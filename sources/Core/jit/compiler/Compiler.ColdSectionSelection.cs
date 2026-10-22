@@ -29,7 +29,7 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        if (Configuration.DEBUG && (compHndBBtabCount > 0) && !opts.compProcedureSplittingEH)
+        if (Configuration.DEBUG && (compHndBBtabCount > 0) && !compProcedureSplittingEH)
         {
             JITDUMP("No procedure splitting will be done for this method with EH (by request)\n");
             return PhaseStatus.MODIFIED_NOTHING;

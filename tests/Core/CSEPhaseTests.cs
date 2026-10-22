@@ -32,26 +32,26 @@ internal static unsafe class CSEPhaseTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "optCSECandidateCount")]
     private static extern ref int CandidateCount(Compiler compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRLHook")]
-    private static extern ref int Hook(ref JitConfigValues config);
+    private static ref int Hook(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitRLHook;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRLCSE")]
-    private static extern ref byte* Rl(ref JitConfigValues config);
+    private static ref byte* Rl(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitRLCSE;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRandomCSE")]
-    private static extern ref int Random(ref JitConfigValues config);
+    private static ref int Random(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitRandomCSE;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitReplayCSE")]
-    private static extern ref byte* Replay(ref JitConfigValues config);
+    private static ref byte* Replay(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitReplayCSE;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStress")]
-    private static extern ref int Stress(ref JitConfigValues config);
+    private static ref int Stress(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitStress;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitNoCSE")]
-    private static extern ref int NoCse(ref JitConfigValues config);
+    private static ref int NoCse(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitNoCSE;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitCSEMask")]
-    private static extern ref int CseMask(ref JitConfigValues config);
+    private static ref int CseMask(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitCSEMask;
 
     [TestCase(1, 1, 1, 1, 1, typeof(CSE_HeuristicRLHook))]
     [TestCase(0, 1, 1, 1, 1, typeof(CSE_HeuristicRL))]
@@ -299,7 +299,7 @@ internal static unsafe class CSEPhaseTests
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         CseStart(compiler) = BAD_VAR_NUM;
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);

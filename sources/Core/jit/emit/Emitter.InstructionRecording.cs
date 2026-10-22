@@ -26,7 +26,7 @@ public partial class Emitter
 
             emitInsSanityCheck(id);
             assert(_compiler is not null);
-            if (_compiler.opts.dspCode)
+            if (_compiler.dspCode)
             {
                 emitDispIns(id, true, false, false);
             }

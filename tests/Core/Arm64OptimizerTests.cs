@@ -251,7 +251,7 @@ internal static unsafe class Arm64OptimizerTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
         JitTls.Compiler = compiler;
         try

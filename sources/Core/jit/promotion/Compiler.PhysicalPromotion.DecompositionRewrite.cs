@@ -217,9 +217,7 @@ public partial class Compiler
             }
 
             if ((dstLocal is not null) && (srcLocal is not null) &&
-                (dstLocal.LclNum == srcLocal.LclNum) && (dstOffset > srcOffset) &&
-                (dstOffset - srcOffset < (srcLocal.GetLayout(_compiler) ??
-                    throw new InvalidOperationException("A struct local requires a layout.")).Size))
+                (dstLocal.LclNum == srcLocal.LclNum) && (dstOffset > srcOffset))
             {
                 if (srcLocal.GetLayout(_compiler) is not ClassLayout sourceLayout)
                 {

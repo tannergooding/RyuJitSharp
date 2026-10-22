@@ -5,13 +5,12 @@
 
 using System;
 using static RyuJitSharp.GCInfo.GCtype;
+using static RyuJitSharp.Emitter.EmitterStatistics;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private static uint emitTotalIDescCGCACnt;
-
     private regMaskTP CallScratchRegisters
     {
         get

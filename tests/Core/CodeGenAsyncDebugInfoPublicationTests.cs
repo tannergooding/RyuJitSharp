@@ -83,7 +83,7 @@ internal static unsafe class CodeGenAsyncDebugInfoPublicationTests
             }
             if (TestConfiguration.IsDebug)
             {
-                Verbose(codeGen) = true;
+                TestConfiguration.SetCodeGenVerbose(codeGen, true);
             }
 
             using var stream = new MemoryStream();
@@ -141,9 +141,6 @@ internal static unsafe class CodeGenAsyncDebugInfoPublicationTests
 
         Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo("0010AAFF"));
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_verbose")]
-    private static extern ref bool Verbose(CodeGen codeGen);
 
     private static void WithPublication(PublicationAction action)
     {

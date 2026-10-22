@@ -796,7 +796,7 @@ internal static unsafe class FlowGraphCleanupTests
         }
 
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         compiler.lvaTable = [
             new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }
         ];

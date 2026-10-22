@@ -88,7 +88,7 @@ internal static unsafe class LinearScanConstructionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         if (debugEnC)
         {
             flags.Set(JitFlags.JIT_FLAG_DEBUG_EnC);

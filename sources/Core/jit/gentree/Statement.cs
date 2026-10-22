@@ -5,7 +5,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -33,27 +32,13 @@ public sealed partial class Statement
 
     private DebugInfo _debugInfo;
 
-    private sealed class DebugData
-    {
-        private static ConditionalWeakTable<Statement, DebugData>? s_instances;
-
-        internal int Id;
-        internal IL_OFFSET LastILOffset;
-
-        internal static DebugData Get(Statement statement)
-        {
-            var instances = LazyStatic.GetOrCreate(ref s_instances);
-            return instances.GetValue(statement, static _ => new DebugData());
-        }
-    }
-
     public Statement(GenTree expr, int stmtId)
     {
         _rootNode = expr;
 
         if (Configuration.DEBUG)
         {
-            var debugData = DebugData.Get(this);
+            var debugData = Compiler.DebugData.Get(this);
             debugData.Id = stmtId;
             debugData.LastILOffset = BAD_IL_OFFSET;
         }
@@ -65,29 +50,33 @@ public sealed partial class Statement
 
     public ref readonly DebugInfo DebugInfo => ref _debugInfo;
 
-    public int Id => GetDebugData().Id;
+    public int Id => GetDebugData()?.Id ?? 0;
 
     public IL_OFFSET LastILOffset
     {
         get
         {
-            return GetDebugData().LastILOffset;
+            return GetDebugData()?.LastILOffset ?? BAD_IL_OFFSET;
         }
 
         set
         {
-            GetDebugData().LastILOffset = value;
+            if (GetDebugData() is { } debugData)
+            {
+                debugData.LastILOffset = value;
+            }
         }
     }
 
-    private DebugData GetDebugData()
+    private Compiler.DebugData.StatementDebugData? GetDebugData()
     {
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StatementDebugDataIsOnlyAvailableInDebugBuilds);
+            return null;
         }
 
-        return DebugData.Get(this);
+        return Compiler.DebugData.Get(this);
     }
 
     public bool IsPhiDefnStmt => _rootNode.IsPhiDefn;

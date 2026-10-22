@@ -69,11 +69,11 @@ internal static unsafe class StressSplitTreeTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
-    private static extern ref byte* StressNames(ref JitConfigValues config);
+    private static ref byte* StressNames(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitStressModeNames;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressSplitTreeLimit")]
-    private static extern ref int SplitLimit(ref JitConfigValues config);
+    private static ref int SplitLimit(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitStressSplitTreeLimit;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compMethodHashPrivate")]
     private static extern ref int MethodHash(ref Compiler.Info info);

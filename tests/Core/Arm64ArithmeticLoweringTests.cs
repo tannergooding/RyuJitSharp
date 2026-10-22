@@ -1278,7 +1278,7 @@ internal static unsafe class Arm64ArithmeticLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         compiler.opts.compFlags = minopts ? 0 : CLFLG_REGVAR;
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;

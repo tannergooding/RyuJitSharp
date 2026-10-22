@@ -215,7 +215,7 @@ internal static unsafe class HardwareComparisonLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         if (supportsAvx512)
         {
             compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX512);

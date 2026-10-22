@@ -410,9 +410,7 @@ public partial class Compiler
 
         if (Configuration.DEBUG && isUpdate)
         {
-            assert(!definition._updated);
-            definition._origVNPair = definition._vnPair;
-            definition._updated = true;
+            RecordLocalSsaValueNumberUpdate(newSsaDef.LclNum, newSsaDef.SsaNum, definition._vnPair);
         }
         definition._vnPair = definitionValues;
         if (Configuration.DEBUG && verbose)

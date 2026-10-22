@@ -3,13 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using static RyuJitSharp.Emitter.EmitterStatistics;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private static uint emitTotalIDescLclVarPairCnt;
-    private static uint emitTotalIDescLclVarPairCnsCnt;
-
     private instrDescLclVarPair emitAllocInstrLclVarPair(emitAttr attr)
     {
         if (Configuration.EMITTER_STATS)

@@ -9,7 +9,30 @@ public sealed class NaturalLoopIterInfo
 {
     public int IterVar = BAD_VAR_NUM;
     public int LimitVar = BAD_VAR_NUM;
-    public GenTree? InitTree;
+    public GenTree? InitTree
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDebugDataIsOnlyAvailableInDebugBuilds);
+                return null;
+            }
+
+            return Compiler.DebugData.Get(this).InitTree;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDebugDataIsOnlyAvailableInDebugBuilds);
+                return;
+            }
+
+            Compiler.DebugData.Get(this).InitTree = value;
+        }
+    }
     public int ConstInitValue;
     public GenTree? TestTree;
     public BasicBlock? TestBlock;

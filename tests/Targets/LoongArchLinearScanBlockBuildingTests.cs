@@ -240,7 +240,7 @@ internal static unsafe class LoongArchLinearScanBlockBuildingTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         JitTls.Compiler = compiler;
 
         var codeGen = new CodeGen(compiler);

@@ -688,7 +688,7 @@ internal static unsafe class LoweringDispatchTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.lvaTable = [new LclVarDsc(), new LclVarDsc()];
         compiler.lvaCount = 2;

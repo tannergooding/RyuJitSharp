@@ -443,7 +443,7 @@ internal static unsafe class LocalReferenceAccountingTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.compDbgCode = debugCode;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         compiler.info.compInitMem = true;
         compiler.lvaRefCountState = RCS_NORMAL;
         compiler.fgCalledCount = BB_UNITY_WEIGHT;

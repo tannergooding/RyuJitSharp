@@ -612,7 +612,7 @@ internal static class LinearScanEdgeResolutionTests
         Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only register-allocation stress.");
         WithEdge(1, (_, allocator, _, _, _) =>
         {
-            StressMask(allocator) = stressMask;
+            TestConfiguration.SetLinearScanStressMask(allocator, stressMask);
             Assert.That(StressLimit(allocator, null, type, candidates), Is.EqualTo(expected));
         });
     }
@@ -626,7 +626,7 @@ internal static class LinearScanEdgeResolutionTests
         Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only register-allocation stress.");
         WithEdge(1, (_, allocator, _, _, _) =>
         {
-            StressMask(allocator) = 0x2;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x2);
             var reference = new RefPosition(1, 2, null, RefType.RefTypeUse)
             {
                 registerAssignment = SRBM_X64_RBX,
@@ -646,7 +646,7 @@ internal static class LinearScanEdgeResolutionTests
         Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only register-allocation stress.");
         WithEdge(1, (compiler, allocator, source, target, _) =>
         {
-            StressMask(allocator) = stressMask;
+            TestConfiguration.SetLinearScanStressMask(allocator, stressMask);
             AvailableIntegerRegisters(allocator) = SRBM_X64_RAX | SRBM_X64_RBX;
             var scratch = TempReg(allocator, source, target, TYP_INT,
                 SetOps.MakeEmpty(compiler), RBM_NONE);
@@ -731,10 +731,7 @@ internal static class LinearScanEdgeResolutionTests
     private static extern regNumber TempReg(LinearScan allocator, BasicBlock from, BasicBlock? to,
         var_types type, nint[] sharedCriticalLiveSet, regMaskTP consumedRegisters);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enregisterLocalVars")]
+[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enregisterLocalVars")]
     private static extern ref bool EnregisterLocals(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockSequencingDone")]

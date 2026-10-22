@@ -99,7 +99,7 @@ internal static unsafe class AddressModeCostTargetTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaTable = new LclVarDsc[2];
         compiler.lvaCount = 2;
         compiler.lvaTable[0].Type = TYP_LONG;

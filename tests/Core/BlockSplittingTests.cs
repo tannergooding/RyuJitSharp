@@ -489,7 +489,7 @@ internal static unsafe class BlockSplittingTests
         compiler.fgPredsComputed = true;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         using var jitTls = TestConfiguration.CreateJitTls();

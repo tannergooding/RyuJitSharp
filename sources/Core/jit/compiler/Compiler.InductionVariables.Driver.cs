@@ -8,15 +8,13 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private static ConfigMethodRange s_jitEnableInductionVariableOptsRange;
-
     public unsafe PhaseStatus optInductionVariables()
     {
         JITDUMP("*************** In optInductionVariables()\n");
         if (Configuration.DEBUG)
         {
-            s_jitEnableInductionVariableOptsRange.EnsureInit(JitConfig.JitEnableInductionVariableOptsRange);
-            if (!s_jitEnableInductionVariableOptsRange.Contains(info.compMethodHash()))
+            DebugData.MethodRangeData.s_jitEnableInductionVariableOptsRange.EnsureInit(JitConfig.JitEnableInductionVariableOptsRange);
+            if (!DebugData.MethodRangeData.s_jitEnableInductionVariableOptsRange.Contains(info.compMethodHash()))
             {
                 return PhaseStatus.MODIFIED_NOTHING;
             }

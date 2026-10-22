@@ -46,7 +46,7 @@ internal static unsafe class ForwardSubTargetTests
         compiler.fgNodeThreading = NodeThreading.AllLocals;
         compiler.fgDidEarlyLiveness = true;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         JitConfig = new JitConfigValues();
         JitTls.Compiler = compiler;
         try

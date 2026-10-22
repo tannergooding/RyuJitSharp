@@ -3,12 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using static RyuJitSharp.Emitter.EmitterStatistics;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private static uint emitTotalIDescRelocCnt;
-
     private unsafe instrDescReloc emitNewInstrReloc(emitAttr attr, nuint address)
     {
         RequireArm32Target();

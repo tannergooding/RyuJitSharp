@@ -96,7 +96,7 @@ public partial class Emitter
         }
         jitprintf("]");
 
-        if (Configuration.DEBUG && variable >= 0 && compiler.opts.varNames
+        if (Configuration.DEBUG && variable >= 0 && compiler.varNames
             && ilOffset != unchecked((uint)BAD_IL_OFFSET))
         {
             for (var i = 0; i < compiler.info.compVarScopesCount; i++)
@@ -105,9 +105,10 @@ public partial class Emitter
                 if (scope.vsdVarNum == variable && ilOffset >= unchecked((uint)scope.vsdLifeBeg)
                     && ilOffset < unchecked((uint)scope.vsdLifeEnd))
                 {
-                    if (scope.vsdName is not null)
+                    var name = compiler.GetVarScopeName(i);
+                    if (name is not null)
                     {
-                        jitprintf($"'{scope.vsdName}");
+                        jitprintf($"'{name}");
                         if (displacement != 0)
                         {
                             jitprintf($"{displacement:+0;-0}");
@@ -151,7 +152,7 @@ public partial class Emitter
 
         jitprintf("]");
 
-        if (Configuration.DEBUG && variable >= 0 && compiler.opts.varNames
+        if (Configuration.DEBUG && variable >= 0 && compiler.varNames
             && ilOffset != unchecked((uint)BAD_IL_OFFSET))
         {
             var variableName = compiler.compLocalVarName(variable, unchecked((int)ilOffset));
@@ -229,7 +230,7 @@ public partial class Emitter
             jitprintf($"{offset:+0;-0}");
         }
         jitprintf("]");
-        if (Configuration.DEBUG && compiler.opts.varNames && offset < 0)
+        if (Configuration.DEBUG && compiler.varNames && offset < 0)
         {
             jitprintf($"'{compiler.eeGetFieldName(field, true)}{(offset == 0 ? "" : offset.ToString("+0;-0", CultureInfo.InvariantCulture))}'");
         }

@@ -638,8 +638,8 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         return 0;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
-    private static extern ref int AltJitSkipOnAssert(ref JitConfigValues config);
+    private static ref int AltJitSkipOnAssert(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._altJitSkipOnAssert;
 
     [Test]
     public static void ReleasePushCountMismatchStillEmitsTheSaveSequence()
@@ -784,7 +784,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.lvaTrackedCount = 1;
         compiler.lvaTrackedCountInSizeTUnits = 1;
         compiler.eeInfoInitialized = true;

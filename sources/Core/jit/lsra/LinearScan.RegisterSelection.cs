@@ -5,14 +5,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-    private enum RegisterScore : int
+    internal enum RegisterScore : int
     {
         NONE = 0,
         FREE = 0x10000,
@@ -34,7 +33,7 @@ public sealed partial class LinearScan
         REG_NUM = 0x00001,
     }
 
-    private sealed partial class RegisterSelection
+    internal sealed partial class RegisterSelection
     {
         private const int HeuristicCount = 17;
 
@@ -90,16 +89,16 @@ public sealed partial class LinearScan
         private bool _coversFullApplied;
         private bool _constAvailableApplied;
 
-        private sealed class SelectorDebugData
+        private Compiler.DebugData.LinearScanRegisterSelectionDebugData<RegisterScore> getDebugData()
         {
-            private static ConditionalWeakTable<RegisterSelection, SelectorDebugData>? s_instances;
-
-            internal readonly RegisterScore[] RegSelectionOrder = new RegisterScore[HeuristicCount];
-            internal readonly Dictionary<RegisterScore, System.Action> MappingTable;
-
-            internal SelectorDebugData(RegisterSelection selector)
+            if (!Configuration.DEBUG)
             {
-                MappingTable = new(HeuristicCount) {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RegisterSelectionDebugDataIsOnlyAvailableInDebugBuilds);
+            }
+
+            return Compiler.DebugData.Get(
+                this,
+                static selector => new(HeuristicCount, new(HeuristicCount) {
                     [RegisterScore.FREE] = selector.try_FREE,
                     [RegisterScore.CONST_AVAILABLE] = selector.try_CONST_AVAILABLE,
                     [RegisterScore.THIS_ASSIGNED] = selector.try_THIS_ASSIGNED,
@@ -117,24 +116,7 @@ public sealed partial class LinearScan
                     [RegisterScore.FAR_NEXT_REF] = selector.try_FAR_NEXT_REF,
                     [RegisterScore.PREV_REG_OPT] = selector.try_PREV_REG_OPT,
                     [RegisterScore.REG_NUM] = selector.try_REG_NUM,
-                };
-            }
-
-            internal static SelectorDebugData Get(RegisterSelection selector)
-            {
-                var instances = LazyStatic.GetOrCreate(ref s_instances);
-                return instances.GetValue(selector, static value => new SelectorDebugData(value));
-            }
-        }
-
-        private SelectorDebugData getDebugData()
-        {
-            if (!Configuration.DEBUG)
-            {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RegisterSelectionDebugDataIsOnlyAvailableInDebugBuilds);
-            }
-
-            return SelectorDebugData.Get(this);
+                }));
         }
 
         public unsafe RegisterSelection(LinearScan linearScan)

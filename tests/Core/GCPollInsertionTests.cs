@@ -314,7 +314,7 @@ internal static unsafe class GCPollInsertionTests
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.compHndBBtab = [];
         compiler.info.compCompHnd = &jitInfo;
         compiler.info.compRetType = TYP_INT;

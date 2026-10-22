@@ -392,7 +392,7 @@ internal static unsafe class Arm64AddressLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.lvaTable = new LclVarDsc[2];
         compiler.lvaCount = 2;

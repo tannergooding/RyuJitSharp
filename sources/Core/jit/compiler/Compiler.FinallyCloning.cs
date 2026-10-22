@@ -32,7 +32,7 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        if (opts.MinOpts)
+        if (MinOpts)
         {
             JITDUMP("Method compiled with MinOpts, no cloning.\n");
             return PhaseStatus.MODIFIED_NOTHING;
@@ -205,8 +205,7 @@ public partial class Compiler
                             {
                                 if (block.hasProfileWeight)
                                 {
-                                    JITDUMP($"Found profiled {FMT_BB(block.bbNum)} " +
-                                        $"with weight {FMT_WT(block.bbWeight)}\n");
+                                    JITDUMP($"Found profiled {FMT_BB(block.bbNum)} " + $"with weight {FMT_WT(block.bbWeight)}\n");
                                     currentWeight = block.bbWeight;
                                 }
                                 else
@@ -231,8 +230,7 @@ public partial class Compiler
 
                             if (block.bbWeight <= currentWeight)
                             {
-                                JITDUMP($"Skipping past {FMT_BB(block.bbNum)} " +
-                                    $"with weight {FMT_WT(block.bbWeight)}\n");
+                                JITDUMP($"Skipping past {FMT_BB(block.bbNum)} " + $"with weight {FMT_WT(block.bbWeight)}\n");
                                 if (block == firstTry)
                                 {
                                     break;
@@ -241,8 +239,7 @@ public partial class Compiler
                                 goto __jitExceptionForIncrement175;
                             }
 
-                            JITDUMP($"Preferring {FMT_BB(block.bbNum)} since " +
-                                $"{FMT_WT(block.bbWeight)} >  {FMT_WT(currentWeight)}\n");
+                            JITDUMP($"Preferring {FMT_BB(block.bbNum)} since " + $"{FMT_WT(block.bbWeight)} >  {FMT_WT(currentWeight)}\n");
                             normalCallFinally = jumpDest;
                             normalContinuation = continuation;
                             currentWeight = block.bbWeight;

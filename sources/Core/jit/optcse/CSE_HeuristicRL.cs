@@ -12,17 +12,25 @@ namespace RyuJitSharp;
 
 public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
 {
-    private readonly double[] m_rewards;
-    private readonly CLRRandom m_cseRng;
     private readonly bool m_updateParameters;
     private readonly bool m_greedy;
     private readonly double m_alpha;
 
+    private double[] Rewards => GetDebugData().Rewards!;
+    private CLRRandom CseRandom => GetDebugData().Random!;
+
     public CSE_HeuristicRL(Compiler compiler) : base(compiler)
     {
-        EnsureDebugDiagnosticsAvailable();
-        m_rewards = new double[MaxSteps];
-        m_cseRng = new CLRRandom(compiler.info.compMethodHash() ^ JitConfig.JitRandomCSE);
+        if (!Configuration.DEBUG)
+        {
+            EnsureDebugDiagnosticsAvailable();
+            return;
+        }
+
+        var debugData = GetDebugData();
+        var rewardValues = new double[MaxSteps];
+        debugData.Rewards = rewardValues;
+        debugData.Random = new CLRRandom(compiler.info.compMethodHash() ^ JitConfig.JitRandomCSE);
 
         var parameters = new ConfigDoubleArray();
         parameters.EnsureInit(JitConfig.JitRLCSE);
@@ -49,7 +57,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
             var values = rewards.GetData();
             for (var index = 0; index < Math.Min(values.Length, MaxSteps); index++)
             {
-                m_rewards[index] = values[index];
+                rewardValues[index] = values[index];
             }
 
             if (JitConfig.JitRLCSEAlpha is not null)
@@ -68,8 +76,8 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
             m_greedy = true;
         }
 
-        m_baseLikelihoods = [];
-        m_features = [];
+        debugData.BaseLikelihoods = [];
+        debugData.Features = [];
     }
 
     public override string Name() => m_updateParameters
@@ -104,7 +112,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
         if (m_updateParameters)
         {
             global::System.Collections.Generic.List<string> __jitExceptionResult529;
-            var __jitExceptionCoalesceLeft530 = m_features;
+            var __jitExceptionCoalesceLeft530 = Features;
             if (__jitExceptionCoalesceLeft530 != null)
             {
                 __jitExceptionResult529 = __jitExceptionCoalesceLeft530;
@@ -135,7 +143,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
         else if (!m_greedy)
         {
             global::System.Collections.Generic.List<double> __jitExceptionResult531;
-            var __jitExceptionCoalesceLeft532 = m_baseLikelihoods;
+            var __jitExceptionCoalesceLeft532 = BaseLikelihoods;
             if (__jitExceptionCoalesceLeft532 != null)
             {
                 __jitExceptionResult531 = __jitExceptionCoalesceLeft532;
@@ -147,7 +155,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
             }
             var baseLikelihoods = __jitExceptionResult531;
             global::System.Collections.Generic.List<double> __jitExceptionResult533;
-            var __jitExceptionCoalesceLeft534 = m_likelihoods;
+            var __jitExceptionCoalesceLeft534 = Likelihoods;
             if (__jitExceptionCoalesceLeft534 != null)
             {
                 __jitExceptionResult533 = __jitExceptionCoalesceLeft534;
@@ -201,7 +209,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
     private void SoftmaxPolicy()
     {
         global::System.Collections.Generic.List<double> __jitExceptionResult535;
-        var __jitExceptionCoalesceLeft536 = m_baseLikelihoods;
+        var __jitExceptionCoalesceLeft536 = BaseLikelihoods;
         if (__jitExceptionCoalesceLeft536 != null)
         {
             __jitExceptionResult535 = __jitExceptionCoalesceLeft536;
@@ -213,7 +221,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
         }
         var baseLikelihoods = __jitExceptionResult535;
         global::System.Collections.Generic.List<double> __jitExceptionResult537;
-        var __jitExceptionCoalesceLeft538 = m_likelihoods;
+        var __jitExceptionCoalesceLeft538 = Likelihoods;
         if (__jitExceptionCoalesceLeft538 != null)
         {
             __jitExceptionResult537 = __jitExceptionCoalesceLeft538;
@@ -282,7 +290,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
         BuildChoices(choices);
         Softmax(choices);
 
-        var randomFactor = m_cseRng.NextDouble();
+        var randomFactor = CseRandom.NextDouble();
         double sum = 0;
         var choiceNum = 0;
         for (var index = 0; index < choices.Count; index++)
@@ -328,6 +336,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
             return;
         }
 
+        var rewards = Rewards;
         List<Choice> choices = [];
         ConfigIntArray configuration = default;
         configuration.EnsureInit(JitConfig.JitReplayCSE);
@@ -341,7 +350,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
             for (var index = 0; index < sequence.Length; index++)
             {
                 jitprintf((index == 0 ? "" : ",") +
-                    formatFloat(m_rewards[RewardIndex(index)], "F4").PadLeft(7));
+                    formatFloat(rewards[RewardIndex(index)], "F4").PadLeft(7));
             }
             jitprintf("\n");
         }
@@ -393,7 +402,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
             }
             JITDUMP("\n");
 
-            UpdateParametersStep(descriptor, choices, m_rewards[RewardIndex(step)], delta);
+            UpdateParametersStep(descriptor, choices, rewards[RewardIndex(step)], delta);
             PerformCSE(candidate);
             madeChanges = true;
         }
@@ -408,7 +417,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
                 jitprintf($"\nRL Update stopping early ({step} CSEs done, {undone} CSEs left undone)\n");
             }
             Softmax(choices);
-            UpdateParametersStep(null, choices, m_rewards[RewardIndex(step)], delta);
+            UpdateParametersStep(null, choices, rewards[RewardIndex(step)], delta);
         }
 
         for (var index = 0; index < NumParameters; index++)

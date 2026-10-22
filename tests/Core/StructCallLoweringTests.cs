@@ -316,7 +316,7 @@ internal static unsafe class StructCallLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compCompHnd = &ee.Interface;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaTable = new LclVarDsc[2];
         compiler.lvaCount = 2;
         compiler.lvaTable[0].Type = TYP_BYREF;

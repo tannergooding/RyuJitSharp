@@ -325,7 +325,7 @@ internal static class FinallyOptimizationTests
         if (TestConfiguration.IsDebug)
         {
             object config = new JitConfigValues();
-            var field = typeof(JitConfigValues).GetField("_jitEnableFinallyCloning",
+            var field = TestConfiguration.GetJitConfigField("_jitEnableFinallyCloning",
                 BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new AssertionException("Missing finally-cloning configuration.");
             field.SetValue(config, 1);

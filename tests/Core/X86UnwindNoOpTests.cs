@@ -172,8 +172,8 @@ internal static unsafe class X86UnwindNoOpTests
     private delegate void PublicationAction(
         Compiler compiler, PublicationContext* context, byte* hotCode, byte* coldCode);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitFakeProcedureSplitting")]
-    private static extern ref int FakeSplit(ref JitConfigValues config);
+    private static ref int FakeSplit(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitFakeProcedureSplitting;
 
     private static insGroup Group(uint offset)
     {

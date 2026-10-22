@@ -24,6 +24,51 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class CodeGenBlockDriverTests
 {
     [Test]
+    public static void StatementLastILOffsetUsesGenTreeDebugData()
+    {
+        SsaLivenessTests.WithCompiler(0, compiler =>
+        {
+            var node = new GenTreeILOffset(default, 42);
+
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(node.StmtLastILOffset, Is.EqualTo(42));
+                Assert.That(Compiler.DebugData.Get(node).StmtLastILOffset, Is.EqualTo(42));
+            }
+            else
+            {
+                _ = Assert.Throws<InvalidOperationException>(() => _ = node.StmtLastILOffset);
+            }
+        });
+    }
+
+    [Test]
+    public static void StatementDebugStateUsesCompilerDebugData()
+    {
+        SsaLivenessTests.WithCompiler(0, compiler =>
+        {
+            var statement = new Statement(compiler.gtNewIconNode(TYP_INT, 1), 17);
+
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(statement.Id, Is.EqualTo(17));
+                Assert.That(statement.LastILOffset, Is.EqualTo(BAD_IL_OFFSET));
+                statement.LastILOffset = 23;
+
+                var debugData = Compiler.DebugData.Get(statement);
+                Assert.That(debugData.Id, Is.EqualTo(17));
+                Assert.That(debugData.LastILOffset, Is.EqualTo(23));
+            }
+            else
+            {
+                _ = Assert.Throws<InvalidOperationException>(() => _ = statement.Id);
+                _ = Assert.Throws<InvalidOperationException>(() => _ = statement.LastILOffset);
+                _ = Assert.Throws<InvalidOperationException>(() => statement.LastILOffset = 23);
+            }
+        });
+    }
+
+    [Test]
     public static void BlockListGeneratesLinearOperandsAndReservesTheExit()
     {
         WithDriver((compiler, codeGen) =>
@@ -458,10 +503,10 @@ internal static unsafe class CodeGenBlockDriverTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_richDebugInfo")]
     private static extern ref int RichMappings(ref JitConfigValues config);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEmitUnitTests")]
-    private static extern ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config);
+    private static ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitEmitUnitTests;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEmitUnitTestsSections")]
-    private static extern ref byte* EmitterSections(ref JitConfigValues config);
+    private static ref byte* EmitterSections(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitEmitUnitTestsSections;
 
 }

@@ -385,7 +385,7 @@ public sealed partial class CodeGen
                 jitprintf("*************** In genFnEpilog()\n");
             }
 
-            if (_compiler.opts.dspCode)
+            if (_compiler.dspCode)
             {
                 jitprintf("\n__epilog:\n");
             }

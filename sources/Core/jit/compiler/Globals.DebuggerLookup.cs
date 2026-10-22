@@ -18,7 +18,10 @@ public static partial class Globals
 
     public static GenTree? dFindTreeInTree(GenTree? tree, uint id)
     {
-        EnsureDebuggerLookupAvailable();
+        if (!EnsureDebuggerLookupAvailable())
+        {
+            return null;
+        }
 
         if (tree is null)
         {
@@ -44,7 +47,10 @@ public static partial class Globals
 
     public static GenTree? dFindTree(uint id)
     {
-        EnsureDebuggerLookupAvailable();
+        if (!EnsureDebuggerLookupAvailable())
+        {
+            return null;
+        }
 
         var comp = GetDebuggerCompiler();
         dbTreeBlock = null;
@@ -69,7 +75,10 @@ public static partial class Globals
 
     public static Statement? dFindStmt(uint id)
     {
-        EnsureDebuggerLookupAvailable();
+        if (!EnsureDebuggerLookupAvailable())
+        {
+            return null;
+        }
 
         var comp = GetDebuggerCompiler();
         dbStmt = null;
@@ -93,7 +102,10 @@ public static partial class Globals
 
     public static BasicBlock? dFindBlock(uint bbNum)
     {
-        EnsureDebuggerLookupAvailable();
+        if (!EnsureDebuggerLookupAvailable())
+        {
+            return null;
+        }
 
         var comp = GetDebuggerCompiler();
         dbBlock = null;
@@ -112,7 +124,10 @@ public static partial class Globals
 
     public static FlowGraphNaturalLoop? dFindLoop(uint index)
     {
-        EnsureDebuggerLookupAvailable();
+        if (!EnsureDebuggerLookupAvailable())
+        {
+            return null;
+        }
 
         var comp = GetDebuggerCompiler();
         dbLoop = null;
@@ -127,11 +142,14 @@ public static partial class Globals
         return dbLoop;
     }
 
-    private static void EnsureDebuggerLookupAvailable()
+    private static bool EnsureDebuggerLookupAvailable()
     {
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.DebuggerLookupsAreOnlyAvailableInDebugBuilds);
+            return false;
         }
+
+        return true;
     }
 }

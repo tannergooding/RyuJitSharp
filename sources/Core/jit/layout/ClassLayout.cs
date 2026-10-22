@@ -32,20 +32,6 @@ public sealed class ClassLayout
     // The normalized type to use in IR for block nodes with this layout.
     private readonly var_types _type;
 
-    internal sealed class DebugNames
-    {
-        private static ConditionalWeakTable<ClassLayout, DebugNames>? s_instances;
-
-        internal string ClassName = string.Empty;
-        internal string ShortClassName = string.Empty;
-
-        internal static DebugNames Get(ClassLayout classLayout)
-        {
-            var instances = LazyStatic.GetOrCreate(ref s_instances);
-            return instances.GetValue(classLayout, static _ => new DebugNames());
-        }
-    }
-
     public ClassLayout(uint size)
     {
         _size = size;
@@ -89,19 +75,19 @@ public sealed class ClassLayout
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ClassLayoutNamesAreOnlyAvailableInDebugBuilds);
         }
 
-        var names = DebugNames.Get(this);
+        var names = Compiler.DebugData.Get(this);
         names.ClassName = className;
         names.ShortClassName = shortClassName;
     }
 
-    private DebugNames GetDebugNames()
+    private Compiler.DebugData.ClassLayoutDebugNames GetDebugNames()
     {
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ClassLayoutNamesAreOnlyAvailableInDebugBuilds);
         }
 
-        return DebugNames.Get(this);
+        return Compiler.DebugData.Get(this);
     }
 
     /// <summary>The number of GC pointers in this layout.</summary>

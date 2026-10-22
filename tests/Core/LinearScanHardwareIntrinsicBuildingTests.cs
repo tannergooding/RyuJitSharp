@@ -498,7 +498,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaSimdInitTempVarNum = BAD_VAR_NUM;
         compiler.lvaTable = [];
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;

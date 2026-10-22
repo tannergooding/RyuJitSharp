@@ -503,7 +503,7 @@ internal static unsafe class LinearScanScalarConversionTests
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             JitFlags flags = default;
             compiler.opts.jitFlags = &flags;
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             if (!Configuration.TARGET_ARM)
             {
                 CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;

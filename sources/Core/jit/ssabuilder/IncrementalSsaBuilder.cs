@@ -20,9 +20,21 @@ public sealed class IncrementalSsaBuilder
     private BitVec? _defBlocks;
     private BitVec? _iteratedDominanceFrontiers;
 
-#if DEBUG
-    private bool _finalizedDefs;
-#endif
+    private bool _finalizedDefs
+    {
+        get
+        {
+            return Configuration.DEBUG && Compiler.DebugData.Get(this).FinalizedDefs;
+        }
+
+        set
+        {
+            if (Configuration.DEBUG)
+            {
+                Compiler.DebugData.Get(this).FinalizedDefs = value;
+            }
+        }
+    }
 
     public IncrementalSsaBuilder(Compiler compiler, int lclNum)
     {
@@ -269,17 +281,20 @@ public sealed class IncrementalSsaBuilder
 
     public void InsertDef(UseDefLocation def)
     {
-#if DEBUG
-        assert(!_finalizedDefs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(!_finalizedDefs);
+        }
+
         _defs.Add(def);
     }
 
     public bool FinalizeDefs()
     {
-#if DEBUG
-        assert(!_finalizedDefs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(!_finalizedDefs);
+        }
 
         if (Configuration.DEBUG && _compiler.verbose)
         {
@@ -339,9 +354,10 @@ public sealed class IncrementalSsaBuilder
             }
             var vnStore = __jitExceptionResult149;
             descriptor.GetPerSsaData(ssaNum)._vnPair = vnStore.VNPNormalPair(tree.Data._vnPair);
-#if DEBUG
-            _finalizedDefs = true;
-#endif
+            if (Configuration.DEBUG)
+            {
+                _finalizedDefs = true;
+            }
             return true;
         }
 
@@ -411,17 +427,20 @@ public sealed class IncrementalSsaBuilder
         }
 
         descriptor.lvInSsa = true;
-#if DEBUG
-        _finalizedDefs = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _finalizedDefs = true;
+        }
         return true;
     }
 
     public void InsertUse(UseDefLocation use)
     {
-#if DEBUG
-        assert(_finalizedDefs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_finalizedDefs);
+        }
+
         global::RyuJitSharp.GenTreeLclVar __jitExceptionResult701;
         var __jitExceptionCoalesceLeft702 = use.Tree;
         if (__jitExceptionCoalesceLeft702 != null)

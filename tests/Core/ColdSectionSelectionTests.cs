@@ -161,7 +161,7 @@ internal static class ColdSectionSelectionTests
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, 100, 0, 0);
             compiler.compHndBBtabCount = 1;
-            ProcedureSplittingEH(ref compiler.opts) = allowEH;
+            compiler.compProcedureSplittingEH = allowEH;
             Assert.That(compiler.fgDetermineFirstColdBlock(), Is.EqualTo(allowEH
                 ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
             Assert.That(compiler.fgFirstColdBlock, Is.SameAs(allowEH ? blocks[1] : null));
@@ -202,11 +202,8 @@ internal static class ColdSectionSelectionTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressProcedureSplitting")]
-    private static extern ref int StressProcedureSplitting(ref JitConfigValues config);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProcedureSplittingEH")]
-    private static extern ref bool ProcedureSplittingEH(ref Compiler.Options options);
+    private static ref int StressProcedureSplitting(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitStressProcedureSplitting;
 
     private static void AddCost(Compiler compiler, BasicBlock block, byte cost)
     {
@@ -242,7 +239,7 @@ internal static class ColdSectionSelectionTests
                 compiler.opts.compProcedureSplitting = true;
                 if (TestConfiguration.IsDebug)
                 {
-                    ProcedureSplittingEH(ref compiler.opts) = true;
+                    compiler.compProcedureSplittingEH = true;
                 }
                 action(compiler);
             });

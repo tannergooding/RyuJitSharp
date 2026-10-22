@@ -31,12 +31,9 @@ internal static unsafe class ConfigMethodRangeTests
         var compilerField = typeof(InlineStrategy).GetField("_compiler", BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException();
         compilerField.SetValue(strategy, compiler);
-        var rangeField = typeof(InlineStrategy).GetField("s_inlingDisabledRange", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException();
-        var configField = typeof(JitConfigValues).GetField("_jitNoInlineRange", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException();
-        var previousRange = rangeField.GetValue(null);
+        var previousRange = Compiler.DebugData.MethodRangeData.DisabledRange;
         var previousConfig = Globals.JitConfig;
+        var config = previousConfig;
         var hash = unchecked((uint)compiler.info.compMethodHash());
         var text = selection switch {
             0 => null,
@@ -48,27 +45,26 @@ internal static unsafe class ConfigMethodRangeTests
 
         try
         {
-            rangeField.SetValue(null, default(ConfigMethodRange));
+            Compiler.DebugData.MethodRangeData.DisabledRange = default;
             fixed (byte* pointer = bytes)
             {
-                object config = previousConfig;
-                configField.SetValue(config, System.Reflection.Pointer.Box(pointer, typeof(byte*)));
-                Globals.JitConfig = (JitConfigValues)config;
+                TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitNoInlineRange = pointer;
+                Globals.JitConfig = config;
 
                 for (var attempt = 0; attempt < 3; attempt++)
                 {
                     Assert.That(strategy.IsInliningDisabled(), Is.EqualTo(expected), $"attempt {attempt}");
                 }
 
-                configField.SetValue(config, System.Reflection.Pointer.Box(null, typeof(byte*)));
-                Globals.JitConfig = (JitConfigValues)config;
+                TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitNoInlineRange = null;
+                Globals.JitConfig = config;
                 Assert.That(strategy.IsInliningDisabled(), Is.False);
             }
         }
         finally
         {
             Globals.JitConfig = previousConfig;
-            rangeField.SetValue(null, previousRange);
+            Compiler.DebugData.MethodRangeData.DisabledRange = previousRange;
         }
     }
 
@@ -166,7 +162,9 @@ internal static unsafe class ConfigMethodRangeTests
 
         var methodHash = unchecked((uint)root.info.compMethodHash());
         var expectedHash = unchecked((uint)(((methodHash * 33UL) ^ (uint)(inlining ? ordinal : 0)) * 33UL) ^ (uint)offset);
-        var rangeField = typeof(Compiler).GetField("s_jitOptimizeAwaitRange", BindingFlags.Static | BindingFlags.NonPublic)
+        var rangeField = typeof(Compiler.DebugData.MethodRangeData).GetField(
+            "s_jitOptimizeAwaitRange",
+            BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("Missing await range.");
         var oldRange = rangeField.GetValue(null);
 

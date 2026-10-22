@@ -154,7 +154,7 @@ internal static unsafe class DivisionLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_REGVAR;
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.lvaTable = [new LclVarDsc(), new LclVarDsc()];

@@ -18,6 +18,7 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
+[NonParallelizable]
 internal static unsafe class LinearScanRegisterWritebackTests
 {
     [Test]
@@ -119,33 +120,33 @@ internal static unsafe class LinearScanRegisterWritebackTests
     [TestCase(true)]
     public static void InsertCopyOrReloadReplacesOwningUseAndPreservesExecutionOrder(bool reload)
     {
-        WithAllocator((compiler, allocator) => {
-            var block = NewBlock(compiler);
-            var source = compiler.gtNewIconNode(TYP_INT, 1);
-            var intervening = compiler.gtNewIconNode(TYP_INT, 2);
-            var parent = new GenTreeOp(GT_ADD, TYP_INT, source, intervening);
-            block.InsertAtEnd(source);
-            block.InsertAtEnd(intervening);
-            block.InsertAtEnd(parent);
+        TestConfiguration.WithLsraStatistics(() => WithAllocator((compiler, allocator) => {
+                var block = NewBlock(compiler);
+                var source = compiler.gtNewIconNode(TYP_INT, 1);
+                var intervening = compiler.gtNewIconNode(TYP_INT, 2);
+                var parent = new GenTreeOp(GT_ADD, TYP_INT, source, intervening);
+                block.InsertAtEnd(source);
+                block.InsertAtEnd(intervening);
+                block.InsertAtEnd(parent);
 
-            var reference = NewReference(allocator, source, regNumber.REG_X64_RBX);
-            reference.reload = reload;
-            InsertCopyOrReload(allocator, block, source, 0, reference);
+                var reference = NewReference(allocator, source, regNumber.REG_X64_RBX);
+                reference.reload = reload;
+                InsertCopyOrReload(allocator, block, source, 0, reference);
 
-            var copy = parent.Op1.AsCopyOrReload();
-            Assert.That(copy.Oper, Is.EqualTo(reload ? GT_RELOAD : GT_COPY));
-            Assert.That(copy.Op1, Is.SameAs(source));
-            Assert.That(copy.RegNum, Is.EqualTo(regNumber.REG_X64_RBX));
-            Assert.That(source.Next, Is.SameAs(copy));
-            Assert.That(copy.Next, Is.SameAs(intervening));
-            Assert.That(intervening.Next, Is.SameAs(parent));
-            if (TestConfiguration.IsDebug)
-            {
-                Assert.That(allocator.getLsraStat(LsraStat.STAT_COPY_REG, checked((uint)block.bbNum)),
-                    Is.EqualTo(reload ? 0u : 1u));
-                Assert.That((copy._debugFlags & GTF_DEBUG_NODE_LSRA_ADDED) != 0, Is.True);
-            }
-        });
+                var copy = parent.Op1.AsCopyOrReload();
+                Assert.That(copy.Oper, Is.EqualTo(reload ? GT_RELOAD : GT_COPY));
+                Assert.That(copy.Op1, Is.SameAs(source));
+                Assert.That(copy.RegNum, Is.EqualTo(regNumber.REG_X64_RBX));
+                Assert.That(source.Next, Is.SameAs(copy));
+                Assert.That(copy.Next, Is.SameAs(intervening));
+                Assert.That(intervening.Next, Is.SameAs(parent));
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(allocator.getLsraStat(LsraStat.STAT_COPY_REG, checked((uint)block.bbNum)),
+                        Is.EqualTo(reload ? 0u : 1u));
+                    Assert.That((copy._debugFlags & GTF_DEBUG_NODE_LSRA_ADDED) != 0, Is.True);
+                }
+            }));
     }
 
     [TestCase(false)]
@@ -265,7 +266,7 @@ internal static unsafe class LinearScanRegisterWritebackTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;

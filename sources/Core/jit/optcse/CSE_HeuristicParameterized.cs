@@ -41,10 +41,9 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
     protected uint m_registerPressure;
     protected List<double>? m_localWeights;
     protected bool m_verbose;
-
-    protected readonly List<double>? m_likelihoods = Configuration.DEBUG ? [] : null;
-    protected List<double>? m_baseLikelihoods;
-    protected List<string>? m_features;
+    protected List<double>? Likelihoods => Configuration.DEBUG ? GetDebugData().Likelihoods : null;
+    protected List<double>? BaseLikelihoods => Configuration.DEBUG ? GetDebugData().BaseLikelihoods : null;
+    protected List<string>? Features => Configuration.DEBUG ? GetDebugData().Features : null;
 
     public CSE_HeuristicParameterized(Compiler compiler) : base(compiler)
     {
@@ -52,6 +51,11 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
         m_registerPressure = unchecked((uint)(compiler.CNT_CALLEE_TRASH_INT + CNT_CALLEE_SAVED));
         m_verbose = Configuration.DEBUG && JitConfig.JitRLCSEVerbose > 0;
         m_verbose |= Configuration.DEBUG && compiler.verbose;
+
+        if (Configuration.DEBUG)
+        {
+            GetDebugData().Likelihoods = [];
+        }
     }
 
     public override string Name() => "Parameterized CSE Heuristic";
@@ -121,7 +125,7 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
             if (Configuration.DEBUG)
             {
                 global::System.Collections.Generic.List<double> __jitExceptionReceiver527;
-                var __jitExceptionCoalesceLeft528 = m_likelihoods;
+                var __jitExceptionCoalesceLeft528 = Likelihoods;
                 if (__jitExceptionCoalesceLeft528 != null)
                 {
                     __jitExceptionReceiver527 = __jitExceptionCoalesceLeft528;

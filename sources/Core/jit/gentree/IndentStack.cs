@@ -11,67 +11,40 @@ namespace RyuJitSharp;
 
 public readonly struct IndentStack
 {
-    private static readonly string[] s_emptyIndents = [
-        " ",    // ICVertical,
-        " ",    // ICBottom,
-        " ",    // ICTop,
-        " ",    // ICMiddle,
-        " ",    // ICDash,
-        "",     // ICTerminal,
-        "?",    // ICError,
-    ];
-
-    private static readonly string[] s_asciiIndents = [
-        "|",    // ICVertical,
-        "\\",   // ICBottom,
-        "/",    // ICTop,
-        "+",    // ICMiddle,
-        "-",    // ICDash,
-        "*",    // ICTerminal,
-        "?",    // ICError,
-    ];
-
-    private static readonly string[] s_unicodeIndents = [
-        "│",    // ICVertical,
-        "└",    // ICBottom,
-        "┌",    // ICTop,
-        "├",    // ICMiddle,
-        "─",    // ICDash,
-        "▌",    // ICTerminal,
-        "?",    // ICError,
-    ];
-
-    private readonly List<Compiler.IndentInfo> _stack;
+    private readonly List<Compiler.IndentInfo>? _stack;
     private readonly string[]? _indents;
 
     public IndentStack(Compiler compiler)
     {
-        _stack = [];
-
-        if (compiler.asciiTrees)
+        if (Configuration.DEBUG)
         {
-            _indents = s_asciiIndents;
+            _stack = [];
+            _indents = compiler.asciiTrees
+                ? Compiler.DebugData.IndentStackStaticData.s_asciiIndents
+                : Compiler.DebugData.IndentStackStaticData.s_unicodeIndents;
         }
         else
         {
-            _indents = s_unicodeIndents;
+            _stack = null;
+            _indents = null;
         }
     }
 
     // Return the depth of the current indentation.
-    public int Depth => _stack.Count;
+    public int Depth => _stack?.Count ?? 0;
 
     // Push a new indentation onto the stack, of the given type.
     [Conditional("DEBUG")]
-    public void Push(Compiler.IndentInfo info) => _stack.Add(info);
+    public void Push(Compiler.IndentInfo info) => _stack!.Add(info);
 
     // Pop the most recent indentation type off the stack.
     public Compiler.IndentInfo Pop()
     {
-        var index = _stack.Count - 1;
-        var info = _stack[index];
+        var stack = _stack!;
+        var index = stack.Count - 1;
+        var info = stack[index];
 
-        _stack.RemoveAt(index);
+        stack.RemoveAt(index);
         return info;
     }
 
@@ -85,7 +58,7 @@ public readonly struct IndentStack
             return;
         }
 
-        var stack = CollectionsMarshal.AsSpan(_stack);
+        var stack = CollectionsMarshal.AsSpan(_stack!);
 
         for (var i = 0; i < stack.Length; i++)
         {

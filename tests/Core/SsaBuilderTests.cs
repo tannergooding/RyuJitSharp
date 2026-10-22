@@ -79,10 +79,6 @@ internal static class SsaBuilderTests
             ref var definition = ref compiler.lvaTable[0].GetPerSsaData(SsaConfig.FIRST_SSA_NUM);
             Assert.That(definition.Block, Is.Null);
             Assert.That(definition._vnPair, Is.EqualTo(new ValueNumPair()));
-            if (TestConfiguration.IsDebug)
-            {
-                Assert.That(definition._origVNPair, Is.EqualTo(new ValueNumPair()));
-            }
         });
     }
 

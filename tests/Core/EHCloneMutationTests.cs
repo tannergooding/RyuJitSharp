@@ -357,6 +357,10 @@ internal static class EHCloneMutationTests
             Assert.That(clonedTry.acdDstBlk, Is.Null);
             Assert.That(clonedHandler.acdHndIndex, Is.EqualTo(2));
             Assert.That(clonedHandler.acdUsed, Is.False);
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(clonedTry.acdNum, Is.Not.EqualTo(clonedHandler.acdNum));
+            }
         });
     }
 

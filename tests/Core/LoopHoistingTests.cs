@@ -29,11 +29,11 @@ internal static unsafe class LoopHoistingTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optCopyLoopMemoryDependence")]
     private static extern void CopyMemoryDependence(Compiler compiler, GenTree source, GenTree clone);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHoistLimit")]
-    private static extern ref int HoistLimit(ref JitConfigValues config);
+    private static ref int HoistLimit(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitHoistLimit;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitNoHoist")]
-    private static extern ref int NoHoist(ref JitConfigValues config);
+    private static ref int NoHoist(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitNoHoist;
 
     [TestCase(CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE)]
     [TestCase(CORINFO_HELP_READYTORUN_GCSTATIC_BASE)]
@@ -429,7 +429,7 @@ internal static unsafe class LoopHoistingTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
         TestConfiguration.SetCompilerFullName(compiler, nameof(LoopHoistingTests));

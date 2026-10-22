@@ -74,7 +74,7 @@ internal static unsafe class RiscVLoweringPortTests
         JitFlags flags = default;
         flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.lvaTable = [new LclVarDsc()];
         compiler.lvaCount = 1;

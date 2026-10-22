@@ -179,7 +179,7 @@ internal static unsafe class SelectLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.opts.compFlags = CLFLG_REGVAR;
         compiler.lvaTable = new LclVarDsc[4];
         compiler.lvaCount = 4;

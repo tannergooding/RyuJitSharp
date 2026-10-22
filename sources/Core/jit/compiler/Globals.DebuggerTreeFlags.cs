@@ -4,13 +4,12 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Diagnostics;
+using DebuggerDisplaySequences = RyuJitSharp.Compiler.DebugData.DebuggerDisplaySequences;
 
 namespace RyuJitSharp;
 
 public static partial class Globals
 {
-    private static uint s_cTreeFlagsSequence;
-
     [Conditional("DEBUG")]
     public static void cTreeFlags(Compiler comp, GenTree tree)
     {
@@ -19,7 +18,7 @@ public static partial class Globals
             return;
         }
 
-        jitprintf($"===================================================================== *TreeFlags {unchecked(s_cTreeFlagsSequence++)}\n");
+        jitprintf($"===================================================================== *TreeFlags {unchecked(DebuggerDisplaySequences.s_cTreeFlagsSequence++)}\n");
 
         if (tree.Flags is not 0)
         {

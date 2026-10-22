@@ -26,7 +26,7 @@ internal static unsafe class WasmClassInitializationTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.info.compMethodHnd = (CORINFO_METHOD_STRUCT_*)0x1000;
         compiler.info.compClassHnd = (CORINFO_CLASS_STRUCT_*)0x2000;
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;

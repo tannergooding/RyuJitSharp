@@ -216,7 +216,7 @@ internal static unsafe class CallLoweringTests
     public static void IntegerFieldsPackIntoOneRegisterWithoutSignExtension()
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             var block = new BasicBlock(null, null);
             block.MakeLir(null, null);
             var lowering = new Lowering(compiler, new LinearScan(compiler));
@@ -327,7 +327,7 @@ internal static unsafe class CallLoweringTests
     public static void SingleFieldArgumentBecomesItsRegisterPlacement()
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             var block = new BasicBlock(null, null);
             block.MakeLir(null, null);
             var lowering = new Lowering(compiler, new LinearScan(compiler));
@@ -456,7 +456,7 @@ internal static unsafe class CallLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);
         try

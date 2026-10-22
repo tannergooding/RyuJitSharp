@@ -330,7 +330,7 @@ internal static unsafe class SysVX64ClassifierTests
             compiler.info.compMethodInfo = &methodInfo;
             compiler.info.compRetBuffArg = BAD_VAR_NUM;
             compiler.opts.jitFlags = &flags;
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             compiler.opts.compDbgInfo = true;
             compiler.info.compIsStatic = true;
             compiler.info.compArgsCount = 1;

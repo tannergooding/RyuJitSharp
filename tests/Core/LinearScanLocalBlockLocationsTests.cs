@@ -291,7 +291,7 @@ internal static class LinearScanLocalBlockLocationsTests
             SetOps.AddElemD(compiler, block.bbLiveIn, 0);
             BlockInfo(allocator)![1].predBBNum = 2;
             allocator.setOutVarRegForBB(2, 0, REG_X64_RCX);
-            StressMask(allocator) = 0x200;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x200);
 
             ProcessStart(allocator, block);
 
@@ -389,9 +389,6 @@ internal static class LinearScanLocalBlockLocationsTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBlockNumber")]
     private static extern ref uint CurrentBlockNumber(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_splitOrSpilledVars")]
+[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_splitOrSpilledVars")]
     private static extern ref nint[] SplitVars(LinearScan allocator);
 }

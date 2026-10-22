@@ -368,7 +368,7 @@ internal static unsafe class Arm64FoldExprDispatchTests
         }
 
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(tier0Disabled);
+        compiler.SetMinOpts(tier0Disabled);
         JitTls.Compiler = compiler;
 
         try

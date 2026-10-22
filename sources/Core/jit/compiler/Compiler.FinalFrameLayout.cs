@@ -88,7 +88,7 @@ public partial class Compiler
         JITDUMP($"\ncompRsvdRegCheck\n  frame size  = {frameSize,6}\n" +
             $"  lvaParameterStackSize = {lvaParameterStackSize,6}\n");
 
-        if (opts.MinOpts)
+        if (MinOpts)
         {
             JITDUMP(" Returning true (MinOpts)\n\n");
             return true;
@@ -235,7 +235,7 @@ public partial class Compiler
         else if (Configuration.FEATURE_SIMD && Configuration.TARGET_ARM64)
         {
             assert(curState == FINAL_FRAME_LAYOUT);
-            unkSizeFrame.FinalizeLayout();
+            unkSizeFrame.FinalizeLayout(this);
 
             if (compUsesUnknownSizeFrame)
             {

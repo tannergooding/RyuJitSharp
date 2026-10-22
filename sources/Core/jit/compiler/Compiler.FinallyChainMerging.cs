@@ -22,7 +22,7 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        if (opts.MinOpts)
+        if (MinOpts)
         {
             JITDUMP("Method compiled with MinOpts, no merging.\n");
             return PhaseStatus.MODIFIED_NOTHING;

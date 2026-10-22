@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using NUnit.Framework;
+using static RyuJitSharp.Compiler.MeasurementData.MethodCounts;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
 using static RyuJitSharp.Globals;
@@ -71,8 +72,7 @@ internal static class CompilerShutdownFamilyTests
     [Test]
     public static void NodeBashStorageMatchesFeatureConfiguration()
     {
-        var nodeBash = GetRequiredStaticField(typeof(GenTree), "BashHash") as GenTree.BashHashDsc[] ??
-            throw new InvalidOperationException("GenTree node-bashing storage is not available.");
+        var nodeBash = GetNodeBashStorage();
 
         Assert.That(nodeBash.Length > 0, Is.EqualTo(Configuration.NODEBASH_STATS));
     }
@@ -105,8 +105,7 @@ internal static class CompilerShutdownFamilyTests
             Assert.Ignore("Node-bashing statistics are disabled for this build.");
         }
 
-        var nodeBash = GetRequiredStaticField(typeof(GenTree), "BashHash") as GenTree.BashHashDsc[] ??
-            throw new InvalidOperationException("GenTree node-bashing storage is not available.");
+        var nodeBash = GetNodeBashStorage();
         var snapshot = (GenTree.BashHashDsc[])nodeBash.Clone();
         var previousCount = GetNodeBashCount(nodeBash);
 
@@ -135,23 +134,23 @@ internal static class CompilerShutdownFamilyTests
             Assert.Ignore("Flow-node statistics are disabled for this build.");
         }
 
-        var previousCount = genFlowNodeCnt;
-        var previousSize = genFlowNodeSize;
+        var previousCount = Compiler.MeasurementData.BlockSize.s_FlowNodeCount;
+        var previousSize = Compiler.MeasurementData.BlockSize.s_FlowNodeSize;
         var updatedCount = unchecked(previousCount + 1);
         var updatedSize = unchecked(previousSize + 1);
 
         try
         {
-            genFlowNodeCnt = updatedCount;
-            genFlowNodeSize = updatedSize;
+            Compiler.MeasurementData.BlockSize.s_FlowNodeCount = updatedCount;
+            Compiler.MeasurementData.BlockSize.s_FlowNodeSize = updatedSize;
 
-            Assert.That(genFlowNodeCnt, Is.EqualTo(updatedCount));
-            Assert.That(genFlowNodeSize, Is.EqualTo(updatedSize));
+            Assert.That(Compiler.MeasurementData.BlockSize.s_FlowNodeCount, Is.EqualTo(updatedCount));
+            Assert.That(Compiler.MeasurementData.BlockSize.s_FlowNodeSize, Is.EqualTo(updatedSize));
         }
         finally
         {
-            genFlowNodeCnt = previousCount;
-            genFlowNodeSize = previousSize;
+            Compiler.MeasurementData.BlockSize.s_FlowNodeCount = previousCount;
+            Compiler.MeasurementData.BlockSize.s_FlowNodeSize = previousSize;
         }
     }
 
@@ -182,19 +181,20 @@ internal static class CompilerShutdownFamilyTests
         }
 
         WithShutdownState(() => {
-            AltAssemblies(null) = (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
+            Compiler.AltJitData.s_pAltJitExcludeAssembliesList =
+                (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
             using var output = new MemoryStream();
             using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
             using var csvOutput = new MemoryStream();
             using var csv = new StreamWriter(csvOutput, leaveOpen: true);
             s_jitstdout = writer;
             CsvFile(null) = csv;
-            Compiler.ManagedAllocationStatsData.s_dspMemStats = false;
+            Compiler.MeasurementData.ManagedAllocation.s_dspMemStats = false;
 
             Compiler.compShutdown();
             writer.Flush();
 
-            Assert.That(AltAssemblies(null), Is.Null);
+            Assert.That(Compiler.AltJitData.s_pAltJitExcludeAssembliesList, Is.Null);
             Assert.That(CsvFile(null), Is.Null);
             var text = Encoding.UTF8.GetString(output.ToArray());
             Assert.That(text, Does.Not.Contain("GenTree operator counts"));
@@ -238,8 +238,9 @@ internal static class CompilerShutdownFamilyTests
         }
 
         WithShutdownState(() => {
-            Compiler.genMethodCnt = 0;
-            AltAssemblies(null) = (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
+            genMethodCnt = 0;
+            Compiler.AltJitData.s_pAltJitExcludeAssembliesList =
+                (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
             if (TestConfiguration.IsDebug)
             {
                 Compiler.DebugData.s_pJitDisasmIncludeAssembliesList =
@@ -255,7 +256,7 @@ internal static class CompilerShutdownFamilyTests
             Compiler.compShutdown();
             writer.Flush();
 
-            Assert.That(AltAssemblies(null), Is.Null);
+            Assert.That(Compiler.AltJitData.s_pAltJitExcludeAssembliesList, Is.Null);
             if (TestConfiguration.IsDebug)
             {
                 Assert.That(Compiler.DebugData.s_pJitDisasmIncludeAssembliesList, Is.Null);
@@ -299,14 +300,14 @@ internal static class CompilerShutdownFamilyTests
             using var csv = new StreamWriter(csvOutput, leaveOpen: true);
             s_jitstdout = writer;
             CsvFile(null) = csv;
-            Compiler.ManagedAllocationStatsData.s_dspMemStats =
+            Compiler.MeasurementData.ManagedAllocation.s_dspMemStats =
                 Configuration.MEASURE_MEM_ALLOC && JitConfig.DisplayMemStats != 0;
             FatalJitException? exception = null;
             if (Configuration.MEASURE_BLOCK_SIZE)
             {
-                BasicBlock.s_Count = 9;
-                BasicBlock.s_Size = -1;
-                Compiler.genMethodCnt = 3;
+                Compiler.MeasurementData.BlockSize.s_Count = 9;
+                Compiler.MeasurementData.BlockSize.s_Size = -1;
+                genMethodCnt = 3;
             }
 
             var onlyNodeBash =
@@ -520,7 +521,7 @@ internal static class CompilerShutdownFamilyTests
                 using var output = new MemoryStream();
                 using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
                 s_jitstdout = writer;
-                Compiler.ManagedAllocationStatsData.s_dspMemStats = true;
+                Compiler.MeasurementData.ManagedAllocation.s_dspMemStats = true;
 
                 Compiler.compShutdown();
                 writer.Flush();
@@ -853,8 +854,14 @@ internal static class CompilerShutdownFamilyTests
 
     private static uint[] GetNodeCounts()
     {
-        return GetRequiredStaticField(typeof(GenTree), "s_gtNodeCounts") as uint[] ??
+        return GetRequiredMeasurementDataField("OperatorCounts", "s_counts") as uint[] ??
             throw new InvalidOperationException("GenTree node-count storage is not available.");
+    }
+
+    private static GenTree.BashHashDsc[] GetNodeBashStorage()
+    {
+        return GetRequiredMeasurementDataField("NodeBashing", "s_bashHash") as GenTree.BashHashDsc[] ??
+            throw new InvalidOperationException("GenTree node-bashing storage is not available.");
     }
 
     private static int GetNodeBashCount(GenTree.BashHashDsc[] nodeBash)
@@ -887,6 +894,19 @@ internal static class CompilerShutdownFamilyTests
             throw new InvalidOperationException($"{declaringType.FullName}.{fieldName} is not available.");
         return field.GetValue(null) ??
             throw new InvalidOperationException($"{declaringType.FullName}.{fieldName} has no value.");
+    }
+
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2075",
+        Justification = "This test reflects over private GenTree measurement sidecars.")]
+    private static object GetRequiredMeasurementDataField(string sidecarName, string fieldName)
+    {
+        var measurementDataType = typeof(GenTree).GetNestedType("MeasurementData", BindingFlags.NonPublic) ??
+            throw new InvalidOperationException("GenTree measurement data is not available.");
+        var sidecarType = measurementDataType.GetNestedType(sidecarName, BindingFlags.NonPublic) ??
+            throw new InvalidOperationException($"GenTree measurement sidecar {sidecarName} is not available.");
+        return GetRequiredStaticField(sidecarType, fieldName);
     }
 
     private static void SetOptionalStaticField(
@@ -936,20 +956,21 @@ internal static class CompilerShutdownFamilyTests
         var csv = CsvFile(null);
         var timeFile = TimeLogFile(null);
         var summary = CompTimeSummaryInfo.s_compTimeSummary;
-        var alt = AltAssemblies(null);
-        var noway = GetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap");
-        SetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap", null);
+        var alt = Compiler.AltJitData.s_pAltJitExcludeAssembliesList;
+        var noway = TestConfiguration.GetNowayAssertMap();
+        TestConfiguration.SetNowayAssertMap(null);
         var dump = Compiler.DebugData.s_pJitDisasmIncludeAssembliesList;
-        var methods = Compiler.genMethodCnt;
-        Compiler.genMethodCnt = 1;
-        var grossVmSize = GetOptionalStaticField(typeof(Globals), "grossVMsize");
-        var grossNativeCodeSize = GetOptionalStaticField(typeof(Globals), "grossNCsize");
-        var totalNativeCodeSize = GetOptionalStaticField(typeof(Globals), "totalNCsize");
-        SetOptionalStaticField(typeof(Globals), "grossVMsize", (nuint)0);
-        SetOptionalStaticField(typeof(Globals), "grossNCsize", (nuint)0);
-        SetOptionalStaticField(typeof(Globals), "totalNCsize", (nuint)0);
-        var blocks = (BasicBlock.s_Count, BasicBlock.s_Size);
-        var displayMemory = Compiler.ManagedAllocationStatsData.s_dspMemStats;
+        var methods = genMethodCnt;
+        genMethodCnt = 1;
+        var codeSizeStatistics = typeof(Globals.CodeSizeStatisticsData);
+        var grossVmSize = GetOptionalStaticField(codeSizeStatistics, "grossVMsize");
+        var grossNativeCodeSize = GetOptionalStaticField(codeSizeStatistics, "grossNCsize");
+        var totalNativeCodeSize = GetOptionalStaticField(codeSizeStatistics, "totalNCsize");
+        SetOptionalStaticField(codeSizeStatistics, "grossVMsize", (nuint)0);
+        SetOptionalStaticField(codeSizeStatistics, "grossNCsize", (nuint)0);
+        SetOptionalStaticField(codeSizeStatistics, "totalNCsize", (nuint)0);
+        var blocks = (Compiler.MeasurementData.BlockSize.s_Count, Compiler.MeasurementData.BlockSize.s_Size);
+        var displayMemory = Compiler.MeasurementData.ManagedAllocation.s_dspMemStats;
         JitConfig = new JitConfigValues();
         CsvFile(null) = null;
         TimeLogFile(null) = 0;
@@ -965,15 +986,15 @@ internal static class CompilerShutdownFamilyTests
             CsvFile(null) = csv;
             TimeLogFile(null) = timeFile;
             CompTimeSummaryInfo.s_compTimeSummary = summary;
-            AltAssemblies(null) = alt;
-            SetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap", noway);
+            Compiler.AltJitData.s_pAltJitExcludeAssembliesList = alt;
+            TestConfiguration.SetNowayAssertMap(noway);
             Compiler.DebugData.s_pJitDisasmIncludeAssembliesList = dump;
-            Compiler.genMethodCnt = methods;
-            SetOptionalStaticField(typeof(Globals), "grossVMsize", grossVmSize);
-            SetOptionalStaticField(typeof(Globals), "grossNCsize", grossNativeCodeSize);
-            SetOptionalStaticField(typeof(Globals), "totalNCsize", totalNativeCodeSize);
-            (BasicBlock.s_Count, BasicBlock.s_Size) = blocks;
-            Compiler.ManagedAllocationStatsData.s_dspMemStats = displayMemory;
+            genMethodCnt = methods;
+            SetOptionalStaticField(codeSizeStatistics, "grossVMsize", grossVmSize);
+            SetOptionalStaticField(codeSizeStatistics, "grossNCsize", grossNativeCodeSize);
+            SetOptionalStaticField(codeSizeStatistics, "totalNCsize", totalNativeCodeSize);
+            (Compiler.MeasurementData.BlockSize.s_Count, Compiler.MeasurementData.BlockSize.s_Size) = blocks;
+            Compiler.MeasurementData.ManagedAllocation.s_dspMemStats = displayMemory;
         }
     }
 
@@ -982,8 +1003,5 @@ internal static class CompilerShutdownFamilyTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "compJitTimeLogFilename")]
     private static extern ref nint TimeLogFile(Compiler? compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_pAltJitExcludeAssembliesList")]
-    private static extern ref AssemblyNamesList2? AltAssemblies(Compiler? compiler);
 
 }

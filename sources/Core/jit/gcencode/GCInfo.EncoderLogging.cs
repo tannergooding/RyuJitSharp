@@ -17,13 +17,13 @@ internal sealed class GcInfoEncoderWithLogging
         _encoder = encoder;
         if (Configuration.DEBUG)
         {
-            _log = compiler.verbose || compiler.opts.dspGCtbls || (JitConfig.JitGCInfoLogging != 0);
+            _log = compiler.verbose || compiler.dspGCtbls || (JitConfig.JitGCInfoLogging != 0);
         }
         else
         {
             if (Configuration.DUMP_GC_TABLES)
             {
-                _log = compiler.opts.dspGCtbls;
+                _log = compiler.dspGCtbls;
             }
             else
             {

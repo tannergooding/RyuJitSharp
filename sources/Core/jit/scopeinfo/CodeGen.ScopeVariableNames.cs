@@ -24,10 +24,11 @@ public sealed partial class CodeGen
             return null;
         }
 
-        noway_assert(_genTrnslLocalVarCount == 0 || genTrnslLocalVarInfo is not null);
+        var debugData = Compiler.DebugData.Get(_compiler);
+        noway_assert(debugData.CodeGenTranslatedLocalVariableCount == 0 || genTrnslLocalVarInfo is not null);
 
         var rangeEnd = unchecked(offs + size);
-        for (var i = 0; i < _genTrnslLocalVarCount; i++)
+        for (var i = 0; i < debugData.CodeGenTranslatedLocalVariableCount; i++)
         {
             ref var localVarInfo = ref genTrnslLocalVarInfo[i];
             if (localVarInfo.tlviVarLoc.vlIsInReg(unchecked((regNumber)reg)) &&
@@ -58,10 +59,11 @@ public sealed partial class CodeGen
             return null;
         }
 
-        noway_assert(_genTrnslLocalVarCount == 0 || genTrnslLocalVarInfo is not null);
+        var debugData = Compiler.DebugData.Get(_compiler);
+        noway_assert(debugData.CodeGenTranslatedLocalVariableCount == 0 || genTrnslLocalVarInfo is not null);
 
         var rangeEnd = unchecked(offs + size);
-        for (var i = 0; i < _genTrnslLocalVarCount; i++)
+        for (var i = 0; i < debugData.CodeGenTranslatedLocalVariableCount; i++)
         {
             ref var localVarInfo = ref genTrnslLocalVarInfo[i];
             if (localVarInfo.tlviVarLoc.vlIsOnStack(unchecked((regNumber)reg), unchecked((int)stkOffs)) &&

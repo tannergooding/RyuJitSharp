@@ -954,7 +954,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
         WithCodeGen((compiler, codeGen) =>
         {
-            CompLongAddress(ref compiler.opts) = true;
+            compiler.compLongAddress = true;
             var target = CreateLabel();
             var emitter = codeGen.Emitter;
             var targetGroup = CurrentGroup(emitter)
@@ -3143,7 +3143,7 @@ internal static unsafe class RiscVCodeGenPortTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaCount = 1;
         compiler.lvaTable = [new LclVarDsc()];
         compiler.lvaTrackedCount = 1;
@@ -3357,9 +3357,6 @@ internal static unsafe class RiscVCodeGenPortTests
         nint immediate,
         regNumber tempReg,
         bool inUnwindRegion);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compLongAddress")]
-    private static extern ref bool CompLongAddress(ref Compiler.Options options);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);

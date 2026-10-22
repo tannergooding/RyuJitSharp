@@ -242,7 +242,7 @@ internal static unsafe class InlineInvocationTests
         compiler.info.compMethodInfo = &methodInfo;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.opts.compFlags = CLFLG_INLINING;
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.beginInlining = &BeginInlining;
@@ -305,6 +305,14 @@ internal static unsafe class InlineInvocationTests
     private static void SetField([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)] Type type,
         object instance, string name, object value)
     {
+        if (type == typeof(JitConfigValues))
+        {
+            var configField = TestConfiguration.GetJitConfigField(name)
+                ?? throw new InvalidOperationException($"Missing JIT configuration field '{name}'.");
+            configField.SetValue(instance, value);
+            return;
+        }
+
         var field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"Missing {name}.");
         field.SetValue(instance, value);

@@ -214,8 +214,14 @@ public partial class Compiler
                     acdUsed = false,
                     acdStkLvl = 0,
                     acdStkLvlInit = false,
-                    acdNum = Configuration.DEBUG ? acdCount++ : 0,
                 };
+                if (Configuration.DEBUG)
+                {
+                    var debugData = GetDebugData();
+                    cloned.acdNum = debugData.AddCodeDscCount;
+                    debugData.AddCodeDscCount = unchecked(debugData.AddCodeDscCount + 1);
+                }
+
                 clonedDescriptors.Push(cloned);
             }
 

@@ -106,22 +106,16 @@ internal static unsafe class ObjectAllocatorGraphTests
     {
         Assume.That(TestConfiguration.IsDebug, "This test requires Debug object-allocation state.");
 
-        var conditionalField = typeof(ObjectAllocator).GetField(
-            "s_jitObjectStackAllocationConditionalEscapeRange", BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new InvalidOperationException("Missing conditional escape range.");
-        var fieldsField = typeof(ObjectAllocator).GetField(
-            "s_jitObjectStackAllocationTrackFieldsRange", BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new InvalidOperationException("Missing field tracking range.");
-        var previousConditional = conditionalField.GetValue(null);
-        var previousFields = fieldsField.GetValue(null);
+        var previousConditional = Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationConditionalEscapeRange;
+        var previousFields = Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationTrackFieldsRange;
 
         var excludedHash = "ffffffff\0"u8.ToArray();
         fixed (byte* text = excludedHash)
         {
             var range = default(ConfigMethodRange);
             range.EnsureInit(text);
-            conditionalField.SetValue(null, range);
-            fieldsField.SetValue(null, range);
+            Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationConditionalEscapeRange = range;
+            Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationTrackFieldsRange = range;
         }
 
         try
@@ -142,8 +136,8 @@ internal static unsafe class ObjectAllocatorGraphTests
         }
         finally
         {
-            conditionalField.SetValue(null, previousConditional);
-            fieldsField.SetValue(null, previousFields);
+            Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationConditionalEscapeRange = previousConditional;
+            Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationTrackFieldsRange = previousFields;
         }
     }
 
@@ -278,7 +272,7 @@ internal static unsafe class ObjectAllocatorGraphTests
 
     private static void SetConfig(ref object config, string name, int value)
     {
-        var field = typeof(JitConfigValues).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)
+        var field = TestConfiguration.GetJitConfigField(name, BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException($"Missing {name}");
         field.SetValue(config, value);
     }

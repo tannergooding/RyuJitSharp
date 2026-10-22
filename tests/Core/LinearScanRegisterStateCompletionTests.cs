@@ -29,7 +29,7 @@ internal static class LinearScanRegisterStateCompletionTests
             var candidates = SRBM_X64_XMM0 | SRBM_X64_XMM31;
             AvailableFloatRegisters(allocator) = candidates;
             AvailableDoubleRegisters(allocator) = candidates;
-            StressMask(allocator) = 0x200;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x200);
             var interval = new Interval(type, candidates);
 
             Assert.That((long)SRBM_X64_XMM31, Is.EqualTo(long.MinValue));
@@ -47,6 +47,4 @@ internal static class LinearScanRegisterStateCompletionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_availableDoubleRegs")]
     private static extern ref regMask AvailableDoubleRegisters(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
 }

@@ -239,7 +239,7 @@ internal static unsafe class CSEHeuristicDiagnosticTests
         compiler.compHndBBtab = [];
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.opts.compCodeOpt = Compiler.BLENDED_CODE;
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);

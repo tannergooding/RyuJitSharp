@@ -9,12 +9,17 @@ namespace RyuJitSharp;
 
 public class CSE_HeuristicRandom : CSE_HeuristicCommon
 {
-    private readonly CLRRandom _cseRng;
+    private CLRRandom CseRandom => GetDebugData().Random!;
 
     public CSE_HeuristicRandom(Compiler compiler) : base(compiler)
     {
-        EnsureDebugDiagnosticsAvailable();
-        _cseRng = new CLRRandom(compiler.info.compMethodHash() ^ JitConfig.JitRandomCSE);
+        if (!Configuration.DEBUG)
+        {
+            EnsureDebugDiagnosticsAvailable();
+            return;
+        }
+
+        GetDebugData().Random = new CLRRandom(compiler.info.compMethodHash() ^ JitConfig.JitRandomCSE);
     }
 
     public override string Name() => "Random CSE Heuristic";
@@ -37,9 +42,10 @@ public class CSE_HeuristicRandom : CSE_HeuristicCommon
         }
 
         sortTab = new CSEdsc?[count];
+        var random = CseRandom;
         for (var i = 0; i < count; i++)
         {
-            var j = _cseRng.Next(i + 1);
+            var j = random.Next(i + 1);
             if (i != j)
             {
                 sortTab[i] = sortTab[j];
@@ -47,7 +53,7 @@ public class CSE_HeuristicRandom : CSE_HeuristicCommon
             sortTab[j] = m_compiler.CseCandidateTable[i];
         }
 
-        var selected = _cseRng.Next(count) + 1;
+        var selected = random.Next(count) + 1;
         for (var index = 0; index < selected; index++)
         {
             _ = m_compiler.NextCseAttempt();

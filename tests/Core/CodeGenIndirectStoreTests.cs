@@ -243,7 +243,7 @@ internal static unsafe class CodeGenIndirectStoreTests
             compiler.info.compCompHnd = &jitInfo;
             if (TestConfiguration.IsDebug)
             {
-                CompEnablePCRelAddr(ref compiler.opts) = true;
+                TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
             }
 
             codeGen.Emitter.UseVexEncodings = vex;
@@ -412,9 +412,6 @@ internal static unsafe class CodeGenIndirectStoreTests
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compEnablePCRelAddr")]
-    private static extern ref bool CompEnablePCRelAddr(ref Compiler.Options options);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static void GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,

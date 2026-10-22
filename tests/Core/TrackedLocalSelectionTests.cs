@@ -292,7 +292,7 @@ internal static unsafe class TrackedLocalSelectionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaRefCountState = RCS_NORMAL;
         compiler.lvaCount = count;
         compiler.lvaTable = new LclVarDsc[count];

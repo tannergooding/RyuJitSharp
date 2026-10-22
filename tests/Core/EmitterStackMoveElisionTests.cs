@@ -125,7 +125,7 @@ internal static unsafe class EmitterStackMoveElisionTests
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.opts.jitFlags = (JitFlags*)Unsafe.AsPointer(ref s_jitFlags[0]);
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         var emitter = new CodeGen(compiler).Emitter;
         emitter.emitBegCG(compiler, default);
         var type = typeof(Emitter).GetNestedType("instrDescBasic", BindingFlags.NonPublic)

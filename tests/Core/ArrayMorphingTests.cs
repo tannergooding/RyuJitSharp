@@ -257,7 +257,7 @@ internal static unsafe class ArrayMorphingTests
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.compHndBBtab = [];
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaArg0Var = BAD_VAR_NUM;
         compiler.lvaCount = 5;
         compiler.lvaTable = new LclVarDsc[16];

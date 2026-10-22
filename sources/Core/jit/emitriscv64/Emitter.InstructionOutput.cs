@@ -860,7 +860,7 @@ public partial class Emitter
         }
 
         emitUpdateLiveGCvars(gcVars, dst);
-        if (Configuration.DEBUG && compiler.opts.disasmWithGC)
+        if (Configuration.DEBUG && compiler.disasmWithGC)
         {
             emitDispGCVarDelta();
         }
@@ -1050,7 +1050,7 @@ public partial class Emitter
             if (compiler.opts.disAsm || compiler.verbose)
             {
                 var displayOffsets = Configuration.DUMP_GC_TABLES
-                    ? compiler.opts.dspGCtbls
+                    ? compiler.dspGCtbls
                     : !compiler.opts.disDiffable;
                 emitDispInsRiscV64(id, false, displayOffsets, true, emitCurCodeOffs(originalDst), *dp,
                     (nuint)(dst - originalDst), ig);
@@ -1072,7 +1072,7 @@ public partial class Emitter
             {
                 assert(false, "JitBreakEmitOutputInstr reached");
             }
-            if (compiler.opts.disasmWithGC)
+            if (compiler.disasmWithGC)
             {
                 emitDispGCInfoDelta();
             }

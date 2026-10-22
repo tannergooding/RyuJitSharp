@@ -99,7 +99,7 @@ internal static unsafe class AsyncTailCallTests
             compiler.info.compMethodHnd = (CORINFO_METHOD_STRUCT_*)&state;
             compiler.info.compRetType = compatible ? var_types.TYP_INT : var_types.TYP_VOID;
             compiler.opts.compDbgCode = !optimize;
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             var method = (CORINFO_METHOD_STRUCT_*)7;
             var call = compiler.gtNewCallNode(var_types.TYP_INT, gtCallTypes.CT_USER_FUNC, method);
 
@@ -329,7 +329,7 @@ internal static unsafe class AsyncTailCallTests
         JitFlags flags = default;
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.info = new Compiler.Info { compMethodInfo = &methodInfo };
         JitTls.Compiler = compiler;
 

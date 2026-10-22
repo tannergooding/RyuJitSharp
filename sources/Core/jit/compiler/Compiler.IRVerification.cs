@@ -14,7 +14,7 @@ public partial class Compiler
     [Conditional("DEBUG")]
     public void fgDebugCheckLinks()
     {
-        if ((fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
+        if (Configuration.DEBUG && (fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
         {
             return;
         }
@@ -119,9 +119,10 @@ public partial class Compiler
             {
                 assert((tree.Flags & GTF_VAR_DEF) != 0);
 
-                if (!fgImplicitByRefLclFldsStale || (tree.Oper is not GT_STORE_LCL_FLD) ||
-                    (lvaGetDesc(tree.AsLclFld().LclNum).Type != lvaGetImplicitByRefParamType()) ||
-                    !lvaIsImplicitByRefLocal(tree.AsLclFld().LclNum))
+                if (Configuration.DEBUG &&
+                    (!fgImplicitByRefLclFldsStale || (tree.Oper is not GT_STORE_LCL_FLD) ||
+                     (lvaGetDesc(tree.AsLclFld().LclNum).Type != lvaGetImplicitByRefParamType()) ||
+                     !lvaIsImplicitByRefLocal(tree.AsLclFld().LclNum)))
                 {
                     assert(((tree.Flags & GTF_VAR_USEASG) != 0) ==
                         ((tree.Oper is GT_STORE_LCL_FLD) && tree.AsLclFld().IsPartial(this)));

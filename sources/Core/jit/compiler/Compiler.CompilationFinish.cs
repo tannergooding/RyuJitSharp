@@ -12,13 +12,10 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    internal static uint genMethodCnt;
-    internal static uint genMethodICnt;
-    internal static uint genMethodNCnt;
-
     private static void IncrementMethodCount()
     {
-        genMethodCnt = unchecked(genMethodCnt + 1);
+        MeasurementData.MethodCounts.genMethodCnt =
+            unchecked(MeasurementData.MethodCounts.genMethodCnt + 1);
     }
 
     private static void InitializeNodeSizeStatistics()
@@ -26,8 +23,6 @@ public partial class Compiler
         Debug.Assert(Configuration.MEASURE_NODE_SIZE);
         genNodeSizeStatsPerFunc.Init();
     }
-
-    private static bool s_compOrderHeaderPrinted;
 
     public unsafe void compCompileFinish()
     {
@@ -48,7 +43,7 @@ public partial class Compiler
             var managedBytes = unchecked((ulong)managedBytesAllocated);
             memAllocHist.record(unchecked((uint)((managedBytes + 1023) / 1024)));
 
-            if (Configuration.DEBUG && (ManagedAllocationStatsData.s_dspMemStats || verbose))
+            if (Configuration.DEBUG && (MeasurementData.ManagedAllocation.s_dspMemStats || verbose))
             {
                 jitprintf($"\nAllocations for {eeGetMethodFullName(info.compMethodHnd)} " +
                     $"(MethodHash={unchecked((uint)info.compMethodHash()):x8})\n");
@@ -90,7 +85,7 @@ public partial class Compiler
                 _inlineStrategy.DumpXml();
             }
 
-            if (opts.dspOrder)
+            if (dspOrder)
             {
                 compDumpOrderSummary();
             }
@@ -129,9 +124,9 @@ public partial class Compiler
     private unsafe void compDumpOrderSummary()
     {
         var token = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
-        if (!s_compOrderHeaderPrinted)
+        if (!DebugData.s_compOrderHeaderPrinted)
         {
-            s_compOrderHeaderPrinted = true;
+            DebugData.s_compOrderHeaderPrinted = true;
             jitprintf($"         |  Profiled   | Method   |   Method has    |   calls   | Num |LclV |AProp| CSE |   Perf  |bytes | {Target.TgtCpuName,3} codesize| \n");
             jitprintf(" mdToken |  CNT |  RGN |    Hash  | EH | FRM | LOOP | NRM | IND | BBs | Cnt | Cnt | Cnt |  Score  |  IL  |   HOT | CLD | method name \n");
             jitprintf("---------+------+------+----------+----+-----+------+-----+-----+-----+-----+-----+-----+---------+------+-------+-----+\n");
@@ -196,7 +191,7 @@ public partial class Compiler
         jitprintf($" {optIndirectCallCount,3} |");
         jitprintf($" {Metrics.BasicBlocksAtCodegen,3} |");
         jitprintf($" {lvaCount,3} |");
-        if (opts.MinOpts)
+        if (MinOpts)
         {
             jitprintf("  MinOpts  |");
         }

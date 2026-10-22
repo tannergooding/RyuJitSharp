@@ -217,57 +217,60 @@ public sealed class GenTreeCall : GenTree
     /// <summary>Call target lookup info for method call from a Ready To Run module</summary>
     internal CORINFO_CONST_LOOKUP _entryPoint;
 
-    private GenTreeCallDebugFlags _callDebugFlagsData;
-
-    /// <summary>For non-inline candidates, track the first observation that blocks candidacy.</summary>
-    private InlineObservation _inlineObservationData;
-
-    // IL offset of the call wrt its parent method.
-    private IL_OFFSET _rawILOffsetData;
-
     internal GenTreeCallDebugFlags _callDebugFlags
     {
         get
         {
-            ThrowIfNotDebug("Call debug flags are only available in Debug builds.");
-            return _callDebugFlagsData;
+            return GetCallDebugData("Call debug flags are only available in Debug builds.")?.CallDebugFlags ?? default;
         }
 
         set
         {
-            ThrowIfNotDebug("Call debug flags are only available in Debug builds.");
-            _callDebugFlagsData = value;
+            if (GetCallDebugData("Call debug flags are only available in Debug builds.") is { } debugData)
+            {
+                debugData.CallDebugFlags = value;
+            }
         }
     }
 
+    /// <summary>For non-inline candidates, track the first observation that blocks candidacy.</summary>
     internal InlineObservation _inlineObservation
     {
         get
         {
-            ThrowIfNotDebug("Inline observation state is only available in Debug builds.");
-            return _inlineObservationData;
+            return GetCallDebugData("Inline observation state is only available in Debug builds.")?.InlineObservation ?? default;
         }
 
         set
         {
-            ThrowIfNotDebug("Inline observation state is only available in Debug builds.");
-            _inlineObservationData = value;
+            if (GetCallDebugData("Inline observation state is only available in Debug builds.") is { } debugData)
+            {
+                debugData.InlineObservation = value;
+            }
         }
     }
 
+    // IL offset of the call wrt its parent method.
     internal IL_OFFSET _rawILOffset
     {
         get
         {
-            ThrowIfNotDebug("Raw IL call offsets are only available in Debug builds.");
-            return _rawILOffsetData;
+            return GetCallDebugData("Raw IL call offsets are only available in Debug builds.")?.RawILOffset ?? default;
         }
 
         set
         {
-            ThrowIfNotDebug("Raw IL call offsets are only available in Debug builds.");
-            _rawILOffsetData = value;
+            if (GetCallDebugData("Raw IL call offsets are only available in Debug builds.") is { } debugData)
+            {
+                debugData.RawILOffset = value;
+            }
         }
+    }
+
+    private Compiler.DebugData.GenTreeDebugData? GetCallDebugData(string message)
+    {
+        ThrowIfNotDebug(message);
+        return Configuration.DEBUG ? Compiler.DebugData.Get(this) : null;
     }
 
     private static void ThrowIfNotDebug(string message)
@@ -503,8 +506,9 @@ public sealed class GenTreeCall : GenTree
     {
         get
         {
-            ThrowIfNotDebug("Devirtualization diagnostic state is only available in Debug builds.");
-            return (_callDebugFlagsData & GTF_CALL_MD_DEVIRTUALIZED) != 0;
+            var debugData = GetCallDebugData("Devirtualization diagnostic state is only available in Debug builds.");
+            return (debugData is not null) &&
+                ((debugData.CallDebugFlags & GTF_CALL_MD_DEVIRTUALIZED) != 0);
         }
     }
 
@@ -557,14 +561,20 @@ public sealed class GenTreeCall : GenTree
     {
         get
         {
-            ThrowIfNotDebug("Guarded-call diagnostic state is only available in Debug builds.");
-            return (_callDebugFlagsData & GTF_CALL_MD_GUARDED) != 0;
+            var debugData = GetCallDebugData("Guarded-call diagnostic state is only available in Debug builds.");
+            return (debugData is not null) &&
+                ((debugData.CallDebugFlags & GTF_CALL_MD_GUARDED) != 0);
         }
 
         set
         {
-            ThrowIfNotDebug("Guarded-call diagnostic state is only available in Debug builds.");
-            _callDebugFlagsData = (_callDebugFlagsData & ~GTF_CALL_MD_GUARDED)
+            var debugData = GetCallDebugData("Guarded-call diagnostic state is only available in Debug builds.");
+            if (debugData is null)
+            {
+                return;
+            }
+
+            debugData.CallDebugFlags = (debugData.CallDebugFlags & ~GTF_CALL_MD_GUARDED)
                 | (value ? GTF_CALL_MD_GUARDED : 0);
         }
     }
@@ -642,7 +652,7 @@ public sealed class GenTreeCall : GenTree
 
     /// <summary>true if this call didn't have an explicit tail. prefix in the IL but was marked as an explicit tail call because of tail call stress mode.</summary>
     public bool IsStressTailCall =>
-        Configuration.DEBUG && ((_callDebugFlagsData & GTF_CALL_MD_STRESS_TAILCALL) != 0);
+        Configuration.DEBUG && ((_callDebugFlags & GTF_CALL_MD_STRESS_TAILCALL) != 0);
 
     public bool IsSuppressGCTransition => (_callMoreFlags & GTF_CALL_M_SUPPRESS_GC_TRANSITION) != 0;
 
@@ -665,8 +675,9 @@ public sealed class GenTreeCall : GenTree
     {
         get
         {
-            ThrowIfNotDebug("Unboxed-call diagnostic state is only available in Debug builds.");
-            return (_callDebugFlagsData & GTF_CALL_MD_UNBOXED) != 0;
+            var debugData = GetCallDebugData("Unboxed-call diagnostic state is only available in Debug builds.");
+            return (debugData is not null) &&
+                ((debugData.CallDebugFlags & GTF_CALL_MD_UNBOXED) != 0);
         }
     }
 
@@ -844,14 +855,20 @@ public sealed class GenTreeCall : GenTree
     {
         get
         {
-            ThrowIfNotDebug("Inline-candidate history is only available in Debug builds.");
-            return (_callDebugFlagsData & GTF_CALL_MD_WAS_CANDIDATE) != 0;
+            var debugData = GetCallDebugData("Inline-candidate history is only available in Debug builds.");
+            return (debugData is not null) &&
+                ((debugData.CallDebugFlags & GTF_CALL_MD_WAS_CANDIDATE) != 0);
         }
 
         set
         {
-            ThrowIfNotDebug("Inline-candidate history is only available in Debug builds.");
-            _callDebugFlagsData = (_callDebugFlagsData & ~GTF_CALL_MD_WAS_CANDIDATE)
+            var debugData = GetCallDebugData("Inline-candidate history is only available in Debug builds.");
+            if (debugData is null)
+            {
+                return;
+            }
+
+            debugData.CallDebugFlags = (debugData.CallDebugFlags & ~GTF_CALL_MD_WAS_CANDIDATE)
                 | (value ? GTF_CALL_MD_WAS_CANDIDATE : 0);
         }
     }

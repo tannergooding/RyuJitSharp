@@ -4,39 +4,11 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private sealed class DebugData
-    {
-        private static ConditionalWeakTable<Emitter, DebugData>? s_instances;
-
-        internal VARSET_TP debugPrevGCrefVars = [];
-
-        internal VARSET_TP debugThisGCrefVars = [];
-
-        internal GCInfo.regPtrDsc? debugPrevRegPtrDsc;
-
-        internal regMaskTP debugPrevGCrefRegs;
-
-        internal regMaskTP debugPrevByrefRegs;
-
-        internal int VarRefOffs;
-
-        internal bool EmitIssuing;
-
-        internal bool CheckAlignment;
-
-        internal static DebugData Get(Emitter emitter)
-        {
-            var instances = LazyStatic.GetOrCreate(ref s_instances);
-            return instances.GetValue(emitter, static _ => new DebugData());
-        }
-    }
-
     private ref VARSET_TP debugPrevGCrefVars
     {
         get
@@ -82,14 +54,15 @@ public partial class Emitter
         }
     }
 
-    private DebugData GetDebugData()
+    private Compiler.DebugData.EmitterDebugData GetDebugData()
     {
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterGCDiagnosticStateIsOnlyAvailableInDebugBuilds);
+            return null!;
         }
 
-        return DebugData.Get(this);
+        return Compiler.DebugData.Get(this);
     }
 
     public void Init()

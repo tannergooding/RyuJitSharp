@@ -905,8 +905,8 @@ public static partial class Globals
                     return 0x0101010101010101;
                 }
             }
-            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskConversionsAreOnlySupportedOnXarchAndARM64);
 
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskConversionsAreOnlySupportedOnXarchAndARM64);
 
             unreached();
             return 0;

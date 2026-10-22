@@ -228,7 +228,7 @@ internal static class IRVerificationTests
     {
         SsaLivenessTests.WithCompiler(0, compiler => {
             compiler.fgBBcount = 10001;
-            ExpensiveDebugCheckLevel(compiler) = 0;
+            TestConfiguration.SetExpensiveDebugCheckLevel(compiler, 0);
 
             Assert.That(() => CheckLinks(compiler), Throws.Nothing);
         });
@@ -275,6 +275,4 @@ internal static class IRVerificationTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgDebugCheckLinks")]
     private static extern void CheckLinks(Compiler compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "expensiveDebugCheckLevel")]
-    private static extern ref int ExpensiveDebugCheckLevel(Compiler compiler);
 }

@@ -209,10 +209,7 @@ internal static unsafe class ObjectAllocatorPhaseTests
             compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(store));
             allocator.EnableObjectStackAllocation();
 
-            var field = typeof(ObjectAllocator).GetField("s_jitObjectStackAllocationRange",
-                BindingFlags.NonPublic | BindingFlags.Static)
-                ?? throw new InvalidOperationException("Missing method-range config.");
-            var previous = field.GetValue(null);
+            var previous = Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationRange;
             var excludedHash = unchecked((uint)compiler.info.compMethodHash() + 1);
             var bytes = System.Text.Encoding.ASCII.GetBytes($"{excludedHash:x8}\0");
             var range = new ConfigMethodRange();
@@ -220,7 +217,7 @@ internal static unsafe class ObjectAllocatorPhaseTests
             {
                 range.EnsureInit(value);
             }
-            field.SetValue(null, range);
+            Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationRange = range;
 
             try
             {
@@ -234,7 +231,7 @@ internal static unsafe class ObjectAllocatorPhaseTests
             }
             finally
             {
-                field.SetValue(null, previous);
+                Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationRange = previous;
             }
         });
     }
@@ -270,19 +267,19 @@ internal static unsafe class ObjectAllocatorPhaseTests
     {
         var previousConfig = JitConfig;
         object config = previousConfig;
-        var field = typeof(JitConfigValues).GetField("_jitObjectStackAllocationTrackFields",
+        var field = TestConfiguration.GetJitConfigField("_jitObjectStackAllocationTrackFields",
             BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("Missing field-tracking config.");
         field.SetValue(config, 0);
-        field = typeof(JitConfigValues).GetField("_jitObjectStackAllocationRefClass",
+        field = TestConfiguration.GetJitConfigField("_jitObjectStackAllocationRefClass",
             BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("Missing reference-class allocation config.");
         field.SetValue(config, canAllocateOnStack ? 1 : 0);
-        field = typeof(JitConfigValues).GetField("_jitObjectStackAllocationBoxedValueClass",
+        field = TestConfiguration.GetJitConfigField("_jitObjectStackAllocationBoxedValueClass",
             BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("Missing boxed-value-class allocation config.");
         field.SetValue(config, enableBoxedValueClass ? 1 : 0);
-        field = typeof(JitConfigValues).GetField("_jitObjectStackAllocationArray",
+        field = TestConfiguration.GetJitConfigField("_jitObjectStackAllocationArray",
             BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("Missing array allocation config.");
         field.SetValue(config, enableArray ? 1 : 0);
@@ -318,7 +315,7 @@ internal static unsafe class ObjectAllocatorPhaseTests
         compiler.optMethodFlags = methodFlags;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         JitTls.Compiler = compiler;
         var block = BasicBlock.New(compiler, BBJ_RETURN);
         compiler.fgFirstBB = block;

@@ -52,7 +52,7 @@ public partial class Compiler
 
     public bool backendRequiresLocalVarLifetimes()
     {
-        if (!opts.MinOpts)
+        if (!MinOpts)
         {
             return true;
         }

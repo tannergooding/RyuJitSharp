@@ -5,7 +5,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -136,27 +135,14 @@ internal sealed class ArrayStack<T>
             return 0;
         }
 
-        return DebugData.Get(this).Version;
+        return Compiler.DebugData.Get(this).Version;
     }
 
     [Conditional("DEBUG")]
     private void IncrementVersion()
     {
-        var debugData = DebugData.Get(this);
+        var debugData = Compiler.DebugData.Get(this);
         debugData.Version = unchecked(debugData.Version + 1);
-    }
-
-    private sealed class DebugData
-    {
-        private static ConditionalWeakTable<ArrayStack<T>, DebugData>? s_instances;
-
-        internal uint Version;
-
-        internal static DebugData Get(ArrayStack<T> stack)
-        {
-            var instances = LazyStatic.GetOrCreate(ref s_instances);
-            return instances.GetValue(stack, static _ => new DebugData());
-        }
     }
 
     internal readonly ref struct BottomUpView

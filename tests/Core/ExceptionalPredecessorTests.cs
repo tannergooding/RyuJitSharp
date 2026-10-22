@@ -269,8 +269,8 @@ internal static unsafe class ExceptionalPredecessorTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitSsaStress")]
-    private static extern ref int SsaStress(ref JitConfigValues config);
+    private static ref int SsaStress(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitSsaStress;
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgGetAllSuccessors")]
     private static extern List<BasicBlock> GetAllSuccessors(Compiler compiler, BasicBlock block, bool useProfile);

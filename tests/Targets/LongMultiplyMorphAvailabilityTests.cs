@@ -116,7 +116,7 @@ internal static unsafe class LongMultiplyMorphAvailabilityTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.opts.compFlags |= Globals.CLFLG_TREETRANS;
         compiler.fgGlobalMorph = true;
         compiler.lvaTable = [

@@ -337,19 +337,6 @@ public sealed class ScevBinop : ScevUnop
 
 public sealed class ScevAddRec : Scev
 {
-    private sealed class DebugData
-    {
-        private static System.Runtime.CompilerServices.ConditionalWeakTable<ScevAddRec, DebugData>? s_instances;
-
-        internal FlowGraphNaturalLoop? Loop;
-
-        internal static DebugData Get(ScevAddRec addRec)
-        {
-            var instances = LazyStatic.GetOrCreate(ref s_instances);
-            return instances.GetValue(addRec, static _ => new DebugData());
-        }
-    }
-
     public Scev Start { get; }
 
     public Scev Step { get; }
@@ -375,17 +362,17 @@ public sealed class ScevAddRec : Scev
         Step = step;
         if (Configuration.DEBUG)
         {
-            DebugData.Get(this).Loop = loop;
+            Compiler.DebugData.Get(this).Loop = loop;
         }
     }
 
-    private DebugData GetDebugData()
+    private Compiler.DebugData.ScevAddRecDebugData GetDebugData()
     {
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalarEvolutionDebugDataIsOnlyAvailableInDebugBuilds);
         }
 
-        return DebugData.Get(this);
+        return Compiler.DebugData.Get(this);
     }
 }

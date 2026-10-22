@@ -40,10 +40,12 @@ internal static class CompilerScopeDisplayTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compVarScopes =
         [
-            new() { vsdVarNum = 12, vsdLVnum = 5, vsdName = "alpha", vsdLifeBeg = 0x120, vsdLifeEnd = 0x300 },
+            new() { vsdVarNum = 12, vsdLVnum = 5, vsdLifeBeg = 0x120, vsdLifeEnd = 0x300 },
             new() { vsdVarNum = 0x123, vsdLVnum = 10, vsdLifeBeg = 8, vsdLifeEnd = 0x200 },
-            new() { vsdVarNum = -1, vsdLVnum = 0xBC, vsdName = name, vsdLifeBeg = 0xFF, vsdLifeEnd = 0x180 },
+            new() { vsdVarNum = -1, vsdLVnum = 0xBC, vsdLifeBeg = 0xFF, vsdLifeEnd = 0x180 },
         ];
+        compiler.SetVarScopeName(0, "alpha");
+        compiler.SetVarScopeName(2, name);
         compiler.info.compVarScopesCount = 3;
         int[] enterIndices = [2, 1, 0];
         int[] exitIndices = [0, 2, 1];

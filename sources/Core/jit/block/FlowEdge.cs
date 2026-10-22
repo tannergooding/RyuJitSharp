@@ -32,8 +32,18 @@ public sealed partial class FlowEdge
     // Indicates if _likelihood was determined using profile synthesis's heuristics
     private bool _heuristicBasedLikelihood;
 
-    // True if likelihood has been set
-    private bool _likelihoodSet;
+    private bool _likelihoodSet
+    {
+        get
+        {
+            return Compiler.DebugData.Get(this).LikelihoodSet;
+        }
+
+        set
+        {
+            Compiler.DebugData.Get(this).LikelihoodSet = value;
+        }
+    }
 
     public FlowEdge(BasicBlock sourceBlock, BasicBlock destBlock, FlowEdge? rest)
     {

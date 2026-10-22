@@ -235,7 +235,7 @@ public partial class Emitter
             var extraBytesNotInLoop = unchecked((alignmentBoundary * minBlocksNeededForLoop) - loopSize);
             var currentOffset = unchecked((uint)(offset % alignmentBoundary));
 
-            if (Configuration.DEBUG && compiler.opts.compJitAlignLoopForJcc)
+            if (Configuration.DEBUG && compiler.compJitAlignLoopForJcc)
             {
                 currentOffset = unchecked(currentOffset + 1);
             }

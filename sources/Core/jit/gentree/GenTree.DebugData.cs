@@ -3,44 +3,23 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-using System.Runtime.CompilerServices;
-
 namespace RyuJitSharp;
 
 public partial class GenTree
 {
-    private sealed class DebugData
-    {
-        private static ConditionalWeakTable<GenTree, DebugData>? s_instances;
-
-        internal genTreeOps OperSave;
-        internal GenTreeDebugFlags Flags;
-        internal int TreeId;
-        internal int SequenceNumber;
-        internal int UseNumber;
-        internal bool CostsInitialized;
-        internal genRegTag RegTag;
-        internal nint TargetHandle;
-        internal IL_OFFSET LocalILOffset = BAD_IL_OFFSET;
-
-        internal static DebugData Get(GenTree tree)
-        {
-            var instances = LazyStatic.GetOrCreate(ref s_instances);
-            return instances.GetValue(tree, static _ => new DebugData());
-        }
-    }
-
     private int _treeId
     {
         get
         {
-            return GetDebugData().TreeId;
+            return GetDebugData()?.TreeId ?? 0;
         }
 
         set
         {
-            GetDebugData().TreeId = value;
+            if (GetDebugData() is { } debugData)
+            {
+                debugData.TreeId = value;
+            }
         }
     }
 
@@ -48,12 +27,15 @@ public partial class GenTree
     {
         get
         {
-            return GetDebugData().SequenceNumber;
+            return GetDebugData()?.SequenceNumber ?? 0;
         }
 
         set
         {
-            GetDebugData().SequenceNumber = value;
+            if (GetDebugData() is { } debugData)
+            {
+                debugData.SequenceNumber = value;
+            }
         }
     }
 
@@ -61,12 +43,15 @@ public partial class GenTree
     {
         get
         {
-            return GetDebugData().UseNumber;
+            return GetDebugData()?.UseNumber ?? 0;
         }
 
         set
         {
-            GetDebugData().UseNumber = value;
+            if (GetDebugData() is { } debugData)
+            {
+                debugData.UseNumber = value;
+            }
         }
     }
 
@@ -74,12 +59,15 @@ public partial class GenTree
     {
         get
         {
-            return GetDebugData().CostsInitialized;
+            return GetDebugData()?.CostsInitialized ?? false;
         }
 
         set
         {
-            GetDebugData().CostsInitialized = value;
+            if (GetDebugData() is { } debugData)
+            {
+                debugData.CostsInitialized = value;
+            }
         }
     }
 
@@ -87,12 +75,15 @@ public partial class GenTree
     {
         get
         {
-            return GetDebugData().RegTag;
+            return GetDebugData()?.RegTag ?? default;
         }
 
         set
         {
-            GetDebugData().RegTag = value;
+            if (GetDebugData() is { } debugData)
+            {
+                debugData.RegTag = value;
+            }
         }
     }
 
@@ -106,14 +97,15 @@ public partial class GenTree
         }
     }
 
-    private DebugData GetDebugData()
+    private Compiler.DebugData.GenTreeDebugData? GetDebugData()
     {
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GenTreeDebugDataIsOnlyAvailableInDebugBuilds);
+            return null;
         }
 
-        return DebugData.Get(this);
+        return Compiler.DebugData.Get(this);
     }
 
     private void CopyDebugDataFrom(GenTree source, bool copyDerivedDebugData = false)
@@ -123,8 +115,8 @@ public partial class GenTree
             return;
         }
 
-        var sourceData = DebugData.Get(source);
-        var targetData = DebugData.Get(this);
+        var sourceData = Compiler.DebugData.Get(source);
+        var targetData = Compiler.DebugData.Get(this);
         targetData.OperSave = sourceData.OperSave;
         targetData.Flags = sourceData.Flags;
         targetData.TreeId = sourceData.TreeId;
@@ -132,31 +124,41 @@ public partial class GenTree
         targetData.UseNumber = sourceData.UseNumber;
         targetData.CostsInitialized = sourceData.CostsInitialized;
         targetData.RegTag = sourceData.RegTag;
+        targetData.CallDebugFlags = sourceData.CallDebugFlags;
+        targetData.InlineObservation = sourceData.InlineObservation;
+        targetData.RawILOffset = sourceData.RawILOffset;
 
         if (copyDerivedDebugData)
         {
             targetData.TargetHandle = sourceData.TargetHandle;
             targetData.LocalILOffset = sourceData.LocalILOffset;
+            targetData.StmtLastILOffset = sourceData.StmtLastILOffset;
         }
     }
 
     internal nint GetDebugTargetHandle()
     {
-        return GetDebugData().TargetHandle;
+        return GetDebugData()?.TargetHandle ?? 0;
     }
 
     internal void SetDebugTargetHandle(nint value)
     {
-        GetDebugData().TargetHandle = value;
+        if (GetDebugData() is { } debugData)
+        {
+            debugData.TargetHandle = value;
+        }
     }
 
     internal IL_OFFSET GetDebugLocalILOffset()
     {
-        return GetDebugData().LocalILOffset;
+        return GetDebugData()?.LocalILOffset ?? BAD_IL_OFFSET;
     }
 
     internal void SetDebugLocalILOffset(IL_OFFSET value)
     {
-        GetDebugData().LocalILOffset = value;
+        if (GetDebugData() is { } debugData)
+        {
+            debugData.LocalILOffset = value;
+        }
     }
 }

@@ -27,7 +27,7 @@ public partial class Emitter
         JITDUMP($"compJitAlignLoopMinBlockWeight = {compiler.opts.compJitAlignLoopMinBlockWeight}\n");
         if (Configuration.DEBUG)
         {
-            JITDUMP($"compJitAlignLoopForJcc         = {(compiler.opts.compJitAlignLoopForJcc ? "true" : "false")}\n");
+            JITDUMP($"compJitAlignLoopForJcc         = {(compiler.compJitAlignLoopForJcc ? "true" : "false")}\n");
         }
         JITDUMP($"compJitAlignLoopMaxCodeSize    = {compiler.opts.compJitAlignLoopMaxCodeSize}\n");
         JITDUMP($"compJitAlignPaddingLimit       = {compiler.opts.compJitAlignPaddingLimit}\n");

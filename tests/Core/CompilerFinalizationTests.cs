@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
+using static RyuJitSharp.Compiler.MeasurementData.MethodCounts;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.var_types;
 
@@ -67,6 +68,125 @@ internal static unsafe class CompilerFinalizationTests
         });
     }
 
+    [Test]
+    public static void AddCodeDscNumbersAreCompilerLocalAndDebugOnly()
+    {
+        WithCompiler(compiler => {
+            var source = (BasicBlock)RuntimeHelpers.GetUninitializedObject(typeof(BasicBlock));
+            var first = CreateAddCodeDsc(compiler, source, SpecialCodeKind.SCK_FAIL_FAST);
+            var second = CreateAddCodeDsc(compiler, source, SpecialCodeKind.SCK_NULL_CHECK);
+
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(second.acdNum, Is.EqualTo(unchecked(first.acdNum + 1u)));
+            }
+            else
+            {
+                _ = Assert.Throws<InvalidOperationException>(() => _ = first.acdNum);
+                _ = Assert.Throws<InvalidOperationException>(() => first.acdNum = 0);
+            }
+        });
+    }
+
+    [Test]
+    [UnconditionalSuppressMessage("Trimming", "IL2070",
+        Justification = "The test reflects over private Debug-only assertion operand context.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "The test reflects over private Debug-only assertion operand context.")]
+    public static void AssertionOperandCompilerReferencesAreDebugOnly()
+    {
+        WithCompiler(compiler => {
+            var op1 = new Compiler.AssertionDsc.AssertionDscOp1(compiler, Compiler.optOp1Kind.O1K_VN, 1);
+            var op2 = new Compiler.AssertionDsc.AssertionDscOp2(compiler, Compiler.optOp2Kind.O2K_VN_ADD_CNS, ValueNumStore.NoVN);
+            var expectedCompiler = TestConfiguration.IsDebug ? compiler : null;
+
+            var op1Compiler = typeof(Compiler.AssertionDsc.AssertionDscOp1).GetField(
+                "_compiler", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("The AssertionDscOp1 compiler field is missing.");
+            var op2Compiler = typeof(Compiler.AssertionDsc.AssertionDscOp2).GetField(
+                "_compiler", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("The AssertionDscOp2 compiler field is missing.");
+
+            Assert.That(op1Compiler.GetValue(op1), Is.SameAs(expectedCompiler));
+            Assert.That(op2Compiler.GetValue(op2), Is.SameAs(expectedCompiler));
+        });
+    }
+
+    [Test]
+    public static void CseHeuristicCounterIsDebugOnly()
+    {
+        WithCompiler(compiler => {
+            var previous = Compiler.DebugData.CseHeuristicData.s_totalCseCount;
+            try
+            {
+                if (TestConfiguration.IsDebug)
+                {
+                    _ = compiler.optConfigDisableCSE2();
+                    Assert.That(Compiler.DebugData.CseHeuristicData.s_totalCseCount, Is.EqualTo(unchecked(previous + 1u)));
+                }
+                else
+                {
+                    _ = Assert.Throws<InvalidOperationException>(() => compiler.optConfigDisableCSE2());
+                    Assert.That(Compiler.DebugData.CseHeuristicData.s_totalCseCount, Is.EqualTo(previous));
+                }
+            }
+            finally
+            {
+                Compiler.DebugData.CseHeuristicData.s_totalCseCount = previous;
+            }
+        });
+    }
+
+    [Test]
+    public static void CompilerMethodHashIsDebugOnly()
+    {
+        WithCompiler(compiler => {
+            if (TestConfiguration.IsDebug)
+            {
+                _ = compiler.info.compMethodHash();
+            }
+            else
+            {
+                _ = Assert.Throws<InvalidOperationException>(() => compiler.info.compMethodHash());
+            }
+        });
+    }
+
+    [Test]
+    public static void ImporterInlinedCodeSizeIsDebugOnly()
+    {
+        WithCompiler(compiler => {
+            if (TestConfiguration.IsDebug)
+            {
+                compiler.impInlinedCodeSize = 11;
+                compiler.AddInlinedCodeSize(5);
+                Assert.That(compiler.impInlinedCodeSize, Is.EqualTo(16));
+            }
+            else
+            {
+                _ = Assert.Throws<InvalidOperationException>(() => _ = compiler.impInlinedCodeSize);
+                _ = Assert.Throws<InvalidOperationException>(() => compiler.impInlinedCodeSize = 11);
+                _ = Assert.Throws<InvalidOperationException>(() => compiler.AddInlinedCodeSize(5));
+            }
+        });
+    }
+
+    [Test]
+    public static void TrackedVariableSetIsDebugOnlySidecarState()
+    {
+        WithCompiler(compiler => {
+            if (TestConfiguration.IsDebug)
+            {
+                compiler.SetLocalTrackedVars([]);
+                Assert.That(compiler.GetLocalTrackedVars(), Is.Empty);
+            }
+            else
+            {
+                _ = Assert.Throws<InvalidOperationException>(() => compiler.GetLocalTrackedVars());
+            }
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     [UnconditionalSuppressMessage("Trimming", "IL2070",
@@ -78,8 +198,7 @@ internal static unsafe class CompilerFinalizationTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             var path = append ? Path.GetTempFileName() : Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), "inlines.xml");
-            var xmlState = typeof(InlineStrategy).GetNestedType("XmlDumpState", BindingFlags.NonPublic)
-                ?? throw new InvalidOperationException("The inline XML dump state is missing.");
+            var xmlState = typeof(Compiler.DebugData.InlineXmlDumpData);
             var header = xmlState.GetField("HasDumpedXmlHeader", BindingFlags.Static | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("The inline XML header state is missing.");
             var previous = header.GetValue(null);
@@ -132,14 +251,14 @@ internal static unsafe class CompilerFinalizationTests
         WithCompiler(compiler => {
             TestConfiguration.EnableVerbose(compiler);
             compiler.Metrics.PerfScore = score;
-            var before = Compiler.genMethodCnt;
+            var before = genMethodCnt;
 
             var text = Capture(compiler.compCompileFinish);
 
             Assert.That(text, Does.StartWith("Final metrics:\nActualCodeBytes"));
             Assert.That(text, Does.Contain("PerfScore" + new string(' ', 33) + ": " + expected + "\n"));
             Assert.That(text, Does.EndWith("\n****** DONE compiling Finalization\n"));
-            Assert.That(Compiler.genMethodCnt, Is.EqualTo(unchecked(before + 1)));
+            Assert.That(genMethodCnt, Is.EqualTo(unchecked(before + 1)));
             Assert.That(s_metadata, Is.Empty);
         });
     }
@@ -152,7 +271,7 @@ internal static unsafe class CompilerFinalizationTests
     {
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
-            compiler.opts.dspOrder = true;
+            compiler.dspOrder = true;
             compiler.fgPgoHaveWeights = true;
             compiler.fgCalledCount = count;
             compiler.Metrics.PerfScore = 9999.995;
@@ -274,10 +393,17 @@ internal static unsafe class CompilerFinalizationTests
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("verboseTrees"));
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("verboseSsa"));
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("compGSSecurityCheckBlocker"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("fgSafeBasicBlockCreation"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("fgSafeFlowEdgeCreation"));
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("fgBBOrder"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("fgImplicitByRefLclFldsStale"));
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("fgPrintInlinedMethods"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("fgPgoDeferredInconsistency"));
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("fgNormalizeEHDone"));
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("impInlinedCodeSize"));
+            var staticFields = typeof(Compiler).GetFields(
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            Assert.That(staticFields.Select(field => field.Name), Does.Not.Contain("s_localAddrPropagationRange"));
             Assert.That(compiler.verbose, Is.False);
             Assert.That(compiler.verboseTrees, Is.False);
             Assert.That(compiler.verboseSsa, Is.False);
@@ -385,8 +511,7 @@ internal static unsafe class CompilerFinalizationTests
             var previousLoopsConsidered = 0;
             var previousLoopsWithHoistedExpressions = 0;
             var previousTotalHoistedExpressions = 0;
-            FieldInfo? headerField = null;
-            object? previousHeader = null;
+            var previousHeader = false;
             if (isDebug)
             {
                 InlineSize(ref JitConfig) = 100;
@@ -402,11 +527,8 @@ internal static unsafe class CompilerFinalizationTests
                 Compiler.DebugData.LoopHoistStatsData.s_loopsWithHoistedExpressions = 0;
                 previousTotalHoistedExpressions = Compiler.DebugData.LoopHoistStatsData.s_totalHoistedExpressions;
                 Compiler.DebugData.LoopHoistStatsData.s_totalHoistedExpressions = 0;
-                headerField = typeof(Compiler).GetField("s_compOrderHeaderPrinted",
-                    BindingFlags.Static | BindingFlags.NonPublic)
-                    ?? throw new InvalidOperationException("The ordered-summary header state is missing.");
-                previousHeader = headerField.GetValue(null);
-                headerField.SetValue(null, false);
+                previousHeader = Compiler.DebugData.s_compOrderHeaderPrinted;
+                Compiler.DebugData.s_compOrderHeaderPrinted = false;
             }
             try
             {
@@ -420,7 +542,7 @@ internal static unsafe class CompilerFinalizationTests
                     Compiler.DebugData.LoopHoistStatsData.s_loopsConsidered = previousLoopsConsidered;
                     Compiler.DebugData.LoopHoistStatsData.s_loopsWithHoistedExpressions = previousLoopsWithHoistedExpressions;
                     Compiler.DebugData.LoopHoistStatsData.s_totalHoistedExpressions = previousTotalHoistedExpressions;
-                    headerField!.SetValue(null, previousHeader);
+                    Compiler.DebugData.s_compOrderHeaderPrinted = previousHeader;
                 }
             }
         });
@@ -476,18 +598,21 @@ internal static unsafe class CompilerFinalizationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitReportMetrics")]
     private static extern ref int ReportMetrics(ref JitConfigValues values);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitInlineDumpXml")]
-    private static extern ref int InlineXml(ref JitConfigValues values);
+    private static ref int InlineXml(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitInlineDumpXml;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitInlineDumpXmlFile")]
-    private static extern ref byte* InlineXmlFile(ref JitConfigValues values);
+    private static ref byte* InlineXmlFile(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitInlineDumpXmlFile;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitInlineSize")]
-    private static extern ref int InlineSize(ref JitConfigValues values);
+    private static ref int InlineSize(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitInlineSize;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitInlineDepth")]
-    private static extern ref int InlineDepth(ref JitConfigValues values);
+    private static ref int InlineDepth(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitInlineDepth;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitForceInlineDepth")]
-    private static extern ref int ForceDepth(ref JitConfigValues values);
+    private static ref int ForceDepth(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitForceInlineDepth;
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgCreateAddCodeDsc")]
+    private static extern Compiler.AddCodeDsc CreateAddCodeDsc(Compiler compiler, BasicBlock source, SpecialCodeKind kind);
 }

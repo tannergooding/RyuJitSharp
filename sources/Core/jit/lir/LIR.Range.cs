@@ -36,6 +36,7 @@ public partial class LIR
             if (!Configuration.DEBUG)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LIRValidationIsOnlyAvailableInDebugBuilds);
+                return false;
             }
 
             // This method checks the following properties:
@@ -153,8 +154,7 @@ public partial class LIR
                 }
             }
 
-            var checkLclVarSemanticsHelper = new CheckLclVarSemanticsHelper(compiler, this, unusedDefs);
-            assert(checkLclVarSemanticsHelper.Check());
+            assert(new CheckLclVarSemanticsHelper(compiler, this, unusedDefs).Check());
             return true;
         }
 

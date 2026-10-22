@@ -364,7 +364,7 @@ internal static unsafe class HWIntrinsicSpecialImportTests
         compiler.info.compCompHnd = &jitInfo;
         compiler.info.compMaxStack = 8;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.compCurBB = new BasicBlock(null, null);
         compiler.stackState.esStack = new StackEntry[8];
         compiler.lvaTable = [

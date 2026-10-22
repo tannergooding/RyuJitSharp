@@ -19,7 +19,7 @@ public partial class Compiler
             _compiler = compiler;
             _lclNum = lclNum;
             _ssaNum = ssaNum;
-            _defNode = defNode;
+            _defNode = Configuration.DEBUG ? defNode : null!;
         }
 
         public int SsaNum => _ssaNum;
@@ -31,6 +31,7 @@ public partial class Compiler
             if (!Configuration.DEBUG)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CopyPropagationDefinitionNodesAreOnlyAvailableInDebugBuilds);
+                return default!;
             }
 
             return _defNode;

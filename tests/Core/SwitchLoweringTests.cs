@@ -272,8 +272,8 @@ internal static unsafe class SwitchLoweringTests
         return block;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
-    private static extern ref byte* StressNames(ref JitConfigValues config);
+    private static ref byte* StressNames(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitStressModeNames;
 
     private static BasicBlock AssertDefaultGuard(BasicBlock source, BasicBlock defaultTarget, int lastCase, double probability)
     {
@@ -305,7 +305,7 @@ internal static unsafe class SwitchLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 1;
         compiler.compHndBBtab = [];

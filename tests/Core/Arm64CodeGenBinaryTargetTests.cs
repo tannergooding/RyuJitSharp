@@ -284,7 +284,7 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.eeInfoInitialized = true;
         compiler.eeInfo.targetAbi = targetAbi;
         compiler.compCurLife = VarSetOps.MakeEmpty(compiler);

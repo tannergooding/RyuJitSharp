@@ -63,14 +63,6 @@ public partial class Globals
         }
     }
 
-    private static nuint s_genFlowNodeCnt;
-
-    private static nuint s_genFlowNodeSize;
-
-    internal static ref nuint genFlowNodeCnt => ref s_genFlowNodeCnt;
-
-    internal static ref nuint genFlowNodeSize => ref s_genFlowNodeSize;
-
     internal static nuint NativeBasicBlockSize
     {
         get
@@ -89,12 +81,7 @@ public partial class Globals
         }
     }
 
-    private static class MemAllocHistogram
-    {
-        internal static readonly Histogram Instance = new([64, 128, 192, 256, 512, 1024, 4096, 8192, 0]);
-    }
-
-    internal static Histogram memAllocHist => MemAllocHistogram.Instance;
+    internal static Histogram memAllocHist => Compiler.MeasurementData.ManagedAllocation.memAllocHist;
 
     internal static void emitterStats(StreamWriter output)
     {

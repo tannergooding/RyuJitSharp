@@ -39,13 +39,13 @@ public partial class Emitter
             if (varx >= 0)
             {
                 ref var varDsc = ref _compiler.lvaGetDesc(varx);
-                imm = _compiler.unkSizeFrame.GetAddressingOffset(in varDsc);
+                imm = _compiler.unkSizeFrame.GetAddressingOffset(_compiler, in varDsc);
                 localType = varDsc.Type;
             }
             else
             {
                 var tmpDsc = codeGen.RegSet.tmpGetNum(varx);
-                imm = _compiler.unkSizeFrame.GetAddressingOffset(tmpDsc);
+                imm = _compiler.unkSizeFrame.GetAddressingOffset(_compiler, tmpDsc);
                 localType = tmpDsc.tdTempType;
             }
 
@@ -373,11 +373,11 @@ public partial class Emitter
 
             if (varx >= 0)
             {
-                imm = _compiler.unkSizeFrame.GetAddressingOffset(in _compiler.lvaGetDesc(varx));
+                imm = _compiler.unkSizeFrame.GetAddressingOffset(_compiler, in _compiler.lvaGetDesc(varx));
             }
             else
             {
-                imm = _compiler.unkSizeFrame.GetAddressingOffset(codeGen.RegSet.tmpGetNum(varx));
+                imm = _compiler.unkSizeFrame.GetAddressingOffset(_compiler, codeGen.RegSet.tmpGetNum(varx));
             }
 
             // TODO-SVE: Upstream does not materialize large VL/PL-scaled offsets.

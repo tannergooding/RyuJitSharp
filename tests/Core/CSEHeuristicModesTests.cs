@@ -16,14 +16,14 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CSEHeuristicModesTests
 {
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRandomCSE")]
-    private static extern ref int RandomSalt(ref JitConfigValues config);
+    private static ref int RandomSalt(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitRandomCSE;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitReplayCSE")]
-    private static extern ref byte* ReplayConfig(ref JitConfigValues config);
+    private static ref byte* ReplayConfig(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitReplayCSE;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitNoCSE2")]
-    private static extern ref int DisableCse(ref JitConfigValues config);
+    private static ref int DisableCse(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitNoCSE2;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "optCSEtab")]
     private static extern ref CSEdsc?[] Candidates(Compiler compiler);
@@ -285,7 +285,7 @@ internal static unsafe class CSEHeuristicModesTests
         compiler.info.compFullName = nameof(CSEHeuristicModesTests);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;

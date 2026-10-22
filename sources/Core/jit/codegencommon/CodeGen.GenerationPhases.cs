@@ -28,14 +28,14 @@ public sealed partial class CodeGen
         }
         if (Configuration.DEBUG)
         {
-            _genInterruptibleUsed = true;
+            Compiler.DebugData.Get(_compiler).CodeGenInterruptibleUsed = true;
         }
         _compiler.fgDebugCheckBBlist();
 
         genPrepForCompiler();
         Emitter.Init();
 
-        if (Configuration.DEBUG && _compiler.opts.disAsmSpilled && RegSet.NeededSpillReg)
+        if (Configuration.DEBUG && _compiler.disAsmSpilled && RegSet.NeededSpillReg)
         {
             _compiler.opts.disAsm = true;
         }
@@ -242,7 +242,7 @@ public sealed partial class CodeGen
 
         if (Configuration.DEBUG)
         {
-            var dspMetrics = _compiler.opts.dspMetrics;
+            var dspMetrics = _compiler.dspMetrics;
             var dspSummary = _compiler.opts.disAsm || _verbose;
             var dspMetricsOnly = dspMetrics && !dspSummary;
             if (dspSummary || dspMetrics)

@@ -93,9 +93,6 @@ public partial class Compiler
     /// <summary>reverse map of tracked number to var number</summary>
     public int[]? lvaTrackedToVarNum;
 
-    /// <summary># of procs compiled a with double-aligned stack</summary>
-    public static int s_lvaDoubleAlignedProcsCount;
-
     public bool lvaEnregEHVars;
 
     public bool lvaEnregMultiRegVars;
@@ -799,7 +796,7 @@ public partial class Compiler
             }
         }
 
-        if (Configuration.DEBUG && varDsc.lvReason is { } reason)
+        if (Configuration.DEBUG && GetLocalDebugReason(lclNum) is { } reason)
         {
             jitprintf($" \"{reason}\"");
         }
@@ -878,7 +875,7 @@ public partial class Compiler
         if (Configuration.TARGET_ARM64 && lvaLocalIsOnUnknownSizeFrame(lclNum))
         {
             ref var varDsc = ref lvaGetDesc(lclNum);
-            var offset = unkSizeFrame.GetAddressingOffset(in varDsc);
+            var offset = unkSizeFrame.GetAddressingOffset(this, in varDsc);
             message = $"[{REG_UNKBASE.Name,2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}*" +
                 $"{(varDsc.Type is TYP_MASK ? "PL" : "VL")}] ";
         }
@@ -1086,7 +1083,7 @@ public partial class Compiler
                     var encodingLimitUpper = isFloatUsage ? 0x3FC : 0xFFF;
                     var encodingLimitLower = isFloatUsage ? -0x3FC : -0xFF;
 
-                    if (opts.MinOpts || (actualSPOffset <= encodingLimitUpper))
+                    if (MinOpts || (actualSPOffset <= encodingLimitUpper))
                     {
                         // Use SP-based encoding. During encoding, we'll pick the best encoding for the actual offset we have.
                         varOffset = spVarOffset;
@@ -1468,7 +1465,7 @@ public partial class Compiler
 
         if (Configuration.DEBUG)
         {
-            lvaDsc.lvReason = reason;
+            SetLocalDebugReason(tempNum, reason);
 
             if (verbose)
             {
@@ -1761,7 +1758,7 @@ public partial class Compiler
 
         if (Configuration.DEBUG)
         {
-            varDsc.lvReason = "Async continuation arg";
+            SetLocalDebugReason(curVarNum, "Async continuation arg");
         }
 
         curVarNum++;

@@ -370,7 +370,7 @@ internal static unsafe class HardwareContainmentDispatchTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
         compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX512);
         compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_AVX512);

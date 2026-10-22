@@ -19,7 +19,4 @@ public struct VarScopeDsc
 
     /// <summary>instr offset of end of life</summary>
     public IL_OFFSET vsdLifeEnd;
-
-    /// <summary>name of the var</summary>
-    public VarName vsdName;
 }

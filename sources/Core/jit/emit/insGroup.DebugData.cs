@@ -3,26 +3,22 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
 public sealed partial class insGroup
 {
-    private sealed class DebugData
+    public insGroup? igSelf
     {
-        private static ConditionalWeakTable<insGroup, DebugData>? s_instances;
-
-        internal BasicBlock? LastGeneratedBlock;
-        internal List<BasicBlock>? Blocks;
-        internal nuint DataSize;
-
-        internal static DebugData Get(insGroup group)
+        get
         {
-            var instances = LazyStatic.GetOrCreate(ref s_instances);
-            return instances.GetValue(group, static _ => new DebugData());
+            return GetDebugData().Self;
+        }
+
+        set
+        {
+            GetDebugData().Self = value;
         }
     }
 
@@ -61,13 +57,14 @@ public sealed partial class insGroup
         }
     }
 
-    private DebugData GetDebugData()
+    private Compiler.DebugData.InstructionGroupDebugData GetDebugData()
     {
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InstructionGroupDebugDataIsOnlyAvailableInDebugBuilds);
+            return null!;
         }
 
-        return DebugData.Get(this);
+        return Compiler.DebugData.Get(this);
     }
 }

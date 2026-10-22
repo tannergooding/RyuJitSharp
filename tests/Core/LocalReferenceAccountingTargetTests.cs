@@ -18,7 +18,7 @@ internal static unsafe class LocalReferenceAccountingTargetTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         compiler.info.compInitMem = true;
         compiler.lvaRefCountState = RCS_NORMAL;
         compiler.lvaCount = 1;

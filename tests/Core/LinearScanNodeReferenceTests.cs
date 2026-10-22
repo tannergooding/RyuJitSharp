@@ -123,7 +123,7 @@ internal static unsafe class LinearScanNodeReferenceTests
         RequireDebugConfiguration();
 
         WithAllocator((compiler, allocator) => {
-            StressMask(allocator) = stressMask;
+            TestConfiguration.SetLinearScanStressMask(allocator, stressMask);
             var input = compiler.gtNewIconNode(TYP_INT, 7);
             BuildAt(allocator, input, 1);
             var inputDefinition = allocator.refPositions[^1];
@@ -153,7 +153,7 @@ internal static unsafe class LinearScanNodeReferenceTests
             BuildAt(allocator, input, 1);
             var inputDefinition = allocator.refPositions[^1];
             inputDefinition.getInterval().isSpecialPutArg = specialPutArg;
-            StressMask(allocator) = 0x08;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x08);
             var negate = new GenTreeUnOp(GT_NEG, TYP_INT, input);
             BuildAt(allocator, negate, 3);
 
@@ -168,7 +168,7 @@ internal static unsafe class LinearScanNodeReferenceTests
         RequireDebugConfiguration();
 
         WithAllocator((compiler, allocator) => {
-            StressMask(allocator) = 0x08;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x08);
             var dividend = compiler.gtNewIconNode(TYP_INT, 101);
             var divisor = compiler.gtNewIconNode(TYP_INT, 7);
             BuildAt(allocator, dividend, 1);
@@ -192,10 +192,7 @@ internal static unsafe class LinearScanNodeReferenceTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "computeAvailableSrcCount")]
     private static extern int ComputeAvailableSrcCount(LinearScan allocator, GenTree node);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildPhysRegRecords")]
+[UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildPhysRegRecords")]
     private static extern void BuildPhysRegRecords(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_referenceBuildLocation")]
@@ -226,7 +223,7 @@ internal static unsafe class LinearScanNodeReferenceTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
         CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;

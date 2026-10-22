@@ -392,7 +392,7 @@ public partial class Compiler
         var copyClass = argument.SignatureClassHandle;
         var temporary = 0;
         var found = false;
-        if (!opts.MinOpts && (fgOrder is FGOrderTree))
+        if (!MinOpts && (fgOrder is FGOrderTree))
         {
             assert(fgAvailableOutgoingArgTemps is not null);
             found = ForEachHbvBitSet(fgAvailableOutgoingArgTemps, localNumber => {

@@ -209,7 +209,7 @@ internal static unsafe class LinearScanRegisterAssignmentTests
             var lastUse = allocator.newRefPosition(interval, 20, RefType.RefTypeUse, lastUseTree, SRBM_X64_RAX);
             _ = allocator.newRefPosition(interval, 40, RefType.RefTypeUse, definitionTree, SRBM_X64_RAX);
             interval.recentRefPosition = lastUse;
-            StressMask(allocator) = 0x80;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x80);
             Assert.That(MoveToNextBlock(allocator), Is.SameAs(blocks[1]));
             allocator.setCurrentBlockStartLocation(30);
 
@@ -288,7 +288,7 @@ internal static unsafe class LinearScanRegisterAssignmentTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_MINOPT | (trackedLocal ? CLFLG_REGVAR : 0);
         compiler.compFloatingPointUsed = true;
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
@@ -361,10 +361,7 @@ internal static unsafe class LinearScanRegisterAssignmentTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "moveToNextBlock")]
     private static extern BasicBlock? MoveToNextBlock(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_splitOrSpilledVars")]
+[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_splitOrSpilledVars")]
     private static extern ref nint[]? SplitOrSpilledVars(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]

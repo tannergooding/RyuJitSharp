@@ -147,7 +147,7 @@ public sealed partial class CodeGen
                     var floatPush = maskCalleeRegsPushed & allFloat;
                     var intPush = maskCalleeRegsPushed & ~floatPush;
                     if (floatPush.IsNonEmpty
-                        || (_compiler.opts.MinOpts && (_regSet.rsMaskResvd & maskCalleeRegsPushed
+                        || (_compiler.MinOpts && (_regSet.rsMaskResvd & maskCalleeRegsPushed
                             & new regMaskTP(SRBM_OPT_RSVD_ARM)).IsNonEmpty))
                     {
                         var pushBits = unchecked((ulong)(_regSet.rsMaskPreSpillRegs(true) | intPush).Lower);
@@ -211,7 +211,7 @@ public sealed partial class CodeGen
         }
         _compiler.lvaAssignFrameOffsets(Compiler.FINAL_FRAME_LAYOUT);
         if (Configuration.DEBUG &&
-            (_compiler.opts.dspCode || _compiler.opts.disAsm || _compiler.opts.disAsm2 || _verbose))
+            (_compiler.dspCode || _compiler.opts.disAsm || _compiler.disAsm2 || _verbose))
         {
             _compiler.lvaTableDump();
         }

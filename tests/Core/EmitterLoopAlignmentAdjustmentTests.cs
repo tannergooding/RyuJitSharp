@@ -238,7 +238,7 @@ internal static class EmitterLoopAlignmentAdjustmentTests
         WithEmitter((compiler, emitter) =>
         {
             Configure(compiler, adaptive: false, boundary: 32);
-            compiler.opts.compJitAlignLoopForJcc = forJcc;
+            compiler.compJitAlignLoopForJcc = forJcc;
             emitter.emitIns_Nop(3);
             var containing = emitter.emitCurIG ?? throw new AssertionException("Missing containing group.");
             Align(emitter);

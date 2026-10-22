@@ -361,7 +361,7 @@ internal static unsafe class BlockMorphTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.lvaTable = new LclVarDsc[3];
         compiler.lvaCount = 3;
         compiler.lvaRefCountState = RCS_EARLY;

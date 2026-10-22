@@ -61,7 +61,7 @@ internal static unsafe class CodeGenBlockDriverTargetTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.info.compMethodInfo = &methodInfo;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaCount = 1;
         compiler.lvaTrackedCount = 1;
         compiler.lvaTrackedCountInSizeTUnits = 1;
@@ -127,6 +127,6 @@ internal static unsafe class CodeGenBlockDriverTargetTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regAlloc")]
     private static extern ref IRegAlloc? Allocator(Compiler compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEmitUnitTests")]
-    private static extern ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config);
+    private static ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitEmitUnitTests;
 }

@@ -272,8 +272,8 @@ internal static unsafe class ProfileInstrumentationTests
         }
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitPropagateSynthesizedCountsToProfileData")]
-    private static extern ref int PropagateSynthesizedCounts(ref JitConfigValues config);
+    private static ref int PropagateSynthesizedCounts(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitPropagateSynthesizedCountsToProfileData;
 
     [Test]
     public static void InterfaceCallHistogramPreservesPairOrderAndObjectEvaluation()

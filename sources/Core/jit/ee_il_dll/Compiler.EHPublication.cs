@@ -23,7 +23,7 @@ public partial class Compiler
 
     public unsafe void eeSetEHinfo(uint EHnumber, CORINFO_EH_CLAUSE* clause)
     {
-        if (Configuration.DEBUG && opts.dspEHTable)
+        if (Configuration.DEBUG && dspEHTable)
         {
             dispOutgoingEHClause(EHnumber, *clause);
         }

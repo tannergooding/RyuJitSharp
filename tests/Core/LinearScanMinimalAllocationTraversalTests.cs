@@ -677,7 +677,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
                 interveningInterval, 4, RefType.RefTypeDef, interveningTree, SRBM_X64_RAX);
             var firstUse = allocator.newRefPosition(
                 firstInterval, 8, RefType.RefTypeUse, firstTree, SRBM_X64_RAX);
-            StressMask(allocator) = 0x800;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x800);
 
             AllocateRegistersMinimal(allocator);
 
@@ -703,7 +703,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
             var definition = allocator.newRefPosition(
                 interval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
             definition.setRegOptional(true);
-            StressMask(allocator) = 0x1000;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x1000);
 
             AllocateRegistersMinimal(allocator);
 
@@ -777,8 +777,6 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentAllocationLocation")]
     private static extern ref uint CurrentAllocationLocation(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
     private static BasicBlock[] CreateBlocks(Compiler compiler, params BBKinds[] kinds)
     {
         var blocks = new BasicBlock[kinds.Length];
@@ -814,7 +812,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_MINOPT;
         compiler.compFloatingPointUsed = true;
         if (evex)

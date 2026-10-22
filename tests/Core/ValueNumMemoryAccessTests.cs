@@ -185,7 +185,7 @@ internal static unsafe class ValueNumMemoryAccessTests
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         JitTls.Compiler = compiler;
         try
         {

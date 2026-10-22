@@ -21,12 +21,15 @@ public partial class GenTree
     {
         get
         {
-            return GetDebugData().OperSave;
+            return GetDebugData()?.OperSave ?? default;
         }
 
         set
         {
-            GetDebugData().OperSave = value;
+            if (GetDebugData() is { } debugData)
+            {
+                debugData.OperSave = value;
+            }
         }
     }
 
@@ -54,12 +57,15 @@ public partial class GenTree
     {
         get
         {
-            return GetDebugData().Flags;
+            return GetDebugData()?.Flags ?? default;
         }
 
         set
         {
-            GetDebugData().Flags = value;
+            if (GetDebugData() is { } debugData)
+            {
+                debugData.Flags = value;
+            }
         }
     }
 
@@ -86,15 +92,8 @@ public partial class GenTree
 
         if (Configuration.DEBUG)
         {
-            var jitTls = JitTls.t_jitTls ??
-                throw new InvalidOperationException("GenTree construction requires an active compiler in Debug builds.");
-            if (jitTls._compiler is null)
-            {
-                throw new InvalidOperationException("GenTree construction requires an active compiler in Debug builds.");
-            }
-
             _useNum = -1;
-            _treeId = jitTls._compGenTreeID++;
+            _treeId = JitTls.GetNextCompGenTreeID();
         }
     }
 
@@ -2698,9 +2697,27 @@ public partial class GenTree
 
     private const int BASH_HASH_SIZE = 211;
 
-    private static BashHashDsc[] BashHash = Configuration.NODEBASH_STATS
-        ? new BashHashDsc[BASH_HASH_SIZE]
-        : [];
+    private static class MeasurementData
+    {
+        internal static class NodeBashing
+        {
+            internal static readonly BashHashDsc[] s_bashHash = Configuration.NODEBASH_STATS
+                ? new BashHashDsc[BASH_HASH_SIZE]
+                : [];
+        }
+
+        internal static class OperatorCounts
+        {
+            private static readonly uint[] s_counts = Configuration.COUNT_AST_OPERS
+                ? new uint[(int)GT_COUNT + 1]
+                : [];
+
+            internal static ref uint GetCount(uint op)
+            {
+                return ref s_counts[(int)op];
+            }
+        }
+    }
 
     private static int hashme(genTreeOps op1, genTreeOps op2)
     {
@@ -2710,7 +2727,7 @@ public partial class GenTree
     private void RecordOperBashing(genTreeOps operOld, genTreeOps operNew)
     {
         var hash = hashme(operOld, operNew);
-        ref var desc = ref BashHash[hash];
+        ref var desc = ref MeasurementData.NodeBashing.s_bashHash[hash];
 
         if (desc.bhFullHash != hash)
         {

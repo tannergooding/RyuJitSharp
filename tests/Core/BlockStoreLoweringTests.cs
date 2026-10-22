@@ -467,7 +467,7 @@ internal static unsafe class BlockStoreLoweringTests
         compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.lvaTable = new LclVarDsc[4];
         compiler.lvaCount = 2;
         compiler.lvaTable[0].Type = var_types.TYP_BYREF;

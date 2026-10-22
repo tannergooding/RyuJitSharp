@@ -769,8 +769,6 @@ public partial class Compiler
         helper.StoreRetExprResultsInArgs(call);
     }
 
-    private static ConfigMethodRange s_jitGuardedDevirtualizationRange;
-
     /// <summary>potentially mark the call as a guarded devirtualization candidate</summary>
     /// <param name="call">potential guarded devirtualization candidate</param>
     /// <param name="methodHandle">method that will be invoked if the class test succeeds</param>
@@ -827,10 +825,10 @@ public partial class Compiler
         {
             // See if disabled by range
 
-            s_jitGuardedDevirtualizationRange.EnsureInit(JitConfig.JitGuardedDevirtualizationRange);
-            assert(!s_jitGuardedDevirtualizationRange.Error);
+            DebugData.MethodRangeData.s_jitGuardedDevirtualizationRange.EnsureInit(JitConfig.JitGuardedDevirtualizationRange);
+            assert(!DebugData.MethodRangeData.s_jitGuardedDevirtualizationRange.Error);
 
-            if (!s_jitGuardedDevirtualizationRange.Contains(impInlineRoot.info.compMethodHash()))
+            if (!DebugData.MethodRangeData.s_jitGuardedDevirtualizationRange.Contains(impInlineRoot.info.compMethodHash()))
             {
                 JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- excluded by JitGuardedDevirtualizationRange");
                 return;
@@ -2565,7 +2563,8 @@ public partial class Compiler
 
         if ((unmanagedCallConv is CorInfoCallConvExtension.Thiscall) && (sigInfo.numArgs is 0))
         {
-            BADCODE("thiscall with 0 arguments");
+            debugBadCode("thiscall with 0 arguments");
+            badCode();
         }
 
         // If we can't get the unmanaged calling convention or the calling convention is unsupported in the JIT,
@@ -3223,7 +3222,14 @@ public partial class Compiler
             // the cached and fresh values.
             if ((freshBaseMethodAttribs & ~CORINFO_FLG_DONT_INLINE) != (baseMethodAttribs & ~CORINFO_FLG_DONT_INLINE))
             {
-                NO_WAY("mismatched method attributes");
+                if (Configuration.DEBUG)
+                {
+                    NO_WAY("mismatched method attributes");
+                }
+                else
+                {
+                    noWay();
+                }
             }
         }
 
@@ -3549,7 +3555,14 @@ public partial class Compiler
             {
                 // only Memmove is expected at the moment.
                 // Possible future extensions: Memset, Memcpy
-                unreached();
+                if (Configuration.DEBUG)
+                {
+                    unreached();
+                }
+                else
+                {
+                    noWayAssertBody();
+                }
             }
 
             if ((profiledValue >= minValue) && (profiledValue <= maxValue))
@@ -3789,7 +3802,15 @@ public partial class Compiler
 
                 default:
                 {
-                    unreached();
+                    if (Configuration.DEBUG)
+                    {
+                        unreached();
+                    }
+                    else
+                    {
+                        noWayAssertBody();
+                    }
+
                     break;
                 }
             }
@@ -3821,7 +3842,15 @@ public partial class Compiler
 
             default:
             {
-                unreached();
+                if (Configuration.DEBUG)
+                {
+                    unreached();
+                }
+                else
+                {
+                    noWayAssertBody();
+                }
+
                 break;
             }
         }
@@ -3862,7 +3891,15 @@ public partial class Compiler
 
                 default:
                 {
-                    unreached();
+                    if (Configuration.DEBUG)
+                    {
+                        unreached();
+                    }
+                    else
+                    {
+                        noWayAssertBody();
+                    }
+
                     break;
                 }
             }
@@ -3900,7 +3937,15 @@ public partial class Compiler
 
             default:
             {
-                unreached();
+                if (Configuration.DEBUG)
+                {
+                    unreached();
+                }
+                else
+                {
+                    noWayAssertBody();
+                }
+
                 return null;
             }
         }
@@ -5946,13 +5991,22 @@ public partial class Compiler
                 case BBJ_EHFILTERRET:
                 case BBJ_THROW:
                 {
-                    BADCODE("can't have 'unreached' end of BB with non-empty stack");
+                    debugBadCode("can't have 'unreached' end of BB with non-empty stack");
+                    badCode();
                     break;
                 }
 
                 default:
                 {
-                    NO_WAY("Unexpected bbKind");
+                    if (Configuration.DEBUG)
+                    {
+                        NO_WAY("Unexpected bbKind");
+                    }
+                    else
+                    {
+                        noWay();
+                    }
+
                     break;
                 }
             }
@@ -6096,7 +6150,8 @@ public partial class Compiler
                 {
                     if (markImport)
                     {
-                        BADCODE("bad stack state");
+                        debugBadCode("bad stack state");
+                        badCode();
                     }
 
                     // We failed to spill, so we need to restart the outer loop
@@ -6159,15 +6214,12 @@ public partial class Compiler
         }
     }
 
-    private static ConfigMethodRange s_jitEnablePatchpointRange;
-    private static ConfigMethodRange s_jitOptimizeAwaitRange;
-
     /// <summary>Check whether an await's root-method, inline-ordinal and IL-offset hash is selected.</summary>
     public unsafe bool impCheckOptimizeAwait(IL_OFFSET awaitOffset)
     {
         if (Configuration.DEBUG)
         {
-            s_jitOptimizeAwaitRange.EnsureInit(JitConfig.JitOptimizeAwaitRange);
+            DebugData.MethodRangeData.s_jitOptimizeAwaitRange.EnsureInit(JitConfig.JitOptimizeAwaitRange);
             var hash = unchecked((uint)impInlineRoot.info.compMethodHash());
             var ordinal = 0;
 
@@ -6185,7 +6237,7 @@ public partial class Compiler
                 assert(false, "JitAwaitHashBreak reached");
             }
 
-            return s_jitOptimizeAwaitRange.Contains(unchecked((int)hash));
+            return DebugData.MethodRangeData.s_jitOptimizeAwaitRange.Contains(unchecked((int)hash));
         }
 
         return true;
@@ -6212,9 +6264,9 @@ public partial class Compiler
         if (Configuration.DEBUG && Configuration.FEATURE_ON_STACK_REPLACEMENT)
         {
             // Optionally suppress patchpoints by method hash
-            s_jitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange);
+            DebugData.MethodRangeData.s_jitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange);
 
-            var inRange = s_jitEnablePatchpointRange.Contains(impInlineRoot.info.compMethodHash());
+            var inRange = DebugData.MethodRangeData.s_jitEnablePatchpointRange.Contains(impInlineRoot.info.compMethodHash());
             enableOSR &= inRange;
             enablePartialCompilation &= inRange;
         }
@@ -6656,7 +6708,8 @@ public partial class Compiler
 
                         if ((val is not 1) && (val is not 2) && (val is not 4))
                         {
-                            BADCODE("Alignment unaligned. must be 1, 2, or 4");
+                            debugBadCode("Alignment unaligned. must be 1, 2, or 4");
+                            badCode();
                         }
 
                         impValidateMemoryAccessOpcode(codeAddr, codeEndp, volatilePrefix: false);
@@ -6691,7 +6744,8 @@ public partial class Compiler
 
                         if (!impOpcodeIsCallOpcode(actualOpcode))
                         {
-                            BADCODE("tailcall. has to be followed by call, callvirt or calli");
+                            debugBadCode("tailcall. has to be followed by call, callvirt or calli");
+                            badCode();
                         }
 
                         opcode = (OPCODE)(codeAddr[0]);
@@ -6716,7 +6770,8 @@ public partial class Compiler
 
                         if (actualOpcode is not CEE_CALLVIRT and not CEE_CALL and not CEE_LDFTN)
                         {
-                            BADCODE("constrained. has to be followed by callvirt, call or ldftn");
+                            debugBadCode("constrained. has to be followed by callvirt, call or ldftn");
+                            badCode();
                         }
 
                         opcode = (OPCODE)(codeAddr[0]);
@@ -6735,7 +6790,8 @@ public partial class Compiler
 
                         if ((actualOpcode is not CEE_LDELEMA) && !impOpcodeIsCallOpcode(actualOpcode))
                         {
-                            BADCODE("readonly. has to be followed by ldelema or call");
+                            debugBadCode("readonly. has to be followed by ldelema or call");
+                            badCode();
                         }
 
                         opcode = (OPCODE)(codeAddr[0]);
@@ -6984,7 +7040,8 @@ public partial class Compiler
                 {
                     if (!info.compIsVarArgs)
                     {
-                        BADCODE("arglist in non-vararg method");
+                        debugBadCode("arglist in non-vararg method");
+                        badCode();
                     }
 
                     assertImp((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG);
@@ -7010,7 +7067,15 @@ public partial class Compiler
                 {
                     if (compIsForInlining && !opts.compInlineMethodsWithEH)
                     {
-                        NO_WAY("Shouldn't have exception handlers in the inlinee!");
+                        if (Configuration.DEBUG)
+                        {
+                            NO_WAY("Shouldn't have exception handlers in the inlinee!");
+                        }
+                        else
+                        {
+                            noWay();
+                        }
+
                         compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_ENDFINALLY);
                         return;
                     }
@@ -7022,7 +7087,8 @@ public partial class Compiler
 
                     if (info.compXcptnsCount is 0)
                     {
-                        BADCODE("endfinally outside finally");
+                        debugBadCode("endfinally outside finally");
+                        badCode();
                     }
 
                     assert(stackState.esStackDepth is 0);
@@ -7036,7 +7102,15 @@ public partial class Compiler
                 {
                     if (compIsForInlining && !opts.compInlineMethodsWithEH)
                     {
-                        NO_WAY("Shouldn't have exception handlers in the inlinee!");
+                        if (Configuration.DEBUG)
+                        {
+                            NO_WAY("Shouldn't have exception handlers in the inlinee!");
+                        }
+                        else
+                        {
+                            noWay();
+                        }
+
                         compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_ENDFILTER);
                         return;
                     }
@@ -7049,7 +7123,8 @@ public partial class Compiler
 
                     if (info.compXcptnsCount is 0)
                     {
-                        BADCODE("endfilter outside filter");
+                        debugBadCode("endfilter outside filter");
+                        badCode();
                     }
 
                     var op1 = impPopStack().val;
@@ -7057,7 +7132,8 @@ public partial class Compiler
 
                     if (!bbInFilterILRange(block))
                     {
-                        BADCODE("EndFilter outside a filter handler");
+                        debugBadCode("EndFilter outside a filter handler");
+                        badCode();
                     }
 
                     // Mark current bb as end of filter
@@ -7072,7 +7148,8 @@ public partial class Compiler
 
                     if (stackState.esStackDepth is not 0)
                     {
-                        BADCODE("stack must be 1 on end of filter");
+                        debugBadCode("stack must be 1 on end of filter");
+                        badCode();
                     }
 
                     Append(this, op1);
@@ -7108,24 +7185,28 @@ public partial class Compiler
                     {
                         /* CEE_JMP does not make sense in some "protected" regions. */
 
-                        BADCODE("Jmp not allowed in protected region");
+                        debugBadCode("Jmp not allowed in protected region");
+                        badCode();
                     }
 
                     if (opts.IsReversePInvoke)
                     {
-                        BADCODE("Jmp not allowed in reverse P/Invoke");
+                        debugBadCode("Jmp not allowed in reverse P/Invoke");
+                        badCode();
                     }
 
                     if (stackState.esStackDepth is not 0)
                     {
-                        BADCODE("Stack must be empty after CEE_JMPs");
+                        debugBadCode("Stack must be empty after CEE_JMPs");
+                        badCode();
                     }
 
                     impResolveToken(codeAddr, out var resolvedToken, compIsAsyncVersion ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_Method);
 
                     if (compIsAsyncVersion && (resolvedToken.hMethod == NO_METHOD_HANDLE))
                     {
-                        BADCODE("Incompatible target for CEE_JMP in async version");
+                        debugBadCode("Incompatible target for CEE_JMP in async version");
+                        badCode();
                     }
 
                     JITDUMP($" {resolvedToken.token:X8}");
@@ -7139,7 +7220,8 @@ public partial class Compiler
                         (sig.retType != info.compMethodInfo->args.retType) ||
                         (sig.callConv != info.compMethodInfo->args.callConv))
                     {
-                        BADCODE("Incompatible target for CEE_JMPs");
+                        debugBadCode("Incompatible target for CEE_JMPs");
+                        badCode();
                     }
 
                     var op1 = new GenTreeVal(GT_JMP, TYP_VOID, unchecked((nint)(resolvedToken.hMethod)));
@@ -7633,7 +7715,8 @@ public partial class Compiler
                     // any type that gtNewZeroConNode can handle.
                     if (!varTypeIsArithmetic(type) && !varTypeIsGC(type))
                     {
-                        BADCODE("invalid type for brtrue/brfalse");
+                        debugBadCode("invalid type for brtrue/brfalse");
+                        badCode();
                     }
 
                     if (opts.OptimizationEnabled)
@@ -8359,7 +8442,14 @@ public partial class Compiler
                     // This check really only applies to intrinsic Array.Address methods
                     if ((callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0)
                     {
-                        NO_WAY("Currently do not support LDFTN of Parameterized functions");
+                       if (Configuration.DEBUG)
+                       {
+                           NO_WAY("Currently do not support LDFTN of Parameterized functions");
+                       }
+                       else
+                       {
+                           noWay();
+                       }
                     }
 
                     // Do this before DO_LDFTN since CEE_LDVIRTFN does it on its own.
@@ -8387,7 +8477,14 @@ public partial class Compiler
                     // This check really only applies to intrinsic Array.Address methods
                     if ((callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0)
                     {
-                        NO_WAY("Currently do not support LDFTN of Parameterized functions");
+                       if (Configuration.DEBUG)
+                       {
+                           NO_WAY("Currently do not support LDFTN of Parameterized functions");
+                       }
+                       else
+                       {
+                           noWay();
+                       }
                     }
 
                     var mflags = callInfo.methodFlags;
@@ -8477,7 +8574,8 @@ public partial class Compiler
 
                     if ((mflags & (CORINFO_FLG_STATIC | CORINFO_FLG_ABSTRACT)) is not 0)
                     {
-                        BADCODE("newobj on static or abstract method");
+                        debugBadCode("newobj on static or abstract method");
+                        badCode();
                     }
 
                     // Insert the security callout before any actual code is generated
@@ -8939,7 +9037,8 @@ public partial class Compiler
                     // Raise InvalidProgramException if static load accesses non-static field
                     if (isLoadStatic && ((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC) is 0))
                     {
-                        BADCODE("static access on an instance field");
+                        debugBadCode("static access on an instance field");
+                        badCode();
                     }
 
                     // We are using ldfld/a on a static field. We allow it, but need to get side-effect from obj.
@@ -8965,7 +9064,14 @@ public partial class Compiler
                         {
                             if ((fieldInfo.fieldAccessor is CORINFO_FIELD_INSTANCE_WITH_BASE) && !Configuration.FEATURE_READYTORUN)
                             {
-                                unreached();
+                                if (Configuration.DEBUG)
+                                {
+                                    unreached();
+                                }
+                                else
+                                {
+                                    noWayAssertBody();
+                                }
                             }
 
                             // If the object is a struct, what we really want is
@@ -8976,7 +9082,8 @@ public partial class Compiler
                             {
                                 if (opcode != CEE_LDFLD)
                                 {
-                                    BADCODE($"Unexpected opcode (has to be LDFLD): {(ushort)(opcode):X2}");
+                                    debugBadCode($"Unexpected opcode (has to be LDFLD): {(ushort)(opcode):X2}");
+                                    badCode();
                                 }
 
                                 // Get the address and any flags from the original access (volatile, unaligned, etc.)
@@ -9102,7 +9209,15 @@ public partial class Compiler
 
                         default:
                         {
-                            NO_WAY("Unexpected fieldAccessor");
+                            if (Configuration.DEBUG)
+                            {
+                                NO_WAY("Unexpected fieldAccessor");
+                            }
+                            else
+                            {
+                                noWay();
+                            }
+
                             break;
                         }
                     }
@@ -9229,7 +9344,14 @@ public partial class Compiler
                         {
                             if ((fieldInfo.fieldAccessor is CORINFO_FIELD_INSTANCE_WITH_BASE) && !Configuration.FEATURE_READYTORUN)
                             {
-                                unreached();
+                                if (Configuration.DEBUG)
+                                {
+                                    unreached();
+                                }
+                                else
+                                {
+                                    noWayAssertBody();
+                                }
                             }
 
                             // We will create STOREIND/STOREBLK(FIELD_ADDR(obj, fld), data).
@@ -9282,7 +9404,15 @@ public partial class Compiler
 
                         default:
                         {
-                            NO_WAY("Unexpected fieldAccessor");
+                            if (Configuration.DEBUG)
+                            {
+                                NO_WAY("Unexpected fieldAccessor");
+                            }
+                            else
+                            {
+                                noWay();
+                            }
+
                             break;
                         }
                     }
@@ -9303,7 +9433,8 @@ public partial class Compiler
                     // Raise InvalidProgramException if static store accesses non-static field
                     if (isStoreStatic && ((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC) is 0))
                     {
-                        BADCODE("static access on an instance field");
+                        debugBadCode("static access on an instance field");
+                        badCode();
                     }
 
                     // We are using stfld on a static field.
@@ -9329,7 +9460,14 @@ public partial class Compiler
                         {
                             if ((fieldInfo.fieldAccessor is CORINFO_FIELD_INSTANCE_WITH_BASE) && !Configuration.FEATURE_READYTORUN)
                             {
-                                unreached();
+                                if (Configuration.DEBUG)
+                                {
+                                    unreached();
+                                }
+                                else
+                                {
+                                    noWayAssertBody();
+                                }
                             }
 
                             var mayOverlap = StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass));
@@ -9436,7 +9574,15 @@ public partial class Compiler
 
                         default:
                         {
-                            NO_WAY("Unexpected fieldAccessor");
+                            if (Configuration.DEBUG)
+                            {
+                                NO_WAY("Unexpected fieldAccessor");
+                            }
+                            else
+                            {
+                                noWay();
+                            }
+
                             break;
                         }
                     }
@@ -9713,7 +9859,8 @@ public partial class Compiler
                     // We don't allow locallocs inside handlers
                     if (block.hasHndIndex)
                     {
-                        BADCODE("Localloc can't be inside handler");
+                        debugBadCode("Localloc can't be inside handler");
+                        badCode();
                     }
 
                     // Get the size to allocate
@@ -9725,7 +9872,8 @@ public partial class Compiler
 
                     if (stackState.esStackDepth is not 0)
                     {
-                        BADCODE("Localloc can only be used when the stack is empty");
+                        debugBadCode("Localloc can only be used when the stack is empty");
+                        badCode();
                     }
 
                     // If the localloc is not in a loop and its size is a small constant,
@@ -10323,7 +10471,8 @@ public partial class Compiler
                     {
                         // ByRefLike types are supported in boxing scenarios when the instruction can be elided
                         // due to a recognized pattern above. If the pattern is not recognized, the code is invalid.
-                        BADCODE("ByRefLike types cannot be boxed");
+                        debugBadCode("ByRefLike types cannot be boxed");
+                        badCode();
                     }
                     else
                     {
@@ -10411,7 +10560,8 @@ public partial class Compiler
 
                     if (info.compXcptnsCount is 0)
                     {
-                        BADCODE("rethrow outside catch");
+                        debugBadCode("rethrow outside catch");
+                        badCode();
                     }
 
                     // Create the 'rethrow' helper call
@@ -10722,7 +10872,8 @@ public partial class Compiler
                         return;
                     }
 
-                    BADCODE($"unknown opcode: {(ushort)(opcode):X2}");
+                    debugBadCode($"unknown opcode: {(ushort)(opcode):X2}");
+                    badCode();
                     break;
                 }
             }
@@ -11068,7 +11219,15 @@ public partial class Compiler
 
                         default:
                         {
-                            NO_WAY("unexpected type");
+                            if (Configuration.DEBUG)
+                            {
+                                NO_WAY("unexpected type");
+                            }
+                            else
+                            {
+                                noWay();
+                            }
+
                             mask = 0;
                             umask = 0;
                             break;
@@ -11674,7 +11833,8 @@ public partial class Compiler
 
             if ((lclNum < 0) || (lclNum >= compiler.info.compILargsCount))
             {
-                BADCODE("Bad IL");
+                debugBadCode("Bad IL");
+                badCode();
             }
 
             if (compiler.compIsForInlining)
@@ -11739,7 +11899,8 @@ public partial class Compiler
         {
             if (((lclNum < 0) || (lclNum >= compiler.info.compLocalsCount)) && (lclNum != compiler.lvaArg0Var))
             {
-                BADCODE("Bad IL");
+                debugBadCode("Bad IL");
+                badCode();
             }
 
             VarStValid(compiler, block, lclTyp, lclNum, clsHnd, isLocal);
@@ -11802,7 +11963,7 @@ public partial class Compiler
                 }
                 else
                 {
-                    NO_WAY("Block entered with different stack depths");
+                    noWay();
                 }
             }
 
@@ -11946,7 +12107,14 @@ public partial class Compiler
         else
         {
             Unsafe.SkipInit(out tlAndN);
-            unreached();
+            if (Configuration.DEBUG)
+            {
+                unreached();
+            }
+            else
+            {
+                noWayAssertBody();
+            }
         }
 
         var expSe = impPopStack();
@@ -11982,7 +12150,14 @@ public partial class Compiler
 
         if (((callInfo.methodFlags & CORINFO_FLG_EnC) != 0) && !isInterface)
         {
-            NO_WAY("Virtual call to a function added via EnC is not supported");
+            if (Configuration.DEBUG)
+            {
+                NO_WAY("Virtual call to a function added via EnC is not supported");
+            }
+            else
+            {
+                noWay();
+            }
         }
 
         var call = null as GenTreeCall;
@@ -12126,7 +12301,8 @@ public partial class Compiler
                 // Can't CEE_LEAVE out of a finally/fault handler
                 if (HBtab.HasFinallyOrFaultHandler)
                 {
-                    BADCODE("leave out of fault/finally block");
+                    debugBadCode("leave out of fault/finally block");
+                    badCode();
                 }
 
                 // We are jumping out of a catch.
@@ -12620,8 +12796,16 @@ public partial class Compiler
 
                     default:
                     {
-                        NO_WAY("unknown generic statics helper");
-                        break;
+                       if (Configuration.DEBUG)
+                       {
+                           NO_WAY("unknown generic statics helper");
+                       }
+                       else
+                       {
+                           noWay();
+                       }
+
+                       break;
                     }
                 }
 
@@ -12718,7 +12902,14 @@ public partial class Compiler
             {
                 if (!Configuration.FEATURE_READYTORUN)
                 {
-                    unreached();
+                    if (Configuration.DEBUG)
+                    {
+                        unreached();
+                    }
+                    else
+                    {
+                        noWayAssertBody();
+                    }
                 }
 
                 assert(fieldKind == FieldSeq.FieldKind.SimpleStatic);
@@ -12745,7 +12936,14 @@ public partial class Compiler
             {
                 if (!Configuration.FEATURE_READYTORUN)
                 {
-                    unreached();
+                    if (Configuration.DEBUG)
+                    {
+                        unreached();
+                    }
+                    else
+                    {
+                        noWayAssertBody();
+                    }
                 }
 
                 assert(IsAot);
@@ -14187,8 +14385,16 @@ public partial class Compiler
 
                 default:
                 {
-                    NO_WAY("Illegal helper arg type");
-                    break;
+                   if (Configuration.DEBUG)
+                   {
+                       NO_WAY("Illegal helper arg type");
+                   }
+                   else
+                   {
+                       noWay();
+                   }
+
+                   break;
                 }
             }
 
@@ -14522,7 +14728,8 @@ public partial class Compiler
         {
             if ((ilArgNum < 0) || (ilArgNum >= info.compArgsCount))
             {
-                BADCODE("Bad IL");
+                debugBadCode("Bad IL");
+                badCode();
             }
 
             // account for possible hidden param
@@ -14559,7 +14766,8 @@ public partial class Compiler
         {
             if ((ilLclNum < 0) || (ilLclNum >= info.compMethodInfo->locals.numArgs))
             {
-                BADCODE("Bad IL");
+                debugBadCode("Bad IL");
+                badCode();
             }
 
             lclNum = info.compArgsCount + ilLclNum;
@@ -15444,8 +15652,16 @@ public partial class Compiler
 
                 default:
                 {
-                    NO_WAY("Unsupported number of args for Math Intrinsic");
-                    break;
+                   if (Configuration.DEBUG)
+                   {
+                       NO_WAY("Unsupported number of args for Math Intrinsic");
+                   }
+                   else
+                   {
+                       noWay();
+                   }
+
+                   break;
                 }
             }
 
@@ -15485,7 +15701,15 @@ public partial class Compiler
 
             default:
             {
-                NO_WAY("unknown call kind");
+                if (Configuration.DEBUG)
+                {
+                    NO_WAY("unknown call kind");
+                }
+                else
+                {
+                    noWay();
+                }
+
                 break;
             }
         }
@@ -15515,6 +15739,7 @@ public partial class Compiler
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImporterILOffsetTrackingIsOnlyAvailableInDebugBuilds);
+            return;
         }
 
         if (impLastILoffsStmt is null)
@@ -15926,7 +16151,8 @@ public partial class Compiler
 
         if (impStackHeight < sigInfo.numArgs)
         {
-            BADCODE("not enough arguments for call");
+            debugBadCode("not enough arguments for call");
+            badCode();
         }
 
         Unsafe.SkipInit(out InlineArray16<SigParamInfo> inlineParameters);
@@ -15956,12 +16182,14 @@ public partial class Compiler
             {
                 if (corType is not CORINFO_TYPE_NATIVEINT)
                 {
-                    BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+                    debugBadCode("SecretStubArgument modifier must be applied to a native int parameter");
+                    badCode();
                 }
 
                 if (hasSecretStubArgument)
                 {
-                    BADCODE("Duplicate SecretStubArgument modifier");
+                    debugBadCode("Duplicate SecretStubArgument modifier");
+                    badCode();
                 }
 
                 hasSecretStubArgument = true;
@@ -16014,7 +16242,8 @@ public partial class Compiler
 
             if (!impCheckImplicitArgumentCoercion(jitSigType, argNode.Type))
             {
-                BADCODE("the call argument has a type that can't be implicitly converted to the signature type");
+                debugBadCode("the call argument has a type that can't be implicitly converted to the signature type");
+                badCode();
             }
 
             if (varTypeIsStruct(argNode.Type))
@@ -16074,7 +16303,8 @@ public partial class Compiler
             {
                 if (arg.WellKnownArg is not WellKnownArg.None)
                 {
-                    BADCODE("SecretStubArgument modifier conflicts with another special argument");
+                    debugBadCode("SecretStubArgument modifier conflicts with another special argument");
+                    badCode();
                 }
 
                 arg = arg.WithWellKnownArg(WellKnownArg.SecretStubParam);
@@ -16103,7 +16333,8 @@ public partial class Compiler
     {
         if (stackState.esStackDepth is 0)
         {
-            BADCODE("stack underflow");
+            debugBadCode("stack underflow");
+            badCode();
         }
 
         return stackState.esStack[--stackState.esStackDepth];
@@ -16115,7 +16346,8 @@ public partial class Compiler
     {
         if (stackState.esStackDepth < n)
         {
-            BADCODE("stack underflow");
+            debugBadCode("stack underflow");
+            badCode();
         }
 
         stackState.esStackDepth -= n;
@@ -16799,7 +17031,15 @@ public partial class Compiler
 
             default:
             {
-                unreached();
+                if (Configuration.DEBUG)
+                {
+                    unreached();
+                }
+                else
+                {
+                    noWayAssertBody();
+                }
+
                 break;
             }
         }
@@ -16913,7 +17153,8 @@ public partial class Compiler
 
         if ((stackDepth >= info.compMaxStack) && (stackDepth >= impStkSize || !compCurBB.HasFlag(BBF_IMPORTED)))
         {
-            BADCODE("stack overflow");
+            debugBadCode("stack overflow");
+            badCode();
         }
 
         ref var stackEntry = ref stackState.esStack[stackDepth];
@@ -17230,7 +17471,14 @@ public partial class Compiler
                 }
                 else
                 {
-                    NO_WAY("*** invalid IL: gc ref passed to unmanaged call");
+                   if (Configuration.DEBUG)
+                   {
+                       NO_WAY("*** invalid IL: gc ref passed to unmanaged call");
+                   }
+                   else
+                   {
+                       noWay();
+                   }
                 }
             }
         }
@@ -17291,7 +17539,7 @@ public partial class Compiler
                     (varTypeIsStruct(op2.Type) && varTypeIsStruct(info.compRetType))
                 );
 
-                if (Configuration.DEBUG && !isTailCall && opts.compGcChecks && (info.compRetType == TYP_REF))
+                if (Configuration.DEBUG && !isTailCall && compGcChecks && (info.compRetType == TYP_REF))
                 {
                     // DDB 3483  : JIT Stress: early termination of GC ref's life time in exception code path
                     // VSW 440513: Incorrect gcinfo on the return value under DOTNET_JitGCChecks=1 for methods with
@@ -18010,7 +18258,14 @@ public partial class Compiler
                     }
                     else
                     {
-                        NO_WAY("Bad oper - Not covered by impValidSpilledStackEntry()");
+                        if (Configuration.DEBUG)
+                        {
+                            NO_WAY("Bad oper - Not covered by impValidSpilledStackEntry()");
+                        }
+                        else
+                        {
+                            noWay();
+                        }
                     }
                 }
             }
@@ -19069,7 +19324,15 @@ public partial class Compiler
 
             default:
             {
-                unreached();
+                if (Configuration.DEBUG)
+                {
+                    unreached();
+                }
+                else
+                {
+                    noWayAssertBody();
+                }
+
                 return null;
             }
         }
@@ -19079,7 +19342,8 @@ public partial class Compiler
     {
         if (stackState.esStackDepth <= n)
         {
-            BADCODE("stack underflow");
+            debugBadCode("stack underflow");
+            badCode();
         }
 
         return ref stackState.esStack[stackState.esStackDepth - n - 1];
@@ -20181,7 +20445,8 @@ public partial class Compiler
 
         if (Configuration.DEBUG)
         {
-            BADCODE("Invalid opcode for unaligned. or volatile. prefix");
+            debugBadCode("Invalid opcode for unaligned. or volatile. prefix");
+            badCode();
         }
         else
         {
@@ -20199,7 +20464,8 @@ public partial class Compiler
 
         if (bbIsTryBeg(block) && (block.bbStackDepthOnEntry is not 0))
         {
-            BADCODE("Evaluation stack must be empty on entry into a try block");
+            debugBadCode("Evaluation stack must be empty on entry into a try block");
+            badCode();
         }
 
         // Save the stack contents, we'll need to restore it later

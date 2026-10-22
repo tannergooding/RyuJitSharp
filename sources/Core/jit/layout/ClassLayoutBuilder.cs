@@ -12,7 +12,7 @@ public struct ClassLayoutBuilder
     internal uint _size;
     internal int _gcPtrCount;
     internal SegmentList? _nonPadding;
-    internal ClassLayout.DebugNames? _debugNames;
+    internal Compiler.DebugData.ClassLayoutDebugNames? _debugNames;
 
     public ClassLayoutBuilder(Compiler compiler, uint size)
     {
@@ -223,7 +223,7 @@ public struct ClassLayoutBuilder
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ClassLayoutNamesAreOnlyAvailableInDebugBuilds);
         }
 
-        _debugNames = new ClassLayout.DebugNames { ClassName = name, ShortClassName = shortName };
+        _debugNames = new Compiler.DebugData.ClassLayoutDebugNames { ClassName = name, ShortClassName = shortName };
     }
 
     /// <summary>Get the non padding segment list, or create it if it does not exist.</summary>

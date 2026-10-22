@@ -67,7 +67,7 @@ internal static unsafe class RegisterEligibilityTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_REGVAR;
         compiler.lvaTable = new LclVarDsc[1];
         compiler.lvaCount = 1;

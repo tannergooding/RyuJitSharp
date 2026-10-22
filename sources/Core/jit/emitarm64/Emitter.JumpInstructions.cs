@@ -5,6 +5,8 @@
 
 using static RyuJitSharp.Emitter.insFormat;
 
+using static RyuJitSharp.Emitter.EmitterStatistics;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -67,7 +69,7 @@ public partial class Emitter
             assert(_compiler is not null);
             assert(_compiler.compCurBB is not null);
             id.idjKeepLong = (ins == INS_bl) || _compiler.fgInDifferentRegions(_compiler.compCurBB, dst);
-            if (Configuration.DEBUG && _compiler!.opts.compLongAddress)
+            if (Configuration.DEBUG && _compiler!.compLongAddress)
             {
                 id.idjKeepLong = true;
             }

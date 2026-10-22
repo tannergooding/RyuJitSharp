@@ -196,7 +196,7 @@ internal static class Arm32JumpRecordingTests
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
-            compiler.opts.compLongAddress = true;
+            compiler.compLongAddress = true;
             var jump = RecordJump(codeGen.Emitter, INS_b, Label());
 
             Assert.That(jump.idjKeepLong, Is.True);

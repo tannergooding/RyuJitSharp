@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
@@ -51,6 +52,11 @@ internal static unsafe class CodeGenLabelTests
             else
             {
                 Assert.That(label.bbTgtStkDepth, Is.Zero);
+                var fields = typeof(BasicBlock).GetFields(
+                    BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                Assert.That(fields.Select(field => field.Name), Does.Not.Contain("bbTgtStkDepth"));
+                Assert.That(fields.Select(field => field.Name), Does.Not.Contain("bbTraversalStamp"));
+                Assert.That(fields.Select(field => field.Name), Does.Not.Contain("s_nMaxTrees"));
             }
         });
     }
@@ -221,7 +227,7 @@ internal static unsafe class CodeGenLabelTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.compHndBBtab = [];
         if (TestConfiguration.IsDebug)
         {

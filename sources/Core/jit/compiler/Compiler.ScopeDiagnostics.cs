@@ -16,6 +16,7 @@ public partial class Compiler
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScopeDiagnosticsAreOnlyAvailableInDebugBuilds);
+            return;
         }
 
         jitprintf(string.Create(CultureInfo.InvariantCulture,
@@ -30,7 +31,7 @@ public partial class Compiler
         {
             ref var scope = ref compEnterScopeList(index);
             assert(!Unsafe.IsNullRef(in scope));
-            var name = scope.vsdName ?? "UNKNOWN";
+            var name = GetVarScopeName(compEnterScopeIndices[index]) ?? "UNKNOWN";
             // Native %10s pads by bytes; the dump writer emits UTF-8.
             var paddedName = new string(' ', int.Max(0, 10 - Encoding.UTF8.GetByteCount(name))) + name;
             jitprintf(string.Create(CultureInfo.InvariantCulture,
@@ -47,7 +48,7 @@ public partial class Compiler
         {
             ref var scope = ref compExitScopeList(index);
             assert(!Unsafe.IsNullRef(in scope));
-            var name = scope.vsdName ?? "UNKNOWN";
+            var name = GetVarScopeName(compExitScopeIndices[index]) ?? "UNKNOWN";
             var paddedName = new string(' ', int.Max(0, 10 - Encoding.UTF8.GetByteCount(name))) + name;
             jitprintf(string.Create(CultureInfo.InvariantCulture,
                 $"{index,2}: \t{scope.vsdVarNum:X2}h \t{scope.vsdLVnum:X2}h \t{paddedName} \t{scope.vsdLifeBeg:X3}h   \t{scope.vsdLifeEnd:X3}h"));

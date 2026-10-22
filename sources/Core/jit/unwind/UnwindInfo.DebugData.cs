@@ -4,27 +4,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-using System.Runtime.CompilerServices;
-
 namespace RyuJitSharp;
 
 public sealed partial class UnwindInfo
 {
-    private sealed class DebugData
-    {
-        private static ConditionalWeakTable<UnwindInfo, DebugData>? s_instances;
-
-        internal bool AddingNOP;
-        internal bool Initialized;
-
-        internal static DebugData Get(UnwindInfo unwindInfo)
-        {
-            var instances = LazyStatic.GetOrCreate(ref s_instances);
-            return instances.GetValue(unwindInfo, static _ => new DebugData());
-        }
-    }
-
     public bool uwiAddingNOP
     {
         get
@@ -34,7 +17,7 @@ public sealed partial class UnwindInfo
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindNOPDiagnosticsAreOnlyAvailableInDebugBuilds);
             }
 
-            return DebugData.Get(this).AddingNOP;
+            return GetDebugData().AddingNOP;
         }
 
         set
@@ -50,7 +33,7 @@ public sealed partial class UnwindInfo
             }
             else
             {
-                DebugData.Get(this).AddingNOP = false;
+                GetDebugData().AddingNOP = false;
             }
         }
     }
@@ -64,7 +47,7 @@ public sealed partial class UnwindInfo
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindInitializationStateIsOnlyAvailableInDebugBuilds);
             }
 
-            return DebugData.Get(this).Initialized;
+            return GetDebugData().Initialized;
         }
 
         set
@@ -80,10 +63,13 @@ public sealed partial class UnwindInfo
             }
             else
             {
-                DebugData.Get(this).Initialized = false;
+                GetDebugData().Initialized = false;
             }
         }
     }
 
-    private DebugData GetDebugData() => DebugData.Get(this);
+    private Compiler.DebugData.UnwindInfoDebugData GetDebugData()
+    {
+        return Compiler.DebugData.Get(this);
+    }
 }

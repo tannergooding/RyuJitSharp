@@ -343,7 +343,7 @@ internal static unsafe class CodeGenSharedScopePublicationTests
         compiler.info.compMethodHnd = &method;
         compiler.info.compMethodInfo = &methodInfo;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compScopeInfo = true;
         compiler.opts.compDbgInfo = true;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;

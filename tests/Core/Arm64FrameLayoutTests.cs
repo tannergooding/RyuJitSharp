@@ -267,7 +267,7 @@ internal static unsafe class Arm64FrameLayoutTests
             Assert.That(compiler.unkSizeFrame.nMask, Is.Zero);
             Assert.That(compiler.unkSizeFrame.FrameSizeInVectors(), Is.EqualTo(2u));
             Assert.That(compiler.compLclFrameSize, Is.EqualTo(fixedFrameSize));
-            Assert.That(compiler.unkSizeFrame.GetAddressingOffset(in compiler.lvaTable[0]),
+            Assert.That(compiler.unkSizeFrame.GetAddressingOffset(compiler, in compiler.lvaTable[0]),
                 Is.EqualTo(-1));
 
             var temps = 0;
@@ -279,7 +279,7 @@ internal static unsafe class Arm64FrameLayoutTests
                 }
                 else
                 {
-                    Assert.That(compiler.unkSizeFrame.GetAddressingOffset(temp), Is.EqualTo(-2));
+                    Assert.That(compiler.unkSizeFrame.GetAddressingOffset(compiler, temp), Is.EqualTo(-2));
                 }
                 temps++;
             }
@@ -305,18 +305,20 @@ internal static unsafe class Arm64FrameLayoutTests
     public static void UnknownFrameBookkeepingPadsTheMaskBlock(int maskCount, int maskVectors)
     {
         Assume.That(Configuration.TARGET_ARM64);
-        Compiler.UnknownSizeFrame frame = default;
-        for (var index = 0; index < maskCount; index++)
-        {
-            Assert.That(frame.AllocMask(), Is.EqualTo((uint)index));
-        }
+        WithFrame((compiler, _) => {
+            for (var index = 0; index < maskCount; index++)
+            {
+                Assert.That(compiler.unkSizeFrame.AllocMask(compiler), Is.EqualTo((uint)index));
+            }
 
-        var vectorIndex = frame.AllocVector();
-        frame.FinalizeLayout();
-        Assert.That(frame.MaskBlockSizeInVectors(), Is.EqualTo((uint)maskVectors));
-        Assert.That(frame.FrameSizeInVectors(), Is.EqualTo((uint)maskVectors + 1));
-        Assert.That(frame.GetOffset((uint)maskCount - 1, isMask: true), Is.EqualTo(-maskCount));
-        Assert.That(frame.GetOffset(vectorIndex), Is.EqualTo(-maskVectors - 1));
+            var vectorIndex = compiler.unkSizeFrame.AllocVector(compiler);
+            compiler.unkSizeFrame.FinalizeLayout(compiler);
+            Assert.That(compiler.unkSizeFrame.MaskBlockSizeInVectors(), Is.EqualTo((uint)maskVectors));
+            Assert.That(compiler.unkSizeFrame.FrameSizeInVectors(), Is.EqualTo((uint)maskVectors + 1));
+            Assert.That(compiler.unkSizeFrame.GetOffset(compiler, (uint)maskCount - 1, isMask: true),
+                Is.EqualTo(-maskCount));
+            Assert.That(compiler.unkSizeFrame.GetOffset(compiler, vectorIndex), Is.EqualTo(-maskVectors - 1));
+        });
     }
 
     [Test]
@@ -393,7 +395,7 @@ internal static unsafe class Arm64FrameLayoutTests
         compiler.info.compMethodInfo = &methodInfo;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.opts.compJitSaveFpLrWithCalleeSavedRegisters = 1;
         TestConfiguration.SetCompilerFullName(compiler, nameof(Arm64FrameLayoutTests));
         compiler.lvaTable = [NewLocal(TYP_LONG), NewLocal(TYP_STRUCT)];

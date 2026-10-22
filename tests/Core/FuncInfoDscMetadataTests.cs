@@ -291,13 +291,13 @@ internal static class FuncInfoDscMetadataTests
         using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         JitTls.Compiler = compiler;
         var stdout = s_jitstdout;
-        var logFailed = LogToEeFailed();
+        var logFailed = Compiler.DebugData.s_logToEEfailed;
         using var output = new MemoryStream();
         using var writer = new TraceWriter(output, compiler);
         try
         {
             s_jitstdout = writer;
-            LogToEeFailed() = true;
+            Compiler.DebugData.s_logToEEfailed = true;
             compiler.compFuncInfos[1].ensureUnwindableFrame(compiler);
             compiler.compFuncInfos[1].ensureUnwindableFrame(compiler);
             writer.Flush();
@@ -310,12 +310,9 @@ internal static class FuncInfoDscMetadataTests
         finally
         {
             s_jitstdout = stdout;
-            LogToEeFailed() = logFailed;
+            Compiler.DebugData.s_logToEEfailed = logFailed;
         }
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_logToEEfailed")]
-    private static extern ref bool LogToEeFailed();
 
     private sealed class TraceWriter : StreamWriter
     {

@@ -24,7 +24,7 @@ internal static unsafe class ShiftRotateLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.fgNodeThreading = NodeThreading.LIR;
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);

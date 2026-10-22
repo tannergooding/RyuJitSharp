@@ -274,7 +274,7 @@ internal static unsafe class Arm64CallOutputTests
         compiler.info.compIsStatic = true;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaTrackedCount = 1;
         compiler.lvaTrackedCountInSizeTUnits = 1;
         JitTls.Compiler = compiler;

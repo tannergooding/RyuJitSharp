@@ -25,8 +25,6 @@ public partial class Compiler
 
     public unsafe ASSERT_TP? apLocalIfTrue;
 
-    private static ConfigMethodRange s_jitEnableCrossBlockLocalAssertionPropRange;
-
     public AssertionIndex AssertionCount => optAssertionCount;
 
     public static nint optCastConstantSmall(nint iconVal, var_types smallType)
@@ -164,8 +162,9 @@ public partial class Compiler
 
             if (Configuration.DEBUG)
             {
-                s_jitEnableCrossBlockLocalAssertionPropRange.EnsureInit(JitConfig.JitEnableCrossBlockLocalAssertionPropRange);
-                if (!s_jitEnableCrossBlockLocalAssertionPropRange.Contains(info.compMethodHash()))
+                DebugData.MethodRangeData.s_jitEnableCrossBlockLocalAssertionPropRange.EnsureInit(
+                    JitConfig.JitEnableCrossBlockLocalAssertionPropRange);
+                if (!DebugData.MethodRangeData.s_jitEnableCrossBlockLocalAssertionPropRange.Contains(info.compMethodHash()))
                 {
                     JITDUMP("Disabling cross-block assertion prop by config range\n");
                     optCrossBlockLocalAssertionProp = false;

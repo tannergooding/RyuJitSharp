@@ -400,7 +400,7 @@ internal static unsafe class ObjectAllocatorEscapeAnalysisTests
 
     private static void SetConfig(ref object config, string name, int value)
     {
-        var field = typeof(JitConfigValues).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)
+        var field = TestConfiguration.GetJitConfigField(name, BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException($"Missing {name}");
         field.SetValue(config, value);
     }

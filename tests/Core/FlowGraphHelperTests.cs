@@ -69,7 +69,7 @@ internal static unsafe class FlowGraphHelperTests
             ];
             compiler.lvaCount = 3;
             compiler.info.compArgsCount = 3;
-            compiler.opts.compGcChecks = true;
+            compiler.compGcChecks = true;
             ee->InitClassResult = initializeClass ? CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER : 0;
             Assert.That(compiler.fgMorphInit(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
 
@@ -517,7 +517,7 @@ internal static unsafe class FlowGraphHelperTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.info.compMethodHnd = (CORINFO_METHOD_STRUCT_*)0x1000;
         compiler.info.compClassHnd = (CORINFO_CLASS_STRUCT_*)0x2000;
         compiler.info.compThisArg = 0;

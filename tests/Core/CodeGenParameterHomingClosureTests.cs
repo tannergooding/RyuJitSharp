@@ -359,7 +359,7 @@ internal static unsafe class CodeGenParameterHomingClosureTests
         JitFlags flags = default;
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.info.compMethodInfo = &methodInfo;
         compiler.info.compIsStatic = true;
         compiler.info.compTypeCtxtArg = BAD_VAR_NUM;

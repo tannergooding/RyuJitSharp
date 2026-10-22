@@ -186,7 +186,7 @@ public partial class Compiler
             var cfiCodes = codes is null ? default : CollectionsMarshal.AsSpan(codes);
             var unwindCodeBytes = unchecked(cfiCodes.Length * 8);
 
-            if (Configuration.DEBUG && opts.dspUnwind)
+            if (Configuration.DEBUG && dspUnwind)
             {
                 DumpCfiInfo(isHotCode, startOffset, endOffset, cfiCodes);
             }
@@ -241,7 +241,7 @@ public partial class Compiler
                 noway_assert(unwindCodeBytes == 4 + (unwindCodes[func.unwindCodeSlot + 2] * 2));
             }
 
-            if (Configuration.DEBUG && opts.dspUnwind)
+            if (Configuration.DEBUG && dspUnwind)
             {
                 DumpUnwindInfo(isHotCode, startOffset, endOffset, unwindCodes, func.unwindCodeSlot);
             }

@@ -856,7 +856,7 @@ internal static unsafe class CallArgumentMorphTests
             compiler.info.compFullName = "TailCaller";
             var call = compiler.gtNewCallNode(TYP_VOID, CT_INDIRECT, null);
             call.ControlExpr = compiler.gtNewIconNode(TYP_I_IMPL, 1);
-            var reportField = typeof(JitConfigValues).GetField("_jitReportFastTailCallDecisions", BindingFlags.Instance | BindingFlags.NonPublic)
+            var reportField = TestConfiguration.GetJitConfigField("_jitReportFastTailCallDecisions", BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("Missing fast-tail-call reporting setting.");
             var previousConfig = JitConfig;
             object config = previousConfig;
@@ -901,7 +901,7 @@ internal static unsafe class CallArgumentMorphTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.lvaTable = new LclVarDsc[3];
         compiler.lvaCount = 3;
         compiler.virtualStubParamInfo = new Compiler.VirtualStubParamInfo();

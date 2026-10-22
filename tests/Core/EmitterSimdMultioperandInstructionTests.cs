@@ -867,7 +867,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
             if (TestConfiguration.IsDebug)
             {
-                compiler.opts.compEnablePCRelAddr = true;
+                compiler.compEnablePCRelAddr = true;
                 codeGen.Emitter.emitVarRefOffs = 0x1234;
             }
             action(compiler, codeGen.Emitter);

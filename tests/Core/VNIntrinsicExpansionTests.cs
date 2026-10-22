@@ -414,7 +414,7 @@ internal static unsafe class VNIntrinsicExpansionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.info = new Compiler.Info { compCompHnd = &ee };
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.info.compMethodInfo = &methodInfo;

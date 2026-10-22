@@ -376,7 +376,7 @@ internal static unsafe class FastTailCallLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.lvaTable = [new LclVarDsc()];
         var block = new BasicBlock(null, null) { Kind = BBJ_RETURN };

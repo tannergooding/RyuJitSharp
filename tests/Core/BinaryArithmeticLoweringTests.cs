@@ -736,7 +736,7 @@ internal sealed unsafe class BinaryArithmeticLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;

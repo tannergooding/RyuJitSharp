@@ -31,7 +31,7 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        if (opts.MinOpts)
+        if (MinOpts)
         {
             JITDUMP("Method compiled with MinOpts, no removal.\n");
             return PhaseStatus.MODIFIED_NOTHING;
@@ -127,8 +127,7 @@ public partial class Compiler
                             assert(block.isBBCallFinallyPair);
                             if (block != callFinally)
                             {
-                                JITDUMP($"EH#{xtnum} found unexpected (likely unreachable) " +
-                                    $"callfinally {FMT_BB(block.bbNum)}; skipping.\n");
+                                JITDUMP($"EH#{xtnum} found unexpected (likely unreachable) " + $"callfinally {FMT_BB(block.bbNum)}; skipping.\n");
                                 singleCallFinally = false;
                                 break;
                             }

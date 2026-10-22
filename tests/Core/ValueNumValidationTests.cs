@@ -25,20 +25,14 @@ internal static unsafe class ValueNumValidationTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(_ =>
         {
-            var field = typeof(VNFuncExtensions).GetField("s_attribs", BindingFlags.Static | BindingFlags.NonPublic)
-                ?? throw new MissingFieldException(nameof(VNFuncExtensions), "s_attribs");
-            if (field.GetValue(null) is not ValueNumStore.VNFOpAttrib[] attributes)
-            {
-                throw new InvalidOperationException("Missing VN attribute table.");
-            }
-
+            var attributes = VNFuncExtensions.Attributes.ToArray();
             ValueNumStore.ValidateValueNumStoreStatics();
             Assert.That(s_assertions, Is.Zero);
             var previous = attributes[(int)func];
             try
             {
                 attributes[(int)func] ^= (ValueNumStore.VNFOpAttrib)mask;
-                ValueNumStore.ValidateValueNumStoreStatics();
+                ValueNumStore.ValidateValueNumStoreStatics(attributes);
                 Assert.That(s_assertions, Is.EqualTo(1));
             }
             finally
@@ -47,6 +41,7 @@ internal static unsafe class ValueNumValidationTests
             }
         });
     }
+
     [Test]
     public static void StaticValidationReportsUnexpectedAttributeTableLength()
     {
@@ -59,7 +54,6 @@ internal static unsafe class ValueNumValidationTests
         Assert.That(exception.Message, Does.Contain(
             "Value number attribute table has an unexpected length."));
     }
-
 
     [Test]
     public static void StaticValidationDoesNotAllocateWhenDebugIsDisabled()
@@ -111,18 +105,19 @@ internal static unsafe class ValueNumValidationTests
             var store = new ValueNumStore(compiler);
             compiler.vnStore = store;
             var previousSetting = ComponentTestSetting(ref JitConfig);
-            var previousRun = DidComponentUnitTests(compiler);
+            var debugData = Compiler.DebugData.Get(compiler);
+            var previousRun = DidComponentUnitTests(debugData);
             try
             {
-                DidComponentUnitTests(compiler) = false;
+                DidComponentUnitTests(debugData) = false;
                 ComponentTestSetting(ref JitConfig) = 0;
                 compiler.compDoComponentUnitTestsOnce();
-                Assert.That(DidComponentUnitTests(compiler), Is.False);
+                Assert.That(DidComponentUnitTests(debugData), Is.False);
                 Assert.That(s_assertions, Is.Zero, s_lastAssertion);
 
                 ComponentTestSetting(ref JitConfig) = 1;
                 compiler.compDoComponentUnitTestsOnce();
-                Assert.That(DidComponentUnitTests(compiler), Is.True);
+                Assert.That(DidComponentUnitTests(debugData), Is.True);
                 Assert.That(compiler.vnStore, Is.SameAs(store));
                 Assert.That(s_assertions, Is.EqualTo(1), s_lastAssertion);
                 Assert.That(s_lastAssertion, Does.Contain("application.GetArg(0) == one"));
@@ -132,7 +127,7 @@ internal static unsafe class ValueNumValidationTests
             finally
             {
                 ComponentTestSetting(ref JitConfig) = previousSetting;
-                DidComponentUnitTests(compiler) = previousRun;
+                DidComponentUnitTests(debugData) = previousRun;
             }
         });
     }
@@ -147,7 +142,7 @@ internal static unsafe class ValueNumValidationTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.info.compFullName = nameof(ValueNumValidationTests);
         JitTls.Compiler = compiler;
         s_assertions = 0;
@@ -173,9 +168,9 @@ internal static unsafe class ValueNumValidationTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "VNOneForType")]
     private static extern int VNOneForType(ValueNumStore store, var_types type);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_runComponentUnitTests")]
-    private static extern ref int ComponentTestSetting(ref JitConfigValues config);
+    private static ref int ComponentTestSetting(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._runComponentUnitTests;
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_didComponentUnitTests")]
-    private static extern ref bool DidComponentUnitTests(Compiler compiler);
+    private static extern ref bool DidComponentUnitTests(Compiler.DebugData debugData);
 }

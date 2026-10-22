@@ -671,7 +671,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
         JitTls.Compiler = compiler;
         try

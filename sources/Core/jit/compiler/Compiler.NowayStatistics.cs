@@ -12,17 +12,25 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private static NowayAssertMap? s_nowayAssertMap;
+    internal static partial class MeasurementData
+    {
+        internal static class NowayAssertData
+        {
+            internal static NowayAssertMap? Map;
+        }
+    }
 
     public void RecordNowayAssert(ReadOnlySpan<char> filePath, int lineNumber, ReadOnlySpan<char> message)
     {
-        s_nowayAssertMap ??= new NowayAssertMap();
-        s_nowayAssertMap.Record(filePath.ToString(), unchecked((uint)lineNumber), message.ToString());
+        MeasurementData.NowayAssertData.Map ??= new NowayAssertMap();
+        MeasurementData.NowayAssertData.Map.Record(
+            filePath.ToString(), unchecked((uint)lineNumber), message.ToString());
     }
 
     internal static unsafe void DisplayNowayAssertMap()
     {
-        if (s_nowayAssertMap is null)
+        var map = MeasurementData.NowayAssertData.Map;
+        if (map is null)
         {
             return;
         }
@@ -51,8 +59,9 @@ public partial class Compiler
 
     private static void PrintNowayAssertMap(StreamWriter output, bool includeHeader)
     {
-        assert(s_nowayAssertMap is not null);
-        var entries = s_nowayAssertMap.Snapshot();
+        var map = MeasurementData.NowayAssertData.Map;
+        assert(map is not null);
+        var entries = map.Snapshot();
         SortNative(entries.AsSpan(), new NowayAssertCountLess());
 
         if (includeHeader)

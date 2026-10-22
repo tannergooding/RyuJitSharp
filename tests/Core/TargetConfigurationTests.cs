@@ -5,6 +5,9 @@ using System.Globalization;
 using System.Reflection;
 using System.Xml;
 using NUnit.Framework;
+using CoreGlobals = RyuJitSharpCore::RyuJitSharp.Globals;
+using CoreRegMask = RyuJitSharpCore::RyuJitSharp.regMask;
+using CoreRegNumber = RyuJitSharpCore::RyuJitSharp.regNumber;
 using TargetDefinition = RyuJitSharpCore::RyuJitSharp.Target;
 
 namespace RyuJitSharp.UnitTests;
@@ -50,6 +53,44 @@ internal static class TargetConfigurationTests
         Assert.That(TargetOS.IsWindows, Is.EqualTo(Configuration.TARGET_WINDOWS));
         Assert.That(TargetOS.IsUnix, Is.EqualTo(Configuration.TARGET_UNIX));
         Assert.That(TargetOS.IsApplePlatform, Is.EqualTo(Configuration.TARGET_APPLE));
+    }
+
+    [Test]
+    public static void ExceptionObjectRegisterMappingPreservesTargetAndAbiAliases()
+    {
+        var expectedRegister = Configuration.TARGET_X86
+            ? CoreRegNumber.REG_X86_EAX
+            : Configuration.TARGET_AMD64
+                ? Configuration.UNIX_AMD64_ABI ? CoreRegNumber.REG_X64_EDI : CoreRegNumber.REG_X64_ECX
+                : Configuration.TARGET_ARM
+                    ? CoreRegNumber.REG_ARM32_R0
+                    : Configuration.TARGET_ARM64
+                        ? CoreRegNumber.REG_ARM64_R0
+                        : Configuration.TARGET_LOONGARCH64
+                            ? CoreRegNumber.REG_LOONGARCH64_A0
+                            : Configuration.TARGET_RISCV64
+                                ? CoreRegNumber.REG_RISCV64_A0
+                                : Configuration.TARGET_WASM
+                                    ? CoreRegNumber.REG_WASM_NA
+                                    : throw new InvalidOperationException("Unsupported target architecture.");
+        var expectedMask = Configuration.TARGET_X86
+            ? CoreRegMask.SRBM_X86_EAX
+            : Configuration.TARGET_AMD64
+                ? Configuration.UNIX_AMD64_ABI ? CoreRegMask.SRBM_X64_EDI : CoreRegMask.SRBM_X64_ECX
+                : Configuration.TARGET_ARM
+                    ? CoreRegMask.SRBM_ARM32_R0
+                    : Configuration.TARGET_ARM64
+                        ? CoreRegMask.SRBM_ARM64_R0
+                        : Configuration.TARGET_LOONGARCH64
+                            ? CoreRegMask.SRBM_LOONGARCH64_A0
+                            : Configuration.TARGET_RISCV64
+                                ? CoreRegMask.SRBM_RISCV64_A0
+                                : Configuration.TARGET_WASM
+                                    ? CoreRegMask.SRBM_NONE
+                                    : throw new InvalidOperationException("Unsupported target architecture.");
+
+        Assert.That(CoreGlobals.REG_EXCEPTION_OBJECT, Is.EqualTo(expectedRegister));
+        Assert.That(CoreGlobals.SRBM_EXCEPTION_OBJECT, Is.EqualTo(expectedMask));
     }
 
     [Test]

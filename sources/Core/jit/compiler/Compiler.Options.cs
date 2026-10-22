@@ -7,6 +7,398 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public bool MinOpts
+    {
+        get
+        {
+            assert(opts.compMinOptsIsSet);
+            if (Configuration.DEBUG)
+            {
+                GetDebugData().CompMinOptsIsUsed = true;
+            }
+
+            return opts.compMinOpts;
+        }
+    }
+
+    public unsafe void SetMinOpts(bool val)
+    {
+        if (Configuration.DEBUG)
+        {
+            assert(!GetDebugData().CompMinOptsIsUsed);
+            assert(!opts.compMinOptsIsSet || (opts.compMinOpts == val));
+        }
+
+        opts.compMinOpts = val;
+        opts.compMinOptsIsSet = true;
+        opts.canUseTier0Opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_MIN_OPT);
+        opts.canUseAllOpts = opts.canUseTier0Opts && !val;
+    }
+
+    public bool compAllowStress
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().CompAllowStress;
+        }
+
+        set
+        {
+            if (Configuration.DEBUG)
+            {
+                GetDebugData().CompAllowStress = value;
+            }
+        }
+    }
+
+    internal bool compGcChecks
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().CompGcChecks;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDebugDataIsOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().CompGcChecks = value;
+        }
+    }
+
+    internal bool compEnablePCRelAddr
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().CompEnablePCRelAddr;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDebugDataIsOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().CompEnablePCRelAddr = value;
+        }
+    }
+
+    internal bool compProcedureSplittingEH
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().CompProcedureSplittingEH;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDebugDataIsOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().CompProcedureSplittingEH = value;
+        }
+    }
+
+    internal bool dspCode
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DspCode;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DspCode = value;
+        }
+    }
+
+    internal bool dspEHTable
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DspEHTable;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DspEHTable = value;
+        }
+    }
+
+    internal bool dspDebugInfo
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DspDebugInfo;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DspDebugInfo = value;
+        }
+    }
+
+    internal bool dspInstrs
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DspInstrs;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DspInstrs = value;
+        }
+    }
+
+    internal bool dspLines
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DspLines;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DspLines = value;
+        }
+    }
+
+    internal bool varNames
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().VarNames;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().VarNames = value;
+        }
+    }
+
+    internal bool disAsmSpilled
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DisAsmSpilled;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DisAsmSpilled = value;
+        }
+    }
+
+    internal bool disasmWithGC
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DisasmWithGC;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DisasmWithGC = value;
+        }
+    }
+
+    internal bool disAddr
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DisAddr;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DisAddr = value;
+        }
+    }
+
+    internal bool disAsm2
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DisAsm2;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DisAsm2 = value;
+        }
+    }
+
+    internal bool dspOrder
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DspOrder;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DspOrder = value;
+        }
+    }
+
+    internal bool dspUnwind
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DspUnwind;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DspUnwind = value;
+        }
+    }
+
+    internal bool compLongAddress
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().CompLongAddress;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDebugDataIsOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().CompLongAddress = value;
+        }
+    }
+
+    internal bool dspGCtbls
+    {
+        get
+        {
+            return (Configuration.DUMP_GC_TABLES && !Configuration.DEBUG) ||
+                (Configuration.DEBUG && GetDebugData().DspGCtbls);
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DspGCtbls = value;
+        }
+    }
+
+    internal bool dspMetrics
+    {
+        get
+        {
+            return Configuration.DEBUG && GetDebugData().DspMetrics;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().DspMetrics = value;
+        }
+    }
+
+    internal bool compJitAlignLoopForJcc
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopAlignmentDiagnosticOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            return GetDebugData().CompJitAlignLoopForJcc;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopAlignmentDiagnosticOptionsAreOnlyAvailableInDebugBuilds);
+            }
+
+            GetDebugData().CompJitAlignLoopForJcc = value;
+        }
+    }
+
     public struct Options
     {
         /// <summary>All flags passed from the EE</summary>
@@ -52,21 +444,6 @@ public partial class Compiler
 
         public bool compMinOptsIsSet;
 
-        public bool compMinOptsIsUsed;
-
-        public bool MinOpts
-        {
-            get
-            {
-                assert(compMinOptsIsSet);
-                if (Configuration.DEBUG)
-                {
-                    compMinOptsIsUsed = true;
-                }
-                return compMinOpts;
-            }
-        }
-
         public readonly bool IsMinOptsSet => compMinOptsIsSet;
 
         // TODO: we should convert these into a single OptimizationLevel
@@ -95,24 +472,6 @@ public partial class Compiler
                 assert(compMinOptsIsSet);
                 return canUseTier0Opts;
             }
-        }
-
-        public unsafe void SetMinOpts(bool val)
-        {
-            if (Configuration.DEBUG)
-            {
-                assert(!compMinOptsIsUsed);
-            }
-            if (Configuration.DEBUG)
-            {
-                assert(!compMinOptsIsSet || (compMinOpts == val));
-            }
-
-            compMinOpts = val;
-            compMinOptsIsSet = true;
-
-            canUseTier0Opts = !compDbgCode && !jitFlags->IsSet(JitFlags.JIT_FLAG_MIN_OPT);
-            canUseAllOpts = canUseTier0Opts && !val;
         }
 
         /// <summary>true if the CLFLG_* for an optimization is set</summary>
@@ -206,14 +565,8 @@ public partial class Compiler
 
         public bool compNoPInvokeInlineCB;
 
-        /// <summary>Check arguments and return values to ensure they are sane</summary>
-        public bool compGcChecks;
-
         /// <summary>Generate relocs for pointers in code, true for all AOT codegen</summary>
         public bool compReloc;
-
-        /// <summary>Whether absolute addr be encoded as PC-rel offset by RyuJIT where possible</summary>
-        public bool compEnablePCRelAddr;
 
         /// <summary>This flag is indicating if there is a need to align the frame.</summary>
         /// <remarks>
@@ -269,144 +622,6 @@ public partial class Compiler
 
         /// <summary>Display instruction code bytes in disassembly code</summary>
         public bool disCodeBytes; 
-
-        /// <summary>Separate cold code from hot code for functions with EH</summary>
-        public bool compProcedureSplittingEH;
-
-        /// <summary>Display native code generated</summary>
-        private bool _dspCode;
-        public bool dspCode
-        {
-            readonly get
-            {
-                return Configuration.DEBUG && _dspCode;
-            }
-
-            set
-            {
-                if (!Configuration.DEBUG)
-                {
-                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
-                }
-
-                _dspCode = value;
-            }
-        }
-
-        /// <summary>Display the EH table reported to the VM</summary>
-        private bool _dspEHTable;
-        public bool dspEHTable
-        {
-            readonly get
-            {
-                return Configuration.DEBUG && _dspEHTable;
-            }
-
-            set
-            {
-                if (!Configuration.DEBUG)
-                {
-                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
-                }
-
-                _dspEHTable = value;
-            }
-        }
-
-        /// <summary>Display the Debug info reported to the VM</summary>
-        public bool dspDebugInfo;
-
-        /// <summary>Display the IL instructions intermixed with the native code output</summary>
-        public bool dspInstrs;
-
-        /// <summary>Display source-code lines intermixed with native code output</summary>
-        public bool dspLines;
-
-        /// <summary>Display variables names in native code output</summary>
-        public bool varNames;
-
-        /// <summary>Display native code when any register spilling occurs</summary>
-        public bool disAsmSpilled;
-
-        /// <summary>Display GC info interleaved with disassembly.</summary>
-        public bool disasmWithGC;
-
-        /// <summary>Display process address next to each instruction in disassembly code</summary>
-        public bool disAddr;
-
-        /// <summary>Display native code after it is generated using external disassembler</summary>
-        public bool disAsm2;
-
-        /// <summary>Display names of each of the methods that we compile</summary>
-        public bool dspOrder;
-
-        /// <summary>Display the unwind info output</summary>
-        public bool dspUnwind;
-
-        /// <summary>Force using large pseudo instructions for long address (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)</summary>
-        public bool compLongAddress;
-
-        /// <summary>Display the GC tables</summary>
-        private bool _dspGCtbls;
-        public bool dspGCtbls
-        {
-            readonly get
-            {
-                return (Configuration.DUMP_GC_TABLES && !Configuration.DEBUG) || _dspGCtbls;
-            }
-
-            set
-            {
-                _dspGCtbls = value;
-            }
-        }
-
-        /// <summary>Display metrics</summary>
-        private bool _dspMetrics;
-        public bool dspMetrics
-        {
-            readonly get
-            {
-                return Configuration.DEBUG && _dspMetrics;
-            }
-
-            set
-            {
-                if (!Configuration.DEBUG)
-                {
-                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
-                }
-
-                _dspMetrics = value;
-            }
-        }
-
-        private bool _compJitAlignLoopForJcc;
-
-        public bool compJitAlignLoopForJcc
-        {
-            readonly get
-            {
-                if (Configuration.DEBUG)
-                {
-                    return _compJitAlignLoopForJcc;
-                }
-
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopAlignmentDiagnosticOptionsAreOnlyAvailableInDebugBuilds);
-                return default;
-            }
-
-            set
-            {
-                if (Configuration.DEBUG)
-                {
-                    _compJitAlignLoopForJcc = value;
-                    return;
-                }
-
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopAlignmentDiagnosticOptionsAreOnlyAvailableInDebugBuilds);
-            }
-        }
 
         /// <summary>For non-adaptive alignment, minimum loop size (in bytes) for which alignment will be done.</summary>
         public ushort compJitAlignLoopMaxCodeSize;

@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.Emitter.EmitterStatistics;
 
 namespace RyuJitSharp;
 
@@ -98,15 +99,6 @@ public partial class Emitter
         unreached();
         return default;
     }
-
-    private static class DebugJumpSelector
-    {
-#pragma warning disable CA1802 // Keep the native debug selector non-constant so disabled tracing has no unreachable branches.
-        internal static readonly int INTERESTING_JUMP_NUM = -1;
-#pragma warning restore CA1802
-    }
-
-    private static uint emitTotalIGjmps;
 
     public void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
     {
@@ -353,10 +345,10 @@ public partial class Emitter
                 {
                     var debugInfo = id.idDebugOnlyInfo();
                     assert(debugInfo is not null);
-                    if ((debugInfo.idNum == unchecked((uint)DebugJumpSelector.INTERESTING_JUMP_NUM)) ||
-                        (DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
+                    if ((debugInfo.idNum == unchecked((uint)global::RyuJitSharp.Compiler.DebugData.DebugJumpSelector.INTERESTING_JUMP_NUM)) ||
+                        (global::RyuJitSharp.Compiler.DebugData.DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
                     {
-                        if (DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
+                        if (global::RyuJitSharp.Compiler.DebugData.DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
                         {
                             jitprintf($"[0] Jump {debugInfo.idNum}:\n");
                         }
@@ -381,10 +373,10 @@ public partial class Emitter
                 {
                     var debugInfo = id.idDebugOnlyInfo();
                     assert(debugInfo is not null);
-                    if ((debugInfo.idNum == unchecked((uint)DebugJumpSelector.INTERESTING_JUMP_NUM)) ||
-                        (DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
+                    if ((debugInfo.idNum == unchecked((uint)global::RyuJitSharp.Compiler.DebugData.DebugJumpSelector.INTERESTING_JUMP_NUM)) ||
+                        (global::RyuJitSharp.Compiler.DebugData.DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
                     {
-                        if (DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
+                        if (global::RyuJitSharp.Compiler.DebugData.DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
                         {
                             jitprintf($"[0] Jump {debugInfo.idNum}:\n");
                         }
@@ -447,7 +439,7 @@ public partial class Emitter
         id.idjTarget = dst;
 
         id.idjKeepLong = compiler.fgInDifferentRegions(currentBlock, dst);
-        if (Configuration.DEBUG && compiler.opts.compLongAddress)
+        if (Configuration.DEBUG && compiler.compLongAddress)
         {
             id.idjKeepLong = true;
         }

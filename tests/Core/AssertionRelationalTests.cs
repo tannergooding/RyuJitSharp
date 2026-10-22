@@ -371,7 +371,7 @@ internal static unsafe class AssertionRelationalTests
             using var stream = new MemoryStream();
             using var writer = new StreamWriter(stream, Encoding.UTF8, 1024, leaveOpen: true) { AutoFlush = true };
             object config = JitConfig;
-            var breakMorphTree = typeof(JitConfigValues).GetField("_jitBreakMorphTree",
+            var breakMorphTree = TestConfiguration.GetJitConfigField("_jitBreakMorphTree",
                 BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException();
             breakMorphTree.SetValue(config, -1);
             JitConfig = (JitConfigValues)config;
@@ -572,14 +572,14 @@ internal static unsafe class AssertionRelationalTests
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         object config = default(JitConfigValues);
-        var maxLocals = typeof(JitConfigValues).GetField("_jitMaxLocalsToTrack",
+        var maxLocals = TestConfiguration.GetJitConfigField("_jitMaxLocalsToTrack",
             BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException();
         maxLocals.SetValue(config, 1024);
         JitConfig = (JitConfigValues)config;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaCount = 2;
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
         TestConfiguration.SetCompilerFullName(compiler, nameof(AssertionRelationalTests));

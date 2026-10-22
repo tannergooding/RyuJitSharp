@@ -337,7 +337,7 @@ internal static unsafe class Arm64IndirectionPairingTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.compHndBBtab = [];
         compiler.lvaTable = new LclVarDsc[2];

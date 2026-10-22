@@ -119,7 +119,7 @@ internal static unsafe class ImporterCallTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         var inputType = type is CorInfoType.CORINFO_TYPE_LONG ? var_types.TYP_LONG : var_types.TYP_INT;
         compiler.lvaTable = new LclVarDsc[4];
         compiler.lvaCount = 1;
@@ -417,7 +417,7 @@ internal static unsafe class ImporterCallTests
         try
         {
             object config = previousConfig;
-            var limitField = typeof(JitConfigValues).GetField("_jitMaxLocalsToTrack", BindingFlags.Instance | BindingFlags.NonPublic)
+            var limitField = TestConfiguration.GetJitConfigField("_jitMaxLocalsToTrack", BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("Missing local tracking limit.");
             limitField.SetValue(config, 0x400);
             Globals.JitConfig = (JitConfigValues)config;
@@ -481,7 +481,7 @@ internal static unsafe class ImporterCallTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.info = new Compiler.Info {
             compCompHnd = &ee.Interface,
             compMethodHnd = (CORINFO_METHOD_STRUCT_*)0x3000,

@@ -23,7 +23,7 @@ internal static class UnknownSizeFrameConfigurationTests
             compiler.compLocallocUsed = true;
             compiler.unkSizeFrame.nVector = 3;
             compiler.unkSizeFrame.nMask = 9;
-            compiler.unkSizeFrame.FinalizeLayout();
+            compiler.unkSizeFrame.FinalizeLayout(compiler);
 
             WithConfiguration(arm64, simd, () =>
             {
@@ -43,7 +43,10 @@ internal static class UnknownSizeFrameConfigurationTests
             Assert.That(compiler.compLocallocUsed, Is.True);
             Assert.That(compiler.unkSizeFrame.nVector, Is.EqualTo(supported ? 0u : 3u));
             Assert.That(compiler.unkSizeFrame.nMask, Is.EqualTo(supported ? 0u : 9u));
-            Assert.That(compiler.unkSizeFrame.isFinalized, Is.EqualTo(TestConfiguration.IsDebug && !supported));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(Compiler.DebugData.Get(compiler).UnknownSizeFrameFinalized, Is.EqualTo(!supported));
+            }
             Assert.That(compiler.fgSafeBasicBlockCreation, Is.True);
             Assert.That(compiler.fgSafeFlowEdgeCreation, Is.True);
 
@@ -97,32 +100,48 @@ internal static class UnknownSizeFrameConfigurationTests
     [TestCase(9u, 2u)]
     public static void SharedBookkeepingPreservesMaskPaddingAndNegativeVectorOffsets(uint maskCount, uint maskVectors)
     {
-        Compiler.UnknownSizeFrame frame = default;
-        for (var index = 0u; index < maskCount; index++)
+        WithCompiler(compiler =>
         {
-            Assert.That(frame.AllocMask(), Is.EqualTo(index));
-        }
+            for (var index = 0u; index < maskCount; index++)
+            {
+                Assert.That(compiler.unkSizeFrame.AllocMask(compiler), Is.EqualTo(index));
+            }
 
-        Assert.That(frame.AllocVector(), Is.Zero);
-        Assert.That(frame.AllocVector(), Is.EqualTo(1u));
-        frame.FinalizeLayout();
+            Assert.That(compiler.unkSizeFrame.AllocVector(compiler), Is.Zero);
+            Assert.That(compiler.unkSizeFrame.AllocVector(compiler), Is.EqualTo(1u));
+            compiler.unkSizeFrame.FinalizeLayout(compiler);
 
-        Assert.That(frame.MaskBlockSizeInVectors(), Is.EqualTo(maskVectors));
-        Assert.That(frame.VectorBlockSize(), Is.EqualTo(2u));
-        Assert.That(frame.FrameSizeInVectors(), Is.EqualTo(maskVectors + 2u));
-        Assert.That(frame.GetOffset(0), Is.EqualTo(-unchecked((int)maskVectors) - 1));
-        Assert.That(frame.GetOffset(1), Is.EqualTo(-unchecked((int)maskVectors) - 2));
+            Assert.That(compiler.unkSizeFrame.MaskBlockSizeInVectors(), Is.EqualTo(maskVectors));
+            Assert.That(compiler.unkSizeFrame.VectorBlockSize(), Is.EqualTo(2u));
+            Assert.That(compiler.unkSizeFrame.FrameSizeInVectors(), Is.EqualTo(maskVectors + 2u));
+            Assert.That(compiler.unkSizeFrame.GetOffset(compiler, 0), Is.EqualTo(-unchecked((int)maskVectors) - 1));
+            Assert.That(compiler.unkSizeFrame.GetOffset(compiler, 1), Is.EqualTo(-unchecked((int)maskVectors) - 2));
 
-        if (maskCount > 0)
-        {
-            Assert.That(frame.GetOffset(maskCount - 1, isMask: true), Is.EqualTo(-unchecked((int)maskCount)));
-        }
+            if (maskCount > 0)
+            {
+                Assert.That(compiler.unkSizeFrame.GetOffset(compiler, maskCount - 1, isMask: true),
+                    Is.EqualTo(-unchecked((int)maskCount)));
+            }
+        });
     }
 
     [Test]
     public static void FrameFinalizationStateHasTheExpectedManagedSize()
     {
-        Assert.That(Unsafe.SizeOf<Compiler.UnknownSizeFrame>(), Is.EqualTo(12));
+        Assert.That(Unsafe.SizeOf<Compiler.UnknownSizeFrame>(), Is.EqualTo(8));
+    }
+
+    [Test]
+    public static void FrameFinalizationStateIsCompilerLocal()
+    {
+        Assume.That(TestConfiguration.IsDebug);
+        WithCompiler(first =>
+        {
+            first.unkSizeFrame.FinalizeLayout(first);
+            Assert.That(Compiler.DebugData.Get(first).UnknownSizeFrameFinalized, Is.True);
+
+            WithCompiler(second => Assert.That(Compiler.DebugData.Get(second).UnknownSizeFrameFinalized, Is.False));
+        });
     }
 
     [TestCase(16u)]
@@ -145,7 +164,7 @@ internal static class UnknownSizeFrameConfigurationTests
             compiler.lvaAllocUnknownSizeLocal(0);
             compiler.lvaAllocUnknownSizeLocal(1);
             compiler.lvaAllocateUnknownSizeTemp(temp);
-            compiler.unkSizeFrame.FinalizeLayout();
+            compiler.unkSizeFrame.FinalizeLayout(compiler);
 
             Assert.That(compiler.compUsesUnknownSizeFrame, Is.True);
             Assert.That(compiler.compLocallocUsed, Is.True);
@@ -154,10 +173,10 @@ internal static class UnknownSizeFrameConfigurationTests
             Assert.That(temp.tdTempOffs, Is.EqualTo(2));
             Assert.That(compiler.unkSizeFrame.nMask, Is.Zero);
             Assert.That(compiler.unkSizeFrame.FrameSizeInVectors(), Is.EqualTo(3u));
-            Assert.That(compiler.unkSizeFrame.GetAddressingOffset(in compiler.lvaTable[0]), Is.EqualTo(-1));
-            Assert.That(compiler.unkSizeFrame.GetAddressingOffset(in compiler.lvaTable[1]), Is.EqualTo(-2));
-            Assert.That(compiler.unkSizeFrame.GetAddressingOffset(temp), Is.EqualTo(-3));
-            Assert.That(compiler.unkSizeFrame.GetExactOffset(in compiler.lvaTable[1], vectorLength),
+            Assert.That(compiler.unkSizeFrame.GetAddressingOffset(compiler, in compiler.lvaTable[0]), Is.EqualTo(-1));
+            Assert.That(compiler.unkSizeFrame.GetAddressingOffset(compiler, in compiler.lvaTable[1]), Is.EqualTo(-2));
+            Assert.That(compiler.unkSizeFrame.GetAddressingOffset(compiler, temp), Is.EqualTo(-3));
+            Assert.That(compiler.unkSizeFrame.GetExactOffset(compiler, in compiler.lvaTable[1], vectorLength),
                 Is.EqualTo(-2 * unchecked((int)vectorLength)));
         });
     }
@@ -189,7 +208,7 @@ internal static class UnknownSizeFrameConfigurationTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         TestConfiguration.SetCompilerFullName(compiler, nameof(UnknownSizeFrameConfigurationTests));
         JitTls.Compiler = compiler;
 

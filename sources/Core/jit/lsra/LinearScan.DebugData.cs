@@ -4,47 +4,11 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-    private sealed class AllocationDebugData
-    {
-        private static ConditionalWeakTable<LinearScan, AllocationDebugData>? s_instances;
-
-        internal static int EmptyColumnWidth;
-        internal static ConfigMethodRange StressRegsRange;
-
-        internal uint MaxNodeLocation;
-        internal uint ConsecutiveRegistersLocation;
-        internal RefPosition? ActiveRefPosition;
-        internal regMaskTP Registers;
-        internal bool DumpFormatInitialized;
-        internal regMaskTP LastDumpRegisters;
-        internal RefPosition? LastDumpRefPosition;
-        internal int DumpLastUsedRegNumIndex;
-        internal int DumpRegColumnWidth;
-        internal int DumpNodeLocationWidth;
-        internal int DumpRefPositionWidth;
-        internal int DumpShortRefPositionWidth;
-        internal int DumpTableIndent;
-        internal int DumpBbNumWidth;
-        internal int DumpPredBbNumWidth;
-        internal int DumpRowsSinceTitle;
-        internal string DumpColumnSeparator = "";
-        internal string DumpLine = "";
-        internal string DumpMiddleBox = "";
-        internal string DumpRightBox = "";
-
-        internal static AllocationDebugData Get(LinearScan linearScan)
-        {
-            var instances = LazyStatic.GetOrCreate(ref s_instances);
-            return instances.GetValue(linearScan, static _ => new AllocationDebugData());
-        }
-    }
-
     private uint _maxNodeLocation
     {
         get
@@ -309,22 +273,22 @@ public sealed partial class LinearScan
     {
         get
         {
-            return AllocationDebugData.EmptyColumnWidth;
+            return Compiler.DebugData.LinearScanAllocationDebugData.EmptyColumnWidth;
         }
 
         set
         {
-            AllocationDebugData.EmptyColumnWidth = value;
+            Compiler.DebugData.LinearScanAllocationDebugData.EmptyColumnWidth = value;
         }
     }
 
-    private AllocationDebugData GetAllocationDebugData()
+    private Compiler.DebugData.LinearScanAllocationDebugData GetAllocationDebugData()
     {
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LinearScanAllocationDiagnosticStateIsOnlyAvailableInDebugBuilds);
         }
 
-        return AllocationDebugData.Get(this);
+        return Compiler.DebugData.Get(this);
     }
 }

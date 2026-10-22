@@ -52,14 +52,27 @@ public sealed class InlineCandidateInfo : HandleHistogramProfileCandidateInfo
 
     public InlineContext? inlinersContext;
 
-    public int asyncStressIndex;
-
-    public InlineCandidateInfo()
+    public int asyncStressIndex
     {
-        if (Configuration.DEBUG)
+        get
         {
-            // -1 keeps late-created candidates outside the body's shuffled async group.
-            asyncStressIndex = -1;
+            return GetDebugData().AsyncStressIndex;
         }
+
+        set
+        {
+            GetDebugData().AsyncStressIndex = value;
+        }
+    }
+
+    private Compiler.DebugData.InlineCandidateInfoDebugData GetDebugData()
+    {
+        if (!Configuration.DEBUG)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                FatalJitErrorCode.AsyncInliningStressIsOnlyAvailableInDebugBuilds);
+        }
+
+        return global::RyuJitSharp.Compiler.DebugData.Get(this);
     }
 }

@@ -30,31 +30,6 @@ public partial struct LclVarDsc
     /// <summary>original slot # (if remapped)</summary>
     internal int lvSlotNum;
 
-    private string? _lvReason;
-
-    public string? lvReason
-    {
-        readonly get
-        {
-            if (!Configuration.DEBUG)
-            {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocalDebugReasonIsOnlyAvailableInDebugBuilds);
-            }
-
-            return _lvReason;
-        }
-
-        set
-        {
-            if (!Configuration.DEBUG)
-            {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocalDebugReasonIsOnlyAvailableInDebugBuilds);
-            }
-
-            _lvReason = value;
-        }
-    }
-
     /// <summary>variable tracking index</summary>
     internal ushort _varIndex;
 

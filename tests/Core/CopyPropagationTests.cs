@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeFlags;
@@ -16,6 +18,10 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class CopyPropagationTests
 {
     [Test]
+    [UnconditionalSuppressMessage("Trimming", "IL2070",
+        Justification = "The test reflects over CopyPropSsaDef's private Debug-only node field.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "The test reflects over CopyPropSsaDef's private Debug-only node field.")]
     public static void PushedDefinitionReferencesLiveSsaDescriptorAfterGrowth()
     {
         WithCompiler((compiler, store) =>
@@ -35,6 +41,14 @@ internal static unsafe class CopyPropagationTests
             if (TestConfiguration.IsDebug)
             {
                 Assert.That(entry.GetDefNode(), Is.SameAs(node));
+            }
+            else
+            {
+                _ = Assert.Throws<InvalidOperationException>(() => entry.GetDefNode());
+                var defNodeField = typeof(Compiler.CopyPropSsaDef).GetField(
+                    "_defNode", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("The CopyPropSsaDef debug node field is missing.");
+                Assert.That(defNodeField.GetValue(entry), Is.Null);
             }
         });
     }

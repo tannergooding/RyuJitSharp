@@ -222,7 +222,7 @@ internal static unsafe class AsyncImporterTests
             compiler.info.compIsStatic = true;
             compiler.info.compTypeCtxtArg = 0;
             compiler.lvaTable[0].Type = Globals.TYP_I_IMPL;
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
 
             var lockObject = compiler.fgGetCritSectOfStaticMethod();
 
@@ -333,7 +333,7 @@ internal static unsafe class AsyncImporterTests
             compiler.info.compCompHnd = &jitInfo;
             compiler.info.compRetType = returnsVoid ? var_types.TYP_VOID : var_types.TYP_INT;
             compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             compiler.opts.compTailCallOpt = true;
             compiler.compInlineContext = (InlineContext)RuntimeHelpers.GetUninitializedObject(typeof(InlineContext));
             PrepareStack(compiler);
@@ -405,7 +405,7 @@ internal static unsafe class AsyncImporterTests
     {
         WithCompiler(compiler => {
             PrepareStack(compiler);
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             compiler.info.compRetType = returnType;
             compiler.lvaTable[0].Type = var_types.TYP_STRUCT;
             var store = new GenTreeLclVar(var_types.TYP_STRUCT, 0, compiler.gtNewIconNode(var_types.TYP_INT, 0));
@@ -447,7 +447,7 @@ internal static unsafe class AsyncImporterTests
         WithCompiler(compiler => {
             PrepareStack(compiler);
             compiler.opts.compDbgCode = !optimize;
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             compiler.info.compRetType = var_types.TYP_INT;
             compiler.lvaTable[0].Type = var_types.TYP_STRUCT;
             var store = new GenTreeLclVar(var_types.TYP_STRUCT, storeLocal, compiler.gtNewIconNode(var_types.TYP_INT, value));

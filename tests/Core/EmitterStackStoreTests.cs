@@ -164,7 +164,7 @@ internal static unsafe class EmitterStackStoreTests
         compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.codeGen = new CodeGen(compiler) { IsFramePointerUsed = true };
         compiler.opts.jitFlags = (JitFlags*)Unsafe.AsPointer(ref s_jitFlags[0]);
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         compiler.compCurBB = new BasicBlock(null, null);
         compiler.lvaCount = 1;
         compiler.lvaTable = [new LclVarDsc

@@ -242,7 +242,7 @@ internal static unsafe class FlowGraphBranchThreadingTests
         compiler.fgPgoConsistent = true;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;

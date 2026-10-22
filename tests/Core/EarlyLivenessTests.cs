@@ -156,10 +156,7 @@ internal static unsafe class EarlyLivenessTests
         WithCompiler(1, minOpts: false, compiler => {
             var block = AddBlock(compiler);
             var statement = AddStatement(compiler, block, Store(compiler, 0, compiler.gtNewIconNode(TYP_INT, 1)));
-            var field = typeof(Compiler).GetField("s_jitEnableEarlyLivenessRange",
-                BindingFlags.NonPublic | BindingFlags.Static) ??
-                throw new InvalidOperationException("Early liveness method range is missing.");
-            var previous = field.GetValue(null);
+            var previous = Compiler.DebugData.MethodRangeData.s_jitEnableEarlyLivenessRange;
             var excludedHash = unchecked((uint)(compiler.info.compMethodHash() ^ 1));
             var encodedRange = Encoding.ASCII.GetBytes($"{excludedHash:x8}\0");
             var range = new ConfigMethodRange();
@@ -170,7 +167,7 @@ internal static unsafe class EarlyLivenessTests
 
             try
             {
-                field.SetValue(null, range);
+                Compiler.DebugData.MethodRangeData.s_jitEnableEarlyLivenessRange = range;
                 Assert.That(compiler.fgEarlyLiveness(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
                 Assert.That(block.FirstStmt, Is.SameAs(statement));
                 Assert.That(compiler.fgDidEarlyLiveness, Is.False);
@@ -178,7 +175,7 @@ internal static unsafe class EarlyLivenessTests
             }
             finally
             {
-                field.SetValue(null, previous);
+                Compiler.DebugData.MethodRangeData.s_jitEnableEarlyLivenessRange = previous;
             }
         });
     }
@@ -285,7 +282,7 @@ internal static unsafe class EarlyLivenessTests
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
         compiler.fgNodeThreading = NodeThreading.AllLocals;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         JitConfig = new JitConfigValues();
         MaxLocalsToTrack(ref JitConfig) = 1024;
         JitTls.Compiler = compiler;

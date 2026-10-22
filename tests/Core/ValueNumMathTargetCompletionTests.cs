@@ -407,7 +407,7 @@ internal static unsafe class ValueNumMathTargetCompletionTests
             flags.Set(JitFlags.JIT_FLAG_AOT);
         }
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         JitTls.Compiler = compiler;
         try
         {

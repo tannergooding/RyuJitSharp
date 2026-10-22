@@ -161,7 +161,7 @@ public sealed partial class CodeGen
             genProduceReg(call);
         }
 
-        if ((call.Next is null) && !_compiler.opts.MinOpts && !_compiler.opts.compDbgCode)
+        if ((call.Next is null) && !_compiler.MinOpts && !_compiler.opts.compDbgCode)
         {
             GCInfo.gcMarkRegSetNpt(new regMaskTP(intReturnMask));
         }

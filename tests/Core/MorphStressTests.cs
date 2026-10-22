@@ -19,8 +19,8 @@ internal static unsafe class MorphStressTests
         Assume.That(TestConfiguration.IsDebug, "This fixture exercises Debug stress behavior.");
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
-    private static extern ref byte* StressNames(ref JitConfigValues config);
+    private static ref byte* StressNames(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitStressModeNames;
 
     [Test]
     public static void DisabledStressPreservesLocalsAndMultiplication()

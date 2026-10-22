@@ -4,27 +4,11 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
 public sealed partial class RefPosition
 {
-    private sealed class DebugData
-    {
-        private static ConditionalWeakTable<RefPosition, DebugData>? s_instances;
-
-        internal uint MinRegCandidateCount;
-        internal uint ReferencePositionNumber;
-        internal GenTree? BuildNode;
-
-        internal static DebugData Get(RefPosition position)
-        {
-            var instances = LazyStatic.GetOrCreate(ref s_instances);
-            return instances.GetValue(position, static _ => new DebugData());
-        }
-    }
-
     public uint minRegCandidateCount
     {
         get
@@ -64,14 +48,14 @@ public sealed partial class RefPosition
         }
     }
 
-    private DebugData GetDebugData()
+    private Compiler.DebugData.RefPositionDebugData GetDebugData()
     {
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RefPositionDebugDataIsOnlyAvailableInDebugBuilds);
         }
 
-        return DebugData.Get(this);
+        return Compiler.DebugData.Get(this);
     }
 
     public Referenceable? referent;

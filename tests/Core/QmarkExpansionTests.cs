@@ -303,7 +303,7 @@ internal static unsafe class QmarkExpansionTests
         compiler.lvaCount = 3;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         using var jitTls = TestConfiguration.CreateJitTls();

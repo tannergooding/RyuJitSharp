@@ -137,7 +137,7 @@ internal static unsafe class CodeGenEmissionPhaseTests
             NativeSizeAddress(codeGen) = &nativeSize;
             if (IsDebug)
             {
-                Assert.That(compiler.opts.dspMetrics, Is.False);
+                Assert.That(compiler.dspMetrics, Is.False);
             }
 
             var output = Capture(codeGen.genEmitMachineCode);
@@ -518,17 +518,17 @@ internal static unsafe class CodeGenEmissionPhaseTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllFloat")]
     private static extern ref regMask CompilerAllFloatRegs(Compiler compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitForceFallback")]
-    private static extern ref int ForceFallback(ref JitConfigValues config);
+    private static ref int ForceFallback(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitForceFallback;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHalt")]
-    private static extern ref JitConfigValues.MethodSet HaltSelection(ref JitConfigValues config);
+    private static ref JitConfigValues.MethodSet HaltSelection(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitHalt;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHashHalt")]
-    private static extern ref int HaltHash(ref JitConfigValues config);
+    private static ref int HaltHash(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitHashHalt;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEmitUnitTests")]
-    private static extern ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config);
+    private static ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitEmitUnitTests;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
     private static extern ref regMask CompilerAllIntRegs(Compiler compiler);

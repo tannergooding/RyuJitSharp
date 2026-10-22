@@ -283,8 +283,12 @@ internal static unsafe class PostImportCleanupTests
             var result = (InlineResult)RuntimeHelpers.GetUninitializedObject(typeof(InlineResult));
             Policy(result) = policy;
             compiler.compInlineResult = result;
+            var inliner = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             var cls = (CORINFO_CLASS_STRUCT_*)0x1000;
-            compiler.impInlineInfo = new InlineInfo { InlineRoot = compiler, retExprClassHnd = cls, retExprClassHndIsExact = true };
+            compiler.impInlineInfo = new InlineInfo {
+                InlinerCompiler = inliner, InlineRoot = inliner,
+                retExprClassHnd = cls, retExprClassHndIsExact = true
+            };
             compiler.lvaTable = [new LclVarDsc { Type = TYP_REF, lvClassHnd = cls, lvSingleDef = singleDef }];
             compiler.lvaCount = 1;
             compiler.lvaInlineeReturnSpillTemp = 0;
@@ -439,7 +443,7 @@ internal static unsafe class PostImportCleanupTests
         compiler.info.compIsStatic = true;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         using var jitTls = TestConfiguration.IsDebug ? new JitTls(null) : null;

@@ -13,8 +13,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private static ConfigMethodRange s_jitEnableHeadTailMergeRange;
-
     private readonly record struct HeadTailMergePredInfo(BasicBlock Block, Statement Stmt);
 
     public unsafe PhaseStatus fgHeadTailMerge(bool early)
@@ -30,8 +28,8 @@ public partial class Compiler
 
         if (Configuration.DEBUG)
         {
-            s_jitEnableHeadTailMergeRange.EnsureInit(JitConfig.JitEnableHeadTailMergeRange);
-            if (!s_jitEnableHeadTailMergeRange.Contains(info.compMethodHash()))
+            DebugData.MethodRangeData.s_jitEnableHeadTailMergeRange.EnsureInit(JitConfig.JitEnableHeadTailMergeRange);
+            if (!DebugData.MethodRangeData.s_jitEnableHeadTailMergeRange.Contains(info.compMethodHash()))
             {
                 JITDUMP("Tail merge disabled by JitEnableHeadTailMergeRange\n");
                 return PhaseStatus.MODIFIED_NOTHING;

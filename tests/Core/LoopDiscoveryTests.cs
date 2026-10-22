@@ -422,8 +422,8 @@ internal static unsafe class LoopDiscoveryTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDoLoopInversion")]
-    private static extern ref int InversionEnabled(ref JitConfigValues config);
+    private static ref int InversionEnabled(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitDoLoopInversion;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitLoopInversionSizeLimit")]
     private static extern ref int InversionSizeLimit(ref JitConfigValues config);
@@ -573,7 +573,7 @@ internal static unsafe class LoopDiscoveryTests
         }
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitTls.Compiler = compiler;

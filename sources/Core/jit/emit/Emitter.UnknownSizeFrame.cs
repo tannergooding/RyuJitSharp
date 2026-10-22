@@ -5,6 +5,7 @@
 
 using static RyuJitSharp.Emitter.Arm64FrameFormats;
 using static RyuJitSharp.regNumber;
+using static RyuJitSharp.Emitter.EmitterStatistics;
 
 namespace RyuJitSharp;
 
@@ -284,7 +285,7 @@ public partial class Emitter
         id.idjTarget = dst;
         id.idjShort = false;
         id.idjKeepLong = _compiler.fgInDifferentRegions(_compiler.compCurBB, dst);
-        if (Configuration.DEBUG && _compiler.opts.compLongAddress)
+        if (Configuration.DEBUG && _compiler.compLongAddress)
         {
             id.idjKeepLong = true;
         }

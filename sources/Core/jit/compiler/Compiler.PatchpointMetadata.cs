@@ -78,7 +78,7 @@ public partial class Compiler
             {
                 var unknownSizeFrameOffset = unchecked(-codeGen.genTotalFrameSize);
                 stackOffset = unchecked(unknownSizeFrameOffset +
-                    unkSizeFrame.GetExactOffset(in varDsc, getRuntimeVectorTByteLength()));
+                    unkSizeFrame.GetExactOffset(this, in varDsc, getRuntimeVectorTByteLength()));
             }
             else
             {

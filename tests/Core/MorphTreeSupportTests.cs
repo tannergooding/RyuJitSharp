@@ -207,7 +207,7 @@ internal static unsafe class MorphTreeSupportTests
     public static void ConstantStringCharacterUsesTheEEQueryAndNativeIndexWidth(long index, int length, int character)
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             LiteralQuery query = new() { ResultLength = length, Character = (char)character };
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.getStringLiteral = &GetStringLiteral;
@@ -245,7 +245,7 @@ internal static unsafe class MorphTreeSupportTests
     public static void IneligibleStringCharacterLoadsDoNotQueryTheEE(int index, bool emptyField, var_types type)
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             LiteralQuery query = default;
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.getStringLiteral = &GetStringLiteral;
@@ -465,7 +465,7 @@ internal static unsafe class MorphTreeSupportTests
     public static void BitCastRetypesEqualSizedMemoryLoads(bool field, bool minOpts)
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(minOpts);
+            compiler.SetMinOpts(minOpts);
             GenTree source = field
                 ? new GenTreeLclFld(GT_LCL_FLD, TYP_INT, 0, 4)
                 : compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(TYP_I_IMPL, 0x1234));

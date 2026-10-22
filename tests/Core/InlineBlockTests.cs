@@ -285,8 +285,8 @@ internal static unsafe class InlineBlockTests
         inlinee.fgReturnCount = 1;
         JitFlags flags = default;
         compiler.opts.jitFlags = inlinee.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
-        inlinee.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
+        inlinee.SetMinOpts(false);
         CORINFO_METHOD_INFO methodInfo = default;
         inlinee.info.compMethodInfo = &methodInfo;
         var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));

@@ -92,9 +92,12 @@ public sealed partial class CodeGen
         if (Configuration.DISPLAY_SIZES)
         {
             var dataSize = unchecked((nuint)(uint)Emitter.emitDataSize());
-            grossVMsize = unchecked(grossVMsize + (uint)_compiler.info.compILCodeSize);
-            totalNCsize = unchecked(totalNCsize + _codeSize + dataSize + (nuint)_compiler.compInfoBlkSize);
-            grossNCsize = unchecked(grossNCsize + _codeSize + dataSize);
+            Globals.CodeSizeStatisticsData.grossVMsize =
+                unchecked(Globals.CodeSizeStatisticsData.grossVMsize + (uint)_compiler.info.compILCodeSize);
+            Globals.CodeSizeStatisticsData.totalNCsize =
+                unchecked(Globals.CodeSizeStatisticsData.totalNCsize + _codeSize + dataSize + (nuint)_compiler.compInfoBlkSize);
+            Globals.CodeSizeStatisticsData.grossNCsize =
+                unchecked(Globals.CodeSizeStatisticsData.grossNCsize + _codeSize + dataSize);
         }
     }
 }

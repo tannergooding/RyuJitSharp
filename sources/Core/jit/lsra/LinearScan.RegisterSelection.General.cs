@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-    private sealed partial class RegisterSelection
+    internal sealed partial class RegisterSelection
     {
         internal SingleTypeRegSet select(
             Interval currentInterval, RefPosition refPosition, out RegisterScore selectionScore) =>

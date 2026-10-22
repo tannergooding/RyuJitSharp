@@ -213,7 +213,7 @@ internal static unsafe class ControlFlowGuardLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaTable = [new LclVarDsc()];
         compiler.lvaCount = 1;
         compiler.lvaTable[0].Type = TYP_I_IMPL;

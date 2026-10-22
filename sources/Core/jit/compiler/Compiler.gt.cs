@@ -2225,7 +2225,7 @@ public partial class Compiler
                     jitprintf("\n");
                     jitprintf("                                                            ");
                     indentStack.Print();
-                    var reason = Configuration.DEBUG ? fieldVarDsc.lvReason : null;
+                    var reason = Configuration.DEBUG ? GetLocalDebugReason(fieldLclNum) : null;
                     jitprintf($"    {fieldVarDsc.Type.Name,-6} {reason} -> ");
                     gtDispLclVar(fieldLclNum);
                     gtDispSsaName(fieldLclNum, tree.GetSsaNum(this, index), isDef);
@@ -3028,20 +3028,11 @@ public partial class Compiler
         gtDispTree(tree, ref indentStack, msg, topOnly, isLIR);
     }
 
-    private static class InsCflagsNames
-    {
-        internal static readonly string[] Values =
-        [
-            "0", "v", "c", "cv", "z", "zv", "zc", "zcv",
-            "n", "nv", "nc", "ncv", "nz", "nzv", "nzc", "nzcv",
-        ];
-    }
-
     private static string InsCflagsToString(insCFlags flags)
     {
         var index = (int)flags;
-        assert((index >= 0) && (index < InsCflagsNames.Values.Length));
-        return InsCflagsNames.Values[index];
+        assert((index >= 0) && (index < DebugData.InsCflagsNamesData.Values.Length));
+        return DebugData.InsCflagsNamesData.Values[index];
     }
 
     [Conditional("DEBUG")]

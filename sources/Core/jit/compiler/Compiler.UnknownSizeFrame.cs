@@ -29,8 +29,6 @@ public partial class Compiler
         public uint nVector;
         public uint nMask;
 
-        public bool isFinalized;
-
         public readonly uint MaskBlockSizeInVectors()
         {
             assert(roundUp(0u, 8u) == 0);
@@ -41,25 +39,25 @@ public partial class Compiler
 
         public readonly uint FrameSizeInVectors() => unchecked(MaskBlockSizeInVectors() + VectorBlockSize());
 
-        public uint AllocMask()
+        public uint AllocMask(Compiler compiler)
         {
-            assert(!isFinalized);
+            assert(!compiler.GetDebugData().UnknownSizeFrameFinalized);
             var index = nMask;
             nMask = unchecked(nMask + 1);
             return index;
         }
 
-        public uint AllocVector()
+        public uint AllocVector(Compiler compiler)
         {
-            assert(!isFinalized);
+            assert(!compiler.GetDebugData().UnknownSizeFrameFinalized);
             var index = nVector;
             nVector = unchecked(nVector + 1);
             return index;
         }
 
-        public readonly int GetOffset(uint index, bool isMask = false)
+        public readonly int GetOffset(Compiler compiler, uint index, bool isMask = false)
         {
-            assert(isFinalized);
+            assert(compiler.GetDebugData().UnknownSizeFrameFinalized);
             uint offset;
             if (isMask)
             {
@@ -77,34 +75,32 @@ public partial class Compiler
             return unchecked(-(int)(offset + 1));
         }
 
-        public readonly int GetAddressingOffset(in LclVarDsc local)
+        public readonly int GetAddressingOffset(Compiler compiler, in LclVarDsc local)
         {
-            return GetOffset(unchecked((uint)local.UnknownSizeFrameIndex), local.Type is TYP_MASK);
+            return GetOffset(compiler, unchecked((uint)local.UnknownSizeFrameIndex), local.Type is TYP_MASK);
         }
 
-        public readonly int GetAddressingOffset(TempDsc temp)
+        public readonly int GetAddressingOffset(Compiler compiler, TempDsc temp)
         {
             assert(temp.tdTempOffs >= 0);
             assert(varTypeHasUnknownSize(temp.tdTempType));
-            return GetOffset(unchecked((uint)temp.tdTempOffs), temp.tdTempType is TYP_MASK);
+            return GetOffset(compiler, unchecked((uint)temp.tdTempOffs), temp.tdTempType is TYP_MASK);
         }
 
         // JIT mode knows the runtime VL, so scalable frame offsets can be expressed in bytes.
-        public readonly int GetExactOffset(in LclVarDsc local, uint vectorLength)
+        public readonly int GetExactOffset(Compiler compiler, in LclVarDsc local, uint vectorLength)
         {
             assert(BitOperations.IsPow2(vectorLength) && (vectorLength >= MinSveRegisterSizeBytes)
                 && (vectorLength <= MaxSveRegisterSizeBytes));
             var scale = local.Type is TYP_MASK ? vectorLength / 8 : vectorLength;
-            return unchecked(GetAddressingOffset(in local) * unchecked((int)scale));
+            return unchecked(GetAddressingOffset(compiler, in local) * unchecked((int)scale));
         }
 
-        [SuppressMessage("Style", "IDE0251:Make member readonly",
-            Justification = "Finalization mutates diagnostic state only in Debug builds.")]
-        public void FinalizeLayout()
+        public readonly void FinalizeLayout(Compiler compiler)
         {
             if (Configuration.DEBUG)
             {
-                isFinalized = true;
+                compiler.GetDebugData().UnknownSizeFrameFinalized = true;
             }
         }
     }
@@ -123,7 +119,7 @@ public partial class Compiler
         compUsesUnknownSizeFrame = false;
         if (Configuration.DEBUG)
         {
-            unkSizeFrame.isFinalized = false;
+            GetDebugData().UnknownSizeFrameFinalized = false;
         }
         unkSizeFrame.nMask = 0;
         unkSizeFrame.nVector = 0;
@@ -145,10 +141,10 @@ public partial class Compiler
         switch (local.Type)
         {
             case TYP_SIMD_ARM64:
-                local.UnknownSizeFrameIndex = unchecked((int)unkSizeFrame.AllocVector());
+                local.UnknownSizeFrameIndex = unchecked((int)unkSizeFrame.AllocVector(this));
                 break;
             case TYP_MASK:
-                local.UnknownSizeFrameIndex = unchecked((int)unkSizeFrame.AllocMask());
+                local.UnknownSizeFrameIndex = unchecked((int)unkSizeFrame.AllocMask(this));
                 break;
             default:
                 JitExceptionHelpers.ThrowUnreachableException();
@@ -177,10 +173,10 @@ public partial class Compiler
         switch (temp.tdTempType)
         {
             case TYP_SIMD_ARM64:
-                __jitExceptionResult248 = unchecked((int)unkSizeFrame.AllocVector());
+                __jitExceptionResult248 = unchecked((int)unkSizeFrame.AllocVector(this));
                 break;
             case TYP_MASK:
-                __jitExceptionResult248 = unchecked((int)unkSizeFrame.AllocMask());
+                __jitExceptionResult248 = unchecked((int)unkSizeFrame.AllocMask(this));
                 break;
             default:
                 JitExceptionHelpers.ThrowUnreachableException();

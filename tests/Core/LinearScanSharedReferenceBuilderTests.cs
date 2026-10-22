@@ -176,7 +176,7 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
         WithAllocator((compiler, allocator) => {
             if (TestConfiguration.IsDebug)
             {
-                StressMask(allocator) = stressMask;
+                TestConfiguration.SetLinearScanStressMask(allocator, stressMask);
             }
             compiler.lvaTable = [
                 new() { Type = TYP_INT, _varIndex = 0, lvTracked = true, lvLRACandidate = true },
@@ -347,10 +347,7 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_placedArgumentLocalCount")]
     private static extern ref int PlacedArgumentLocalCount(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_availableIntRegs")]
+[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_availableIntRegs")]
     private static extern ref regMask AvailableIntRegs(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_availableFloatRegs")]
@@ -372,7 +369,7 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
         CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;

@@ -252,8 +252,8 @@ internal static class DiscretionaryPolicyTests
         RequireDebugPolicyBehavior();
 
         var compiler = CreateCompiler();
-        var strategy = CreateStrategy(compiler);
-        SetField(typeof(InlineStrategy), strategy, "_random", new CLRRandom(1));
+        _ = CreateStrategy(compiler);
+        Compiler.DebugData.Get(compiler).InlineStressRandom = new CLRRandom(1);
         var policy = policyType.Name switch {
             nameof(DiscretionaryPolicy) => new DiscretionaryPolicy(compiler, true),
             nameof(ModelPolicy) => new ModelPolicy(compiler, true),
@@ -300,9 +300,9 @@ internal static class DiscretionaryPolicyTests
         RequireDebugPolicyBehavior();
 
         var compiler = CreateCompiler();
-        var strategy = CreateStrategy(compiler);
+        _ = CreateStrategy(compiler);
         var random = new CLRRandom(1);
-        SetField(typeof(InlineStrategy), strategy, "_random", random);
+        Compiler.DebugData.Get(compiler).InlineStressRandom = random;
         var expectedRandom = new CLRRandom(1).Next(1, 100);
         var policy = new RandomPolicy(compiler, true);
         policy.NoteBool(InlineObservation.CALLEE_IS_FORCE_INLINE, false);
@@ -419,6 +419,7 @@ internal static class DiscretionaryPolicyTests
     private static InlineStrategy CreateStrategy(Compiler compiler)
     {
         var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
+        SetField(typeof(InlineStrategy), strategy, "_compiler", compiler);
         compiler._inlineStrategy = strategy;
         return strategy;
     }

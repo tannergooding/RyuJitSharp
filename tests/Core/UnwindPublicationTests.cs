@@ -221,7 +221,7 @@ internal static unsafe class UnwindPublicationTests
         Assume.That(TestConfiguration.IsDebug);
         WithPublication((compiler, _, context) =>
         {
-            compiler.opts.dspUnwind = true;
+            compiler.dspUnwind = true;
             compiler.opts.dspDiffable = diffable;
             compiler.unwindReserve();
 
@@ -274,8 +274,8 @@ internal static unsafe class UnwindPublicationTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitFakeProcedureSplitting")]
-    private static extern ref int FakeSplit(ref JitConfigValues config);
+    private static ref int FakeSplit(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitFakeProcedureSplitting;
 
     private static insGroup Group(uint offset)
     {

@@ -169,7 +169,7 @@ internal static unsafe class RationalizationTests
         compiler.codeGen = new CodeGen(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         ICorJitInfo jitInfo = default;

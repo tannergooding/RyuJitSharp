@@ -307,21 +307,22 @@ internal static unsafe class ScopeReportingTests
             compiler.info.compRetBuffArg = 0;
             compiler.info.compVarScopes =
             [
-                new() { vsdLVnum = 0, vsdName = "first" },
-                new() { vsdLVnum = 0, vsdName = "last" },
+                new() { vsdLVnum = 0 },
+                new() { vsdLVnum = 0 },
             ];
+            compiler.SetVarScopeName(0, "first");
+            compiler.SetVarScopeName(1, "last");
             compiler.info.compVarScopesCount = 2;
             AddRange(codeGen, 0, 2, 9, Register(REG_X64_RCX));
             codeGen.genSetScopeInfo();
 
-            var translations = (Array)typeof(CodeGen).GetField("genTrnslLocalVarInfo", PrivateFields)!.GetValue(codeGen)!;
-            var translation = translations.GetValue(0)!;
-            Assert.That(Field(translation, "tlviName"), Is.EqualTo("last"));
-            Assert.That(Field(translation, "tlviVarNum"), Is.EqualTo(ICorDebugInfo.RETBUF_ILNUM));
-            Assert.That(Field(translation, "tlviLVnum"), Is.EqualTo(0));
-            Assert.That(Field(translation, "tlviStartPC"), Is.EqualTo(2u));
-            Assert.That(Field(translation, "tlviLength"), Is.EqualTo((nuint)7));
-            Assert.That(Field(translation, "tlviAvailable"), Is.EqualTo(true));
+            var translation = Compiler.DebugData.Get(codeGen).TranslatedLocalVarInfo[0];
+            Assert.That(translation.tlviName, Is.EqualTo("last"));
+            Assert.That(translation.tlviVarNum, Is.EqualTo(ICorDebugInfo.RETBUF_ILNUM));
+            Assert.That(translation.tlviLVnum, Is.EqualTo(0));
+            Assert.That(translation.tlviStartPC, Is.EqualTo(2u));
+            Assert.That(translation.tlviLength, Is.EqualTo((nuint)7));
+            Assert.That(translation.tlviAvailable, Is.True);
         });
     }
 
@@ -333,7 +334,7 @@ internal static unsafe class ScopeReportingTests
         WithCompiler((compiler, codeGen, _) =>
         {
             compiler.info.compVarScopes[0].vsdLVnum = 0;
-            compiler.info.compVarScopes[0].vsdName = "local";
+            compiler.SetVarScopeName(0, "local");
             AddRange(codeGen, 0, 2, 9, Register(REG_X64_RCX));
             codeGen.genSetScopeInfo();
 
@@ -343,7 +344,7 @@ internal static unsafe class ScopeReportingTests
             Assert.That(((ICodeGen)codeGen).siRegVarName(0, 1, (uint)REG_X64_RCX), Is.Null);
             Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_X64_RDX), Is.Null);
 
-            SetTranslationField(codeGen, 0, "tlviAvailable", false);
+            Compiler.DebugData.Get(codeGen).TranslatedLocalVarInfo[0].tlviAvailable = false;
             Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_X64_RCX), Is.Null);
 
             compiler.opts.compScopeInfo = false;
@@ -362,7 +363,7 @@ internal static unsafe class ScopeReportingTests
         WithCompiler((compiler, codeGen, _) =>
         {
             compiler.info.compVarScopes[0].vsdLVnum = 0;
-            compiler.info.compVarScopes[0].vsdName = "stackLocal";
+            compiler.SetVarScopeName(0, "stackLocal");
             CodeGen.siVarLoc location = default;
             location.storeVariableOnStack(REG_SPBASE, 16);
             AddRange(codeGen, 0, 2, 9, location);
@@ -382,7 +383,7 @@ internal static unsafe class ScopeReportingTests
         {
             compiler.info.compFullName = "ScopeReporting:Method";
             compiler.info.compRetBuffArg = 0;
-            compiler.opts.dspDebugInfo = true;
+            compiler.dspDebugInfo = true;
             AddRange(codeGen, 0, 0, 3, Register(REG_X64_RCX));
             AddCallReturn(codeGen, 7, 3, Register(REG_X64_XMM0));
 
@@ -430,18 +431,6 @@ internal static unsafe class ScopeReportingTests
         Assert.That(Unsafe.SizeOf<CodeGen.siVarLoc>(), Is.EqualTo(Unsafe.SizeOf<ICorDebugInfo.VarLoc>()));
     }
 
-    private static object? Field(object value, string name) =>
-        typeof(CodeGen).GetNestedType("TrnslLocalVarInfo", BindingFlags.NonPublic)!.GetField(name)!.GetValue(value);
-
-    private static void SetTranslationField(CodeGen codeGen, int index, string name, object value)
-    {
-        var translations = (Array)typeof(CodeGen).GetField("genTrnslLocalVarInfo", PrivateFields)!.GetValue(codeGen)!;
-        var translation = translations.GetValue(index)!;
-        var translationType = typeof(CodeGen).GetNestedType("TrnslLocalVarInfo", BindingFlags.NonPublic)!;
-        translationType.GetField(name)!.SetValue(translation, value);
-        translations.SetValue(translation, index);
-    }
-
     private const BindingFlags PrivateFields = BindingFlags.Instance | BindingFlags.NonPublic;
 
     private static CodeGen.siVarLoc Register(regNumber reg)
@@ -459,14 +448,11 @@ internal static unsafe class ScopeReportingTests
         return new emitLocation(group, 0);
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "igSelf")]
-    private static extern ref insGroup? InstructionGroupSelf(insGroup group);
-
     private static void SetInstructionGroupSelf(insGroup group)
     {
         if (TestConfiguration.IsDebug)
         {
-            InstructionGroupSelf(group) = group;
+            group.igSelf = group;
         }
     }
 
@@ -516,7 +502,7 @@ internal static unsafe class ScopeReportingTests
         var context = new EEContext { JitInfo = new() { lpVtbl = &vtable } };
         compiler.info.compCompHnd = &context.JitInfo;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compScopeInfo = true;
         compiler.opts.compDbgInfo = true;
         compiler.info.compMethodInfo = &methodInfo;

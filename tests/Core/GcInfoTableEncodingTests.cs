@@ -7,6 +7,7 @@ using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.GCInfo.rpdArgType_t;
 using static RyuJitSharp.GcSlotFlags;
 using static RyuJitSharp.GcStackSlotBase;
+using static RyuJitSharp.Compiler.MeasurementData.MethodCounts;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.EHHandlerType;
 using static RyuJitSharp.regMask;
@@ -27,11 +28,11 @@ internal static unsafe class GcInfoTableEncodingTests
             Assert.Ignore("Display-size statistics are disabled in this build.");
         }
 
-        var counts = (Compiler.genMethodICnt, Compiler.genMethodNCnt);
+        var counts = (genMethodICnt, genMethodNCnt);
         try
         {
-            Compiler.genMethodICnt = interruptible ? uint.MaxValue : 7;
-            Compiler.genMethodNCnt = interruptible ? 7 : uint.MaxValue;
+            genMethodICnt = interruptible ? uint.MaxValue : 7;
+            genMethodNCnt = interruptible ? 7 : uint.MaxValue;
             CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
             {
                 compiler.lvaOutgoingArgSpaceSize.Value = 32;
@@ -42,13 +43,13 @@ internal static unsafe class GcInfoTableEncodingTests
 
                 codeGen.GCInfo.gcInfoBlockHdrSave(encoder, 20, 2);
 
-                Assert.That(Compiler.genMethodICnt, Is.EqualTo(interruptible ? 0U : 7U));
-                Assert.That(Compiler.genMethodNCnt, Is.EqualTo(interruptible ? 7U : 0U));
+                Assert.That(genMethodICnt, Is.EqualTo(interruptible ? 0U : 7U));
+                Assert.That(genMethodNCnt, Is.EqualTo(interruptible ? 7U : 0U));
             }, minopts: false);
         }
         finally
         {
-            (Compiler.genMethodICnt, Compiler.genMethodNCnt) = counts;
+            (genMethodICnt, genMethodNCnt) = counts;
         }
     }
 

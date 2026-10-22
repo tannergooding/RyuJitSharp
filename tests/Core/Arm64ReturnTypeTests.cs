@@ -524,7 +524,7 @@ internal static unsafe class Arm64ReturnTypeTests
     private static void WithLowering(int size, var_types nativeType, Action<Compiler, Lowering, BasicBlock> action)
     {
         WithCompiler(size, TYPE_GC_NONE, TYPE_GC_NONE, (compiler, handle, metadata) => {
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             compiler.opts.compFlags = CLFLG_REGVAR;
             compiler.fgNodeThreading = NodeThreading.LIR;
             compiler.info.compRetBuffArg = BAD_VAR_NUM;

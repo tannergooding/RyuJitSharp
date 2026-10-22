@@ -193,7 +193,7 @@ internal static unsafe class InlineVariableTests
         compiler.lvaCount = 1;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getArgType = &GetArgumentType;
         vtable.Base.Base.getArgNext = &GetNextArgument;

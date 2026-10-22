@@ -439,7 +439,7 @@ internal static unsafe class LoopCloningTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
         CORINFO_METHOD_INFO methodInfo = default;
@@ -485,7 +485,7 @@ internal static unsafe class LoopCloningTests
     private static void SetConfig(ref JitConfigValues config, string field, int value)
     {
         object boxed = config;
-        typeof(JitConfigValues).GetField(field,
+        TestConfiguration.GetJitConfigField(field,
             BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(boxed, value);
         config = (JitConfigValues)boxed;
     }

@@ -28,7 +28,7 @@ public partial class Emitter
         {
             assert(_compiler is not null);
         }
-        if (Configuration.DEBUG && (_compiler?.opts.disAddr == true))
+        if (Configuration.DEBUG && (_compiler?.disAddr == true))
         {
             // FMT_ADDR/DBG_ADDR print the raw address, not the diffable FMT_PTR representation.
             var address = unchecked((nuint)code);

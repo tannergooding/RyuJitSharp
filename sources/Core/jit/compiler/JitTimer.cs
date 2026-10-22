@@ -260,7 +260,7 @@ public sealed class JitTimer
 
             streamWriter.Write($"{compiler.info.compILCodeSize},");
             streamWriter.Write($"{compiler.fgBBcount},");
-            streamWriter.Write($"{(compiler.opts.MinOpts ? 1 : 0)},");
+            streamWriter.Write($"{(compiler.MinOpts ? 1 : 0)},");
             streamWriter.Write($"{compiler.Metrics.LoopsFoundDuringOpts},");
             streamWriter.Write($"{compiler.Metrics.LoopsCloned},");
 

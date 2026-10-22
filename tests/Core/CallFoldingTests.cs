@@ -659,7 +659,7 @@ internal static unsafe class CallFoldingTests
             compiler.lvaTable[1].Type = TYP_REF;
             JitFlags flags = default;
             compiler.opts.jitFlags = &flags;
-            compiler.opts.SetMinOpts(minOpts);
+            compiler.SetMinOpts(minOpts);
             JitTls.Compiler = compiler;
 
             try

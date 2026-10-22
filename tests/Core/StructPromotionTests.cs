@@ -209,6 +209,30 @@ internal static unsafe class StructPromotionTests
         });
     }
 
+    [Test]
+    public static void IndentStackAllocatesDebugReferencesOnlyInDebugBuilds()
+    {
+        WithCompiler((compiler, _) =>
+        {
+            var indentStack = new IndentStack(compiler);
+            const System.Reflection.BindingFlags instanceFields =
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            const System.Reflection.BindingFlags staticFields =
+                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
+
+            var stackField = typeof(IndentStack).GetField("_stack", instanceFields)
+                ?? throw new AssertionException("Missing IndentStack stack field.");
+            var indentsField = typeof(IndentStack).GetField("_indents", instanceFields)
+                ?? throw new AssertionException("Missing IndentStack glyph field.");
+
+            Assert.That(stackField.GetValue(indentStack) is null, Is.EqualTo(!TestConfiguration.IsDebug));
+            Assert.That(indentsField.GetValue(indentStack) is null, Is.EqualTo(!TestConfiguration.IsDebug));
+            Assert.That(typeof(IndentStack).GetField("s_emptyIndents", staticFields), Is.Null);
+            Assert.That(typeof(IndentStack).GetField("s_asciiIndents", staticFields), Is.Null);
+            Assert.That(typeof(IndentStack).GetField("s_unicodeIndents", staticFields), Is.Null);
+        });
+    }
+
     private struct Metadata
     {
         public CorInfoType FieldType;

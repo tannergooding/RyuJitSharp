@@ -16,7 +16,23 @@ public abstract partial class CSE_HeuristicCommon
     protected readonly int cntCalleeTrashInt;
     protected readonly int cntCalleeTrashFlt;
     protected readonly int cntCalleeTrashMsk;
-    protected readonly List<uint>? m_sequence = Configuration.DEBUG ? [] : null;
+
+    private protected Compiler.DebugData.CSEHeuristicDebugData GetDebugData()
+    {
+        if (!Configuration.DEBUG)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSEHeuristicDiagnosticsAreOnlyAvailableInDebugBuilds);
+            return default!;
+        }
+
+        return Compiler.DebugData.Get(this);
+    }
+
+    protected List<uint> GetSequence()
+    {
+        var debugData = GetDebugData();
+        return debugData.Sequence ??= [];
+    }
 
     public Compiler.codeOptimize CodeOptKind() => codeOptKind;
     public bool MadeChanges() => madeChanges;
@@ -35,18 +51,7 @@ public abstract partial class CSE_HeuristicCommon
     {
         if (Configuration.DEBUG)
         {
-            global::System.Collections.Generic.List<uint> __jitExceptionReceiver520;
-            var __jitExceptionCoalesceLeft521 = m_sequence;
-            if (__jitExceptionCoalesceLeft521 != null)
-            {
-                __jitExceptionReceiver520 = __jitExceptionCoalesceLeft521;
-            }
-            else
-            {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSEHeuristicMetricsAreOnlyAvailableInDebugBuilds);
-                __jitExceptionReceiver520 = default;
-            }
-            __jitExceptionReceiver520.Add(0);
+            GetSequence().Add(0);
         }
     }
 
@@ -69,18 +74,7 @@ public abstract partial class CSE_HeuristicCommon
     public virtual void DumpMetrics()
     {
         EnsureDebugDiagnosticsAvailable();
-        global::System.Collections.Generic.List<uint> __jitExceptionResult522;
-        var __jitExceptionCoalesceLeft523 = m_sequence;
-        if (__jitExceptionCoalesceLeft523 != null)
-        {
-            __jitExceptionResult522 = __jitExceptionCoalesceLeft523;
-        }
-        else
-        {
-            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSEHeuristicMetricsHaveNotBeenInitialized);
-            __jitExceptionResult522 = default;
-        }
-        var sequence = __jitExceptionResult522;
+        var sequence = GetSequence();
         Globals.jitprintf($" {Name()} seq ");
         for (var index = 0; index < sequence.Count; index++)
         {

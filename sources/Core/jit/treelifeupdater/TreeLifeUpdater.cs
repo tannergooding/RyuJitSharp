@@ -11,22 +11,20 @@ public sealed class TreeLifeUpdater
 {
     private readonly Compiler _compiler;
     private readonly bool _forCodeGen;
-#if DEBUG
-    private readonly int _epoch;
-    private nint[] _oldLife;
-    private nint[] _oldStackPtrsLife;
-#endif
 
     public TreeLifeUpdater(Compiler compiler, bool forCodeGen)
     {
         _compiler = compiler;
         _forCodeGen = forCodeGen;
-#if DEBUG
-        _epoch = compiler.CurLVEpoch;
-        _oldLife = VarSetOps.MakeEmpty(compiler);
-        _oldStackPtrsLife = VarSetOps.MakeEmpty(compiler);
-#endif
+
+        if (Configuration.DEBUG)
+        {
+            _ = Compiler.DebugData.Get(this, compiler);
+        }
     }
+
+    private Compiler.DebugData.TreeLifeUpdaterDebugData GetDebugData()
+        => Compiler.DebugData.Get(this, _compiler);
 
     public bool UpdateLifeFieldVar(GenTreeLclVar lclNode, byte multiRegIndex)
     {
@@ -257,9 +255,11 @@ public sealed class TreeLifeUpdater
 
     public void UpdateLife(GenTree tree, bool generalLclAddrHandling = false)
     {
-#if DEBUG
-        assert(_compiler.CurLVEpoch == _epoch);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler.CurLVEpoch == GetDebugData().Epoch);
+        }
+
         if (tree == _compiler.compCurLifeTree)
         {
             return;
@@ -301,29 +301,33 @@ public sealed class TreeLifeUpdater
 
     private void StoreCurrentLifeForDump()
     {
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
-            VarSetOps.Assign(_compiler, ref _oldLife, _compiler.compCurLife);
+            var debugData = GetDebugData();
+            VarSetOps.Assign(_compiler, ref debugData.OldLife, _compiler.compCurLife);
 
             if (_forCodeGen)
             {
                 assert(_compiler.codeGen is not null);
-                VarSetOps.Assign(_compiler, ref _oldStackPtrsLife, _compiler.codeGen.GCInfo.gcVarPtrSetCur);
+                VarSetOps.Assign(_compiler, ref debugData.OldStackPtrsLife, _compiler.codeGen.GCInfo.gcVarPtrSetCur);
             }
         }
-#endif
     }
 
     private void DumpLifeDelta(GenTree tree)
     {
-#if DEBUG
-        if (_compiler.verbose && !VarSetOps.Equal(_compiler, _oldLife, _compiler.compCurLife))
+        if (!Configuration.DEBUG || !_compiler.verbose)
+        {
+            return;
+        }
+
+        var debugData = GetDebugData();
+        if (!VarSetOps.Equal(_compiler, debugData.OldLife, _compiler.compCurLife))
         {
             jitprintf($"\t\t\t\t\t\t\tLive vars after [{tree.TreeId:D6}]: ");
-            dumpConvertedVarSet(_compiler, _oldLife);
-            var deadSet = VarSetOps.Diff(_compiler, _oldLife, _compiler.compCurLife);
-            var bornSet = VarSetOps.Diff(_compiler, _compiler.compCurLife, _oldLife);
+            dumpConvertedVarSet(_compiler, debugData.OldLife);
+            var deadSet = VarSetOps.Diff(_compiler, debugData.OldLife, _compiler.compCurLife);
+            var bornSet = VarSetOps.Diff(_compiler, _compiler.compCurLife, debugData.OldLife);
 
             if (!VarSetOps.IsEmpty(_compiler, deadSet))
             {
@@ -342,19 +346,18 @@ public sealed class TreeLifeUpdater
             jitprintf("\n");
         }
 
-        if (_forCodeGen && _compiler.verbose)
+        if (_forCodeGen)
         {
             assert(_compiler.codeGen is not null);
 
-            if (!VarSetOps.Equal(_compiler, _oldStackPtrsLife, _compiler.codeGen.GCInfo.gcVarPtrSetCur))
+            if (!VarSetOps.Equal(_compiler, debugData.OldStackPtrsLife, _compiler.codeGen.GCInfo.gcVarPtrSetCur))
             {
                 jitprintf($"\t\t\t\t\t\t\tGC vars after [{tree.TreeId:D6}]: ");
-                dumpConvertedVarSet(_compiler, _oldStackPtrsLife);
+                dumpConvertedVarSet(_compiler, debugData.OldStackPtrsLife);
                 jitprintf(" => ");
                 dumpConvertedVarSet(_compiler, _compiler.codeGen.GCInfo.gcVarPtrSetCur);
                 jitprintf("\n");
             }
         }
-#endif
     }
 }

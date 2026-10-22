@@ -386,7 +386,7 @@ internal static unsafe class AddressLoweringTests
         compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaTable = new LclVarDsc[2];
         compiler.lvaCount = 2;
         compiler.lvaTable[0].Type = var_types.TYP_LONG;

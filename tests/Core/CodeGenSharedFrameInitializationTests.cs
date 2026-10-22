@@ -271,7 +271,7 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
         JitFlags flags = default;
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.info.compMethodInfo = &methodInfo;
         compiler.eeInfoInitialized = true;
         compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;

@@ -46,7 +46,7 @@ public partial class Compiler
     public unsafe void eeSetLVdone()
     {
         assert(opts.compScopeInfo);
-        if (Configuration.DEBUG && (verbose || opts.dspDebugInfo))
+        if (Configuration.DEBUG && (verbose || dspDebugInfo))
         {
             eeDispVars(info.compMethodHnd, eeVarsCount, eeVars);
         }

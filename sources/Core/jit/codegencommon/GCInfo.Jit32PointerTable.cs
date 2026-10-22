@@ -1184,7 +1184,7 @@ public partial struct GCInfo
         {
             unchecked
             {
-                s_gcTotalPtrTabSize += totalSize;
+                PointerTableStatisticsData.s_gcTotalPtrTabSize += totalSize;
             }
         }
 

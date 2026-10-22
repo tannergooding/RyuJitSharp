@@ -33,7 +33,7 @@ internal static unsafe class CodeGenTestSupport
         JitFlags flags = default;
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         if (Configuration.DEBUG_EMIT)
         {
             // DEBUG_EMIT diagnostics consume descriptor metadata that Release otherwise omits.

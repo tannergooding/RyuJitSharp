@@ -138,7 +138,7 @@ internal static unsafe class InlineReportingTests
         compiler._inlineStrategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         using var jitTls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;

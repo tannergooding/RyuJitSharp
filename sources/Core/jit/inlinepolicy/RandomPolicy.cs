@@ -7,8 +7,6 @@ namespace RyuJitSharp;
 
 public sealed class RandomPolicy : DiscretionaryPolicy
 {
-    private readonly CLRRandom _random;
-
     public RandomPolicy(Compiler compiler, bool isPrejitRoot)
         : base(compiler, isPrejitRoot)
     {
@@ -19,7 +17,7 @@ public sealed class RandomPolicy : DiscretionaryPolicy
 
         var strategy = compiler._inlineStrategy;
         assert(strategy is not null);
-        _random = strategy.GetRandom();
+        _ = strategy.GetRandom();
     }
 
     public override string Name => nameof(RandomPolicy);
@@ -69,7 +67,9 @@ public sealed class RandomPolicy : DiscretionaryPolicy
             <= 200 => 5,
             _ => 1,
         };
-        var randomValue = _random.Next(1, 100);
+        var strategy = _rootCompiler._inlineStrategy;
+        assert(strategy is not null);
+        var randomValue = strategy.GetRandom().Next(1, 100);
 
         if (randomValue > threshold)
         {

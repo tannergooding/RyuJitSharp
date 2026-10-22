@@ -252,7 +252,7 @@ internal static unsafe class LinearScanAllocationTraversalTests
                 interval, 4, RefType.RefTypeUse, compiler.gtNewLclvNode(type, 0), mask);
             if (TestConfiguration.IsDebug)
             {
-                StressMask(allocator) = forceSpill ? 0x800 : 0;
+                TestConfiguration.SetLinearScanStressMask(allocator, forceSpill ? 0x800 : 0);
             }
 
             AllocateRegisters(allocator);
@@ -412,7 +412,7 @@ internal static unsafe class LinearScanAllocationTraversalTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_MINOPT;
         compiler.lvaRefCountState = RCS_NORMAL;
         compiler.compFloatingPointUsed = true;
@@ -469,10 +469,7 @@ internal static unsafe class LinearScanAllocationTraversalTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_registerCandidateVars")]
     private static extern ref nint[] RegisterCandidateVars(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpRegisters")]
+[UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpRegisters")]
     private static extern regMaskTP AllocationDumpRegisters(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "canSkipUpperVectorSave")]

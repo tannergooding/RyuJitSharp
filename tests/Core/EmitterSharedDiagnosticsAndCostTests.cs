@@ -56,7 +56,7 @@ internal static unsafe class EmitterSharedDiagnosticsAndCostTests
         var compiler = CreateCompiler();
         if (TestConfiguration.IsDebug)
         {
-            compiler.opts.disAddr = display;
+            compiler.disAddr = display;
         }
 
         compiler.opts.disDiffable = diffable;

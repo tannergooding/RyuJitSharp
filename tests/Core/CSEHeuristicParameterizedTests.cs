@@ -294,7 +294,7 @@ internal static unsafe class CSEHeuristicParameterizedTests
         CalleeTrash(compiler) = CNT_CALLEE_TRASH_INT_INIT;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;

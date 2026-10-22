@@ -105,7 +105,7 @@ internal static unsafe class HardwareMaskInversionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX512);
         compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX512);
         compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_AVX512);

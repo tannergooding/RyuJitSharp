@@ -25,7 +25,7 @@ internal static unsafe class OptimizedStoreLoweringTests
         compiler.lvaAsyncContinuationArg = Globals.BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaTable = new LclVarDsc[2];
         compiler.lvaCount = 2;
         var layout = new ClassLayout(8);

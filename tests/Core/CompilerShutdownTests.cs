@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using NUnit.Framework;
+using static RyuJitSharp.Compiler.MeasurementData.MethodCounts;
+using static RyuJitSharp.Globals.CodeSizeStatisticsData;
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp.UnitTests;
@@ -81,9 +83,9 @@ internal static unsafe class CompilerShutdownTests
             gcHeaderNSize = 20;
             gcPtrMapISize = 12;
             gcPtrMapNSize = 8;
-            Compiler.genMethodCnt = 4;
-            Compiler.genMethodICnt = 3;
-            Compiler.genMethodNCnt = 1;
+            genMethodCnt = 4;
+            genMethodICnt = 3;
+            genMethodNCnt = 1;
             var output = CaptureSizeReport();
 
             Assert.That(output, Does.Contain(
@@ -105,14 +107,14 @@ internal static unsafe class CompilerShutdownTests
         WithState(() => {
             grossVMsize = grossNCsize = totalNCsize = 17;
             gcHeaderISize = gcHeaderNSize = gcPtrMapISize = gcPtrMapNSize = 19;
-            Compiler.genMethodICnt = Compiler.genMethodNCnt = 23;
+            genMethodICnt = genMethodNCnt = 23;
 
             Compiler.compStartup();
 
             Assert.That((grossVMsize, grossNCsize, totalNCsize), Is.EqualTo(((nuint)0, (nuint)0, (nuint)0)));
             Assert.That((gcHeaderISize, gcHeaderNSize, gcPtrMapISize, gcPtrMapNSize),
                 Is.EqualTo(((nuint)19, (nuint)19, (nuint)19, (nuint)19)));
-            Assert.That((Compiler.genMethodICnt, Compiler.genMethodNCnt), Is.EqualTo((23U, 23U)));
+            Assert.That((genMethodICnt, genMethodNCnt), Is.EqualTo((23U, 23U)));
         });
     }
 
@@ -144,8 +146,12 @@ internal static unsafe class CompilerShutdownTests
         }
 
         WithState(() => {
-            var saved = (s_fatalBadCodeCount, s_fatalNoWayCount, s_fatalImplLimitationCount,
-                s_fatalNoMemCount, s_fatalNoWayAssertBodyCount, s_fatalNyiCount);
+            var saved = (Globals.FatalStatisticsData.s_fatalBadCodeCount,
+                Globals.FatalStatisticsData.s_fatalNoWayCount,
+                Globals.FatalStatisticsData.s_fatalImplLimitationCount,
+                Globals.FatalStatisticsData.s_fatalNoMemCount,
+                Globals.FatalStatisticsData.s_fatalNoWayAssertBodyCount,
+                Globals.FatalStatisticsData.s_fatalNyiCount);
             var savedArgs = TestConfiguration.IsDebug
                 ? TestConfiguration.GetFatalNoWayAssertBodyArgsCount()
                 : 0;
@@ -161,8 +167,12 @@ internal static unsafe class CompilerShutdownTests
 
             try
             {
-                s_fatalBadCodeCount = s_fatalNoWayCount = s_fatalImplLimitationCount = 0;
-                s_fatalNoMemCount = s_fatalNoWayAssertBodyCount = s_fatalNyiCount = 0;
+                Globals.FatalStatisticsData.s_fatalBadCodeCount =
+                    Globals.FatalStatisticsData.s_fatalNoWayCount =
+                    Globals.FatalStatisticsData.s_fatalImplLimitationCount = 0;
+                Globals.FatalStatisticsData.s_fatalNoMemCount =
+                    Globals.FatalStatisticsData.s_fatalNoWayAssertBodyCount =
+                    Globals.FatalStatisticsData.s_fatalNyiCount = 0;
                 if (TestConfiguration.IsDebug)
                 {
                     TestConfiguration.SetFatalNoWayAssertBodyArgsCount(0);
@@ -199,8 +209,12 @@ internal static unsafe class CompilerShutdownTests
             finally
             {
                 JitTls.Compiler = previousCompiler;
-                (s_fatalBadCodeCount, s_fatalNoWayCount, s_fatalImplLimitationCount,
-                    s_fatalNoMemCount, s_fatalNoWayAssertBodyCount, s_fatalNyiCount) = saved;
+                (Globals.FatalStatisticsData.s_fatalBadCodeCount,
+                    Globals.FatalStatisticsData.s_fatalNoWayCount,
+                    Globals.FatalStatisticsData.s_fatalImplLimitationCount,
+                    Globals.FatalStatisticsData.s_fatalNoMemCount,
+                    Globals.FatalStatisticsData.s_fatalNoWayAssertBodyCount,
+                    Globals.FatalStatisticsData.s_fatalNyiCount) = saved;
                 if (TestConfiguration.IsDebug)
                 {
                     TestConfiguration.SetFatalNoWayAssertBodyArgsCount(savedArgs);
@@ -219,24 +233,24 @@ internal static unsafe class CompilerShutdownTests
         }
 
         WithState(() => {
-            var saved = s_fatalBadCodeCount;
+            var saved = Globals.FatalStatisticsData.s_fatalBadCodeCount;
             using var output = new MemoryStream();
             using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
             s_jitstdout = writer;
 
             try
             {
-                s_fatalBadCodeCount = initial;
+                Globals.FatalStatisticsData.s_fatalBadCodeCount = initial;
                 _ = Assert.Throws<FatalJitException>(badCode);
                 Compiler.compShutdown();
                 writer.Flush();
 
-                Assert.That(s_fatalBadCodeCount, Is.EqualTo(expected));
+                Assert.That(Globals.FatalStatisticsData.s_fatalBadCodeCount, Is.EqualTo(expected));
                 Assert.That(Encoding.UTF8.GetString(output.ToArray()), Does.Contain($"   badCode:             {expected}\n"));
             }
             finally
             {
-                s_fatalBadCodeCount = saved;
+                Globals.FatalStatisticsData.s_fatalBadCodeCount = saved;
             }
         });
     }
@@ -248,16 +262,16 @@ internal static unsafe class CompilerShutdownTests
             Assert.Ignore("Fatal counters are enabled for this build.");
         }
 
-        var previous = s_fatalBadCodeCount;
+        var previous = Globals.FatalStatisticsData.s_fatalBadCodeCount;
         try
         {
             var exception = Assert.Throws<FatalJitException>(badCode);
             Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_BADCODE));
-            Assert.That(s_fatalBadCodeCount, Is.EqualTo(previous));
+            Assert.That(Globals.FatalStatisticsData.s_fatalBadCodeCount, Is.EqualTo(previous));
         }
         finally
         {
-            s_fatalBadCodeCount = previous;
+            Globals.FatalStatisticsData.s_fatalBadCodeCount = previous;
         }
     }
 
@@ -346,8 +360,8 @@ internal static unsafe class CompilerShutdownTests
         WithState(() => {
             fixed (byte* name = "Example\0"u8)
             {
-                AltAssemblies(null) = new AssemblyNamesList2(name);
-                AltInitialized(null) = true;
+                Compiler.AltJitData.s_pAltJitExcludeAssembliesList = new AssemblyNamesList2(name);
+                Compiler.AltJitData.s_pAltJitExcludeAssembliesListInitialized = true;
                 if (TestConfiguration.IsDebug)
                 {
                     Compiler.DebugData.s_pJitDisasmIncludeAssembliesList =
@@ -358,8 +372,8 @@ internal static unsafe class CompilerShutdownTests
 
             Compiler.compShutdown();
 
-            Assert.That(AltAssemblies(null), Is.Null);
-            Assert.That(AltInitialized(null), Is.True);
+            Assert.That(Compiler.AltJitData.s_pAltJitExcludeAssembliesList, Is.Null);
+            Assert.That(Compiler.AltJitData.s_pAltJitExcludeAssembliesListInitialized, Is.True);
             if (TestConfiguration.IsDebug)
             {
                 Assert.That(Compiler.DebugData.s_pJitDisasmIncludeAssembliesList, Is.Null);
@@ -463,7 +477,7 @@ internal static unsafe class CompilerShutdownTests
             using var csv = new StreamWriter(csvStream);
             s_jitstdout = writer;
             CsvFile(null) = csv;
-            Compiler.genMethodCnt = 0;
+            genMethodCnt = 0;
             XmlHeader = true;
             LoopStats(ref JitConfig) = 1;
             try
@@ -537,18 +551,18 @@ internal static unsafe class CompilerShutdownTests
         var csv = CsvFile(null);
         var timeFile = TimeLogFile(null);
         var summary = CompTimeSummaryInfo.s_compTimeSummary;
-        var alt = AltAssemblies(null);
-        var altInitialized = AltInitialized(null);
-        var methodCount = Compiler.genMethodCnt;
-        Compiler.genMethodCnt = 1;
+        var alt = Compiler.AltJitData.s_pAltJitExcludeAssembliesList;
+        var altInitialized = Compiler.AltJitData.s_pAltJitExcludeAssembliesListInitialized;
+        var methodCount = genMethodCnt;
+        genMethodCnt = 1;
         (nuint GrossVMsize, nuint GrossNCsize, nuint TotalNCsize, nuint GCHeaderISize, nuint GCHeaderNSize,
             nuint GCPtrMapISize, nuint GCPtrMapNSize, uint Interruptible, uint NonInterruptible) sizeStatistics = default;
         if (Configuration.DISPLAY_SIZES)
         {
             sizeStatistics = (grossVMsize, grossNCsize, totalNCsize, gcHeaderISize, gcHeaderNSize,
-                gcPtrMapISize, gcPtrMapNSize, Compiler.genMethodICnt, Compiler.genMethodNCnt);
+                gcPtrMapISize, gcPtrMapNSize, genMethodICnt, genMethodNCnt);
             grossVMsize = grossNCsize = totalNCsize = gcHeaderISize = gcHeaderNSize = gcPtrMapISize = gcPtrMapNSize = 0;
-            Compiler.genMethodICnt = Compiler.genMethodNCnt = 0;
+            genMethodICnt = genMethodNCnt = 0;
         }
         var dump = TestConfiguration.IsDebug
             ? Compiler.DebugData.s_pJitDisasmIncludeAssembliesList
@@ -575,13 +589,13 @@ internal static unsafe class CompilerShutdownTests
             CsvFile(null) = csv;
             TimeLogFile(null) = timeFile;
             CompTimeSummaryInfo.s_compTimeSummary = summary;
-            AltAssemblies(null) = alt;
-            AltInitialized(null) = altInitialized;
-            Compiler.genMethodCnt = methodCount;
+            Compiler.AltJitData.s_pAltJitExcludeAssembliesList = alt;
+            Compiler.AltJitData.s_pAltJitExcludeAssembliesListInitialized = altInitialized;
+            genMethodCnt = methodCount;
             if (Configuration.DISPLAY_SIZES)
             {
                 (grossVMsize, grossNCsize, totalNCsize, gcHeaderISize, gcHeaderNSize,
-                    gcPtrMapISize, gcPtrMapNSize, Compiler.genMethodICnt, Compiler.genMethodNCnt) = sizeStatistics;
+                    gcPtrMapISize, gcPtrMapNSize, genMethodICnt, genMethodNCnt) = sizeStatistics;
             }
             if (TestConfiguration.IsDebug)
             {
@@ -598,17 +612,11 @@ internal static unsafe class CompilerShutdownTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "compJitTimeLogFilename")]
     private static extern ref nint TimeLogFile(Compiler? compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_pAltJitExcludeAssembliesList")]
-    private static extern ref AssemblyNamesList2? AltAssemblies(Compiler? compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_pAltJitExcludeAssembliesListInitialized")]
-    private static extern ref bool AltInitialized(Compiler? compiler);
-
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitTimeLogCsv")]
     private static extern ref byte* CsvConfig(ref JitConfigValues config);
 
     private static FieldInfo XmlHeaderField =>
-        typeof(InlineStrategy).GetNestedType("XmlDumpState", BindingFlags.NonPublic)?
+        typeof(Compiler.DebugData.InlineXmlDumpData)
             .GetField("HasDumpedXmlHeader", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("Missing XML dump header state.");
 
@@ -624,13 +632,13 @@ internal static unsafe class CompilerShutdownTests
         }
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitInlineDumpXmlFile")]
-    private static extern ref byte* XmlFile(ref JitConfigValues config);
+    private static ref byte* XmlFile(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitInlineDumpXmlFile;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_displayLoopHoistStats")]
-    private static extern ref int LoopStats(ref JitConfigValues config);
+    private static ref int LoopStats(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._displayLoopHoistStats;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEnregStats")]
-    private static extern ref int EnregStats(ref JitConfigValues config);
+    private static ref int EnregStats(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitEnregStats;
 
 }

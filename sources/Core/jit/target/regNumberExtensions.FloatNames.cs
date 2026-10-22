@@ -16,6 +16,7 @@ public static partial class regNumberExtensions
             if (!Configuration.DEBUG)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FloatingRegisterNamesAreOnlyAvailableInDebugBuilds);
+                return default!;
             }
 
             if (Configuration.TARGET_ARM)
@@ -144,7 +145,7 @@ public static partial class regNumberExtensions
                 return GetName(reg);
             }
 
-            var floatNames = FloatRegisterNames.s_floatNames;
+            var floatNames = Compiler.DebugData.FloatRegisterNames.FloatNames;
             assert((uint)reg < (uint)floatNames.Length,
                 conditionExpression: "(unsigned)reg < ArrLen(regNamesFloat)");
 
@@ -152,12 +153,12 @@ public static partial class regNumberExtensions
             {
                 if (type == TYP_SIMD64)
                 {
-                    return FloatRegisterNames.s_zmmNames[(int)reg];
+                    return Compiler.DebugData.FloatRegisterNames.ZmmNames[(int)reg];
                 }
 
                 if (type == TYP_SIMD32)
                 {
-                    return FloatRegisterNames.s_ymmNames[(int)reg];
+                    return Compiler.DebugData.FloatRegisterNames.YmmNames[(int)reg];
                 }
             }
 
@@ -165,23 +166,15 @@ public static partial class regNumberExtensions
         }
     }
 
-    // Keep the Debug-only prefixed names lazy until floating-register diagnostics need them.
-    private static class FloatRegisterNames
+    internal static string[] CreatePrefixedNames(string prefix)
     {
-        internal static readonly string[] s_floatNames = CreatePrefixedNames("x");
-        internal static readonly string[] s_ymmNames = CreatePrefixedNames("y");
-        internal static readonly string[] s_zmmNames = CreatePrefixedNames("z");
-
-        private static string[] CreatePrefixedNames(string prefix)
+        var names = new string[GetRegisterCount()];
+        for (var index = 0; index < names.Length; index++)
         {
-            var names = new string[GetRegisterCount()];
-            for (var index = 0; index < names.Length; index++)
-            {
-                names[index] = prefix + GetName((regNumber)index);
-            }
-
-            return names;
+            names[index] = prefix + GetName((regNumber)index);
         }
+
+        return names;
     }
 
     private static int GetRegisterCount()

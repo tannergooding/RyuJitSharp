@@ -219,7 +219,7 @@ internal static unsafe class LinearScanBlockOrderTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.opts.compFlags = minOpts ? CLFLG_MINOPT : 0;
         compiler.compFloatingPointUsed = true;
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);

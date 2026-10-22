@@ -221,7 +221,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             {
                 if (stressSpills)
                 {
-                    StressMask(allocator) = 0xc00;
+                    TestConfiguration.SetLinearScanStressMask(allocator, 0xc00);
                 }
             }
             InitMaxSpill(allocator);
@@ -442,8 +442,6 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "initMaxSpill")]
     private static extern void InitMaxSpill(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationPassComplete")]
     private static extern ref bool AllocationPassComplete(LinearScan allocator);
 

@@ -125,7 +125,7 @@ internal static unsafe class SysVX64LocalStoreLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.lvaTable = new LclVarDsc[4];

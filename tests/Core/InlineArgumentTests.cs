@@ -372,7 +372,7 @@ internal static unsafe class InlineArgumentTests
 
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         CORINFO_METHOD_INFO methodInfo = default;
         inlinee.info.compMethodInfo = &methodInfo;
         JitTls.Compiler = compiler;

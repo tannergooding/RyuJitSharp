@@ -453,7 +453,7 @@ internal static unsafe class IndirectStoreCoalescingTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(!optimized);
+        compiler.SetMinOpts(!optimized);
         compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
         compiler.lvaTable = new LclVarDsc[4];
         compiler.lvaCount = 1;

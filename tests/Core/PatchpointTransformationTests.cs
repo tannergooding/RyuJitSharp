@@ -215,7 +215,7 @@ internal static unsafe class PatchpointTransformationTests
         JitFlags flags = default;
         flags.Set(JitFlags.JIT_FLAG_TIER0);
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         using var jitTls = TestConfiguration.CreateJitTls();

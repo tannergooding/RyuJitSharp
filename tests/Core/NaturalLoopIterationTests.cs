@@ -14,6 +14,29 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class NaturalLoopIterationTests
 {
+    [Test]
+    public static void InitTreeUsesDebugDataSidecar()
+    {
+        SsaLivenessTests.WithCompiler(0, compiler =>
+        {
+            var info = new NaturalLoopIterInfo();
+            var tree = compiler.gtNewIconNode(TYP_INT, 1);
+
+            if (TestConfiguration.IsDebug)
+            {
+                info.InitTree = tree;
+
+                Assert.That(info.InitTree, Is.SameAs(tree));
+                Assert.That(Compiler.DebugData.Get(info).InitTree, Is.SameAs(tree));
+            }
+            else
+            {
+                _ = Assert.Throws<InvalidOperationException>(() => _ = info.InitTree);
+                _ = Assert.Throws<InvalidOperationException>(() => info.InitTree = tree);
+            }
+        });
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]

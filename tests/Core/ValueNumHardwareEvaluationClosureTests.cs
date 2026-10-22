@@ -533,7 +533,7 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.info.compCompHnd = jitInfo;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         JitTls.Compiler = compiler;
         try
         {

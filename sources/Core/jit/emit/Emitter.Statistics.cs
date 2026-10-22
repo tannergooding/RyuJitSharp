@@ -7,6 +7,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using static RyuJitSharp.Emitter.EmitterStatistics;
 
 namespace RyuJitSharp;
 
@@ -276,12 +277,24 @@ public partial class Emitter
         }
         else
         {
-            var format = precision switch {
-                1 => "F1",
-                2 => "F2",
-                3 => "F3",
-                _ => throw new ArgumentOutOfRangeException(nameof(precision)),
-            };
+            string __jitExceptionResult304;
+            switch (precision)
+            {
+                case 1:
+                    __jitExceptionResult304 = "F1";
+                    break;
+                case 2:
+                    __jitExceptionResult304 = "F2";
+                    break;
+                case 3:
+                    __jitExceptionResult304 = "F3";
+                    break;
+                default:
+                    JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitArgument.Precision);
+                    __jitExceptionResult304 = default;
+                    break;
+            }
+            var format = __jitExceptionResult304;
 
             output.Write(value.ToString(format, CultureInfo.InvariantCulture).PadLeft(width));
         }

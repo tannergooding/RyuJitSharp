@@ -158,7 +158,7 @@ internal static unsafe class ParameterLocalMappingTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.info.compArgsCount = 1;
         compiler.lvaTable = [
             new LclVarDsc { Type = TYP_STRUCT, lvIsParam = true, lvFieldLclStart = 1, lvFieldCnt = 1 },

@@ -131,7 +131,7 @@ internal static unsafe class ProfileCountTests
     {
         WithCompiler(compiler => {
             var blocks = CreateLinearGraph(compiler);
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             compiler.fgPgoDynamic = dynamicPgo;
 
             if (inlinee)
@@ -153,7 +153,7 @@ internal static unsafe class ProfileCountTests
     {
         WithCompiler(compiler => {
             _ = CreateLinearGraph(compiler);
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             compiler.fgPgoDynamic = true;
             Assert.That(IncorporateProfile(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
             Assert.That(compiler.fgPgoHaveWeights, Is.False);
@@ -167,7 +167,7 @@ internal static unsafe class ProfileCountTests
     {
         WithCompiler(compiler => {
             var blocks = CreateLinearGraph(compiler);
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             var data = stackalloc ulong[3] { 40, 40, 75 };
             var schema = stackalloc PgoInstrumentationSchema[3] {
                 new() { ILOffset = 0, InstrumentationKind = PgoInstrumentationKind.BasicBlockLongCount, Offset = 0 },
@@ -194,7 +194,7 @@ internal static unsafe class ProfileCountTests
     {
         WithCompiler(compiler => {
             var blocks = CreateLinearGraph(compiler);
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             var data = mismatched ? 40ul : 0ul;
             PgoInstrumentationSchema schema = new() {
                 ILOffset = mismatched ? 99 : 10,
@@ -222,7 +222,7 @@ internal static unsafe class ProfileCountTests
     {
         WithCompiler(compiler => {
             _ = CreateLinearGraph(compiler);
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             var schema = stackalloc PgoInstrumentationSchema[10] {
                 new() { InstrumentationKind = PgoInstrumentationKind.NumRuns, Other = firstRuns },
                 new() { InstrumentationKind = PgoInstrumentationKind.NumRuns, Other = secondRuns },
@@ -287,7 +287,7 @@ internal static unsafe class ProfileCountTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             _ = CreateLinearGraph(compiler);
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             compiler.fgPgoQueryResult = unchecked((int)0x80004001);
 
             if (bbopt)
@@ -313,7 +313,7 @@ internal static unsafe class ProfileCountTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             _ = CreateLinearGraph(compiler);
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             SynthesisMode(ref JitConfig) = mode;
             PgoInstrumentationSchema schema = new() { InstrumentationKind = PgoInstrumentationKind.GetLikelyClass };
 
@@ -340,18 +340,18 @@ internal static unsafe class ProfileCountTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             _ = CreateLinearGraph(compiler);
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             StressSeed(ref JitConfig) = 7;
             Assert.That(IncorporateProfile(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(compiler.Metrics.ProfileSynthesizedBlendedOrRepaired, Is.EqualTo(1));
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitSynthesizeCounts")]
-    private static extern ref int SynthesisMode(ref JitConfigValues config);
+    private static ref int SynthesisMode(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitSynthesizeCounts;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitPropagateSynthesizedCountsToProfileData")]
-    private static extern ref int PropagateSynthesis(ref JitConfigValues config);
+    private static ref int PropagateSynthesis(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitPropagateSynthesizedCountsToProfileData;
 
     private static string Capture(Compiler compiler, Action action)
     {
@@ -408,8 +408,8 @@ internal static unsafe class ProfileCountTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressBBProf")]
-    private static extern ref int StressSeed(ref JitConfigValues config);
+    private static ref int StressSeed(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitStressBBProf;
 
     private static void WithCompiler(Action<Compiler> action)
     {

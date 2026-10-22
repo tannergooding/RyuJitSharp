@@ -63,7 +63,21 @@ public sealed partial class LinearScan : IRegAlloc
     internal readonly List<Interval> intervals;
     internal readonly RegRecord[] physRegs;
 
-    private int _lsraStressMask;
+    private int _lsraStressMask
+    {
+        get
+        {
+            return Configuration.DEBUG ? Compiler.DebugData.Get(this).StressMask : 0;
+        }
+
+        set
+        {
+            if (Configuration.DEBUG)
+            {
+                Compiler.DebugData.Get(this).StressMask = value;
+            }
+        }
+    }
 
     public LinearScan(Compiler compiler)
     {
@@ -270,8 +284,8 @@ public sealed partial class LinearScan : IRegAlloc
 
         if (_lsraStressMask != 0)
         {
-            AllocationDebugData.StressRegsRange.EnsureInit(JitConfig.JitStressRegsRange);
-            if (!AllocationDebugData.StressRegsRange.Contains(_compiler.info.compMethodHash()))
+            Compiler.DebugData.LinearScanAllocationDebugData.StressRegsRange.EnsureInit(JitConfig.JitStressRegsRange);
+            if (!Compiler.DebugData.LinearScanAllocationDebugData.StressRegsRange.Contains(_compiler.info.compMethodHash()))
             {
                 JITDUMP($"*** JitStressRegs = 0x{_lsraStressMask:x} -- disabled by JitStressRegsRange\n");
                 _lsraStressMask = 0;

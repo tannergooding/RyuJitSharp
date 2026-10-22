@@ -43,7 +43,7 @@ internal static unsafe class HardwareContainmentPrerequisiteTests
         WithCompiler(compiler => {
             if (TestConfiguration.IsDebug)
             {
-                compiler.opts.compEnablePCRelAddr = true;
+                compiler.compEnablePCRelAddr = true;
             }
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1234);
             var intrinsic = Load(address);
@@ -141,7 +141,7 @@ internal static unsafe class HardwareContainmentPrerequisiteTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.lvaTable = [new LclVarDsc()];
         compiler.lvaCount = 1;

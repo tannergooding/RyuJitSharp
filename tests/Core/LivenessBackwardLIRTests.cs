@@ -705,7 +705,7 @@ internal static unsafe class LivenessBackwardLIRTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         compiler.info.compIsStatic = true;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.compHndBBtab = [];

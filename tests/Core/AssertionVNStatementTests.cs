@@ -256,7 +256,7 @@ internal static unsafe class AssertionVNStatementTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 2;
         TestConfiguration.SetCompilerFullName(compiler, nameof(AssertionVNStatementTests));

@@ -196,7 +196,7 @@ internal static unsafe class MemoryCallLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaTable = [new LclVarDsc(), new LclVarDsc()];
         compiler.lvaCount = 2;
         compiler.lvaTable[0].Type = TYP_BYREF;

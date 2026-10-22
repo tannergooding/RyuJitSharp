@@ -136,7 +136,7 @@ public partial class Emitter
                 {
                     emitGCvarLiveSet(offs, gcType, addr, disp);
                     if (Configuration.DEBUG &&
-                        (_compiler.verbose || _compiler.opts.disasmWithGC) &&
+                        (_compiler.verbose || _compiler.disasmWithGC) &&
                         (actualVarNum < _compiler.lvaCount) &&
                         _compiler.lvaGetDesc((int)actualVarNum).lvTracked)
                     {
@@ -170,7 +170,7 @@ public partial class Emitter
                 assert(!_compiler.lvaKeepAliveAndReportThis() || (offs != emitSyncThisObjOffs));
                 emitGCvarDeadSet(offs, addr, disp);
                 if (Configuration.DEBUG &&
-                    (_compiler.verbose || _compiler.opts.disasmWithGC) &&
+                    (_compiler.verbose || _compiler.disasmWithGC) &&
                     (varNum < _compiler.lvaCount) &&
                     _compiler.lvaGetDesc((int)varNum).lvTracked)
                 {

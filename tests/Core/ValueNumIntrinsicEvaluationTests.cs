@@ -367,7 +367,7 @@ internal static unsafe class ValueNumIntrinsicEvaluationTests
         {
             flags.Set(JitFlags.JIT_FLAG_AOT);
         }
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         JitTls.Compiler = compiler;
         try
         {

@@ -244,9 +244,9 @@ internal static unsafe class CodeGenPrologTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regAlloc")]
     private static extern ref IRegAlloc? Allocator(Compiler compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHalt")]
-    private static extern ref JitConfigValues.MethodSet HaltSelection(ref JitConfigValues config);
+    private static ref JitConfigValues.MethodSet HaltSelection(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitHalt;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHashHalt")]
-    private static extern ref int HaltHash(ref JitConfigValues config);
+    private static ref int HaltHash(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitHashHalt;
 }

@@ -36,7 +36,7 @@ public partial class Emitter
             var size = id.idOpSize();
             var dspOffs = Configuration.DEBUG &&
                 (Configuration.DUMP_GC_TABLES
-                    ? compiler.opts.dspGCtbls
+                    ? compiler.dspGCtbls
                     : !compiler.opts.disDiffable);
             assert((int)REG_ARM64_NA == (int)REG_ARM64_NA);
             nint imm;
@@ -1600,7 +1600,7 @@ public partial class Emitter
                 {
                     assert(false, "!\"JitBreakEmitOutputInstr reached\"");
                 }
-                if (compiler.verbose || compiler.opts.disasmWithGC)
+                if (compiler.verbose || compiler.disasmWithGC)
                 {
                     emitDispGCInfoDelta();
                 }

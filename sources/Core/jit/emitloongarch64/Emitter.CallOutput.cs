@@ -44,7 +44,7 @@ public partial class Emitter
         }
 
         emitUpdateLiveGCvars(gcVars, dst);
-        if (Configuration.DEBUG && compiler.opts.disasmWithGC)
+        if (Configuration.DEBUG && compiler.disasmWithGC)
         {
             emitDispGCVarDelta();
         }

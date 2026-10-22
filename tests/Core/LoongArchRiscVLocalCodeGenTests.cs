@@ -1057,7 +1057,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             compiler.opts.compReloc = useRelocation;
             if (TestConfiguration.IsDebug)
             {
-                CompEnablePCRelAddr(ref compiler.opts) = enablePcRelAddr;
+                TestConfiguration.SetCompEnablePCRelAddr(compiler, enablePcRelAddr);
             }
             var emitter = codeGen.Emitter;
             var instructionBuffer = CurrentInstructionBuffer(emitter)
@@ -2284,7 +2284,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             compiler.opts.compReloc = true;
             if (TestConfiguration.IsDebug)
             {
-                CompEnablePCRelAddr(ref compiler.opts) = true;
+                TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
             }
             var address = compiler.gtNewIconHandleNode((nint)context.Address, GTF_ICON_CONST_PTR);
             address.IsContained = true;
@@ -2449,7 +2449,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaCount = 1;
         compiler.lvaTable = [new LclVarDsc()];
         compiler.lvaTrackedCount = 1;
@@ -2618,6 +2618,4 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compEnablePCRelAddr")]
-    private static extern ref bool CompEnablePCRelAddr(ref Compiler.Options options);
 }

@@ -174,7 +174,7 @@ public partial class Emitter
             jitprintf($"{separator}bbWeight={refCntWtd2str(ig.igWeight)}");
             separator = ", ";
 
-            if (compiler.compCodeGenDone)
+            if (Configuration.DEBUG && compiler.compCodeGenDone)
             {
                 jitprintf(separator + "PerfScore " + ig.igPerfScore.ToString("F2", CultureInfo.InvariantCulture));
                 separator = ", ";

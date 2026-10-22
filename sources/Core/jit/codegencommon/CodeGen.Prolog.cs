@@ -50,13 +50,13 @@ public sealed partial class CodeGen
         JITDUMP("*************** In genFnProlog()\n");
         if (Configuration.DEBUG)
         {
-            _genInterruptibleUsed = true;
+            Compiler.DebugData.Get(_compiler).CodeGenInterruptibleUsed = true;
         }
         assert(_compiler.lvaDoneFrameLayout == Compiler.FINAL_FRAME_LAYOUT);
         Emitter.emitBegProlog();
         _compiler.unwindBegProlog();
         genIPmappingAddToFront(IPmappingDscKind.Prolog, default, true);
-        if (Configuration.DEBUG && _compiler.opts.dspCode)
+        if (Configuration.DEBUG && _compiler.dspCode)
         {
             jitprintf("\n__prolog:\n");
         }
@@ -535,7 +535,7 @@ public sealed partial class CodeGen
             noway_assert(gcRefLo == int.MaxValue);
             noway_assert(gcRefHi == -int.MaxValue);
         }
-        if (Configuration.DEBUG && _compiler.opts.dspCode)
+        if (Configuration.DEBUG && _compiler.dspCode)
         {
             jitprintf("\n");
         }

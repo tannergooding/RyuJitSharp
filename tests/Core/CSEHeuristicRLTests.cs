@@ -19,11 +19,11 @@ internal static unsafe class CSEHeuristicRLTests
     private static readonly double[] s_performLikelihoods = [0.5, 1.0];
     private static readonly int[] s_performedCandidate = [1];
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRLCSE")]
-    private static extern ref byte* RlParameters(ref JitConfigValues config);
+    private static ref byte* RlParameters(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitRLCSE;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRLCSEAlpha")]
-    private static extern ref byte* RlAlpha(ref JitConfigValues config);
+    private static ref byte* RlAlpha(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitRLCSEAlpha;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRLCSEGreedy")]
     private static extern ref int RlGreedy(ref JitConfigValues config);
@@ -31,17 +31,17 @@ internal static unsafe class CSEHeuristicRLTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRLCSEVerbose")]
     private static extern ref int RlVerbose(ref JitConfigValues config);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitReplayCSEReward")]
-    private static extern ref byte* ReplayReward(ref JitConfigValues config);
+    private static ref byte* ReplayReward(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitReplayCSEReward;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitReplayCSE")]
-    private static extern ref byte* ReplaySequence(ref JitConfigValues config);
+    private static ref byte* ReplaySequence(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitReplayCSE;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRLHookCSEDecisions")]
-    private static extern ref byte* HookDecisions(ref JitConfigValues config);
+    private static ref byte* HookDecisions(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitRLHookCSEDecisions;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRLHookEmitFeatureNames")]
-    private static extern ref int EmitFeatureNames(ref JitConfigValues config);
+    private static ref int EmitFeatureNames(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitRLHookEmitFeatureNames;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "optCSEtab")]
     private static extern ref CSEdsc?[] Candidates(Compiler compiler);
@@ -54,12 +54,6 @@ internal static unsafe class CSEHeuristicRLTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "m_parameters")]
     private static extern ref double[] Parameters(CSE_HeuristicParameterized heuristic);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "m_baseLikelihoods")]
-    private static extern ref List<double>? BaseLikelihoods(CSE_HeuristicParameterized heuristic);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "m_likelihoods")]
-    private static extern ref List<double> Likelihoods(CSE_HeuristicParameterized heuristic);
 
     [Test]
     public static void HookUsesZeroBasedIndicesCountsViableAttemptsAndEmitsOriginalSequence()
@@ -102,10 +96,11 @@ internal static unsafe class CSEHeuristicRLTests
                 var heuristic = new RecordingRL(compiler);
                 heuristic.ConsiderCandidates();
 
-                Assert.That(BaseLikelihoods(heuristic), Is.EqualTo(s_initialDistribution));
+                var debugData = Compiler.DebugData.Get(heuristic);
+                Assert.That(debugData.BaseLikelihoods, Is.EqualTo(s_initialDistribution));
                 var firstDraw = new CLRRandom(compiler.info.compMethodHash()).NextDouble();
                 Assert.That(heuristic.Performed, firstDraw < 0.5 ? Is.Empty : Is.EqualTo(s_performedCandidate));
-                Assert.That(Likelihoods(heuristic), Is.EqualTo(firstDraw < 0.5
+                Assert.That(debugData.Likelihoods, Is.EqualTo(firstDraw < 0.5
                     ? s_stopLikelihoods : s_performLikelihoods));
             }
         });
@@ -167,7 +162,7 @@ internal static unsafe class CSEHeuristicRLTests
                 heuristic.ConsiderCandidates();
 
                 Assert.That(heuristic.Performed, Is.EqualTo(s_performedCandidate));
-                Assert.That(BaseLikelihoods(heuristic), Is.Empty);
+                Assert.That(Compiler.DebugData.Get(heuristic).BaseLikelihoods, Is.Empty);
                 Assert.That(heuristic.MadeChanges(), Is.True);
             }
         });
@@ -277,7 +272,7 @@ internal static unsafe class CSEHeuristicRLTests
         compiler.info.compFullName = nameof(CSEHeuristicRLTests);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;

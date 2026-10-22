@@ -6,7 +6,9 @@ using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.CORINFO_RUNTIME_ABI;
 using static RyuJitSharp.CorJitAllocMemFlag;
+using static RyuJitSharp.Compiler.MeasurementData.MethodCounts;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.Globals.CodeSizeStatisticsData;
 using static RyuJitSharp.Phases;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
@@ -36,12 +38,12 @@ internal static unsafe class CodeGenMetadataPhaseTests
         if (Configuration.DISPLAY_SIZES)
         {
             previousSizes = (grossVMsize, grossNCsize, totalNCsize);
-            previousCounts = (Compiler.genMethodICnt, Compiler.genMethodNCnt);
+            previousCounts = (genMethodICnt, genMethodNCnt);
             grossVMsize = nuint.MaxValue - 10;
             grossNCsize = nuint.MaxValue - 3;
             totalNCsize = nuint.MaxValue - 7;
-            Compiler.genMethodICnt = 17;
-            Compiler.genMethodNCnt = 23;
+            genMethodICnt = 17;
+            genMethodNCnt = 23;
         }
         try
         {
@@ -197,8 +199,8 @@ internal static unsafe class CodeGenMetadataPhaseTests
                     Assert.That(grossVMsize, Is.EqualTo((nuint)26));
                     Assert.That(grossNCsize, Is.EqualTo(unchecked(nuint.MaxValue - 3 + emittedSize)));
                     Assert.That(totalNCsize, Is.EqualTo(unchecked(nuint.MaxValue - 7 + emittedSize + (nuint)state.GCSize)));
-                    Assert.That(Compiler.genMethodICnt, Is.EqualTo(codeGen.Interruptible ? 18U : 17U));
-                    Assert.That(Compiler.genMethodNCnt, Is.EqualTo(codeGen.Interruptible ? 23U : 24U));
+                    Assert.That(genMethodICnt, Is.EqualTo(codeGen.Interruptible ? 18U : 17U));
+                    Assert.That(genMethodNCnt, Is.EqualTo(codeGen.Interruptible ? 23U : 24U));
                 }
                 Assert.That(codeGen.RegSet.tmpGetAllFree(), Is.True);
                 Assert.That(codeGen.Emitter.emitCurIG, Is.Null);
@@ -210,7 +212,7 @@ internal static unsafe class CodeGenMetadataPhaseTests
             if (Configuration.DISPLAY_SIZES)
             {
                 (grossVMsize, grossNCsize, totalNCsize) = previousSizes;
-                (Compiler.genMethodICnt, Compiler.genMethodNCnt) = previousCounts;
+                (genMethodICnt, genMethodNCnt) = previousCounts;
             }
         }
     }
@@ -456,18 +458,18 @@ internal static unsafe class CodeGenMetadataPhaseTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_richDebugInfo")]
     private static extern ref int RichMappings(ref JitConfigValues config);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHalt")]
-    private static extern ref JitConfigValues.MethodSet HaltSelection(ref JitConfigValues config);
+    private static ref JitConfigValues.MethodSet HaltSelection(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitHalt;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHashHalt")]
-    private static extern ref int HaltHash(ref JitConfigValues config);
+    private static ref int HaltHash(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitHashHalt;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEmitUnitTests")]
-    private static extern ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config);
+    private static ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitEmitUnitTests;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRawHexCode")]
-    private static extern ref JitConfigValues.MethodSet RawHexSelection(ref JitConfigValues config);
+    private static ref JitConfigValues.MethodSet RawHexSelection(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitRawHexCode;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitForceFallback")]
-    private static extern ref int ForceFallback(ref JitConfigValues config);
+    private static ref int ForceFallback(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitForceFallback;
 }

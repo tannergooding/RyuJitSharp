@@ -43,7 +43,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             block.InsertAtEnd(ret);
             if (TestConfiguration.IsDebug && stressSpills)
             {
-                StressMask(allocator) = 0xc00;
+                TestConfiguration.SetLinearScanStressMask(allocator, 0xc00);
             }
 
             var status = allocator.DoRegisterAllocation();
@@ -97,7 +97,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             block.InsertAtEnd(ret);
             if (spill)
             {
-                StressMask(allocator) = 0xc00;
+                TestConfiguration.SetLinearScanStressMask(allocator, 0xc00);
             }
 
             BuildIntervals(allocator);
@@ -607,7 +607,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.opts.compFlags = (minOpts ? CLFLG_MINOPT : 0) | (enregister ? CLFLG_REGVAR : 0);
         compiler.fgPredsComputed = true;
         compiler.lvaTable = [];
@@ -673,14 +673,11 @@ internal static unsafe class LinearScanIntervalConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enregisterLocalVars")]
     private static extern ref bool EnregisterLocalVars(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
+private static ref byte* StressNames(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitStressModeNames;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
-    private static extern ref byte* StressNames(ref JitConfigValues config);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNamesOnly")]
-    private static extern ref int StressNamesOnly(ref JitConfigValues config);
+    private static ref int StressNamesOnly(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitStressModeNamesOnly;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_firstColdLocation")]
     private static extern ref uint FirstColdLocation(LinearScan allocator);

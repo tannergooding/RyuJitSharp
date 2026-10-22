@@ -57,7 +57,7 @@ public partial class Emitter
         {
             assert(emitIssuing);
         }
-        var dspOffs = Configuration.DEBUG && _compiler.opts.dspGCtbls;
+        var dspOffs = Configuration.DEBUG && _compiler.dspGCtbls;
         var dst = *dp;
         var sz = INSTR_DESC_SIZE;
         var ins = id.idIns();
@@ -1231,7 +1231,7 @@ public partial class Emitter
         // Stack variables cannot be used by the call. Kill them at the call's start,
         // before return-register changes, including at non-returning THROW boundaries.
         emitUpdateLiveGCvars(GCvars, *dp);
-        if (Configuration.DEBUG && (_compiler.verbose || _compiler.opts.disasmWithGC))
+        if (Configuration.DEBUG && (_compiler.verbose || _compiler.disasmWithGC))
         {
             emitDispGCVarDelta();
         }
@@ -1437,7 +1437,7 @@ public partial class Emitter
             var mask = inst3opImulReg(ins).SingleTypeMask;
             assert((mask & (emitThisGCrefRegs | emitThisByrefRegs)) == SRBM_NONE);
         }
-        if (Configuration.DEBUG && (_compiler.verbose || _compiler.opts.disasmWithGC))
+        if (Configuration.DEBUG && (_compiler.verbose || _compiler.disasmWithGC))
         {
             emitDispGCInfoDelta();
         }

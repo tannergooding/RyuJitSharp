@@ -1142,7 +1142,7 @@ internal static unsafe class UseEdgeIteratorTests
         }
 
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         JitTls.Compiler = compiler;
 
         try

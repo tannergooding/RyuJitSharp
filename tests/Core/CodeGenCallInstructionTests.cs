@@ -166,7 +166,7 @@ internal static unsafe class CodeGenCallInstructionTests
         {
             if (TestConfiguration.IsDebug)
             {
-                CompEnablePCRelAddr(ref compiler.opts) = true;
+                TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
             }
             var address = new GenTreeIntCon(TYP_LONG, 0x1234) { IsContained = true };
             var call = DirectCall(TYP_VOID);
@@ -358,6 +358,4 @@ internal static unsafe class CodeGenCallInstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisByrefRegs")]
     private static extern ref regMask ThisByrefs(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compEnablePCRelAddr")]
-    private static extern ref bool CompEnablePCRelAddr(ref Compiler.Options options);
 }

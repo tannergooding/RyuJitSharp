@@ -146,8 +146,6 @@ public partial class Compiler
 
     private static int jitTotalMethodCompiled;
 
-    private static int jitNestingLevel;
-
     private HelperToManagedMap? _helperToManagedMap;
 
     public FlowGraphDfsTree? _dfsTree;
@@ -203,8 +201,6 @@ public partial class Compiler
 
     /// <summary>True iff GcHeap and ByrefExposed memory have all the same def points.</summary>
     public bool byrefStatesMatchGcHeapStates;
-
-    public int acdCount;
 
     /// <summary>The following is the upper limit on how many expressions we'll keep track of for the CSE analysis.</summary>
     protected const int MAX_CSE_CNT = EXPSET_SZ;
@@ -267,9 +263,11 @@ public partial class Compiler
 
     public Options opts;
 
-    public static bool s_pAltJitExcludeAssembliesListInitialized;
-
-    public static AssemblyNamesList2? s_pAltJitExcludeAssembliesList;
+    internal static class AltJitData
+    {
+        internal static bool s_pAltJitExcludeAssembliesListInitialized;
+        internal static AssemblyNamesList2? s_pAltJitExcludeAssembliesList;
+    }
 
     public Info info = new Info();
 
@@ -284,9 +282,45 @@ public partial class Compiler
     /// <summary>the currently active phase dumps</summary>
     public PhaseDumps activePhaseDumps = PhaseDumps.DUMP_ALL;
 
-    internal static class ManagedAllocationStatsData
+    internal static partial class MeasurementData
     {
-        internal static bool s_dspMemStats;
+        internal static class BlockSize
+        {
+            internal static nint s_Size;
+            internal static nint s_Count;
+            internal static nuint s_FlowNodeCount;
+            internal static nuint s_FlowNodeSize;
+        }
+
+        internal static class ManagedAllocation
+        {
+            internal static bool s_dspMemStats;
+            private static Histogram? s_memAllocHistogram;
+
+            internal static Histogram memAllocHist =>
+                LazyInitializer.EnsureInitialized(
+                    ref s_memAllocHistogram,
+                    static () => new Histogram([64, 128, 192, 256, 512, 1024, 4096, 8192, 0]))!;
+        }
+
+        internal static class MethodCounts
+        {
+            internal static uint genMethodCnt;
+            internal static uint genMethodICnt;
+            internal static uint genMethodNCnt;
+        }
+
+        internal static class VarSetOperationCounts
+        {
+            internal static readonly BitSetSupport.BitSetOpCounter? Counter =
+                Configuration.VARSET_COUNTOPS ? new("VarSetOpCounts.log") : null;
+        }
+
+        internal static class AllVarSetOperationCounts
+        {
+            internal static readonly BitSetSupport.BitSetOpCounter? Counter =
+                Configuration.ALLVARSET_COUNTOPS ? new("AllVarSetOpCounts.log") : null;
+        }
     }
 
     public JitMetrics Metrics;
@@ -320,21 +354,11 @@ public partial class Compiler
     // The Refany type is the only struct type whose structure is implicitly assumed by IL.  We need its fields.
     public unsafe CORINFO_CLASS_HANDLE _refAnyClass;
 
-    private static class VarSetOpStatsData
-    {
-        internal static readonly BitSetSupport.BitSetOpCounter? Counter =
-            Configuration.VARSET_COUNTOPS ? new("VarSetOpCounts.log") : null;
-    }
+    public static BitSetSupport.BitSetOpCounter? _varsetOpCounter =>
+        MeasurementData.VarSetOperationCounts.Counter;
 
-    private static class AllVarSetOpStatsData
-    {
-        internal static readonly BitSetSupport.BitSetOpCounter? Counter =
-            Configuration.ALLVARSET_COUNTOPS ? new("AllVarSetOpCounts.log") : null;
-    }
-
-    public static BitSetSupport.BitSetOpCounter? _varsetOpCounter => VarSetOpStatsData.Counter;
-
-    public static BitSetSupport.BitSetOpCounter? _allvarsetOpCounter => AllVarSetOpStatsData.Counter;
+    public static BitSetSupport.BitSetOpCounter? _allvarsetOpCounter =>
+        MeasurementData.AllVarSetOperationCounts.Counter;
 
     public FpStructLoweringMap? _fpStructLoweringCache;
 
@@ -393,8 +417,6 @@ public partial class Compiler
     private regMask srbmAllMask;
 
     internal regMask srbmMskCalleeTrash;
-
-    private static ConfigMethodRange fJitStressRange;
 
     public unsafe Compiler(CORINFO_METHOD_HANDLE methodHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, InlineInfo? inlineInfo)
     {
@@ -456,10 +478,10 @@ public partial class Compiler
             //
             // Note the default (with JitStressRange not set) is that all
             // methods will be subject to stress.
-            fJitStressRange.EnsureInit(JitConfig.JitStressRange);
-            assert(!fJitStressRange.Error);
+            DebugData.MethodRangeData.fJitStressRange.EnsureInit(JitConfig.JitStressRange);
+            assert(!DebugData.MethodRangeData.fJitStressRange.Error);
 
-            if (fJitStressRange.Contains(info.compMethodHash()))
+            if (DebugData.MethodRangeData.fJitStressRange.Contains(info.compMethodHash()))
             {
                 var jitStressOnlyMethodSet = JitConfig.JitStressOnly;
                 compAllowStress = jitStressOnlyMethodSet.isEmpty() || jitStressOnlyMethodSet.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
@@ -2269,8 +2291,6 @@ public partial class Compiler
         }
     }
 
-    private static ConfigMethodRange fJitRange;
-
     public unsafe bool SkipMethod()
     {
         if (!Configuration.DEBUG)
@@ -2278,13 +2298,13 @@ public partial class Compiler
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SkipMethodIsOnlyAvailableInDebugBuilds);
         }
 
-        fJitRange.EnsureInit(JitConfig.JitRange);
-        assert(!fJitRange.Error);
+        DebugData.MethodRangeData.fJitRange.EnsureInit(JitConfig.JitRange);
+        assert(!DebugData.MethodRangeData.fJitRange.Error);
 
         // Normally JitConfig.JitRange() is null, we don't want to skip jitting any methods.
         // So, the logic below relies on the fact that a null range string passed to ConfigMethodRange represents the set of all methods.
 
-        if (!fJitRange.Contains(info.compMethodHash()))
+        if (!DebugData.MethodRangeData.fJitRange.Contains(info.compMethodHash()))
         {
             return true;
         }

@@ -288,7 +288,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             var constant = new GenTreeIntCon(TYP_INT, 42);
             ReferenceBuildLocation(allocator) = 2;
             BuildRefPositionsForNode(allocator, constant, 2);
-            StressMask(allocator) = 0x2000;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x2000);
             var negate = new GenTreeUnOp(GT_NEG, TYP_INT, constant);
 
             ReferenceBuildLocation(allocator) = 4;
@@ -313,7 +313,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             var definition = allocator.refPositions[^1];
             definition.registerAssignment = SRBM_ARM64_R0;
             definition.needsConsecutive = consecutive;
-            StressMask(allocator) = 0x08;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x08);
             var negate = new GenTreeUnOp(GT_NEG, TYP_INT, constant);
 
             ReferenceBuildLocation(allocator) = 4;
@@ -793,7 +793,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
                 ? SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V3 | SRBM_ARM64_V4
                 : SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2;
             first.delayRegFree = delayRegFree;
-            StressMask(allocator) = 3;
+            TestConfiguration.SetLinearScanStressMask(allocator, 3);
             InUse(allocator) = new regMaskTP(SRBM_ARM64_V2);
 
             FixedLow(allocator) = SRBM_ARM64_V0 | SRBM_ARM64_V1;
@@ -827,7 +827,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             compiler.compFloatingPointUsed = true;
             compiler.info.compNeedsConsecutiveRegisters = true;
             var allocator = new LinearScan(compiler);
-            StressMask(allocator) = 3;
+            TestConfiguration.SetLinearScanStressMask(allocator, 3);
             var address = new GenTreeIntCon(TYP_I_IMPL, 0x1000);
             var load = new GenTreeHWIntrinsic(
                 TYP_STRUCT, NI_AdvSimd_Arm64_Load2xVector128, TYP_INT, 16, address);
@@ -1070,10 +1070,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBlockNumber")]
     private static extern ref uint CurrentBlockNumber(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
-
-    private static readonly System.Collections.Generic.List<string> s_assertions = [];
+private static readonly System.Collections.Generic.List<string> s_assertions = [];
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
@@ -1082,8 +1079,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
         return 0;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
-    private static extern ref int AltJitSkipOnAssert(ref JitConfigValues config);
+    private static ref int AltJitSkipOnAssert(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._altJitSkipOnAssert;
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "stressLimitRegs")]
     private static extern regMask StressLimit(
@@ -1144,7 +1141,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.opts.compDbgEnC = debugEnC;
         TestConfiguration.SetCompilerFullName(compiler, nameof(Arm64LinearScanConstructionTests));
         if (debugEnC)

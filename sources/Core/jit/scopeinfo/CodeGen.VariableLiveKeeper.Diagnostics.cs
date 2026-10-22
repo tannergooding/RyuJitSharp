@@ -187,49 +187,7 @@ public sealed partial class CodeGen
             }
         }
 
-        private sealed class LiveRangeDumper
-        {
-            // Append-only range storage makes this index equivalent to the native stable list iterator.
-            private readonly Compiler m_compiler;
-            private readonly int m_varNum;
-            private int m_startingLiveRange;
-            private bool m_hasLiveRangesToDump;
-
-            public LiveRangeDumper(Compiler compiler, int varNum)
-            {
-                m_compiler = compiler;
-                m_varNum = varNum;
-            }
-
-            public Compiler Compiler => m_compiler;
-
-            public int VarNum => m_varNum;
-
-            public void resetDumper(List<VariableLiveRange> liveRanges)
-            {
-                assert(m_hasLiveRangesToDump);
-                if (liveRanges[^1].m_EndEmitLocation.Valid())
-                {
-                    m_hasLiveRangesToDump = false;
-                }
-                else
-                {
-                    m_startingLiveRange = liveRanges.Count - 1;
-                }
-            }
-
-            public void setDumperStartAt(int liveRangeIndex)
-            {
-                m_hasLiveRangesToDump = true;
-                m_startingLiveRange = liveRangeIndex;
-            }
-
-            public int getStartForDump() => m_startingLiveRange;
-
-            public bool hasLiveRangesToDump() => m_hasLiveRangesToDump;
-        }
-
-        private sealed partial class VariableLiveDescriptor
+        internal sealed partial class VariableLiveDescriptor
         {
             [System.Diagnostics.Conditional("DEBUG")]
             public void dumpAllRegisterLiveRangesForBlock(Emitter emit, CodeGen codeGen)

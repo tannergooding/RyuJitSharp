@@ -139,7 +139,7 @@ internal static unsafe class SimdAlignedMemoryCompletionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.info = new Compiler.Info();
         compiler.lvaTable = new LclVarDsc[128];
         JitTls.Compiler = compiler;

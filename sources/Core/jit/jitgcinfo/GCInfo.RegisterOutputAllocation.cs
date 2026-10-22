@@ -8,9 +8,6 @@ namespace RyuJitSharp;
 public partial struct GCInfo
 {
     // Mirrors sizeof(regPtrDsc) in jitgcinfo.h; the managed descriptor is a class.
-    private static readonly nuint s_nativeRegPtrDscSize =
-        Configuration.MEASURE_PTRTAB_SIZE ? getNativeRegPtrDscSize() : 0;
-
     private static nuint getNativeRegPtrDscSize()
     {
         var pointerSize = (nuint)System.IntPtr.Size;
@@ -63,7 +60,8 @@ public partial struct GCInfo
         {
             unchecked
             {
-                s_gcRegPtrDscSize += s_nativeRegPtrDscSize;
+                PointerTableStatisticsData.s_gcRegPtrDscSize +=
+                    PointerTableStatisticsData.s_nativeRegPtrDscSize;
             }
         }
 

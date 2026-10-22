@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.Emitter.EmitterStatistics;
 
 namespace RyuJitSharp;
 

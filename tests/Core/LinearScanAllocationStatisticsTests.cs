@@ -408,7 +408,7 @@ internal sealed unsafe class LinearScanAllocationStatisticsTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_MINOPT;
         compiler.compFloatingPointUsed = true;
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);

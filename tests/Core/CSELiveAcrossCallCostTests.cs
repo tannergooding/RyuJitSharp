@@ -135,7 +135,7 @@ internal static unsafe class CSELiveAcrossCallCostTests
         compiler.compHndBBtab = [];
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.opts.compCodeOpt = Compiler.BLENDED_CODE;
         if (TestConfiguration.IsDebug)
         {

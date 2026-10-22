@@ -33,10 +33,10 @@ public sealed partial class InlineStrategy
             AutoFlush = true
         };
 
-        if (!XmlDumpState.HasDumpedDataHeader)
+        if (!global::RyuJitSharp.Compiler.DebugData.InlineXmlDumpData.HasDumpedDataHeader)
         {
             DumpDataHeader(file);
-            XmlDumpState.HasDumpedDataHeader = true;
+            global::RyuJitSharp.Compiler.DebugData.InlineXmlDumpData.HasDumpedDataHeader = true;
         }
 
         DumpDataContents(file);
@@ -98,9 +98,9 @@ public sealed partial class InlineStrategy
 
         file ??= jitstdout();
 
-        lock (XmlDumpState.WriterLock)
+        lock (global::RyuJitSharp.Compiler.DebugData.InlineXmlDumpData.WriterLock)
         {
-            if (!XmlDumpState.HasDumpedXmlHeader)
+            if (!global::RyuJitSharp.Compiler.DebugData.InlineXmlDumpData.HasDumpedXmlHeader)
             {
                 DumpDataEnsurePolicyIsSet();
                 var dumpDataSetting = JitConfig.JitInlineDumpData;
@@ -124,7 +124,7 @@ public sealed partial class InlineStrategy
                 }
 
                 file.Write("<Methods>\n");
-                XmlDumpState.HasDumpedXmlHeader = true;
+                global::RyuJitSharp.Compiler.DebugData.InlineXmlDumpData.HasDumpedXmlHeader = true;
             }
 
             if ((_inlineCount == 0) && (JitConfig.JitInlineDumpXml >= 2))
@@ -174,14 +174,14 @@ public sealed partial class InlineStrategy
     public static void FinalizeXml(StreamWriter? file = null)
     {
         file ??= jitstdout();
-        lock (XmlDumpState.WriterLock)
+        lock (global::RyuJitSharp.Compiler.DebugData.InlineXmlDumpData.WriterLock)
         {
-            if (XmlDumpState.HasDumpedXmlHeader)
+            if (global::RyuJitSharp.Compiler.DebugData.InlineXmlDumpData.HasDumpedXmlHeader)
             {
                 file.Write("</Methods>\n");
                 file.Write("</InlineForest>\n");
                 file.Flush();
-                XmlDumpState.HasDumpedXmlHeader = false;
+                global::RyuJitSharp.Compiler.DebugData.InlineXmlDumpData.HasDumpedXmlHeader = false;
             }
         }
 

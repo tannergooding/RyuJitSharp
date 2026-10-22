@@ -284,7 +284,7 @@ internal static unsafe class LateCastExpansionTests
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.compHndBBtab = [];
         compiler.info.compCompHnd = &jitInfo;
         CORINFO_METHOD_INFO methodInfo = default;

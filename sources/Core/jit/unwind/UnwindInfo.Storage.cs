@@ -1384,7 +1384,7 @@ public sealed partial class UnwindInfo
 
             fixed (byte* storage = finalInfo.Memory)
             {
-                if (Configuration.DEBUG && m_compiler.opts.dspUnwind)
+                if (Configuration.DEBUG && m_compiler.dspUnwind)
                 {
                     Globals.DumpUnwindInfo(m_compiler, isHotCode, startOffset, endOffset,
                         storage + finalInfo.Offset, unchecked((uint)finalInfo.Size));

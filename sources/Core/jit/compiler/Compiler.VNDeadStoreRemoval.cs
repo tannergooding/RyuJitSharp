@@ -9,14 +9,13 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private static ConfigMethodRange s_jitEnableVNBasedDeadStoreRemovalRange;
-
     public unsafe PhaseStatus optVNBasedDeadStoreRemoval()
     {
         if (Configuration.DEBUG)
         {
-            s_jitEnableVNBasedDeadStoreRemovalRange.EnsureInit(JitConfig.JitEnableVNBasedDeadStoreRemovalRange);
-            if (!s_jitEnableVNBasedDeadStoreRemovalRange.Contains(info.compMethodHash()))
+            DebugData.MethodRangeData.s_jitEnableVNBasedDeadStoreRemovalRange.EnsureInit(
+                JitConfig.JitEnableVNBasedDeadStoreRemovalRange);
+            if (!DebugData.MethodRangeData.s_jitEnableVNBasedDeadStoreRemovalRange.Contains(info.compMethodHash()))
             {
                 JITDUMP("VN-based dead store removal disabled by JitEnableVNBasedDeadStoreRemovalRange\n");
                 return PhaseStatus.MODIFIED_NOTHING;

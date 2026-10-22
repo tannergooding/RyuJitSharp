@@ -60,8 +60,8 @@ internal static class BlockToBlockMapTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitSsaStress")]
-    private static extern ref int SsaStress(ref JitConfigValues config);
+    private static ref int SsaStress(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitSsaStress;
 
     private static BasicBlock[] CreateBlocks(Compiler compiler)
     {

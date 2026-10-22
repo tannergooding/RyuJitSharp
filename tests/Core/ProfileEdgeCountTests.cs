@@ -236,7 +236,8 @@ internal static unsafe class ProfileEdgeCountTests
             JitConfig = config;
             var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
             var random = new CLRRandom(seed);
-            StrategyRandom(strategy) = random;
+            StrategyCompiler(strategy) = compiler;
+            Compiler.DebugData.Get(compiler).InlineStressRandom = random;
             compiler._inlineStrategy = strategy;
             var expectedRandom = new CLRRandom(seed);
             var blocks = CreateBlocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
@@ -255,11 +256,11 @@ internal static unsafe class ProfileEdgeCountTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRandomEdgeCounts")]
-    private static extern ref int RandomEdgeCounts(ref JitConfigValues config);
+    private static ref int RandomEdgeCounts(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitRandomEdgeCounts;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_random")]
-    private static extern ref CLRRandom? StrategyRandom(InlineStrategy strategy);
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_compiler")]
+    private static extern ref Compiler StrategyCompiler(InlineStrategy strategy);
 
     private readonly record struct Probe(int Source, int Target, ulong Count, bool Wide = false);
 

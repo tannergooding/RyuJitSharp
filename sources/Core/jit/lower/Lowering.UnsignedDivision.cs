@@ -89,7 +89,7 @@ public sealed partial class Lowering
         if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 ||
             Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-            if (compiler.opts.MinOpts || divisorValue < 3)
+            if (compiler.MinOpts || divisorValue < 3)
             {
                 return false;
             }

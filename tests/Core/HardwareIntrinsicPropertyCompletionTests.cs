@@ -200,7 +200,7 @@ internal static unsafe class HardwareIntrinsicPropertyCompletionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.info = new Compiler.Info();
         foreach (var instructionSet in new[] { InstructionSet_AVX, InstructionSet_AVX512 })
         {

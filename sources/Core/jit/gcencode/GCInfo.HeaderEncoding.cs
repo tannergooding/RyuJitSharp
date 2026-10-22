@@ -106,11 +106,13 @@ public partial struct GCInfo
         {
             if (_codeGen.Interruptible)
             {
-                Compiler.genMethodICnt = unchecked(Compiler.genMethodICnt + 1);
+                Compiler.MeasurementData.MethodCounts.genMethodICnt =
+                    unchecked(Compiler.MeasurementData.MethodCounts.genMethodICnt + 1);
             }
             else
             {
-                Compiler.genMethodNCnt = unchecked(Compiler.genMethodNCnt + 1);
+                Compiler.MeasurementData.MethodCounts.genMethodNCnt =
+                    unchecked(Compiler.MeasurementData.MethodCounts.genMethodNCnt + 1);
             }
         }
     }

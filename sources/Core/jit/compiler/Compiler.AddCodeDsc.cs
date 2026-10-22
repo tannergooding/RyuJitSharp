@@ -31,7 +31,30 @@ public partial class Compiler
         /// <summary>stack level in stack slots.</summary>
         public int acdStkLvl;
 
-        public int acdNum;
+        public uint acdNum
+        {
+            get
+            {
+                if (!Configuration.DEBUG)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AddCodeDscDumpIsOnlyAvailableInDebugBuilds);
+                    return default;
+                }
+
+                return global::RyuJitSharp.Compiler.DebugData.Get(this).Number;
+            }
+
+            set
+            {
+                if (!Configuration.DEBUG)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AddCodeDscDumpIsOnlyAvailableInDebugBuilds);
+                    return;
+                }
+
+                global::RyuJitSharp.Compiler.DebugData.Get(this).Number = value;
+            }
+        }
 
         /// <summary>determine new key designator after modifying the region indices.</summary>
         /// <param name="compiler">current compiler instance</param>

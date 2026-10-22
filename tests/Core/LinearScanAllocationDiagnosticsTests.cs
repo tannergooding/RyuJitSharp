@@ -161,69 +161,69 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
     [Test]
     public static void MinimalRegisterOrderSelectionIncrementsItsBlockStatistic()
     {
-        WithCompiler((compiler, _) => {
-            var allocator = CreateAllocator(compiler);
-            var interval = NewInterval(allocator, TYP_INT);
-            var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
+        TestConfiguration.WithLsraStatistics(() => WithCompiler((compiler, _) => {
+                var allocator = CreateAllocator(compiler);
+                var interval = NewInterval(allocator, TYP_INT);
+                var tree = compiler.gtNewIconNode(TYP_INT, 1);
+                var definition = allocator.newRefPosition(
+                    interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
 
-            var selected = allocator.selectMinimal(interval, definition);
+                var selected = allocator.selectMinimal(interval, definition);
 
-            Assert.That(selected, Is.Not.EqualTo(SRBM_NONE));
-            Assert.That(allocator.getLsraStat(LsraStat.STAT_REG_ORDER, 0), Is.EqualTo(1u));
-            Assert.That(allocator.getLsraStat(LsraStat.STAT_REG_NUM, 0), Is.Zero);
-        });
+                Assert.That(selected, Is.Not.EqualTo(SRBM_NONE));
+                Assert.That(allocator.getLsraStat(LsraStat.STAT_REG_ORDER, 0), Is.EqualTo(1u));
+                Assert.That(allocator.getLsraStat(LsraStat.STAT_REG_NUM, 0), Is.Zero);
+            }));
     }
 
     [Test]
     public static void MinimalRegisterNumberFallbackIncrementsItsBlockStatistic()
     {
-        WithCompiler((compiler, codeGen) => {
-            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_X64_RBX | SRBM_X64_RCX);
-            var allocator = CreateAllocator(compiler);
-            var interval = NewInterval(allocator, TYP_INT);
-            var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX | SRBM_X64_RCX);
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
+        TestConfiguration.WithLsraStatistics(() => WithCompiler((compiler, codeGen) => {
+                codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_X64_RBX | SRBM_X64_RCX);
+                var allocator = CreateAllocator(compiler);
+                var interval = NewInterval(allocator, TYP_INT);
+                var tree = compiler.gtNewIconNode(TYP_INT, 1);
+                var definition = allocator.newRefPosition(
+                    interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX | SRBM_X64_RCX);
+                BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
 
-            var selected = allocator.selectMinimal(interval, definition);
+                var selected = allocator.selectMinimal(interval, definition);
 
-            Assert.That(selected, Is.EqualTo(SRBM_X64_RCX));
-            Assert.That(allocator.getLsraStat(LsraStat.STAT_REG_ORDER, 0), Is.Zero);
-            Assert.That(allocator.getLsraStat(LsraStat.STAT_REG_NUM, 0), Is.EqualTo(1u));
-        });
+                Assert.That(selected, Is.EqualTo(SRBM_X64_RCX));
+                Assert.That(allocator.getLsraStat(LsraStat.STAT_REG_ORDER, 0), Is.Zero);
+                Assert.That(allocator.getLsraStat(LsraStat.STAT_REG_NUM, 0), Is.EqualTo(1u));
+            }));
     }
 
     [Test]
     public static void CsvOutputReportsNativeSelectorStatisticNamesAndCounts()
     {
-        WithCompiler((compiler, codeGen) => {
-            compiler.info = new Compiler.Info { compFullName = "LSRAStatsTest" };
-            var allocator = CreateAllocator(compiler);
-            var interval = NewInterval(allocator, TYP_INT);
-            var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
-            _ = allocator.selectMinimal(interval, definition);
+        TestConfiguration.WithLsraStatistics(() => WithCompiler((compiler, codeGen) => {
+                compiler.info = new Compiler.Info { compFullName = "LSRAStatsTest" };
+                var allocator = CreateAllocator(compiler);
+                var interval = NewInterval(allocator, TYP_INT);
+                var tree = compiler.gtNewIconNode(TYP_INT, 1);
+                var definition = allocator.newRefPosition(
+                    interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
+                _ = allocator.selectMinimal(interval, definition);
 
-            using var stream = new MemoryStream();
-            using (var writer = new StreamWriter(stream, new UTF8Encoding(false), bufferSize: 1024, leaveOpen: true))
-            {
-                allocator.dumpLsraStatsCsv(writer);
-            }
+                using var stream = new MemoryStream();
+                using (var writer = new StreamWriter(stream, new UTF8Encoding(false), bufferSize: 1024, leaveOpen: true))
+                {
+                    allocator.dumpLsraStatsCsv(writer);
+                }
 
-            var csv = Encoding.UTF8.GetString(stream.ToArray());
-            var expectedHeader =
-                "\"Method Name\",\"SpillCount\",\"CopyReg\",\"ResolutionMovs\",\"SplitEdges\",\"FREE\"," +
-                "\"CONST_AVAILABLE\",\"THIS_ASSIGNED\",\"COVERS\",\"OWN_PREFERENCE\",\"COVERS_RELATED\"," +
-                "\"RELATED_PREFERENCE\",\"CALLER_CALLEE\",\"UNASSIGNED\",\"COVERS_FULL\",\"BEST_FIT\"," +
-                "\"IS_PREV_REG\",\"REG_ORDER\",\"SPILL_COST\",\"FAR_NEXT_REF\",\"PREV_REG_OPT\",\"REG_NUM\"," +
-                "\"PerfScore\"";
-            Assert.That(csv, Does.StartWith(expectedHeader + Environment.NewLine));
-            Assert.That(csv, Does.Contain("\"LSRAStatsTest\",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0.00"));
-        });
+                var csv = Encoding.UTF8.GetString(stream.ToArray());
+                var expectedHeader =
+                    "\"Method Name\",\"SpillCount\",\"CopyReg\",\"ResolutionMovs\",\"SplitEdges\",\"FREE\"," +
+                    "\"CONST_AVAILABLE\",\"THIS_ASSIGNED\",\"COVERS\",\"OWN_PREFERENCE\",\"COVERS_RELATED\"," +
+                    "\"RELATED_PREFERENCE\",\"CALLER_CALLEE\",\"UNASSIGNED\",\"COVERS_FULL\",\"BEST_FIT\"," +
+                    "\"IS_PREV_REG\",\"REG_ORDER\",\"SPILL_COST\",\"FAR_NEXT_REF\",\"PREV_REG_OPT\",\"REG_NUM\"," +
+                    "\"PerfScore\"";
+                Assert.That(csv, Does.StartWith(expectedHeader + Environment.NewLine));
+                Assert.That(csv, Does.Contain("\"LSRAStatsTest\",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0.00"));
+            }));
     }
 
     private static LinearScan CreateAllocator(Compiler compiler)
@@ -317,7 +317,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_MINOPT;
         compiler.compFloatingPointUsed = true;
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;

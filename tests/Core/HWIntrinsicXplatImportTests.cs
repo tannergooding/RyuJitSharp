@@ -340,7 +340,7 @@ internal static unsafe class HWIntrinsicXplatImportTests
 
         WithImporter(compiler => {
             TestConfiguration.SetCompilerFullName(compiler, nameof(LongGeometricSequenceWithConstantMultiplierDefersOrPreservesTheStack));
-            compiler.opts.SetMinOpts(minOpts);
+            compiler.SetMinOpts(minOpts);
             compiler.lvaTable[0].Type = TYP_LONG;
             var initial = new GenTreeLclVar(TYP_LONG, 0);
             var multiplier = compiler.gtNewLconNode(2);
@@ -550,7 +550,7 @@ internal static unsafe class HWIntrinsicXplatImportTests
         compiler.info.compCompHnd = &jitInfo;
         compiler.info.compMaxStack = 4;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.compCurBB = new BasicBlock(null, null);
         compiler.stackState.esStack = new StackEntry[4];
         compiler.lvaTable = [

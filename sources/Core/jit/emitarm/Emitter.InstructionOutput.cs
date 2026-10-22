@@ -966,7 +966,7 @@ public partial class Emitter
                 assert(size == expectedSize);
                 if (compiler.opts.disAsm || compiler.verbose)
                 {
-                    var displayOffsets = compiler.opts.dspGCtbls || !compiler.opts.disDiffable;
+                    var displayOffsets = compiler.dspGCtbls || !compiler.opts.disDiffable;
                     emitDispInsArm32(id, false, displayOffsets, true, emitCurCodeOffs(originalDst), *dp, (nuint)(dst - *dp), ig);
                 }
                 bool __jitExceptionCondition311;
@@ -999,7 +999,7 @@ public partial class Emitter
                 {
                     assert(false, "!\"JitBreakEmitOutputInstr reached\"");
                 }
-                if (compiler.verbose || compiler.opts.disasmWithGC)
+                if (compiler.verbose || compiler.disasmWithGC)
                 {
                     emitDispGCInfoDelta();
                 }
@@ -1034,7 +1034,7 @@ public partial class Emitter
         var compiler = __jitExceptionResult317;
         _ = compiler;
         emitUpdateLiveGCvars(gcVars, callStart);
-        if (Configuration.DEBUG && (compiler.verbose || compiler.opts.disasmWithGC))
+        if (Configuration.DEBUG && (compiler.verbose || compiler.disasmWithGC))
         {
             emitDispGCVarDelta();
         }

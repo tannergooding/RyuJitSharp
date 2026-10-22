@@ -2523,7 +2523,7 @@ internal static unsafe class AssertionTests
 
     private static void SetField(object target, string name, object value)
     {
-        var field = typeof(JitConfigValues).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
+        var field = TestConfiguration.GetJitConfigField(name, BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException(name);
         field.SetValue(target, value);
     }
@@ -2540,7 +2540,7 @@ internal static unsafe class AssertionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaCount = Math.Max(2, tracked);
         compiler.lvaTrackedCount = tracked;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;

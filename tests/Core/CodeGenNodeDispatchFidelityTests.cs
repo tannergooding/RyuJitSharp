@@ -205,7 +205,7 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         var previousFunctionLog = Compiler.compJitFuncInfoFile;
-        var previousNyiCount = s_fatalNyiCount;
+        var previousNyiCount = Globals.FatalStatisticsData.s_fatalNyiCount;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         if (altJit)
@@ -213,7 +213,7 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
             flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
         }
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
 
         try
         {
@@ -229,7 +229,7 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
             JitTls.Compiler = previousCompiler;
             JitConfig = previousConfig;
             Compiler.compJitFuncInfoFile = previousFunctionLog;
-            s_fatalNyiCount = previousNyiCount;
+            Globals.FatalStatisticsData.s_fatalNyiCount = previousNyiCount;
         }
     }
 
@@ -244,6 +244,6 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
         return 0;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
-    private static extern ref int SkipOnAssert(ref JitConfigValues config);
+    private static ref int SkipOnAssert(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._altJitSkipOnAssert;
 }

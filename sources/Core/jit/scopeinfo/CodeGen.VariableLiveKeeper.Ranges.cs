@@ -26,34 +26,28 @@ public sealed partial class CodeGen
             }
         }
 
-        private sealed partial class VariableLiveDescriptor
+        internal sealed partial class VariableLiveDescriptor
         {
             private readonly List<VariableLiveRange> m_VariableLiveRanges = [];
-            private readonly LiveRangeDumper? m_VariableLifeBarrier;
 
             public VariableLiveDescriptor(Compiler compiler, int varNum)
             {
                 if (Configuration.DEBUG)
                 {
-                    m_VariableLifeBarrier = new LiveRangeDumper(compiler, varNum);
+                    _ = Compiler.DebugData.Get(this, compiler, varNum);
                 }
             }
 
-            private LiveRangeDumper getLiveRangeDumper() {
-    global::RyuJitSharp.CodeGen.VariableLiveKeeper.LiveRangeDumper __jitExceptionReturnResult671;
-    var __jitExceptionCoalesceLeft672 = m_VariableLifeBarrier;
-    if (__jitExceptionCoalesceLeft672 != null)
-    {
-        __jitExceptionReturnResult671 = __jitExceptionCoalesceLeft672;
-    }
-    else
-    {
-        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LiveRangeDiagnosticsAreOnlyAvailableInDebugBuilds);
-        __jitExceptionReturnResult671 = default;
-    }
+            private Compiler.DebugData.VariableLiveDumperDebugData getLiveRangeDumper()
+            {
+                if (!Configuration.DEBUG)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LiveRangeDiagnosticsAreOnlyAvailableInDebugBuilds);
+                    return default!;
+                }
 
-    return __jitExceptionReturnResult671;
-}
+                return Compiler.DebugData.Get(this);
+            }
             public bool hasVariableLiveRangeOpen()
             {
                 return (m_VariableLiveRanges.Count != 0) && !m_VariableLiveRanges[^1].m_EndEmitLocation.Valid();

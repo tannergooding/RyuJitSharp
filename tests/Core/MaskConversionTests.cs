@@ -232,6 +232,6 @@ internal static class MaskConversionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgOptimizeMaskConversions")]
     private static extern PhaseStatus Optimize(Compiler compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDoOptimizeMaskConversions")]
-    private static extern ref int Config(ref JitConfigValues config);
+    private static ref int Config(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitDoOptimizeMaskConversions;
 }

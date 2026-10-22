@@ -37,7 +37,7 @@ public partial struct GCInfo
 
         var compiler = Compiler;
         var encoder = new GcInfoEncoderWithLogging(gcInfoEncoder, compiler);
-        var noTrackedGCSlots = compiler.opts.MinOpts;
+        var noTrackedGCSlots = compiler.MinOpts;
 
         if (mode == MakeRegPtrMode.MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
         {

@@ -322,8 +322,8 @@ internal static unsafe class EmitterInstructionAllocationTests
         Assert.That(emitter.emitCurIG.igBlocks, Is.EqualTo((BasicBlock?[])[first]));
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
-    private static extern ref byte* StressNames(ref JitConfigValues config);
+    private static ref byte* StressNames(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitStressModeNames;
 
     internal static Emitter.instrDesc Allocate(Emitter emitter, emitAttr attr, bool small = false)
     {

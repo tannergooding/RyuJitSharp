@@ -29,7 +29,7 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        if (opts.MinOpts)
+        if (MinOpts)
         {
             JITDUMP("Method compiled with MinOpts, no removal.\n");
             return PhaseStatus.MODIFIED_NOTHING;

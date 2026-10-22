@@ -247,7 +247,7 @@ internal static unsafe class StackArrayExpansionTests
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         JitTls.Compiler = compiler;
         compiler.lvaTable = new LclVarDsc[4];
         compiler.lvaCount = 4;

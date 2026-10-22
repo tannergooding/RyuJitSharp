@@ -392,8 +392,7 @@ internal static unsafe class InlineStrategyDiagnosticsTests
 
     [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
     private static Type GetXmlDumpStateType()
-        => typeof(InlineStrategy).GetNestedType("XmlDumpState", BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("Missing XML dump state");
+        => typeof(Compiler.DebugData.InlineXmlDumpData);
 
     private static T GetStaticField<T>([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)] Type type, string name)
     {
@@ -405,6 +404,14 @@ internal static unsafe class InlineStrategyDiagnosticsTests
     private static void SetField([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] Type type,
         object? target, string name, object value)
     {
+        if (type == typeof(JitConfigValues))
+        {
+            var configField = TestConfiguration.GetJitConfigField(name)
+                ?? throw new InvalidOperationException($"Missing JIT configuration field '{name}'.");
+            configField.SetValue(target, value);
+            return;
+        }
+
         var flags = (target is null ? BindingFlags.Static : BindingFlags.Instance) | BindingFlags.NonPublic;
         var field = type.GetField(name, flags) ?? throw new InvalidOperationException($"Missing field {name}");
         field.SetValue(target, value);

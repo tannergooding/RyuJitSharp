@@ -5,7 +5,9 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using CallArgumentStatisticsData = RyuJitSharp.Compiler.MeasurementData.CallArgumentStatistics;
 using NUnit.Framework;
+using static RyuJitSharp.Compiler.MeasurementData.MethodCounts;
 using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
@@ -49,14 +51,14 @@ internal static unsafe class CompilerCallArgumentStatisticsTests
             compiler.fgLastBB = block;
             compiler.compJitStats();
 
-            Assert.That(Compiler.argTotalCalls, Is.EqualTo(4));
-            Assert.That(Compiler.argStaticCalls, Is.EqualTo(1));
-            Assert.That(Compiler.argHelperCalls, Is.EqualTo(1));
-            Assert.That(Compiler.argNonVirtualCalls, Is.EqualTo(1));
-            Assert.That(Compiler.argVirtualCalls, Is.EqualTo(1));
-            Assert.That(Compiler.argTotalObjPtr, Is.EqualTo(2));
-            Assert.That(Compiler.argTotalArgs, Is.Zero);
-            Assert.That(Compiler.argTotalRegArgs, Is.Zero);
+            Assert.That(CallArgumentStatisticsData.argTotalCalls, Is.EqualTo(4));
+            Assert.That(CallArgumentStatisticsData.argStaticCalls, Is.EqualTo(1));
+            Assert.That(CallArgumentStatisticsData.argHelperCalls, Is.EqualTo(1));
+            Assert.That(CallArgumentStatisticsData.argNonVirtualCalls, Is.EqualTo(1));
+            Assert.That(CallArgumentStatisticsData.argVirtualCalls, Is.EqualTo(1));
+            Assert.That(CallArgumentStatisticsData.argTotalObjPtr, Is.EqualTo(2));
+            Assert.That(CallArgumentStatisticsData.argTotalArgs, Is.Zero);
+            Assert.That(CallArgumentStatisticsData.argTotalRegArgs, Is.Zero);
         }));
     }
 
@@ -64,24 +66,24 @@ internal static unsafe class CompilerCallArgumentStatisticsTests
     public static void CallStatisticsReportPreservesNativeLabelsAndPercentages()
     {
         WithStatistics(() => {
-            Compiler.genMethodCnt = 2;
-            Compiler.argTotalCalls = 4;
-            Compiler.argHelperCalls = 1;
-            Compiler.argStaticCalls = 1;
-            Compiler.argVirtualCalls = 1;
-            Compiler.argNonVirtualCalls = 1;
-            Compiler.argTotalArgs = 4;
-            Compiler.argTotalDWordArgs = 1;
-            Compiler.argTotalLongArgs = 1;
-            Compiler.argTotalFloatArgs = 1;
-            Compiler.argTotalDoubleArgs = 1;
-            Compiler.argTotalRegArgs = 4;
-            Compiler.argTotalTemps = 1;
-            Compiler.argTotalLclVar = 1;
-            Compiler.argTotalDeferred = 1;
-            Compiler.argTotalConst = 1;
-            Compiler.argTotalObjPtr = 2;
-            Compiler.argMaxTempsPerMethod = 3;
+            genMethodCnt = 2;
+            CallArgumentStatisticsData.argTotalCalls = 4;
+            CallArgumentStatisticsData.argHelperCalls = 1;
+            CallArgumentStatisticsData.argStaticCalls = 1;
+            CallArgumentStatisticsData.argVirtualCalls = 1;
+            CallArgumentStatisticsData.argNonVirtualCalls = 1;
+            CallArgumentStatisticsData.argTotalArgs = 4;
+            CallArgumentStatisticsData.argTotalDWordArgs = 1;
+            CallArgumentStatisticsData.argTotalLongArgs = 1;
+            CallArgumentStatisticsData.argTotalFloatArgs = 1;
+            CallArgumentStatisticsData.argTotalDoubleArgs = 1;
+            CallArgumentStatisticsData.argTotalRegArgs = 4;
+            CallArgumentStatisticsData.argTotalTemps = 1;
+            CallArgumentStatisticsData.argTotalLclVar = 1;
+            CallArgumentStatisticsData.argTotalDeferred = 1;
+            CallArgumentStatisticsData.argTotalConst = 1;
+            CallArgumentStatisticsData.argTotalObjPtr = 2;
+            CallArgumentStatisticsData.argMaxTempsPerMethod = 3;
 
             using var output = new MemoryStream();
             using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
@@ -104,11 +106,11 @@ internal static unsafe class CompilerCallArgumentStatisticsTests
     public static void CallStatisticsReportPreservesNativeSignedCounterFormatting()
     {
         WithStatistics(() => {
-            Compiler.genMethodCnt = 1;
-            Compiler.argTotalCalls = uint.MaxValue;
-            Compiler.argTotalArgs = 1;
-            Compiler.argTotalRegArgs = 1;
-            Compiler.argMaxTempsPerMethod = uint.MaxValue;
+            genMethodCnt = 1;
+            CallArgumentStatisticsData.argTotalCalls = uint.MaxValue;
+            CallArgumentStatisticsData.argTotalArgs = 1;
+            CallArgumentStatisticsData.argTotalRegArgs = 1;
+            CallArgumentStatisticsData.argMaxTempsPerMethod = uint.MaxValue;
 
             using var output = new MemoryStream();
             using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
@@ -141,68 +143,68 @@ internal static unsafe class CompilerCallArgumentStatisticsTests
     private static void WithStatistics(Action action)
     {
         var saved = (
-            Compiler.genMethodCnt,
-            Compiler.argTotalCalls,
-            Compiler.argHelperCalls,
-            Compiler.argStaticCalls,
-            Compiler.argNonVirtualCalls,
-            Compiler.argVirtualCalls,
-            Compiler.argTotalArgs,
-            Compiler.argTotalDWordArgs,
-            Compiler.argTotalLongArgs,
-            Compiler.argTotalFloatArgs,
-            Compiler.argTotalDoubleArgs,
-            Compiler.argTotalRegArgs,
-            Compiler.argTotalTemps,
-            Compiler.argTotalLclVar,
-            Compiler.argTotalDeferred,
-            Compiler.argTotalConst,
-            Compiler.argTotalObjPtr,
-            Compiler.argMaxTempsPerMethod);
+            genMethodCnt,
+            CallArgumentStatisticsData.argTotalCalls,
+            CallArgumentStatisticsData.argHelperCalls,
+            CallArgumentStatisticsData.argStaticCalls,
+            CallArgumentStatisticsData.argNonVirtualCalls,
+            CallArgumentStatisticsData.argVirtualCalls,
+            CallArgumentStatisticsData.argTotalArgs,
+            CallArgumentStatisticsData.argTotalDWordArgs,
+            CallArgumentStatisticsData.argTotalLongArgs,
+            CallArgumentStatisticsData.argTotalFloatArgs,
+            CallArgumentStatisticsData.argTotalDoubleArgs,
+            CallArgumentStatisticsData.argTotalRegArgs,
+            CallArgumentStatisticsData.argTotalTemps,
+            CallArgumentStatisticsData.argTotalLclVar,
+            CallArgumentStatisticsData.argTotalDeferred,
+            CallArgumentStatisticsData.argTotalConst,
+            CallArgumentStatisticsData.argTotalObjPtr,
+            CallArgumentStatisticsData.argMaxTempsPerMethod);
 
         try
         {
-            Compiler.genMethodCnt = 1;
-            Compiler.argTotalCalls = 0;
-            Compiler.argHelperCalls = 0;
-            Compiler.argStaticCalls = 0;
-            Compiler.argNonVirtualCalls = 0;
-            Compiler.argVirtualCalls = 0;
-            Compiler.argTotalArgs = 0;
-            Compiler.argTotalDWordArgs = 0;
-            Compiler.argTotalLongArgs = 0;
-            Compiler.argTotalFloatArgs = 0;
-            Compiler.argTotalDoubleArgs = 0;
-            Compiler.argTotalRegArgs = 0;
-            Compiler.argTotalTemps = 0;
-            Compiler.argTotalLclVar = 0;
-            Compiler.argTotalDeferred = 0;
-            Compiler.argTotalConst = 0;
-            Compiler.argTotalObjPtr = 0;
-            Compiler.argMaxTempsPerMethod = 0;
+            genMethodCnt = 1;
+            CallArgumentStatisticsData.argTotalCalls = 0;
+            CallArgumentStatisticsData.argHelperCalls = 0;
+            CallArgumentStatisticsData.argStaticCalls = 0;
+            CallArgumentStatisticsData.argNonVirtualCalls = 0;
+            CallArgumentStatisticsData.argVirtualCalls = 0;
+            CallArgumentStatisticsData.argTotalArgs = 0;
+            CallArgumentStatisticsData.argTotalDWordArgs = 0;
+            CallArgumentStatisticsData.argTotalLongArgs = 0;
+            CallArgumentStatisticsData.argTotalFloatArgs = 0;
+            CallArgumentStatisticsData.argTotalDoubleArgs = 0;
+            CallArgumentStatisticsData.argTotalRegArgs = 0;
+            CallArgumentStatisticsData.argTotalTemps = 0;
+            CallArgumentStatisticsData.argTotalLclVar = 0;
+            CallArgumentStatisticsData.argTotalDeferred = 0;
+            CallArgumentStatisticsData.argTotalConst = 0;
+            CallArgumentStatisticsData.argTotalObjPtr = 0;
+            CallArgumentStatisticsData.argMaxTempsPerMethod = 0;
 
             action();
         }
         finally
         {
-            (Compiler.genMethodCnt,
-                Compiler.argTotalCalls,
-                Compiler.argHelperCalls,
-                Compiler.argStaticCalls,
-                Compiler.argNonVirtualCalls,
-                Compiler.argVirtualCalls,
-                Compiler.argTotalArgs,
-                Compiler.argTotalDWordArgs,
-                Compiler.argTotalLongArgs,
-                Compiler.argTotalFloatArgs,
-                Compiler.argTotalDoubleArgs,
-                Compiler.argTotalRegArgs,
-                Compiler.argTotalTemps,
-                Compiler.argTotalLclVar,
-                Compiler.argTotalDeferred,
-                Compiler.argTotalConst,
-                Compiler.argTotalObjPtr,
-                Compiler.argMaxTempsPerMethod) = saved;
+            (genMethodCnt,
+                CallArgumentStatisticsData.argTotalCalls,
+                CallArgumentStatisticsData.argHelperCalls,
+                CallArgumentStatisticsData.argStaticCalls,
+                CallArgumentStatisticsData.argNonVirtualCalls,
+                CallArgumentStatisticsData.argVirtualCalls,
+                CallArgumentStatisticsData.argTotalArgs,
+                CallArgumentStatisticsData.argTotalDWordArgs,
+                CallArgumentStatisticsData.argTotalLongArgs,
+                CallArgumentStatisticsData.argTotalFloatArgs,
+                CallArgumentStatisticsData.argTotalDoubleArgs,
+                CallArgumentStatisticsData.argTotalRegArgs,
+                CallArgumentStatisticsData.argTotalTemps,
+                CallArgumentStatisticsData.argTotalLclVar,
+                CallArgumentStatisticsData.argTotalDeferred,
+                CallArgumentStatisticsData.argTotalConst,
+                CallArgumentStatisticsData.argTotalObjPtr,
+                CallArgumentStatisticsData.argMaxTempsPerMethod) = saved;
         }
     }
 

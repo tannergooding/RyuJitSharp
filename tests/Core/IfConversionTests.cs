@@ -22,8 +22,8 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class IfConversionTests
 {
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDoIfConversion")]
-    private static extern ref int IfConversionEnabled(ref JitConfigValues config);
+    private static ref int IfConversionEnabled(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitDoIfConversion;
 
     [Test]
     public static void SimpleStoreCreatesSelectAndRemovesSingleArm()
@@ -607,7 +607,7 @@ internal static unsafe class IfConversionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(!optimized);
+        compiler.SetMinOpts(!optimized);
         compiler.compHndBBtab = [];
         compiler.lvaTable = [
             new LclVarDsc { Type = TYP_INT },

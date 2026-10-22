@@ -5,6 +5,8 @@
 
 using static RyuJitSharp.Emitter.insFormat;
 
+using static RyuJitSharp.Emitter.EmitterStatistics;
+
 namespace RyuJitSharp;
 
 public partial class Emitter

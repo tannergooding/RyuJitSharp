@@ -140,7 +140,7 @@ internal static unsafe class WasmEhFlowTests
             JitFlags flags = default;
             flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
             compiler.opts.jitFlags = &flags;
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             TestConfiguration.SetCompilerFullName(compiler, nameof(WasmEhFlowTests));
             compiler.fgNodeThreading = NodeThreading.LIR;
             compiler.fgPredsComputed = true;
@@ -179,6 +179,6 @@ internal static unsafe class WasmEhFlowTests
         return 0;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
-    private static extern ref int AltJitSkipOnAssert(ref JitConfigValues config);
+    private static ref int AltJitSkipOnAssert(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._altJitSkipOnAssert;
 }

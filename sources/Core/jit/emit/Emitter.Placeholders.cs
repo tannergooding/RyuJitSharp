@@ -4,14 +4,13 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using static RyuJitSharp.insGroupPlaceholderType;
+using static RyuJitSharp.Emitter.EmitterStatistics;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
     private const int MAX_PLACEHOLDER_IG_SIZE = 256;
-
-    private static uint emitTotalPhIGcnt;
 
     public void emitCreatePlaceholderIG(insGroupPlaceholderType igType, BasicBlock block, VARSET_TP gcVars,
         regMaskTP gcRefRegs, regMaskTP byrefRegs, bool last)

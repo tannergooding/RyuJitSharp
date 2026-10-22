@@ -329,9 +329,7 @@ internal static unsafe class VNDeadStoreRemovalTests
 
         WithCompiler((compiler, store) =>
         {
-            var field = typeof(Compiler).GetField("s_jitEnableVNBasedDeadStoreRemovalRange",
-                BindingFlags.Static | BindingFlags.NonPublic) ?? throw new InvalidOperationException();
-            var original = field.GetValue(null);
+            var original = Compiler.DebugData.MethodRangeData.s_jitEnableVNBasedDeadStoreRemovalRange;
             var hash = unchecked((uint)compiler.info.compMethodHash());
             var selection = enabled ? hash : unchecked(hash + 1);
             var bytes = Encoding.ASCII.GetBytes($"{selection:x8}\0");
@@ -357,14 +355,14 @@ internal static unsafe class VNDeadStoreRemovalTests
 
             try
             {
-                field.SetValue(null, range);
+                Compiler.DebugData.MethodRangeData.s_jitEnableVNBasedDeadStoreRemovalRange = range;
                 Assert.That(compiler.optVNBasedDeadStoreRemoval(), Is.EqualTo(enabled
                     ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
                 Assert.That(statement.RootNode.Oper, Is.EqualTo(enabled ? GT_COMMA : GT_STORE_LCL_VAR));
             }
             finally
             {
-                field.SetValue(null, original);
+                Compiler.DebugData.MethodRangeData.s_jitEnableVNBasedDeadStoreRemovalRange = original;
             }
         });
     }
@@ -388,7 +386,7 @@ internal static unsafe class VNDeadStoreRemovalTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 2;
         TestConfiguration.SetCompilerFullName(compiler, nameof(VNDeadStoreRemovalTests));

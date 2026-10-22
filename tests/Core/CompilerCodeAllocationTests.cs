@@ -181,8 +181,8 @@ internal static unsafe class CompilerCodeAllocationTests
         }, fakeSplitting: true);
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitFakeProcedureSplitting")]
-    private static extern ref int FakeProcedureSplitting(ref JitConfigValues config);
+    private static ref int FakeProcedureSplitting(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitFakeProcedureSplitting;
 
     [TestCase(false)]
     [TestCase(true)]

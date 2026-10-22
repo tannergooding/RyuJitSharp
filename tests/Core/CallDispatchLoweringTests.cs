@@ -436,7 +436,7 @@ internal static unsafe class CallDispatchLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.lvaTable = [new LclVarDsc()];
         compiler.lvaCount = 1;

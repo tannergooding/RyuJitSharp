@@ -2026,7 +2026,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         compiler.opts.jitFlags = &flags;
         compiler.unkSizeFrame.nMask = 9;
         compiler.unkSizeFrame.nVector = 3;
-        compiler.unkSizeFrame.FinalizeLayout();
+        compiler.unkSizeFrame.FinalizeLayout(compiler);
         var varx = 0;
         if (temp)
         {
@@ -2157,7 +2157,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         compiler.lvaTable[0].Type = var_types.TYP_SIMD_ARM64;
         compiler.lvaTable[0].UnknownSizeFrameIndex = index;
         compiler.unkSizeFrame.nVector = (uint)(index + 1);
-        compiler.unkSizeFrame.FinalizeLayout();
+        compiler.unkSizeFrame.FinalizeLayout(compiler);
         RecordLocalLoad(emitter, INS_lea, EA_8BYTE, REG_ARM64_R4, 0, 0);
         Assert.That(GroupSize(emitter), Is.EqualTo(recordedSize));
         var instructions = CurrentInstructions(emitter);
@@ -2622,7 +2622,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         }
         if (TestConfiguration.IsDebug)
         {
-            compiler.opts.compLongAddress = forceLong;
+            compiler.compLongAddress = forceLong;
         }
         emitter.emitIns(INS_nop);
         var handle = Compiler.eeFindJitDataOffs(64);

@@ -516,7 +516,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_MINOPT;
         compiler.compFloatingPointUsed = true;
         compiler.fgBBNumMax = 1;
@@ -585,7 +585,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     private static extern void DumpReference(LinearScan allocator, RefPosition? reference, BasicBlock? block = null);
 
     private static readonly FieldInfo s_emptyColumnWidthField =
-        typeof(LinearScan).GetNestedType("AllocationDebugData", BindingFlags.NonPublic)
+        typeof(Compiler.DebugData).GetNestedType("LinearScanAllocationDebugData", BindingFlags.NonPublic)
             ?.GetField("EmptyColumnWidth", BindingFlags.Static | BindingFlags.NonPublic)
         ?? throw new AssertionException("Missing allocation dump empty-column width.");
 

@@ -108,7 +108,7 @@ internal static unsafe class ValueNumMemoryStateTests
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         JitTls.Compiler = compiler;
         try
         {

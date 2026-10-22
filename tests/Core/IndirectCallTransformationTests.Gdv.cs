@@ -57,8 +57,8 @@ internal static unsafe partial class IndirectCallTransformationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitGuardedDevirtualizationChainLikelihood")]
     private static extern ref int ChainLikelihood(ref JitConfigValues config);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitPrintDevirtualizedMethods")]
-    private static extern ref JitConfigValues.MethodSet PrintDevirtualizedMethods(ref JitConfigValues config);
+    private static ref JitConfigValues.MethodSet PrintDevirtualizedMethods(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitPrintDevirtualizedMethods;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitGuardedDevirtualizationChainStatements")]
     private static extern ref int ChainStatements(ref JitConfigValues config);

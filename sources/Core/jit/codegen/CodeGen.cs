@@ -26,7 +26,7 @@ public sealed partial class CodeGen : ICodeGen
     private Compiler _compiler;
 
     private bool _genAlignLoops;
-    private bool _genInterruptibleUsed;
+    private bool _verbose => Configuration.DEBUG && Compiler.DebugData.Get(_compiler).CodeGenVerbose;
 
     private NodeInternalRegisters _internalRegisters;
 
@@ -34,9 +34,6 @@ public sealed partial class CodeGen : ICodeGen
     private int _stkArgOffset;
 
     private regMaskTP _calleeRegArgMaskLiveIn;
-
-    private int _genTrnslLocalVarCount;
-    private uint _genCurDispOffset;
 
     private regMask _srbmAllFloat;
     private regMask _srbmAllInt;
@@ -47,15 +44,11 @@ public sealed partial class CodeGen : ICodeGen
     private regMask _srbmAllMask;
     private regMask _srbmMskCalleeTrash;
 
-    private bool _verbose;
-
     private GCInfo _gcInfo;
 
     private RegSet _regSet;
 
     internal bool genReverseAndPairCalleeSavedRegisters;
-
-    private static ConfigMethodRange s_jitR2RUnsupportedRange;
 
     public CodeGen(Compiler compiler)
     {
@@ -78,7 +71,7 @@ public sealed partial class CodeGen : ICodeGen
 
         if (Configuration.DEBUG)
         {
-            _verbose = compiler.verbose;
+            Compiler.DebugData.Get(compiler).CodeGenVerbose = compiler.verbose;
         }
 
         _regSet.tmpInit();
@@ -90,7 +83,7 @@ public sealed partial class CodeGen : ICodeGen
 
         if (Configuration.DEBUG)
         {
-            _genTrnslLocalVarCount = 0;
+            Compiler.DebugData.Get(compiler).CodeGenTranslatedLocalVariableCount = 0;
 
             if (Configuration.HAS_FIXED_REGISTER_SET)
             {
@@ -109,8 +102,9 @@ public sealed partial class CodeGen : ICodeGen
 
         if (Configuration.DEBUG)
         {
-            _genInterruptibleUsed = false;
-            _genCurDispOffset = uint.MaxValue;
+            var debugData = Compiler.DebugData.Get(compiler);
+            debugData.CodeGenInterruptibleUsed = false;
+            debugData.CodeGenCurrentDisplayOffset = uint.MaxValue;
         }
 
         genSaveFpLrWithAllCalleeSavedRegisters = false;
@@ -531,7 +525,7 @@ public sealed partial class CodeGen : ICodeGen
                 return false;
             }
 
-            return _genInterruptibleUsed;
+            return Compiler.DebugData.Get(_compiler).CodeGenInterruptibleUsed;
         }
     }
 
@@ -545,7 +539,7 @@ public sealed partial class CodeGen : ICodeGen
                 return false;
             }
 
-            return _verbose;
+            return Compiler.DebugData.Get(_compiler).CodeGenVerbose;
         }
 
         set
@@ -556,7 +550,7 @@ public sealed partial class CodeGen : ICodeGen
                 return;
             }
 
-            _verbose = value;
+            Compiler.DebugData.Get(_compiler).CodeGenVerbose = value;
         }
     }
 
@@ -1079,7 +1073,7 @@ public sealed partial class CodeGen : ICodeGen
         {
             genCheckWasmFunclets();
         }
-        if (Configuration.DEBUG && _verbose)
+        if (Configuration.DEBUG && Compiler.DebugData.Get(_compiler).CodeGenVerbose)
         {
             jitprintf("*************** In genGenerateCode()\n");
             _compiler.fgDispBasicBlocks(_compiler.verboseTrees);
@@ -1087,7 +1081,7 @@ public sealed partial class CodeGen : ICodeGen
 
         if (Configuration.DEBUG)
         {
-            _genWriteBarrierUsed = false;
+            Compiler.DebugData.Get(_compiler).CodeGenWriteBarrierUsed = false;
         }
 
         void* generatedCode = null;
@@ -1100,7 +1094,7 @@ public sealed partial class CodeGen : ICodeGen
             DoPhase(_compiler, PHASE_EMIT_CODE, genEmitMachineCode);
             DoPhase(_compiler, PHASE_EMIT_GCEH, genEmitUnwindDebugGCandEH);
 
-            if (Configuration.DEBUG && _genWriteBarrierUsed &&
+            if (Configuration.DEBUG && Compiler.DebugData.Get(_compiler).CodeGenWriteBarrierUsed &&
                 (JitConfig.EnableExtraSuperPmiQueries != 0) && !_compiler.IsAot)
             {
                 for (var helper = CORINFO_HELP_ASSIGN_REF; helper <= CORINFO_HELP_BULK_WRITEBARRIER_SMALL; helper++)
@@ -1167,17 +1161,18 @@ public sealed partial class CodeGen : ICodeGen
             return;
         }
 
-        s_jitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange);
-        assert(!s_jitR2RUnsupportedRange.Error);
+        ref var debugRange = ref Compiler.DebugData.CodeGenStaticData.JitR2RUnsupportedRange;
+        debugRange.EnsureInit(JitConfig.JitR2RUnsupportedRange);
+        assert(!debugRange.Error);
         var hash = _compiler.impInlineRoot.info.compMethodHash();
-        var inRange = !s_jitR2RUnsupportedRange.IsEmpty && s_jitR2RUnsupportedRange.Contains(hash);
+        var inRange = !debugRange.IsEmpty && debugRange.Contains(hash);
 
         if (inRange)
         {
             JITDUMP($"Failing R2R codegen because of JitR2RUnsupportedRange. Hash is 0x{unchecked((uint)hash):x8}, range is ");
             if (VERBOSE)
             {
-                s_jitR2RUnsupportedRange.Dump();
+                debugRange.Dump();
             }
             implReadyToRunUnsupported();
         }

@@ -29,7 +29,7 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        if (opts.MinOpts)
+        if (MinOpts)
         {
             JITDUMP("Method compiled with MinOpts, no removal.\n");
             return PhaseStatus.MODIFIED_NOTHING;
@@ -70,8 +70,7 @@ public partial class Compiler
                     {
                         if (block.TryIndex != xtnum)
                         {
-                            JITDUMP($"EH#{xtnum} try block {FMT_BB(block.bbNum)} " +
-                                "is nested try entry; skipping.\n");
+                            JITDUMP($"EH#{xtnum} try block {FMT_BB(block.bbNum)} " + "is nested try entry; skipping.\n");
                             canThrow = true;
                             break;
                         }
@@ -80,8 +79,7 @@ public partial class Compiler
                         {
                             if ((stmt.RootNode.Flags & (GTF_EXCEPT | GTF_CALL)) != 0)
                             {
-                                JITDUMP($"EH#{xtnum} {FMT_STMT(stmt.Id)} in {FMT_BB(block.bbNum)} " +
-                                    "can throw; skipping.\n");
+                                JITDUMP($"EH#{xtnum} {FMT_STMT(stmt.Id)} in {FMT_BB(block.bbNum)} " + "can throw; skipping.\n");
                                 canThrow = true;
                                 break;
                             }
@@ -124,8 +122,7 @@ public partial class Compiler
                     {
                         if (bbIsTryBeg(block))
                         {
-                            JITDUMP($"EH#{xtnum} handler block {FMT_BB(block.bbNum)} " +
-                                "is nested try entry; skipping.\n");
+                            JITDUMP($"EH#{xtnum} handler block {FMT_BB(block.bbNum)} " + "is nested try entry; skipping.\n");
                             handlerEnclosesTry = true;
                             break;
                         }

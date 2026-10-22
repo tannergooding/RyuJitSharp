@@ -298,7 +298,7 @@ internal static unsafe class RuntimeLookupExpansionTests
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
         CORINFO_METHOD_INFO methodInfo = default;

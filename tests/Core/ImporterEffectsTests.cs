@@ -29,7 +29,7 @@ internal static unsafe class ImporterEffectsTests
             vtable.Base.Base.runWithSPMIErrorTrap = &UnavailableClassName;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             var block = new BasicBlock(null, null);
             block.setBBProfileWeight(100);
             compiler.compCurBB = block;
@@ -71,7 +71,7 @@ internal static unsafe class ImporterEffectsTests
                 (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, byte, CorInfoHelpFunc>)&GetArrayCastingHelper;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             var block = new BasicBlock(null, null);
             block.setBBProfileWeight(100);
             compiler.compCurBB = block;
@@ -157,7 +157,7 @@ internal static unsafe class ImporterEffectsTests
         [Values(false, true)] bool isStatic)
     {
         SsaLivenessTests.WithCompiler(2, compiler => {
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             compiler.compCurBB = new BasicBlock(null, null);
             compiler.compCurBB.setBBProfileWeight(100);
             compiler.lvaTable[0].Type = var_types.TYP_REF;
@@ -192,7 +192,7 @@ internal static unsafe class ImporterEffectsTests
     public static void SuccessfulEeBackedStringComparisonPopsArgumentsBeforeOrderedSpills()
     {
         SsaLivenessTests.WithCompiler(2, compiler => {
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             compiler.compCurBB = new BasicBlock(null, null);
             compiler.compCurBB.setBBProfileWeight(100);
             compiler.lvaTable[0].Type = var_types.TYP_REF;
@@ -251,7 +251,7 @@ internal static unsafe class ImporterEffectsTests
                 ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
                 compiler.info.compCompHnd = &jitInfo;
 
-                compiler.opts.SetMinOpts(false);
+                compiler.SetMinOpts(false);
                 compiler.compCurBB = new BasicBlock(null, null);
                 compiler.compCurBB.setBBProfileWeight(100);
                 compiler.lvaTable[0].Type = var_types.TYP_STRUCT;
@@ -298,7 +298,7 @@ internal static unsafe class ImporterEffectsTests
         [Values(StringComparison.Ordinal, StringComparison.OrdinalIgnoreCase)] StringComparison comparison)
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             compiler.lvaTable[0].Type = var_types.TYP_BYREF;
             var data = compiler.gtNewLclvNode(var_types.TYP_BYREF, 0);
             var characters = value.ToCharArray();
@@ -318,7 +318,7 @@ internal static unsafe class ImporterEffectsTests
         [Values(var_types.TYP_INT, var_types.TYP_LONG)] var_types type)
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             compiler.info.compMaxStack = 2;
             compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
             compiler.lvaTable[0].Type = type;
@@ -358,7 +358,7 @@ internal static unsafe class ImporterEffectsTests
         Assume.That(TestConfiguration.IsDebug, "Importer diagnostics are available only in Debug.");
 
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             compiler.info.compMaxStack = 1;
             compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
             compiler.lvaTable[0].Type = var_types.TYP_BYREF;
@@ -461,7 +461,7 @@ internal static unsafe class ImporterEffectsTests
         [Values(false, true)] bool nativeFirst)
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             compiler.info.compMaxStack = 2;
             compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
             compiler.stackState.esStack = new StackEntry[2];
@@ -522,7 +522,7 @@ internal static unsafe class ImporterEffectsTests
         [Values(false, true)] bool byref)
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             compiler.info.compMaxStack = 3;
             compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
             var type = byref ? var_types.TYP_BYREF : var_types.TYP_INT;
@@ -605,7 +605,7 @@ internal static unsafe class ImporterEffectsTests
     public static void SwitchExitSpillsReplaceTheOwningValueSlot(bool referencesSpillTemp)
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             compiler.info.compMaxStack = 2;
             compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
             compiler.lvaTable[0].Type = var_types.TYP_INT;

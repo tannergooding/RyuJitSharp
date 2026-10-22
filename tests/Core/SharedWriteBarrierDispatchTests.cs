@@ -135,6 +135,11 @@ internal static class SharedWriteBarrierDispatchTests
 
     private static CodeGen Create()
     {
-        return (CodeGen)RuntimeHelpers.GetUninitializedObject(typeof(CodeGen));
+        var codeGen = (CodeGen)RuntimeHelpers.GetUninitializedObject(typeof(CodeGen));
+        CodeGenCompiler(codeGen) = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        return codeGen;
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_compiler")]
+    private static extern ref Compiler CodeGenCompiler(CodeGen codeGen);
 }

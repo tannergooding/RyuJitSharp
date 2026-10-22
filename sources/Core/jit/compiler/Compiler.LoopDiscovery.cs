@@ -55,14 +55,15 @@ public partial class Compiler
         if (optCanonicalizeLoops())
         {
             fgInvalidateDfsTree();
-            _dfsTree = fgComputeDfs();
-            _loops = FlowGraphNaturalLoops.Find(_dfsTree);
+            dfsTree = fgComputeDfs();
+            _dfsTree = dfsTree;
+            _loops = FlowGraphNaturalLoops.Find(dfsTree);
         }
 
         optLoopsCanonical = true;
 
         // Removing edges can turn general cycles into natural loops in later phases.
-        fgMightHaveNaturalLoops = _dfsTree.HasCycle;
+        fgMightHaveNaturalLoops = dfsTree.HasCycle;
         assert(fgMightHaveNaturalLoops || (_loops.NumLoops == 0));
     }
 

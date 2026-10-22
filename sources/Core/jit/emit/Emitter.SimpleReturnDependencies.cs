@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using static RyuJitSharp.GenTreeFlags;
+using static RyuJitSharp.Emitter.EmitterStatistics;
 
 namespace RyuJitSharp;
 
@@ -42,7 +43,7 @@ public partial class Emitter
             id.idjTarget = target;
 
             id.idjKeepLong = compiler.fgInDifferentRegions(currentBlock, target);
-            if (Configuration.DEBUG && compiler.opts.compLongAddress)
+            if (Configuration.DEBUG && compiler.compLongAddress)
             {
                 id.idjKeepLong = true;
             }
@@ -140,7 +141,7 @@ public partial class Emitter
             return true;
         }
 
-        if (Configuration.DEBUG && !compiler.opts.compEnablePCRelAddr)
+        if (Configuration.DEBUG && !compiler.compEnablePCRelAddr)
         {
             return false;
         }

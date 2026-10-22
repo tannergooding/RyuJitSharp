@@ -54,7 +54,7 @@ internal static unsafe class CodeGenSharedGenerationTests
             }
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(CurrentDisplayOffset(codeGen), Is.EqualTo(uint.MaxValue));
+                Assert.That(Compiler.DebugData.Get(compiler).CodeGenCurrentDisplayOffset, Is.EqualTo(uint.MaxValue));
                 if (Configuration.HAS_FIXED_REGISTER_SET)
                 {
                     Assert.That(compiler.compCalleeRegsPushed, Is.EqualTo(unchecked((int)Globals.INVALID_POINT_CD)));
@@ -72,7 +72,9 @@ internal static unsafe class CodeGenSharedGenerationTests
     public static void ConstructionCopiesDebugVerbosity(bool verbose)
     {
         WithGeneration(
-            (_, codeGen) => Assert.That(VerboseField(codeGen), Is.EqualTo(Configuration.DEBUG && verbose)),
+            (compiler, _) => Assert.That(
+                Configuration.DEBUG && Compiler.DebugData.Get(compiler).CodeGenVerbose,
+                Is.EqualTo(Configuration.DEBUG && verbose)),
             verbose);
     }
 
@@ -111,7 +113,7 @@ internal static unsafe class CodeGenSharedGenerationTests
         {
             if (Configuration.TARGET_WASM)
             {
-                WasmFunclets(ref Globals.JitConfig) = 1;
+                TestConfiguration.SetJitConfigValue(ref Globals.JitConfig, "_jitWasmFunclets", 1);
             }
 
             WithGeneration((compiler, codeGen) =>
@@ -174,7 +176,7 @@ internal static unsafe class CodeGenSharedGenerationTests
         var previousConfig = Globals.JitConfig;
         try
         {
-            WasmFunclets(ref Globals.JitConfig) = enabled;
+            TestConfiguration.SetJitConfigValue(ref Globals.JitConfig, "_jitWasmFunclets", enabled);
             WithGeneration((compiler, codeGen) =>
             {
                 compiler.fgFuncletsCreated = true;
@@ -206,7 +208,7 @@ internal static unsafe class CodeGenSharedGenerationTests
         var previousConfig = Globals.JitConfig;
         try
         {
-            WasmFunclets(ref Globals.JitConfig) = 0;
+            TestConfiguration.SetJitConfigValue(ref Globals.JitConfig, "_jitWasmFunclets", 0);
             WithGeneration((compiler, codeGen) =>
             {
                 compiler.fgFuncletsCreated = true;
@@ -232,9 +234,6 @@ internal static unsafe class CodeGenSharedGenerationTests
         }
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitWasmFunclets")]
-    private static extern ref int WasmFunclets(ref JitConfigValues config);
-
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genCheckWasmFunclets")]
     private static extern void CheckWasmFunclets(CodeGen codeGen);
 
@@ -248,10 +247,10 @@ internal static unsafe class CodeGenSharedGenerationTests
         Assume.That(TestConfiguration.IsDebug);
 
         var previousConfig = Globals.JitConfig;
-        var previousRange = UnsupportedRange(null);
+        var previousRange = Compiler.DebugData.CodeGenStaticData.JitR2RUnsupportedRange;
         try
         {
-            UnsupportedRange(null) = default;
+            Compiler.DebugData.CodeGenStaticData.JitR2RUnsupportedRange = default;
             var bytes = System.Text.Encoding.ASCII.GetBytes(range + "\0");
             fixed (byte* rangePointer = bytes)
             {
@@ -273,22 +272,19 @@ internal static unsafe class CodeGenSharedGenerationTests
                     {
                         CheckWasmRange(codeGen);
                     }
-                    Assert.That(UnsupportedRange(null).IsInit, Is.True);
+                    Assert.That(Compiler.DebugData.CodeGenStaticData.JitR2RUnsupportedRange.IsInit, Is.True);
                 });
             }
         }
         finally
         {
-            UnsupportedRange(null) = previousRange;
+            Compiler.DebugData.CodeGenStaticData.JitR2RUnsupportedRange = previousRange;
             Globals.JitConfig = previousConfig;
         }
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_jitR2RUnsupportedRange")]
-    private static extern ref ConfigMethodRange UnsupportedRange(CodeGen? codeGen);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitR2RUnsupportedRange")]
-    private static extern ref byte* UnsupportedRangeConfig(ref JitConfigValues config);
+    private static ref byte* UnsupportedRangeConfig(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitR2RUnsupportedRange;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compMethodHashPrivate")]
     private static extern ref int MethodHash(ref Compiler.Info info);
@@ -330,9 +326,6 @@ internal static unsafe class CodeGenSharedGenerationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_nativeSizeOfCode")]
     private static extern ref int* NativeSizeAddress(CodeGen codeGen);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_verbose")]
-    private static extern ref bool VerboseField(CodeGen codeGen);
-
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_stkArgVarNum")]
     private static extern ref int StackArgumentVariable(CodeGen codeGen);
 
@@ -342,6 +335,4 @@ internal static unsafe class CodeGenSharedGenerationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "maxNestedAlignment")]
     private static extern ref uint MaximumNestedAlignment(CodeGen codeGen);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_genCurDispOffset")]
-    private static extern ref uint CurrentDisplayOffset(CodeGen codeGen);
 }

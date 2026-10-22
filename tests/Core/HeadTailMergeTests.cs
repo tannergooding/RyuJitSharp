@@ -307,7 +307,7 @@ internal static unsafe class HeadTailMergeTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.compHndBBtab = [];
         compiler.fgPredsComputed = true;
         compiler.info = new Compiler.Info();
@@ -317,7 +317,7 @@ internal static unsafe class HeadTailMergeTests
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 2;
         object config = new JitConfigValues();
-        var enable = typeof(JitConfigValues).GetField("_jitEnableHeadTailMerge",
+        var enable = TestConfiguration.GetJitConfigField("_jitEnableHeadTailMerge",
             BindingFlags.Instance | BindingFlags.NonPublic) ??
             throw new AssertionException("Missing head/tail merge configuration.");
         enable.SetValue(config, 1);

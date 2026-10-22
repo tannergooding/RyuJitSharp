@@ -4,29 +4,12 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.Emitter.EmitterStatistics;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private const int SMALL_CNS_TSZ = 256;
-
-    private static uint emitTotalIDescCnsCnt;
-    private static uint emitTotalIDescDspCnt;
-    private static uint emitTotalIDescCnsDspCnt;
-    private static uint emitTotalIDescAmdCnt;
-    private static uint emitTotalIDescCnsAmdCnt;
-
-    private static uint emitSmallCnsCnt;
-    private static uint emitLargeCnsCnt;
-    private static uint emitInt8CnsCnt;
-    private static uint emitInt16CnsCnt;
-    private static uint emitInt32CnsCnt;
-    private static uint emitNegCnsCnt;
-    private static uint emitPow2CnsCnt;
-    private static uint emitSmallDspCnt;
-    private static uint emitLargeDspCnt;
-
     private void TrackCns(nint value)
     {
         if (value < 0)

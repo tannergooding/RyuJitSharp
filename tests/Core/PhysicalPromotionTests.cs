@@ -512,7 +512,7 @@ internal static class PhysicalPromotionTests
     {
         var previousConfig = JitConfig;
         object config = JitConfig;
-        typeof(JitConfigValues).GetField("_jitEnablePhysicalPromotion",
+        TestConfiguration.GetJitConfigField("_jitEnablePhysicalPromotion",
             BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(config, 1);
 
         try
@@ -902,7 +902,7 @@ internal static class PhysicalPromotionTests
                 BindingFlags.Instance | BindingFlags.NonPublic)!;
             var previousConfig = JitConfig;
             object config = JitConfig;
-            typeof(JitConfigValues).GetField("_jitMaxLocalsToTrack",
+            TestConfiguration.GetJitConfigField("_jitMaxLocalsToTrack",
                 BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(config, 1024);
             Compiler.PhysicalPromotionAggregateInfoMap aggregates;
             try

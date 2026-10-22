@@ -815,7 +815,7 @@ internal static unsafe class ScalarFoldingTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         JitTls.Compiler = compiler;
 
         try

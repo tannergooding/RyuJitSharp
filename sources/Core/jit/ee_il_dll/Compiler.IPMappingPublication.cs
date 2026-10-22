@@ -68,7 +68,7 @@ public partial class Compiler
     public unsafe void eeSetLIdone()
     {
         assert(opts.compDbgInfo);
-        if (Configuration.DEBUG && (verbose || opts.dspDebugInfo))
+        if (Configuration.DEBUG && (verbose || dspDebugInfo))
         {
             eeDispLineInfos();
         }

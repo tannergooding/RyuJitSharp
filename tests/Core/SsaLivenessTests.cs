@@ -351,7 +351,7 @@ internal static unsafe class SsaLivenessTests
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         JitConfig = new JitConfigValues();
         MaxLocalsToTrack(ref JitConfig) = 1024;
         JitTls.Compiler = compiler;

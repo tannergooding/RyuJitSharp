@@ -7,11 +7,14 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-    public static nuint grossVMsize;
-    public static nuint grossNCsize;
-    public static nuint totalNCsize;
-    public static nuint gcHeaderISize;
-    public static nuint gcPtrMapISize;
-    public static nuint gcHeaderNSize;
-    public static nuint gcPtrMapNSize;
+    internal static class CodeSizeStatisticsData
+    {
+        internal static nuint grossVMsize;
+        internal static nuint grossNCsize;
+        internal static nuint totalNCsize;
+        internal static nuint gcHeaderISize;
+        internal static nuint gcPtrMapISize;
+        internal static nuint gcHeaderNSize;
+        internal static nuint gcPtrMapNSize;
+    }
 }

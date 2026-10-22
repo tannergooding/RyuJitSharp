@@ -16,6 +16,7 @@ public partial class Compiler
         {
             for (var index = 0; index < lvaCount; index++)
             {
+                ResetLocalSsaDebugData(index);
                 lvaTable[index].lvPerSsaData.Reset();
             }
             lvMemoryPerSsaData.Reset();

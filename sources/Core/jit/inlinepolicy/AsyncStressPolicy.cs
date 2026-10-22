@@ -9,9 +9,44 @@ namespace RyuJitSharp;
 
 public sealed class AsyncStressPolicy : ExtendedDefaultPolicy
 {
-    private bool _isAsyncCall;
-    private int _asyncStressIndex = -1;
-    private uint _basicBlockCount;
+    private bool _isAsyncCall
+    {
+        get
+        {
+            return GetDebugData().IsAsyncCall;
+        }
+
+        set
+        {
+            GetDebugData().IsAsyncCall = value;
+        }
+    }
+
+    private int _asyncStressIndex
+    {
+        get
+        {
+            return GetDebugData().AsyncStressIndex;
+        }
+
+        set
+        {
+            GetDebugData().AsyncStressIndex = value;
+        }
+    }
+
+    private uint _basicBlockCount
+    {
+        get
+        {
+            return GetDebugData().BasicBlockCount;
+        }
+
+        set
+        {
+            GetDebugData().BasicBlockCount = value;
+        }
+    }
 
     public AsyncStressPolicy(Compiler compiler, bool isPrejitRoot)
         : base(compiler, isPrejitRoot)
@@ -20,6 +55,17 @@ public sealed class AsyncStressPolicy : ExtendedDefaultPolicy
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncInliningStressIsOnlyAvailableInDebugBuilds);
         }
+    }
+
+    private Compiler.DebugData.AsyncStressPolicyDebugData GetDebugData()
+    {
+        if (!Configuration.DEBUG)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                FatalJitErrorCode.AsyncInliningStressIsOnlyAvailableInDebugBuilds);
+        }
+
+        return global::RyuJitSharp.Compiler.DebugData.Get(this);
     }
 
     public override string Name => nameof(AsyncStressPolicy);

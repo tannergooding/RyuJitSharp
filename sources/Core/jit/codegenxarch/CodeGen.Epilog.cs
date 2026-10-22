@@ -139,14 +139,14 @@ public sealed partial class CodeGen
         VarSetOps.Assign(_compiler, ref GCInfo.gcVarPtrSetCur, Emitter.InitGCrefVars);
         GCInfo.gcRegGCrefSetCur = Emitter.InitGCrefRegs;
         GCInfo.gcRegByrefSetCur = Emitter.InitByrefRegs;
-        noway_assert(!_compiler.opts.MinOpts || IsFramePointerUsed);
+        noway_assert(!_compiler.MinOpts || IsFramePointerUsed);
         if (Configuration.DEBUG)
         {
-            _genInterruptibleUsed = true;
+            Compiler.DebugData.Get(_compiler).CodeGenInterruptibleUsed = true;
         }
         var jmpEpilog = block.HasFlag(BBF_HAS_JMP);
 
-        if (Configuration.DEBUG && _compiler.opts.dspCode)
+        if (Configuration.DEBUG && _compiler.dspCode)
         {
             jitprintf("\n__epilog:\n");
         }

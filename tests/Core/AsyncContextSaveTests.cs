@@ -174,7 +174,7 @@ internal static unsafe class AsyncContextSaveTests
         WithCompiler(compiler => {
             var previousConfig = Globals.JitConfig;
             object config = previousConfig;
-            var configField = typeof(JitConfigValues).GetField("_jitAsyncInlining", BindingFlags.Instance | BindingFlags.NonPublic)
+            var configField = TestConfiguration.GetJitConfigField("_jitAsyncInlining", BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("Missing async inlining setting.");
             configField.SetValue(config, 1);
             Globals.JitConfig = (JitConfigValues)config;
@@ -233,7 +233,7 @@ internal static unsafe class AsyncContextSaveTests
                     inlinee.compHndBBtab = [];
                     inlinee.fgPredsComputed = true;
                     inlinee.opts.jitFlags = compiler.opts.jitFlags;
-                    inlinee.opts.SetMinOpts(false);
+                    inlinee.SetMinOpts(false);
                     TestConfiguration.EnableSafeBasicBlockCreation(inlinee);
                     TestConfiguration.EnableSafeFlowEdgeCreation(inlinee);
                     var entry = NewBlock(inlinee, BBJ_ALWAYS, 0);
@@ -336,7 +336,7 @@ internal static unsafe class AsyncContextSaveTests
         WithCompiler(compiler => {
             var previousConfig = Globals.JitConfig;
             object config = previousConfig;
-            var configField = typeof(JitConfigValues).GetField("_jitAsyncInlining", BindingFlags.Instance | BindingFlags.NonPublic)
+            var configField = TestConfiguration.GetJitConfigField("_jitAsyncInlining", BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("Missing async inlining setting.");
             configField.SetValue(config, reason == "disabled" ? 0 : 1);
             Globals.JitConfig = (JitConfigValues)config;
@@ -719,7 +719,7 @@ internal static unsafe class AsyncContextSaveTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         CORINFO_METHOD_INFO methodInfo = default;
         methodInfo.options = CorInfoOptions.CORINFO_ASYNC_SAVE_CONTEXTS;
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;

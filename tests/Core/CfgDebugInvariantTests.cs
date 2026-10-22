@@ -185,8 +185,8 @@ internal static unsafe class CfgDebugInvariantTests
         return 0;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitExpensiveDebugCheckLevel")]
-    private static extern ref int ExpensiveCheckLevel(ref JitConfigValues config);
+    private static ref int ExpensiveCheckLevel(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitExpensiveDebugCheckLevel;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_prev")]
     private static extern ref BasicBlock? PreviousBlock(BasicBlock block);

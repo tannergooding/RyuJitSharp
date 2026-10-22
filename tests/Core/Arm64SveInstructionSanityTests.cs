@@ -22,6 +22,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64SveInstructionSanityTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64,
+            "SVE instruction sanity tests require ARM64 target semantics.");
+    }
+
     [TestCase(IF_ARM64_SVE_AA_3A, INS_sve_add, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V31, REG_ARM64_V0, EA_SCALABLE, 0)]
     [TestCase(IF_ARM64_SVE_AC_3A, INS_sve_sdiv, INS_OPTS_SCALABLE_D, REG_ARM64_V0, REG_ARM64_P0, REG_ARM64_V1, REG_ARM64_V0, EA_SCALABLE, 0)]
     [TestCase(IF_ARM64_SVE_AR_4A, INS_sve_mla, INS_OPTS_SCALABLE_S, REG_ARM64_V0, REG_ARM64_P0, REG_ARM64_V1, REG_ARM64_V31, EA_SCALABLE, 0)]

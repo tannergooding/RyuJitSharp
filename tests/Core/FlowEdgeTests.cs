@@ -28,6 +28,14 @@ internal static class FlowEdgeTests
         AssertLikelihoodTracking(edge, expected: true);
         edge.clearLikelihood();
         AssertLikelihoodTracking(edge, expected: false);
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.That(
+                typeof(FlowEdge).GetField(
+                    "_likelihoodSet",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic),
+                Is.Null);
+        }
 
         static void AssertLikelihoodTracking(FlowEdge edge, bool expected)
         {

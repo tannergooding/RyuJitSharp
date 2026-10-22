@@ -79,7 +79,7 @@ public partial class Compiler
             if ((_dstLclNum != BAD_VAR_NUM) && DstVarDsc.lvPromoted)
             {
                 noway_assert(varTypeIsStruct(DstVarDsc.Type));
-                noway_assert(!_compiler.opts.MinOpts);
+                noway_assert(!_compiler.MinOpts);
                 if (_blockSize == DstVarDsc.lvExactSize)
                 {
                     JITDUMP(" (m_dstDoFldStore=true)");
@@ -93,7 +93,7 @@ public partial class Compiler
             if ((_srcLclNum != BAD_VAR_NUM) && SrcVarDsc.lvPromoted)
             {
                 noway_assert(varTypeIsStruct(SrcVarDsc.Type));
-                noway_assert(!_compiler.opts.MinOpts);
+                noway_assert(!_compiler.MinOpts);
                 if (_blockSize == SrcVarDsc.lvExactSize)
                 {
                     JITDUMP(" (m_srcDoFldStore=true)");

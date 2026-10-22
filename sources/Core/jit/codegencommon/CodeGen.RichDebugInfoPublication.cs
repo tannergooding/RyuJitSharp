@@ -14,11 +14,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private static class DebugData
-    {
-        internal static readonly Lock RichDebugInfoFileLock = new();
-    }
-
     [Conditional("DEBUG")]
     public unsafe void genReportRichDebugInfoInlineTreeToFile(TextWriter writer, InlineContext context, ref bool first)
     {
@@ -60,7 +55,7 @@ public sealed partial class CodeGen
             return;
         }
 
-        lock (DebugData.RichDebugInfoFileLock)
+        lock (Compiler.DebugData.RichDebugInfoFileData.FileLock)
         {
             var path = Marshal.PtrToStringUTF8((nint)pathPointer);
             if (path is null)

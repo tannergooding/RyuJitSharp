@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using NUnit.Framework;
+using static RyuJitSharp.Compiler.MeasurementData.MethodCounts;
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp.UnitTests;
@@ -124,7 +125,8 @@ internal static unsafe class NowayStatisticsTests
     {
         _ = Run(compiler => {
             compiler.RecordNowayAssert("\u00e9", 7, "condition");
-            var map = Map(null) ?? throw new InvalidOperationException("Expected recorded assertion.");
+            var map = TestConfiguration.GetNowayAssertMap()
+                ?? throw new InvalidOperationException("Expected recorded assertion.");
 
             Assert.That(map.Snapshot()[0].Location.Hash, Is.EqualTo(0xFFFFFF73U));
         });
@@ -135,7 +137,8 @@ internal static unsafe class NowayStatisticsTests
     {
         var text = Run(compiler => {
             compiler.RecordNowayAssert("a", -1, "condition");
-            var map = Map(null) ?? throw new InvalidOperationException("Expected recorded assertion.");
+            var map = TestConfiguration.GetNowayAssertMap()
+                ?? throw new InvalidOperationException("Expected recorded assertion.");
             map.Snapshot()[0].Location.Count = nuint.MaxValue;
             compiler.RecordNowayAssert("a", -1, "ignored");
             Compiler.DisplayNowayAssertMap();
@@ -151,8 +154,8 @@ internal static unsafe class NowayStatisticsTests
             compiler.RecordNowayAssert("a", 7, "condition");
             if (TestConfiguration.IsDebug)
             {
-                var previous = Compiler.genMethodCnt;
-                Compiler.genMethodCnt = 0;
+                var previous = genMethodCnt;
+                genMethodCnt = 0;
 
                 try
                 {
@@ -160,7 +163,7 @@ internal static unsafe class NowayStatisticsTests
                 }
                 finally
                 {
-                    Compiler.genMethodCnt = previous;
+                    genMethodCnt = previous;
                 }
             }
             else
@@ -177,7 +180,7 @@ internal static unsafe class NowayStatisticsTests
     {
         var recordingOutput = Run(_ => {
             RecordNowayAssertGlobal("a", 7, "condition");
-            Assert.That(Map(null), Is.Null);
+            Assert.That(TestConfiguration.GetNowayAssertMap(), Is.Null);
             Compiler.compShutdown();
         }, measureNoway: false);
 
@@ -195,7 +198,8 @@ internal static unsafe class NowayStatisticsTests
     {
         var text = Run(compiler => {
             compiler.RecordNowayAssert("a", 1, "large");
-            var map = Map(null) ?? throw new InvalidOperationException("Expected recorded assertion.");
+            var map = TestConfiguration.GetNowayAssertMap()
+                ?? throw new InvalidOperationException("Expected recorded assertion.");
             map.Snapshot()[0].Location.Count = nuint.MaxValue;
             compiler.RecordNowayAssert("a", 2, "small");
             Compiler.DisplayNowayAssertMap();
@@ -261,7 +265,7 @@ internal static unsafe class NowayStatisticsTests
         AppContext.SetSwitch(switchName, measureNoway);
 
         var savedConfig = JitConfig;
-        var savedMap = Map(null);
+        var savedMap = TestConfiguration.GetNowayAssertMap();
         var savedOutput = s_jitstdout;
         using var tls = TestConfiguration.CreateJitTls();
         var savedCompiler = JitTls.Compiler;
@@ -270,7 +274,7 @@ internal static unsafe class NowayStatisticsTests
         using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
         JitConfig = new JitConfigValues();
         Option(ref JitConfig) = option;
-        Map(null) = null;
+        TestConfiguration.SetNowayAssertMap(null);
         s_jitstdout = writer;
         JitTls.Compiler = hasCompiler ? compiler : null;
 
@@ -285,14 +289,11 @@ internal static unsafe class NowayStatisticsTests
         {
             JitTls.Compiler = savedCompiler;
             s_jitstdout = savedOutput;
-            Map(null) = savedMap;
+            TestConfiguration.SetNowayAssertMap(savedMap);
             JitConfig = savedConfig;
             AppContext.SetSwitch(switchName, hadOriginalValue && originalValue);
         }
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_nowayAssertMap")]
-    private static extern ref Compiler.NowayAssertMap? Map(Compiler? compiler);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitMeasureNowayAssert")]
     private static extern ref int Option(ref JitConfigValues config);

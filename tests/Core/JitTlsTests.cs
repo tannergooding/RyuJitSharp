@@ -24,8 +24,7 @@ internal static unsafe class JitTlsTests
         {
             JitTls.Compiler = firstCompiler;
             firstCompiler.compGenTreeID = 3;
-            var activeJitTls = JitTls.t_jitTls ?? throw new InvalidOperationException("Missing JitTls scope.");
-            Assert.That(activeJitTls._compGenTreeID++, Is.EqualTo(3));
+            Assert.That(JitTls.GetNextCompGenTreeID(), Is.EqualTo(3));
             Assert.That(firstCompiler.compGenTreeID, Is.EqualTo(4));
 
             JitTls.Compiler = secondCompiler;
@@ -216,11 +215,11 @@ internal static unsafe class JitTlsTests
     public static void AbandonedScopeDoesNotInstallCompilerOnFinalizerThread()
     {
         Assume.That(TestConfiguration.IsDebug);
-        _ = CurrentScope(null);
+        _ = Compiler.DebugData.CurrentJitTls;
         JitTls? previousScope = null;
         Compiler? previousCompiler = null;
         RunOnFinalizerThread(() => {
-            previousScope = CurrentScope(null);
+            previousScope = Compiler.DebugData.CurrentJitTls;
             previousCompiler = JitTls.Compiler;
         });
 
@@ -238,7 +237,7 @@ internal static unsafe class JitTlsTests
         {
             RunOnFinalizerThread(() => {
                 outer.Dispose();
-                CurrentScope(null) = previousScope;
+                Compiler.DebugData.CurrentJitTls = previousScope;
             });
             GC.KeepAlive(outer);
         }
@@ -289,7 +288,4 @@ internal static unsafe class JitTlsTests
             action();
         }
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "t_jitTls")]
-    private static extern ref JitTls? CurrentScope(JitTls? type);
 }

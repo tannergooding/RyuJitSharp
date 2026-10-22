@@ -193,7 +193,7 @@ internal static unsafe class Arm64RegisterConsumptionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.compCurLife = [];
         JitTls.Compiler = compiler;
         try

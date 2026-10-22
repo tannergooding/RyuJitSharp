@@ -345,7 +345,7 @@ internal static class EHCleanupTests
             object config = new JitConfigValues();
             foreach (var fieldName in new[] { "_jitEnableRemoveEmptyTry", "_jitEnableRemoveEmptyTryCatchOrTryFault" })
             {
-                var field = typeof(JitConfigValues).GetField(fieldName,
+                var field = TestConfiguration.GetJitConfigField(fieldName,
                     BindingFlags.Instance | BindingFlags.NonPublic)
                     ?? throw new AssertionException($"Missing configuration {fieldName}.");
                 field.SetValue(config, 1);

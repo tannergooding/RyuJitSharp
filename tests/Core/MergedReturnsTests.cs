@@ -174,7 +174,7 @@ internal static unsafe class MergedReturnsTests
         compiler.genReturnLocal = BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         using var tls = TestConfiguration.CreateJitTls();

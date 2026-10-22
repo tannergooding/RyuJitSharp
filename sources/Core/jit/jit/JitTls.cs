@@ -14,36 +14,25 @@ namespace RyuJitSharp;
 
 public sealed class JitTls : IDisposable
 {
-    internal struct ImporterDebugState
-    {
-        internal int CurrentOpcodeOffset;
-        internal string? CurrentOpcodeName;
-        internal bool NestedStackSpill;
-        internal Statement? PendingStatement;
-    }
-
-    [ThreadStatic]
-    internal static JitTls? t_jitTls;
-
     [ThreadStatic]
     private static Compiler? t_compiler;
-
-    internal Compiler? _compiler;
-    internal int _compGenTreeID;
-    private LogEnv _logEnv;
-    private ImporterDebugState _importerDebugState;
-    private readonly JitTls? _next;
 
     public unsafe JitTls(ICorJitInfo* jitInfo)
     {
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitTlsScopesAreOnlyAvailableInDebugBuilds);
+            return;
         }
-        t_jitTls?.FlushCompGenTreeID();
-        _logEnv = new LogEnv(jitInfo);
-        _next = t_jitTls;
-        t_jitTls = this;
+
+        var currentJitTls = global::RyuJitSharp.Compiler.DebugData.CurrentJitTls;
+        currentJitTls?.FlushCompGenTreeID();
+
+        var data = global::RyuJitSharp.Compiler.DebugData.Get(this);
+        data.LogEnv = new LogEnv(jitInfo);
+        data.Next = currentJitTls;
+
+        global::RyuJitSharp.Compiler.DebugData.CurrentJitTls = this;
     }
 
     public static unsafe IDisposable? CreateScope(ICorJitInfo* jitInfo)
@@ -51,23 +40,24 @@ public sealed class JitTls : IDisposable
         return Configuration.DEBUG ? new JitTls(jitInfo) : null;
     }
 
-    internal static ref ImporterDebugState CurrentImporterDebugState
+    internal static ref global::RyuJitSharp.Compiler.DebugData.JitTlsImporterDebugState CurrentImporterDebugState
     {
         get
         {
             if (!Configuration.DEBUG)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImporterDebugStateIsOnlyAvailableInDebugBuilds);
+                return ref Unsafe.NullRef<global::RyuJitSharp.Compiler.DebugData.JitTlsImporterDebugState>();
             }
 
-            var jitTls = t_jitTls;
+            var jitTls = global::RyuJitSharp.Compiler.DebugData.CurrentJitTls;
             if (jitTls is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImporterDebugStateRequiresAnActiveJitTlsScope);
-                return ref Unsafe.NullRef<ImporterDebugState>();
+                return ref Unsafe.NullRef<global::RyuJitSharp.Compiler.DebugData.JitTlsImporterDebugState>();
             }
 
-            return ref jitTls._importerDebugState;
+            return ref global::RyuJitSharp.Compiler.DebugData.Get(jitTls).ImporterDebugState;
         }
     }
 
@@ -78,7 +68,7 @@ public sealed class JitTls : IDisposable
             return default;
         }
 
-        var jitTls = t_jitTls;
+        var jitTls = global::RyuJitSharp.Compiler.DebugData.CurrentJitTls;
         if (jitTls is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImporterDebugStateRequiresAnActiveJitTlsScope);
@@ -91,31 +81,39 @@ public sealed class JitTls : IDisposable
     // Native JitTls is a stack scope; restore TLS on the owning thread, not a finalizer thread.
     public void Dispose()
     {
-        if (Configuration.DEBUG && ReferenceEquals(t_jitTls, this))
+        if (!Configuration.DEBUG)
         {
+            return;
+        }
+
+        var currentJitTls = global::RyuJitSharp.Compiler.DebugData.CurrentJitTls;
+        if (ReferenceEquals(currentJitTls, this))
+        {
+            var data = global::RyuJitSharp.Compiler.DebugData.Get(this);
             FlushCompGenTreeID();
-            t_jitTls = _next;
-            t_jitTls?.ReloadCompGenTreeID();
+            global::RyuJitSharp.Compiler.DebugData.CurrentJitTls = data.Next;
+            data.Next?.ReloadCompGenTreeID();
         }
     }
 
     internal readonly ref struct ImporterDebugStateScope : IDisposable
     {
         private readonly JitTls? _jitTls;
-        private readonly ImporterDebugState _previousState;
+        private readonly global::RyuJitSharp.Compiler.DebugData.JitTlsImporterDebugState _previousState;
 
         internal ImporterDebugStateScope(JitTls jitTls)
         {
             _jitTls = jitTls;
-            _previousState = jitTls._importerDebugState;
-            jitTls._importerDebugState = default;
+            var data = global::RyuJitSharp.Compiler.DebugData.Get(jitTls);
+            _previousState = data.ImporterDebugState;
+            data.ImporterDebugState = default;
         }
 
         public readonly void Dispose()
         {
             if (_jitTls is { } jitTls)
             {
-                jitTls._importerDebugState = _previousState;
+                global::RyuJitSharp.Compiler.DebugData.Get(jitTls).ImporterDebugState = _previousState;
             }
         }
     }
@@ -129,8 +127,8 @@ public sealed class JitTls : IDisposable
                 return t_compiler;
             }
 
-            var jitTls = t_jitTls;
-            return jitTls?._compiler;
+            var jitTls = global::RyuJitSharp.Compiler.DebugData.CurrentJitTls;
+            return jitTls is null ? null : global::RyuJitSharp.Compiler.DebugData.Get(jitTls).Compiler;
         }
 
         set
@@ -141,17 +139,19 @@ public sealed class JitTls : IDisposable
                 return;
             }
 
-            var jitTls = t_jitTls;
+            var jitTls = global::RyuJitSharp.Compiler.DebugData.CurrentJitTls;
             assert(jitTls is not null);
+            var activeJitTls = jitTls!;
+            var data = global::RyuJitSharp.Compiler.DebugData.Get(activeJitTls);
 
-            if (ReferenceEquals(jitTls._compiler, value))
+            if (ReferenceEquals(data.Compiler, value))
             {
                 return;
             }
 
-            jitTls.FlushCompGenTreeID();
-            jitTls._compiler = value;
-            jitTls.ReloadCompGenTreeID();
+            activeJitTls.FlushCompGenTreeID();
+            data.Compiler = value;
+            activeJitTls.ReloadCompGenTreeID();
         }
     }
 
@@ -160,12 +160,17 @@ public sealed class JitTls : IDisposable
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeIDsAreOnlyAvailableInDebugBuilds);
+            return default;
         }
 
-        var jitTls = t_jitTls;
-        if (jitTls is { } active && ReferenceEquals(active._compiler, compiler))
+        var jitTls = global::RyuJitSharp.Compiler.DebugData.CurrentJitTls;
+        if (jitTls is { } active)
         {
-            return active._compGenTreeID;
+            var data = global::RyuJitSharp.Compiler.DebugData.Get(active);
+            if (ReferenceEquals(data.Compiler, compiler))
+            {
+                return data.CompGenTreeID;
+            }
         }
 
         return compiler.GetCompGenTreeIDFromDebugSidecar();
@@ -176,17 +181,21 @@ public sealed class JitTls : IDisposable
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeIDsAreOnlyAvailableInDebugBuilds);
+            return;
         }
 
-        var jitTls = t_jitTls;
-        if (jitTls is { } active && ReferenceEquals(active._compiler, compiler))
+        var jitTls = global::RyuJitSharp.Compiler.DebugData.CurrentJitTls;
+        if (jitTls is { } active)
         {
-            active._compGenTreeID = value;
+            var data = global::RyuJitSharp.Compiler.DebugData.Get(active);
+            if (ReferenceEquals(data.Compiler, compiler))
+            {
+                data.CompGenTreeID = value;
+                return;
+            }
         }
-        else
-        {
-            compiler.SetCompGenTreeIDInDebugSidecar(value);
-        }
+
+        compiler.SetCompGenTreeIDInDebugSidecar(value);
     }
 
     internal static void IncrementCompGenTreeID(Compiler compiler)
@@ -194,17 +203,46 @@ public sealed class JitTls : IDisposable
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeIDsAreOnlyAvailableInDebugBuilds);
+            return;
         }
 
-        var jitTls = t_jitTls;
-        if (jitTls is { } active && ReferenceEquals(active._compiler, compiler))
+        var jitTls = global::RyuJitSharp.Compiler.DebugData.CurrentJitTls;
+        if (jitTls is { } active)
         {
-            active._compGenTreeID++;
+            var data = global::RyuJitSharp.Compiler.DebugData.Get(active);
+            if (ReferenceEquals(data.Compiler, compiler))
+            {
+                data.CompGenTreeID++;
+                return;
+            }
         }
-        else
+
+        compiler.IncrementCompGenTreeIDInDebugSidecar();
+    }
+
+    internal static int GetNextCompGenTreeID()
+    {
+        if (!Configuration.DEBUG)
         {
-            compiler.IncrementCompGenTreeIDInDebugSidecar();
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeIDsAreOnlyAvailableInDebugBuilds);
+            return default;
         }
+
+        var jitTls = global::RyuJitSharp.Compiler.DebugData.CurrentJitTls;
+        if (jitTls is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GenTreeConstructionRequiresAnActiveCompilerInDebugBuilds);
+            return default;
+        }
+
+        var data = global::RyuJitSharp.Compiler.DebugData.Get(jitTls);
+        if (data.Compiler is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GenTreeConstructionRequiresAnActiveCompilerInDebugBuilds);
+            return default;
+        }
+
+        return data.CompGenTreeID++;
     }
 
     public static ref LogEnv LogEnv
@@ -214,20 +252,28 @@ public sealed class JitTls : IDisposable
             if (!Configuration.DEBUG)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitTlsLogEnvIsOnlyAvailableInDebugBuilds);
+                return ref Unsafe.NullRef<LogEnv>();
             }
 
-            var jitTls = t_jitTls;
-            return ref ((jitTls is not null) ? ref jitTls._logEnv : ref Unsafe.NullRef<LogEnv>());
+            var jitTls = global::RyuJitSharp.Compiler.DebugData.CurrentJitTls;
+            if (jitTls is null)
+            {
+                return ref Unsafe.NullRef<LogEnv>();
+            }
+
+            return ref global::RyuJitSharp.Compiler.DebugData.Get(jitTls).LogEnv;
         }
     }
 
     private void FlushCompGenTreeID()
     {
-        _compiler?.SetCompGenTreeIDInDebugSidecar(_compGenTreeID);
+        var data = global::RyuJitSharp.Compiler.DebugData.Get(this);
+        data.Compiler?.SetCompGenTreeIDInDebugSidecar(data.CompGenTreeID);
     }
 
     private void ReloadCompGenTreeID()
     {
-        _compGenTreeID = _compiler?.GetCompGenTreeIDFromDebugSidecar() ?? 0;
+        var data = global::RyuJitSharp.Compiler.DebugData.Get(this);
+        data.CompGenTreeID = data.Compiler?.GetCompGenTreeIDFromDebugSidecar() ?? 0;
     }
 }

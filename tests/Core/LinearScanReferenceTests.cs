@@ -126,7 +126,7 @@ internal static unsafe class LinearScanReferenceTests
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             if (TestConfiguration.IsDebug)
             {
-                CurrentBuildNode(allocator) = tree;
+                Compiler.DebugData.Get(allocator).CurrentBuildNode = tree;
             }
 
             var definition = allocator.newRefPositionRaw(10, tree, RefType.RefTypeDef);
@@ -179,9 +179,6 @@ internal static unsafe class LinearScanReferenceTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBuildNode")]
-    private static extern ref GenTree? CurrentBuildNode(LinearScan allocator);
-
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "tinyDump")]
     private static extern void DumpInterval(Interval interval);
 
@@ -192,7 +189,7 @@ internal static unsafe class LinearScanReferenceTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);
         try

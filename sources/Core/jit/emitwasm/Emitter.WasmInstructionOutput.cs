@@ -281,7 +281,7 @@ public partial class Emitter
         {
             if (compiler!.opts.disAsm || compiler.verbose)
             {
-                emitDispInsWasm(id, false, compiler.opts.dspGCtbls, true, emitCurCodeOffs(*dp), *dp,
+                emitDispInsWasm(id, false, compiler.dspGCtbls, true, emitCurCodeOffs(*dp), *dp,
                     unchecked((nuint)(dst - *dp)), ig);
             }
         }

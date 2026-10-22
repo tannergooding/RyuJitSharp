@@ -102,7 +102,7 @@ public partial class Emitter
         ((instrDescJmp)id).idjTarget = target;
         id.idjShort = false;
         id.idjKeepLong = compiler.fgInDifferentRegions(currentBlock, target);
-        if (Configuration.DEBUG && compiler.opts.compLongAddress)
+        if (Configuration.DEBUG && compiler.compLongAddress)
         {
             id.idjKeepLong = true;
         }

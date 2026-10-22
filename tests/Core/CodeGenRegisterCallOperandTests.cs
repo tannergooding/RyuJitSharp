@@ -146,7 +146,7 @@ internal static unsafe class CodeGenRegisterCallOperandTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         TestConfiguration.SetCompilerFullName(compiler, nameof(CodeGenRegisterCallOperandTests));
         JitTls.Compiler = compiler;
         s_assertions = 0;

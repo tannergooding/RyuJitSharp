@@ -7,21 +7,63 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
+using InlineReplayData = RyuJitSharp.Compiler.DebugData.InlineReplayData;
 
 namespace RyuJitSharp;
 
 public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
 {
-    private static bool s_wroteReplayBanner;
-    private static FileStream? s_replayFile;
-    private static readonly Lock s_xmlReaderLock = new();
-    private static bool s_endOfFile;
+    private InlineContext? _inlineContext
+    {
+        get
+        {
+            return GetDebugData().InlineContext;
+        }
 
-    private InlineContext? _inlineContext;
-    private IL_OFFSET _offset = BAD_IL_OFFSET;
-    private bool _wasForceInline;
-    private bool _isDataCollectionTarget;
+        set
+        {
+            GetDebugData().InlineContext = value;
+        }
+    }
+
+    private IL_OFFSET _offset
+    {
+        get
+        {
+            return GetDebugData().Offset;
+        }
+
+        set
+        {
+            GetDebugData().Offset = value;
+        }
+    }
+
+    private bool _wasForceInline
+    {
+        get
+        {
+            return GetDebugData().WasForceInline;
+        }
+
+        set
+        {
+            GetDebugData().WasForceInline = value;
+        }
+    }
+
+    private bool _isDataCollectionTarget
+    {
+        get
+        {
+            return GetDebugData().IsDataCollectionTarget;
+        }
+
+        set
+        {
+            GetDebugData().IsDataCollectionTarget = value;
+        }
+    }
 
     public ReplayPolicy(Compiler compiler, bool isPrejitRoot)
         : base(compiler, isPrejitRoot)
@@ -31,13 +73,15 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ReplayInlinePolicyIsOnlyAvailableInDebugBuilds);
         }
 
-        if ((s_replayFile is null) && !s_wroteReplayBanner)
+        if ((InlineReplayData.ReplayFile is null) &&
+            !InlineReplayData.WroteReplayBanner)
         {
             var path = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(JitConfig.JitInlineReplayFile));
             try
             {
-                s_replayFile = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                s_endOfFile = false;
+                InlineReplayData.ReplayFile =
+                    new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                InlineReplayData.EndOfFile = false;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
             {
@@ -48,11 +92,23 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
             {
                 using var stream = Console.OpenStandardError();
                 using var stderr = new JitTextWriter(stream, leaveOpen: true);
-                stderr.Write($"*** {(s_replayFile is null ? "Unable to replay" : "Replaying")} inlines from {path}\n");
+                stderr.Write(
+                    $"*** {(InlineReplayData.ReplayFile is null ? "Unable to replay" : "Replaying")} inlines from {path}\n");
             }
 
-            s_wroteReplayBanner = true;
+            InlineReplayData.WroteReplayBanner = true;
         }
+    }
+
+    private Compiler.DebugData.ReplayPolicyDebugData GetDebugData()
+    {
+        if (!Configuration.DEBUG)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                FatalJitErrorCode.ReplayInlinePolicyIsOnlyAvailableInDebugBuilds);
+        }
+
+        return global::RyuJitSharp.Compiler.DebugData.Get(this);
     }
 
     public override string Name => nameof(ReplayPolicy);
@@ -62,8 +118,8 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
     [System.Diagnostics.Conditional("DEBUG")]
     public static void FinalizeXml()
     {
-        s_replayFile?.Dispose();
-        s_replayFile = null;
+        InlineReplayData.ReplayFile?.Dispose();
+        InlineReplayData.ReplayFile = null;
     }
 
     public override void NoteContext(InlineContext? context) => _inlineContext = context;
@@ -98,7 +154,7 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
         }
 
         var accept = false;
-        lock (s_xmlReaderLock)
+        lock (InlineReplayData.XmlReaderLock)
         {
             if (FindMethod() && (_inlineContext is not null) && FindContext(_inlineContext))
             {
@@ -134,7 +190,7 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
 
     private bool FindMethod()
     {
-        if (s_replayFile is null)
+        if (InlineReplayData.ReplayFile is null)
         {
             return false;
         }
@@ -189,7 +245,9 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
             break;
         }
 
-        strategy.MethodXmlFilePosition = found ? unchecked((int)s_replayFile.Position) : -1;
+        strategy.MethodXmlFilePosition = found
+            ? unchecked((int)InlineReplayData.ReplayFile.Position)
+            : -1;
         return found;
     }
 
@@ -306,28 +364,25 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
         return false;
     }
 
-    private static FileStream ReplayFile {
-    get
+    private static FileStream ReplayFile
     {
-        global::System.IO.FileStream __jitExceptionReturnResult431;
-        var __jitExceptionCoalesceLeft432 = s_replayFile;
-        if (__jitExceptionCoalesceLeft432 != null)
+        get
         {
-            __jitExceptionReturnResult431 = __jitExceptionCoalesceLeft432;
-        }
-        else
-        {
-            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ReplayFileIsNotOpen);
-            __jitExceptionReturnResult431 = default;
-        }
+            var replayFile = InlineReplayData.ReplayFile;
+            if (replayFile is not null)
+            {
+                return replayFile;
+            }
 
-        return __jitExceptionReturnResult431;
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ReplayFileIsNotOpen);
+            return default!;
+        }
     }
-}
+
     private static void Seek(int position)
     {
         _ = ReplayFile.Seek(position, SeekOrigin.Begin);
-        s_endOfFile = false;
+        InlineReplayData.EndOfFile = false;
     }
 
     // Match fgets(buffer, 256) in CRT text mode, including byte limits and physical
@@ -336,12 +391,12 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
     {
         var file = ReplayFile;
         length = 0;
-        while (!s_endOfFile && (length < buffer.Length))
+        while (!InlineReplayData.EndOfFile && (length < buffer.Length))
         {
             var value = file.ReadByte();
             if (value == -1)
             {
-                s_endOfFile = true;
+                InlineReplayData.EndOfFile = true;
                 break;
             }
 
@@ -349,7 +404,7 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
             {
                 if (value == 0x1a)
                 {
-                    s_endOfFile = true;
+                    InlineReplayData.EndOfFile = true;
                     break;
                 }
 

@@ -10,17 +10,30 @@ public sealed class GenTreeILOffset : GenTree
 {
     private DebugInfo _stmtDebugInfo;
 
-    private IL_OFFSET _stmtLastILOffset;
-
     public GenTreeILOffset(in DebugInfo stmtDebugInfo, IL_OFFSET stmtLastILOffset = BAD_IL_OFFSET)
         : base(GT_IL_OFFSET, TYP_VOID)
     {
         _stmtDebugInfo = stmtDebugInfo;
 
-        _stmtLastILOffset = stmtLastILOffset;
+        if (Configuration.DEBUG)
+        {
+            Compiler.DebugData.Get(this).StmtLastILOffset = stmtLastILOffset;
+        }
     }
 
     public ref readonly DebugInfo StmtDebugInfo => ref _stmtDebugInfo;
 
-    public IL_OFFSET StmtLastILOffset => _stmtLastILOffset;
+    public IL_OFFSET StmtLastILOffset
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GenTreeDebugDataIsOnlyAvailableInDebugBuilds);
+                return BAD_IL_OFFSET;
+            }
+
+            return Compiler.DebugData.Get(this).StmtLastILOffset;
+        }
+    }
 }

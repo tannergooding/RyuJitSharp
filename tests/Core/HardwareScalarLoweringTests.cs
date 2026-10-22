@@ -133,7 +133,7 @@ internal static unsafe class HardwareScalarLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.lvaTable = [new() { Type = TYP_I_IMPL }, new() { Type = TYP_SIMD16 }];
         compiler.lvaCount = compiler.lvaTable.Length;

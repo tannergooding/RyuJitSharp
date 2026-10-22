@@ -454,7 +454,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         JitTls.Compiler = compiler;
         var previousEnableNoway = EnableNoway(ref JitConfig);
         EnableNoway(ref JitConfig) = 1;

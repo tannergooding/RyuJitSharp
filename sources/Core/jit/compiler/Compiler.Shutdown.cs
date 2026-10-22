@@ -7,6 +7,8 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using static RyuJitSharp.Compiler.MeasurementData.MethodCounts;
+using static RyuJitSharp.Globals.CodeSizeStatisticsData;
 
 namespace RyuJitSharp;
 
@@ -14,7 +16,7 @@ public partial class Compiler
 {
     public static unsafe void compShutdown()
     {
-        s_pAltJitExcludeAssembliesList = null;
+        AltJitData.s_pAltJitExcludeAssembliesList = null;
         if (Configuration.DEBUG)
         {
             DebugData.s_pJitDisasmIncludeAssembliesList = null;
@@ -191,7 +193,7 @@ public partial class Compiler
 
                     if (Configuration.DEBUG && Configuration.DOUBLE_ALIGN)
                     {
-                        jitprintf($"{(uint)s_lvaDoubleAlignedProcsCount} out of {genMethodCnt} methods generated with double-aligned stack\n");
+                        jitprintf($"{(uint)DebugData.s_lvaDoubleAlignedProcsCount} out of {genMethodCnt} methods generated with double-aligned stack\n");
                     }
                 }
             }
@@ -261,14 +263,15 @@ public partial class Compiler
                 jitprintf("---------------------------------------------------\n");
 
                 // Existing signed storage represents native size_t bits, not signed division.
-                jitprintf($"Allocated {(uint)BasicBlock.s_Count,6} basic blocks ({(uint)BasicBlock.s_Size,7} bytes total, " +
-                    $"avg {(uint)((nuint)BasicBlock.s_Size / genMethodCnt),4} bytes per method)\n");
-                jitprintf($"Allocated {(uint)genFlowNodeCnt,6} flow nodes ({(uint)genFlowNodeSize,7} bytes total, " +
-                    $"avg {(uint)(genFlowNodeSize / genMethodCnt),4} bytes per method)\n");
+                jitprintf($"Allocated {(uint)MeasurementData.BlockSize.s_Count,6} basic blocks ({(uint)MeasurementData.BlockSize.s_Size,7} bytes total, " +
+                    $"avg {(uint)((nuint)MeasurementData.BlockSize.s_Size / genMethodCnt),4} bytes per method)\n");
+                jitprintf($"Allocated {(uint)MeasurementData.BlockSize.s_FlowNodeCount,6} flow nodes " +
+                    $"({(uint)MeasurementData.BlockSize.s_FlowNodeSize,7} bytes total, " +
+                    $"avg {(uint)(MeasurementData.BlockSize.s_FlowNodeSize / genMethodCnt),4} bytes per method)\n");
             }
         }
 
-        if (Configuration.MEASURE_MEM_ALLOC && ManagedAllocationStatsData.s_dspMemStats)
+        if (Configuration.MEASURE_MEM_ALLOC && MeasurementData.ManagedAllocation.s_dspMemStats)
         {
             jitprintf("\nAll allocations:\n");
             JitMemStatsInfo.dumpAggregateMemStats(jitstdout());
@@ -305,10 +308,12 @@ public partial class Compiler
                 jitprintf("GC pointer table stats\n");
                 jitprintf("---------------------------------------------------\n");
 
-                jitprintf($"Reg pointer descriptor size (internal): {(uint)GCInfo.s_gcRegPtrDscSize,8} " +
-                    $"(avg {(uint)(GCInfo.s_gcRegPtrDscSize / genMethodCnt),4} per method)\n");
-                jitprintf($"Total pointer table size: {(uint)GCInfo.s_gcTotalPtrTabSize,8} " +
-                    $"(avg {(uint)(GCInfo.s_gcTotalPtrTabSize / genMethodCnt),4} per method)\n");
+                jitprintf($"Reg pointer descriptor size (internal): " +
+                    $"{(uint)GCInfo.PointerTableStatisticsData.s_gcRegPtrDscSize,8} " +
+                    $"(avg {(uint)(GCInfo.PointerTableStatisticsData.s_gcRegPtrDscSize / genMethodCnt),4} per method)\n");
+                jitprintf($"Total pointer table size: " +
+                    $"{(uint)GCInfo.PointerTableStatisticsData.s_gcTotalPtrTabSize,8} " +
+                    $"(avg {(uint)(GCInfo.PointerTableStatisticsData.s_gcTotalPtrTabSize / genMethodCnt),4} per method)\n");
             }
         }
 
@@ -338,16 +343,16 @@ public partial class Compiler
             jitprintf("---------------------------------------------------\n");
             jitprintf("Fatal errors stats\n");
             jitprintf("---------------------------------------------------\n");
-            jitprintf($"   badCode:             {s_fatalBadCodeCount}\n");
-            jitprintf($"   noWay:               {s_fatalNoWayCount}\n");
-            jitprintf($"   implLimitation:      {s_fatalImplLimitationCount}\n");
-            jitprintf($"   NOMEM:               {s_fatalNoMemCount}\n");
-            jitprintf($"   noWayAssertBody:     {s_fatalNoWayAssertBodyCount}\n");
+            jitprintf($"   badCode:             {Globals.FatalStatisticsData.s_fatalBadCodeCount}\n");
+            jitprintf($"   noWay:               {Globals.FatalStatisticsData.s_fatalNoWayCount}\n");
+            jitprintf($"   implLimitation:      {Globals.FatalStatisticsData.s_fatalImplLimitationCount}\n");
+            jitprintf($"   NOMEM:               {Globals.FatalStatisticsData.s_fatalNoMemCount}\n");
+            jitprintf($"   noWayAssertBody:     {Globals.FatalStatisticsData.s_fatalNoWayAssertBodyCount}\n");
             if (Configuration.DEBUG)
             {
-                jitprintf($"   noWayAssertBodyArgs: {s_fatalNoWayAssertBodyArgsCount}\n");
+                jitprintf($"   noWayAssertBodyArgs: {DebugData.FatalStatisticsData.s_fatalNoWayAssertBodyArgsCount}\n");
             }
-            jitprintf($"   NYI:                 {s_fatalNyiCount}\n");
+            jitprintf($"   NYI:                 {Globals.FatalStatisticsData.s_fatalNyiCount}\n");
         }
 
         if (Configuration.CALL_ARG_STATS ||

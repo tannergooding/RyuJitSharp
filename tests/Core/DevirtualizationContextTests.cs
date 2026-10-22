@@ -19,7 +19,7 @@ internal static unsafe class DevirtualizationContextTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags jitFlags = default;
         compiler.opts.jitFlags = &jitFlags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         using var tls = TestConfiguration.CreateJitTlsWithCompiler(compiler);
         Globals.JitConfig = new JitConfigValues();
 

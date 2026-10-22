@@ -265,14 +265,14 @@ internal static unsafe class LocalStoreCoalescingTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(!optimized);
+        compiler.SetMinOpts(!optimized);
         compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
         compiler.lvaTable = new LclVarDsc[4];
         compiler.lvaCount = 1;
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);
         object config = previousConfig;
-        var field = typeof(JitConfigValues).GetField("_jitEnableStoreLclFldCoalescing",
+        var field = TestConfiguration.GetJitConfigField("_jitEnableStoreLclFldCoalescing",
             BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException();
         field.SetValue(config, enabled ? 1 : 0);
         Globals.JitConfig = (JitConfigValues)config;

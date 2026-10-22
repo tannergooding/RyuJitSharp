@@ -79,7 +79,7 @@ internal static unsafe class HWIntrinsicImportClosureTests
     public static void UnsupportedNamedIntrinsicSurfacesMustThrowAtOptimizedInlineSites()
     {
         WithImporter(compiler => {
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
 
             var argument = compiler.gtNewIconNode(TYP_INT, 1);
             compiler.impPushOnStack(argument, new typeInfo(TYP_INT));
@@ -104,7 +104,7 @@ internal static unsafe class HWIntrinsicImportClosureTests
     {
         WithImporter(compiler => {
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_MIN_OPT);
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
 
             var argument = compiler.gtNewIconNode(TYP_INT, 1);
             compiler.impPushOnStack(argument, new typeInfo(TYP_INT));
@@ -126,7 +126,7 @@ internal static unsafe class HWIntrinsicImportClosureTests
     {
         WithImporter(compiler => {
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
 
             CORINFO_SIG_INFO sig = default;
             sig.retType = CORINFO_TYPE_VOID;

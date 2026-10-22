@@ -11,8 +11,6 @@ public sealed partial class insGroup
 
     public insGroup? igPrev;
 
-    public insGroup? igSelf;
-
     public weight_t igWeight;
     public double igPerfScore;
 

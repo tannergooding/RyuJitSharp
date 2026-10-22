@@ -530,6 +530,8 @@ public partial class Compiler
             varInfoCountExtra += info.compLocalsCount;
         }
 
+        ResetVarScopeNames();
+
         if (varInfoCountExtra == 0)
         {
             return;
@@ -563,7 +565,7 @@ public partial class Compiler
 
             if (Configuration.DEBUG)
             {
-                localVar.vsdName = gtGetLclVarName(localVar.vsdVarNum);
+                SetVarScopeName(i, gtGetLclVarName(localVar.vsdVarNum));
             }
 
             info.compVarScopesCount++;
@@ -607,7 +609,7 @@ public partial class Compiler
 
                 if (Configuration.DEBUG)
                 {
-                    localVar.vsdName = gtGetLclVarName(localVar.vsdVarNum);
+                    SetVarScopeName(varInfoCount + varNum, gtGetLclVarName(localVar.vsdVarNum));
                 }
 
                 info.compVarScopesCount++;

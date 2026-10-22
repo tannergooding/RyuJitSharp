@@ -109,9 +109,9 @@ internal static class LclVarDscVectorPerElementMaskTests
         }
 
         var config = JitConfig;
-        var fatalCount = s_fatalNoWayAssertBodyCount;
+        var fatalCount = Globals.FatalStatisticsData.s_fatalNoWayAssertBodyCount;
         var fatalArgsCount = TestConfiguration.IsDebug
-            ? s_fatalNoWayAssertBodyArgsCount
+            ? Compiler.DebugData.FatalStatisticsData.s_fatalNoWayAssertBodyArgsCount
             : 0;
         JitConfig = new JitConfigValues();
         try
@@ -132,20 +132,24 @@ internal static class LclVarDscVectorPerElementMaskTests
             Assert.That(GetFlags(descriptor), Is.EqualTo(markedFlags));
             if (Configuration.MEASURE_FATAL)
             {
-                Assert.That(s_fatalNoWayAssertBodyCount, Is.EqualTo(unchecked(fatalCount + 2)));
+                Assert.That(
+                    Globals.FatalStatisticsData.s_fatalNoWayAssertBodyCount,
+                    Is.EqualTo(unchecked(fatalCount + 2)));
                 if (TestConfiguration.IsDebug)
                 {
-                    Assert.That(s_fatalNoWayAssertBodyArgsCount, Is.EqualTo(unchecked(fatalArgsCount + 2)));
+                    Assert.That(
+                        Compiler.DebugData.FatalStatisticsData.s_fatalNoWayAssertBodyArgsCount,
+                        Is.EqualTo(unchecked(fatalArgsCount + 2)));
                 }
             }
         }
         finally
         {
             JitConfig = config;
-            s_fatalNoWayAssertBodyCount = fatalCount;
+            Globals.FatalStatisticsData.s_fatalNoWayAssertBodyCount = fatalCount;
             if (TestConfiguration.IsDebug)
             {
-                s_fatalNoWayAssertBodyArgsCount = fatalArgsCount;
+                Compiler.DebugData.FatalStatisticsData.s_fatalNoWayAssertBodyArgsCount = fatalArgsCount;
             }
         }
     }

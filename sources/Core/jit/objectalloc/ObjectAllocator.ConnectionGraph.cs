@@ -7,9 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class ObjectAllocator
 {
-    private static ConfigMethodRange s_jitObjectStackAllocationConditionalEscapeRange;
-    private static ConfigMethodRange s_jitObjectStackAllocationTrackFieldsRange;
-
     private void MarkLclVarAsEscaping(int lclNum)
     {
         var bvIndex = LocalToIndex(lclNum);
@@ -118,8 +115,10 @@ public sealed partial class ObjectAllocator
 
         if (Configuration.DEBUG && _trackFields)
         {
-            s_jitObjectStackAllocationTrackFieldsRange.EnsureInit(JitConfig.JitObjectStackAllocationTrackFieldsRange);
-            var inRange = s_jitObjectStackAllocationTrackFieldsRange.Contains(compiler.info.compMethodHash());
+            Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationTrackFieldsRange.EnsureInit(
+                JitConfig.JitObjectStackAllocationTrackFieldsRange);
+            var inRange = Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationTrackFieldsRange.Contains(
+                compiler.info.compMethodHash());
 
             if (!inRange)
             {
@@ -293,8 +292,9 @@ public sealed partial class ObjectAllocator
 
     private static unsafe bool IsInConditionalEscapeRange(Compiler compiler)
     {
-        s_jitObjectStackAllocationConditionalEscapeRange.EnsureInit(
+        Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationConditionalEscapeRange.EnsureInit(
             JitConfig.JitObjectStackAllocationConditionalEscapeRange);
-        return s_jitObjectStackAllocationConditionalEscapeRange.Contains(compiler.info.compMethodHash());
+        return Compiler.DebugData.MethodRangeData.s_jitObjectStackAllocationConditionalEscapeRange.Contains(
+            compiler.info.compMethodHash());
     }
 }

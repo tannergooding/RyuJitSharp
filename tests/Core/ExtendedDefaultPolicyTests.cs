@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -21,6 +22,8 @@ internal static class ExtendedDefaultPolicyTests
     [TestCaseSource(nameof(ExplicitCalleeCases))]
     public static unsafe void CallResultPreservesExplicitCalleeAndAsyncGroup(int explicitCallee, int expectedCallee)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         object config = Globals.JitConfig;
         SetField(typeof(JitConfigValues), config, "_jitStressAsyncInlining", 1);
         Globals.JitConfig = (JitConfigValues)config;
@@ -89,11 +92,14 @@ internal static class ExtendedDefaultPolicyTests
     [Test]
     public static void InlineStrategyConfigurationIsBuildSpecific()
     {
-        object config = Globals.JitConfig;
-        SetField(typeof(JitConfigValues), config, "_jitInlineSize", 120);
-        SetField(typeof(JitConfigValues), config, "_jitInlineDepth", 40);
-        SetField(typeof(JitConfigValues), config, "_jitForceInlineDepth", 15);
-        Globals.JitConfig = (JitConfigValues)config;
+        if (TestConfiguration.IsDebug)
+        {
+            object config = Globals.JitConfig;
+            SetField(typeof(JitConfigValues), config, "_jitInlineSize", 120);
+            SetField(typeof(JitConfigValues), config, "_jitInlineDepth", 40);
+            SetField(typeof(JitConfigValues), config, "_jitForceInlineDepth", 15);
+            Globals.JitConfig = (JitConfigValues)config;
+        }
 
         var compiler = CreateCompiler();
         compiler.info = new Compiler.Info();
@@ -112,9 +118,12 @@ internal static class ExtendedDefaultPolicyTests
     [Test]
     public static void AdditionalInlineMultiplierIsBuildSpecific()
     {
-        object config = Globals.JitConfig;
-        SetField(typeof(JitConfigValues), config, "_jitInlineAdditionalMultiplier", 2);
-        Globals.JitConfig = (JitConfigValues)config;
+        if (TestConfiguration.IsDebug)
+        {
+            object config = Globals.JitConfig;
+            SetField(typeof(JitConfigValues), config, "_jitInlineAdditionalMultiplier", 2);
+            Globals.JitConfig = (JitConfigValues)config;
+        }
 
         var compiler = CreateCompiler();
         var defaultPolicy = new DefaultPolicyProbe(compiler);
@@ -134,6 +143,8 @@ internal static class ExtendedDefaultPolicyTests
     [TestCase(3)]
     public static void AsyncGroupingUsesNativeShuffleAndExcludesNonCandidates(int count)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         object config = Globals.JitConfig;
         SetField(typeof(JitConfigValues), config, "_jitStressAsyncInlining", 1);
         Globals.JitConfig = (JitConfigValues)config;
@@ -141,7 +152,8 @@ internal static class ExtendedDefaultPolicyTests
         var compiler = CreateCompiler();
         var random = new CLRRandom(1);
         var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
-        SetField(typeof(InlineStrategy), strategy, "_random", random);
+        SetField(typeof(InlineStrategy), strategy, "_compiler", compiler);
+        Compiler.DebugData.Get(compiler).InlineStressRandom = random;
         compiler._inlineStrategy = strategy;
         var block = new BasicBlock(null, null);
         compiler.fgFirstBB = block;
@@ -235,6 +247,38 @@ internal static class ExtendedDefaultPolicyTests
             _ = Assert.Throws<InvalidOperationException>(() => _ = Globals.JitConfig.JitStressAsyncInlining);
             _ = Assert.Throws<InvalidOperationException>(() => _ = Globals.JitConfig.JitStressAsyncInliningMaxDepth);
             _ = Assert.Throws<InvalidOperationException>(() => _ = Globals.JitConfig.JitStressAsyncInliningPct);
+            var candidateInfo = new InlineCandidateInfo();
+            _ = Assert.Throws<InvalidOperationException>(() => _ = candidateInfo.asyncStressIndex);
+            _ = Assert.Throws<InvalidOperationException>(() => candidateInfo.asyncStressIndex = -1);
+            Assert.That(
+                typeof(InlineCandidateInfo).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    .Select(field => field.Name),
+                Does.Not.Contain("asyncStressIndex"));
+            var asyncStressPolicyFields = typeof(AsyncStressPolicy)
+                .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Select(field => field.Name);
+            Assert.That(asyncStressPolicyFields, Does.Not.Contain("_isAsyncCall"));
+            Assert.That(asyncStressPolicyFields, Does.Not.Contain("_asyncStressIndex"));
+            Assert.That(asyncStressPolicyFields, Does.Not.Contain("_basicBlockCount"));
+            Assert.That(
+                typeof(RandomPolicy).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    .Select(field => field.Name),
+                Does.Not.Contain("_random"));
+            var replayPolicyFields = typeof(ReplayPolicy).GetFields(
+                BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                .Select(field => field.Name);
+            Assert.That(replayPolicyFields, Does.Not.Contain("s_wroteReplayBanner"));
+            Assert.That(replayPolicyFields, Does.Not.Contain("s_replayFile"));
+            Assert.That(replayPolicyFields, Does.Not.Contain("s_xmlReaderLock"));
+            Assert.That(replayPolicyFields, Does.Not.Contain("s_endOfFile"));
+            Assert.That(replayPolicyFields, Does.Not.Contain("_inlineContext"));
+            Assert.That(replayPolicyFields, Does.Not.Contain("_offset"));
+            Assert.That(replayPolicyFields, Does.Not.Contain("_wasForceInline"));
+            Assert.That(replayPolicyFields, Does.Not.Contain("_isDataCollectionTarget"));
+            Assert.That(
+                typeof(InlineStrategy).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    .Select(field => field.Name),
+                Does.Not.Contain("_random"));
             _ = Assert.Throws<InvalidOperationException>(() => strategy.GetRandom());
             var exception = Assert.Throws<TargetInvocationException>(() => prepareStress.Invoke(compiler, [1]));
             Assert.That(exception?.InnerException, Is.TypeOf<InvalidOperationException>());
@@ -245,6 +289,8 @@ internal static class ExtendedDefaultPolicyTests
     [TestCaseSource(nameof(AsyncStressSeedCases))]
     public static void AsyncStressSeedUsesSpecificThenGlobalThenDefault(int asyncSeed, int globalStress, int expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         object config = Globals.JitConfig;
         SetField(typeof(JitConfigValues), config, "_jitStressAsyncInlining", asyncSeed);
         SetField(typeof(JitConfigValues), config, "_jitStress", globalStress);
@@ -256,6 +302,8 @@ internal static class ExtendedDefaultPolicyTests
     [TestCaseSource(nameof(InlineRandomSeedCases))]
     public static void InlineRandomUsesConfiguredSeedAndCachesState(int configuredSeed)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         object config = Globals.JitConfig;
         SetField(typeof(JitConfigValues), config, "_jitInlinePolicyRandom", configuredSeed);
         Globals.JitConfig = (JitConfigValues)config;
@@ -295,7 +343,7 @@ internal static class ExtendedDefaultPolicyTests
 
         void SetConfig(string name, int value)
         {
-            var field = typeof(JitConfigValues).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
+            var field = TestConfiguration.GetJitConfigField(name, BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException($"Missing config field {name}.");
             field.SetValue(config, value);
         }
@@ -494,6 +542,8 @@ internal static class ExtendedDefaultPolicyTests
     [TestCaseSource(nameof(AsyncStressProbabilityCases))]
     public static void AsyncStressProbabilityUsesDepthAndGroupIndex(int depth, int index, bool accepted)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         object config = Globals.JitConfig;
         SetField(typeof(JitConfigValues), config, "_jitStressAsyncInliningMaxDepth", 2);
         SetField(typeof(JitConfigValues), config, "_jitStressAsyncInliningPct", 50);
@@ -502,7 +552,8 @@ internal static class ExtendedDefaultPolicyTests
         var compiler = CreateCompiler();
         var random = new CLRRandom(1);
         var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
-        SetField(typeof(InlineStrategy), strategy, "_random", random);
+        SetField(typeof(InlineStrategy), strategy, "_compiler", compiler);
+        Compiler.DebugData.Get(compiler).InlineStressRandom = random;
         SetField(typeof(InlineStrategy), strategy, "_maxInlineDepth", 20);
         compiler._inlineStrategy = strategy;
         var policy = new AsyncStressPolicy(compiler, isPrejitRoot: false);
@@ -818,6 +869,14 @@ internal static class ExtendedDefaultPolicyTests
 
     private static void SetField([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)] Type type, object target, string name, object value)
     {
+        if (type == typeof(JitConfigValues))
+        {
+            var configField = TestConfiguration.GetJitConfigField(name)
+                ?? throw new InvalidOperationException($"Missing JIT configuration field '{name}'.");
+            configField.SetValue(target, value);
+            return;
+        }
+
         var field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"Missing field {name}.");
         field.SetValue(target, value);

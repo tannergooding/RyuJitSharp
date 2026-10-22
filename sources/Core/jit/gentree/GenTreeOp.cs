@@ -418,7 +418,7 @@ public class GenTreeOp : GenTreeUnOp
         // ARM32 has no GT_MULHI support for this path.
         if ((Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
             Configuration.TARGET_RISCV64) &&
-            !compiler.opts.MinOpts && (!isSigned || (divisorValue >= 3) || (divisorValue <= -3)))
+            !compiler.MinOpts && (!isSigned || (divisorValue >= 3) || (divisorValue <= -3)))
         {
             return true;
         }

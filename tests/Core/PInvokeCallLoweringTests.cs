@@ -372,7 +372,7 @@ internal static unsafe class PInvokeCallLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.info.compCompHnd = &ee.Interface;
         compiler.info.compMatchedVM = true;

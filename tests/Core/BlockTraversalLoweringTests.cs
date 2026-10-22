@@ -376,7 +376,7 @@ internal static unsafe class BlockTraversalLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.compRationalIRForm = true;
         compiler.info.compCompHnd = &ee.Interface;

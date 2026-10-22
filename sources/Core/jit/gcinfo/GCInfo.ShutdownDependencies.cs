@@ -7,7 +7,13 @@ namespace RyuJitSharp;
 
 public partial struct GCInfo
 {
-    internal static nuint s_gcRegPtrDscSize;
+    internal static class PointerTableStatisticsData
+    {
+        internal static readonly nuint s_nativeRegPtrDscSize =
+            Configuration.MEASURE_PTRTAB_SIZE ? getNativeRegPtrDscSize() : 0;
 
-    internal static nuint s_gcTotalPtrTabSize;
+        internal static nuint s_gcRegPtrDscSize;
+
+        internal static nuint s_gcTotalPtrTabSize;
+    }
 }

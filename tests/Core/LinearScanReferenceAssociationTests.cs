@@ -56,7 +56,7 @@ internal static unsafe class LinearScanReferenceAssociationTests
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             if (TestConfiguration.IsDebug)
             {
-                CurrentBuildNode(allocator) = tree;
+                Compiler.DebugData.Get(allocator).CurrentBuildNode = tree;
             }
             var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
             var use = allocator.newRefPosition(interval, 12, RefType.RefTypeUse, tree, SRBM_X64_RAX);
@@ -232,7 +232,7 @@ internal static unsafe class LinearScanReferenceAssociationTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             var allocator = CreateAllocator(compiler);
-            StressMask(allocator) = 0x08 | 0x80;
+            Compiler.DebugData.Get(allocator).StressMask = 0x08 | 0x80;
             var interval = NewLocalInterval(compiler, allocator);
             var originalPreferences = interval.registerPreferences;
             var definition = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, null, SRBM_X64_RAX);
@@ -308,12 +308,6 @@ internal static unsafe class LinearScanReferenceAssociationTests
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBuildNode")]
-    private static extern ref GenTree? CurrentBuildNode(LinearScan allocator);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
-
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[]? BlockInfo(LinearScan allocator);
 
@@ -364,7 +358,7 @@ internal static unsafe class LinearScanReferenceAssociationTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_REGVAR;
         compiler.compFloatingPointUsed = true;
         if (debugEnC)

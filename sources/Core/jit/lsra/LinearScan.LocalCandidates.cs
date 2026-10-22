@@ -46,7 +46,7 @@ public sealed partial class LinearScan
             checkDoubleAlign = true;
             var codeGen = _compiler.codeGen;
             assert(codeGen is not null);
-            if (codeGen.IsFramePointerRequired || _compiler.opts.MinOpts)
+            if (codeGen.IsFramePointerRequired || _compiler.MinOpts)
             {
                 checkDoubleAlign = false;
             }

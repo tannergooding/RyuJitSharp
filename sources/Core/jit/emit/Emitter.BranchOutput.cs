@@ -177,8 +177,8 @@ public partial class Emitter
             {
                 var debugInfo = id.idDebugOnlyInfo();
                 if (id.idCodeSize() != JMP_SIZE_SMALL &&
-                    (compiler.verbose || debugInfo?.idNum == unchecked((uint)DebugJumpSelector.INTERESTING_JUMP_NUM) ||
-                     DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
+                    (compiler.verbose || debugInfo?.idNum == unchecked((uint)global::RyuJitSharp.Compiler.DebugData.DebugJumpSelector.INTERESTING_JUMP_NUM) ||
+                     global::RyuJitSharp.Compiler.DebugData.DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
                 {
                     jitprintf($"; NOTE: size of jump [{id.StorageOffset:X}] mis-predicted by " +
                         $"{id.idCodeSize() - JMP_SIZE_SMALL} bytes\n");

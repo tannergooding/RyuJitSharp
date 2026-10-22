@@ -392,7 +392,7 @@ internal static unsafe class Arm64CodeGenPortTests
             compiler.compLocallocUsed = true;
             compiler.compUsesUnknownSizeFrame = true;
             compiler.unkSizeFrame.nVector = 32;
-            compiler.unkSizeFrame.FinalizeLayout();
+            compiler.unkSizeFrame.FinalizeLayout(compiler);
 
             codeGen.genUnknownSizeFrame();
 
@@ -450,7 +450,7 @@ internal static unsafe class Arm64CodeGenPortTests
             compiler.compLocallocUsed = true;
             compiler.compUsesUnknownSizeFrame = true;
             compiler.unkSizeFrame.nVector = 33;
-            compiler.unkSizeFrame.FinalizeLayout();
+            compiler.unkSizeFrame.FinalizeLayout(compiler);
 
             codeGen.genUnknownSizeFrame();
 
@@ -482,7 +482,7 @@ internal static unsafe class Arm64CodeGenPortTests
             compiler.compLocallocUsed = true;
             compiler.compUsesUnknownSizeFrame = true;
             compiler.unkSizeFrame.nVector = count;
-            compiler.unkSizeFrame.FinalizeLayout();
+            compiler.unkSizeFrame.FinalizeLayout(compiler);
             codeGen.genUnknownSizeFrame();
 
             var frame = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
@@ -515,7 +515,7 @@ internal static unsafe class Arm64CodeGenPortTests
         {
             compiler.compUsesUnknownSizeFrame = true;
             compiler.unkSizeFrame.nVector = 5;
-            compiler.unkSizeFrame.FinalizeLayout();
+            compiler.unkSizeFrame.FinalizeLayout(compiler);
 
             codeGen.genZeroInitializeUnknownSizeFrame();
 
@@ -550,7 +550,7 @@ internal static unsafe class Arm64CodeGenPortTests
             compiler.compCurBB = new BasicBlock(null, null);
             compiler.compUsesUnknownSizeFrame = true;
             compiler.unkSizeFrame.nVector = 6;
-            compiler.unkSizeFrame.FinalizeLayout();
+            compiler.unkSizeFrame.FinalizeLayout(compiler);
 
             codeGen.genZeroInitializeUnknownSizeFrame();
 

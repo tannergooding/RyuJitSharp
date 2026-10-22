@@ -211,7 +211,7 @@ internal static unsafe class LivenessInitializationTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         compiler.lvaRefCountState = RCS_NORMAL;
         compiler.lvaCount = count;
         compiler.lvaTable = new LclVarDsc[count];

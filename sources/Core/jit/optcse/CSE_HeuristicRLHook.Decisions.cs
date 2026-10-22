@@ -59,18 +59,13 @@ public partial class CSE_HeuristicRLHook
     public override unsafe void DumpMetrics()
     {
         EnsureDebugDiagnosticsAvailable();
-        string[] __jitExceptionResult539;
-        var __jitExceptionCoalesceLeft540 = s_featureNameAndType;
-        if (__jitExceptionCoalesceLeft540 != null)
-        {
-            __jitExceptionResult539 = __jitExceptionCoalesceLeft540;
-        }
-        else
+        var featureNameAndType = Compiler.DebugData.CSEHeuristicRLHookData.FeatureNameAndType;
+        if (featureNameAndType is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RLHookCSEFeatureNamesHaveNotBeenInitialized);
-            __jitExceptionResult539 = default;
+            return;
         }
-        var featureNameAndType = __jitExceptionResult539;
+
         if (JitConfig.JitRLHookEmitFeatureNames > 0)
         {
             jitprintf(" featureNames ");

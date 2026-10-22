@@ -464,19 +464,50 @@ public sealed partial class BasicBlock : LIR.Range
 
     public insGroup? bbEmitCookie;
 
-    public static nint s_Size;
-
-    public static nint s_Count;
-
     /// <summary>Native stack depth on entry (for throw-blocks)</summary>
-    public int bbTgtStkDepth;
+    public int bbTgtStkDepth
+    {
+        get
+        {
+            return Configuration.DEBUG ? Compiler.DebugData.Get(this).TargetStackDepth : 0;
+        }
 
-    /// <summary>The max # of tree nodes in any BB</summary>
-    public static int s_nMaxTrees;
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException();
+            }
+
+            Compiler.DebugData.Get(this).TargetStackDepth = value;
+        }
+    }
 
     /// <summary>This is used in integrity checks.</summary>
     /// <remarks>We semi-randomly pick a traversal stamp, label all blocks in the BB list with that stamp (in this field); then we can tell if (e.g.) predecessors are still in the BB list by whether they have the same stamp (with high probability).</remarks>
-    public int bbTraversalStamp;
+    public int bbTraversalStamp
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException();
+                return default;
+            }
+
+            return Compiler.DebugData.Get(this).TraversalStamp;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException();
+            }
+
+            Compiler.DebugData.Get(this).TraversalStamp = value;
+        }
+    }
 
     /// <summary>bbID is a unique block identifier number that does not change: it does not get renumbered, like bbNum.</summary>
     public int bbID;
@@ -1429,7 +1460,7 @@ public sealed partial class BasicBlock : LIR.Range
     private static void MeasureBasicBlockSize()
     {
         Debug.Assert(Configuration.MEASURE_BLOCK_SIZE);
-        s_Count += 1;
+        Compiler.MeasurementData.BlockSize.s_Count += 1;
         FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NativeSizeofBasicBlockIsNotPorted);
         return;
     }

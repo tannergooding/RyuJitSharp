@@ -82,8 +82,6 @@ public partial class Globals
         }
     }
 
-    private static bool s_logToEEfailed;
-
     [Conditional("DEBUG")]
     public static void logf(string message)
     {
@@ -98,15 +96,15 @@ public partial class Globals
         // If it fails to log an LL_INFO1000 message once
         // it will always fail when logging an LL_INFO1000 message.
 
-        if (!s_logToEEfailed)
+        if (!Compiler.DebugData.s_logToEEfailed)
         {
             if (!vlogf(LL_INFO1000, message))
             {
-                s_logToEEfailed = true;
+                Compiler.DebugData.s_logToEEfailed = true;
             }
         }
 
-        if (s_logToEEfailed)
+        if (Compiler.DebugData.s_logToEEfailed)
         {
             // if the EE refuses to log it, we try to send it to stdout
             vflogf(jitstdout(), message);

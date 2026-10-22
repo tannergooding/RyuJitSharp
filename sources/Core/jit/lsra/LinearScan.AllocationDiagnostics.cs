@@ -524,10 +524,11 @@ public sealed partial class LinearScan
         _allocationDumpPredBbNumWidth = _allocationDumpTableIndent -
             (_allocationDumpNodeLocationWidth + 2 + _allocationDumpRefPositionWidth + 1) -
             _allocationDumpBbNumWidth - 9 - 9;
-        _allocationDumpLine = _compiler.asciiTrees ? "-" : "─";
-        _allocationDumpMiddleBox = _compiler.asciiTrees ? "+" : "┼";
-        _allocationDumpRightBox = _compiler.asciiTrees ? "+" : "┤";
-        _allocationDumpColumnSeparator = _compiler.asciiTrees ? "|" : "│";
+        var useAscii = Configuration.DEBUG && _compiler.asciiTrees;
+        _allocationDumpLine = useAscii ? "-" : "─";
+        _allocationDumpMiddleBox = useAscii ? "+" : "┼";
+        _allocationDumpRightBox = useAscii ? "+" : "┤";
+        _allocationDumpColumnSeparator = useAscii ? "|" : "│";
         _lastAllocationDumpRegisters = RBM_NONE;
         dumpAllocationRegisterTitleIfNeeded();
     }

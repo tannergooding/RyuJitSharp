@@ -588,7 +588,7 @@ internal sealed unsafe class HWIntrinsicDispatchTests
         compiler.info.compFullName = nameof(HWIntrinsicDispatchTests);
         compiler.info.compMaxStack = 4;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.compCurBB = new BasicBlock(null, null);
         compiler.stackState.esStack = new StackEntry[4];
         compiler.lvaTable = [

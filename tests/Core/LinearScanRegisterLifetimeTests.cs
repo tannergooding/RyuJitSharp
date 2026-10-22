@@ -332,7 +332,7 @@ internal static unsafe class LinearScanRegisterLifetimeTests
 
         WithAllocator((_, allocator) => {
             SetConstantReg(allocator, regNumber.REG_X64_RAX);
-            StressMask(allocator) = 0x800;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x800);
 
             VerifyFreeRegisters(allocator, new regMaskTP(SRBM_NONE));
         });
@@ -432,17 +432,14 @@ internal static unsafe class LinearScanRegisterLifetimeTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentAllocationLocation")]
     private static extern ref uint CurrentAllocationLocation(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
-
-    private static void WithAllocator(Action<Compiler, LinearScan> action)
+private static void WithAllocator(Action<Compiler, LinearScan> action)
     {
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_MINOPT;
         compiler.compFloatingPointUsed = true;
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;

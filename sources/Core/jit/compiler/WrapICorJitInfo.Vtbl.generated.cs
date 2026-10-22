@@ -244,7 +244,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -258,7 +258,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -272,7 +272,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -286,7 +286,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -300,7 +300,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -314,7 +314,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -328,7 +328,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -342,7 +342,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -356,7 +356,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -370,7 +370,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -384,7 +384,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -398,7 +398,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -412,7 +412,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -426,7 +426,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -440,7 +440,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -454,7 +454,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -468,7 +468,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -482,7 +482,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -496,7 +496,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -510,7 +510,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -524,7 +524,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -538,7 +538,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -552,7 +552,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -566,7 +566,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -580,7 +580,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -594,7 +594,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -608,7 +608,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -622,7 +622,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -636,7 +636,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -650,7 +650,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -664,7 +664,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -678,7 +678,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -692,7 +692,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -706,7 +706,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -720,7 +720,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -734,7 +734,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -748,7 +748,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -762,7 +762,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -776,7 +776,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -790,7 +790,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -804,7 +804,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -818,7 +818,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -832,7 +832,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -846,7 +846,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -860,7 +860,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -874,7 +874,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -888,7 +888,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -902,7 +902,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -916,7 +916,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -930,7 +930,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -944,7 +944,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -958,7 +958,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -972,7 +972,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -986,7 +986,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1000,7 +1000,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1014,7 +1014,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1028,7 +1028,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1042,7 +1042,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1056,7 +1056,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1070,7 +1070,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1084,7 +1084,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1098,7 +1098,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1112,7 +1112,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1126,7 +1126,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1140,7 +1140,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1154,7 +1154,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1168,7 +1168,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1182,7 +1182,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1196,7 +1196,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1210,7 +1210,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1224,7 +1224,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1238,7 +1238,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1252,7 +1252,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1266,7 +1266,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1280,7 +1280,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1294,7 +1294,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1308,7 +1308,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1322,7 +1322,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1336,7 +1336,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1350,7 +1350,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1364,7 +1364,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1378,7 +1378,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1392,7 +1392,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1406,7 +1406,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1420,7 +1420,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1434,7 +1434,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1448,7 +1448,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1462,7 +1462,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1476,7 +1476,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1490,7 +1490,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1504,7 +1504,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1518,7 +1518,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1532,7 +1532,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1546,7 +1546,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1560,7 +1560,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1574,7 +1574,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1588,7 +1588,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1602,7 +1602,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1616,7 +1616,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1630,7 +1630,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1644,7 +1644,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1658,7 +1658,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1672,7 +1672,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1686,7 +1686,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1700,7 +1700,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1714,7 +1714,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1728,7 +1728,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1742,7 +1742,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1756,7 +1756,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1770,7 +1770,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1784,7 +1784,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1798,7 +1798,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1812,7 +1812,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1826,7 +1826,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1840,7 +1840,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1854,7 +1854,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1868,7 +1868,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1882,7 +1882,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1896,7 +1896,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1910,7 +1910,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1924,7 +1924,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -1938,7 +1938,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1952,7 +1952,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1966,7 +1966,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1980,7 +1980,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -1994,7 +1994,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2008,7 +2008,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2022,7 +2022,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2036,7 +2036,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2050,7 +2050,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2064,7 +2064,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2078,7 +2078,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2092,7 +2092,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2106,7 +2106,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2120,7 +2120,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2134,7 +2134,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2148,7 +2148,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2162,7 +2162,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2176,7 +2176,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2190,7 +2190,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2204,7 +2204,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2218,7 +2218,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2232,7 +2232,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2246,7 +2246,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2260,7 +2260,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2274,7 +2274,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2288,7 +2288,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2302,7 +2302,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2316,7 +2316,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2330,7 +2330,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2344,7 +2344,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2358,7 +2358,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2372,7 +2372,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2386,7 +2386,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2400,7 +2400,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2414,7 +2414,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2428,7 +2428,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2442,7 +2442,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2456,7 +2456,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2470,7 +2470,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2484,7 +2484,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2498,7 +2498,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2518,7 +2518,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2532,7 +2532,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2546,7 +2546,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2560,7 +2560,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2574,7 +2574,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2588,7 +2588,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2602,7 +2602,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2616,7 +2616,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2630,7 +2630,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2644,7 +2644,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2658,7 +2658,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2672,7 +2672,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2686,7 +2686,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2700,7 +2700,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2714,7 +2714,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2728,7 +2728,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return;
         }
     }
 
@@ -2742,7 +2742,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2756,7 +2756,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2770,7 +2770,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2784,7 +2784,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 
@@ -2798,7 +2798,7 @@ public sealed unsafe partial class WrapICorJitInfo
         catch (Exception exception)
         {
             FailFastCallback(exception);
-            throw;
+            return default;
         }
     }
 

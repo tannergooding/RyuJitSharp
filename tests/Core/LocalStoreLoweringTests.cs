@@ -247,7 +247,7 @@ internal static unsafe class LocalStoreLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaTable = new LclVarDsc[4];
         compiler.lvaCount = 1;
         compiler.lvaTable[0].Type = var_types.TYP_INT;

@@ -98,6 +98,7 @@ public sealed partial class ValueNumStore
         {
             return;
         }
+
         ValidateValueNumStoreStatics(VNFuncExtensions.Attributes);
     }
 
@@ -115,7 +116,6 @@ public sealed partial class ValueNumStore
                 FatalJitErrorCode.ValueNumberAttributeTableHasUnexpectedLength,
                 FatalJitArgument.ExpectedAttributes);
         }
-
 
         var attributes = new VNFOpAttrib[(int)VNF_COUNT];
         for (var oper = GT_NONE; oper < GT_COUNT; oper++)

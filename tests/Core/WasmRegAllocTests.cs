@@ -146,7 +146,7 @@ internal static unsafe class WasmRegAllocTests
             JitFlags flags = default;
             compiler.opts.jitFlags = &flags;
             compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             compiler.lvaTable = [new LclVarDsc { Type = TYP_I_IMPL }];
             compiler.lvaCount = 1;
             compiler.lvaWasmSpArg = 0;

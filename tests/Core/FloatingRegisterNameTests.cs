@@ -45,6 +45,20 @@ internal sealed unsafe class FloatingRegisterNameTests
         }
     }
 
+    [NonParallelizable]
+    internal static class FloatingRegisterNameReleaseTests
+    {
+        [Test]
+        public static void FloatingRegisterNameAccessIsRejectedOutsideDebug()
+        {
+            Assume.That(!TestConfiguration.IsDebug);
+
+            Assert.That(
+                () => ((regNumber)0).GetFloatName(TYP_FLOAT),
+                Throws.TypeOf<System.InvalidOperationException>());
+        }
+    }
+
     private static IEnumerable<TestCaseData> FloatingNameTypeCases()
     {
         if (Configuration.TARGET_ARM)

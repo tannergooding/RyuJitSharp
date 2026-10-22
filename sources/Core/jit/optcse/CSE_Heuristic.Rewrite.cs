@@ -29,18 +29,7 @@ public abstract partial class CSE_HeuristicCommon
                 : successfulCandidate.IsStressCSE() ? ": stress"
                 : successfulCandidate.IsRandom() ? ": random" : "";
             cseLclVarName += category;
-            global::System.Collections.Generic.List<uint> __jitExceptionReceiver516;
-            var __jitExceptionCoalesceLeft517 = m_sequence;
-            if (__jitExceptionCoalesceLeft517 != null)
-            {
-                __jitExceptionReceiver516 = __jitExceptionCoalesceLeft517;
-            }
-            else
-            {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSEHeuristicMetricsHaveNotBeenInitialized);
-                __jitExceptionReceiver516 = default;
-            }
-            __jitExceptionReceiver516.Add(unchecked((uint)descriptor.csdIndex));
+            GetSequence().Add(unchecked((uint)descriptor.csdIndex));
         }
 
         var cseLclVarNum = m_compiler.lvaGrabTemp(false, cseLclVarName);

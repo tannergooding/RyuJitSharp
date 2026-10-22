@@ -81,7 +81,7 @@ internal static unsafe class ValueNumPointerExtensionTests
         compiler.lvaTable = new LclVarDsc[1];
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.isFieldStatic = &IsFieldStatic;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };

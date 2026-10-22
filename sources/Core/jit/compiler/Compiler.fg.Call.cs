@@ -56,7 +56,7 @@ public partial class Compiler
             return null;
         }
 
-        if (Configuration.DEBUG && opts.compGcChecks && (info.compRetType is TYP_REF))
+        if (Configuration.DEBUG && compGcChecks && (info.compRetType is TYP_REF))
         {
             FailTailCall("DOTNET_JitGCChecks or stress might have interposed a call to CORINFO_HELP_CHECK_OBJ, invalidating tailcall opportunity");
             return null;

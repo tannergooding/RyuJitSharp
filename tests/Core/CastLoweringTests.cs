@@ -149,7 +149,7 @@ internal static unsafe class CastLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaTable = new LclVarDsc[1];
         compiler.lvaCount = 1;
         JitTls.Compiler = compiler;

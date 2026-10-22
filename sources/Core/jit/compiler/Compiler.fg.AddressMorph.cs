@@ -57,7 +57,7 @@ public partial class Compiler
 
         // Retain the compact representation in minopts; spilling to locals
         // there would also introduce unconditional stack loads and stores.
-        if (opts.MinOpts)
+        if (MinOpts)
         {
             indexAddress.Op1 = fgMorphTree(indexAddress.Arr);
             indexAddress.Op2 = fgMorphTree(indexAddress.Index);

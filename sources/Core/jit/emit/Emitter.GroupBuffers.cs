@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using static RyuJitSharp.Emitter.EmitterStatistics;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -12,17 +14,6 @@ public partial class Emitter
 
     private static int SC_IG_BUFFER_NUM_LARGE_DESCS =>
         Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64 ? 200 : 50;
-
-    private static nuint emitSizeMethod;
-    private static uint emitCurPrologInsCnt;
-    private static nuint emitCurPrologIGSize;
-    private static uint emitMaxPrologInsCnt;
-    private static nuint emitMaxPrologIGSize;
-    private static uint emitTotalIGptrs;
-    private static uint emitTotalIGicnt;
-    private static nuint emitTotalIGsize;
-    private static uint emitTotalIGExtend;
-    private static nuint emitTotMemAlloc;
 
     private void emitGenIG(insGroup ig)
     {
@@ -232,12 +223,12 @@ public partial class Emitter
             }
         }
 
-        if (Configuration.DEBUG && _compiler.opts.dspCode && !_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.dspCode && !_compiler.verbose)
         {
             jitprintf($"      {emitLabelString(ig)}:        ; funclet={ig.igFuncIdx:D2}\n");
         }
 
-        if (Configuration.DEBUG && _compiler.opts.dspCode && _compiler.verbose)
+        if (Configuration.DEBUG && _compiler.dspCode && _compiler.verbose)
         {
             jitprintf("Saved:\n      ");
             emitDispIG(ig, displayFunc: false, displayInstructions: false, displayLocation: false);

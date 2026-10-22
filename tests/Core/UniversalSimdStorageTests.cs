@@ -342,7 +342,7 @@ internal static unsafe class UniversalSimdStorageTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         JitTls.Compiler = compiler;
 
         try

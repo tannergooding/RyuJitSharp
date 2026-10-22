@@ -227,7 +227,7 @@ internal static unsafe class EarlyPropagationTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaTable = new LclVarDsc[8];
         compiler.lvaCount = compiler.lvaTable.Length;
         (typeof(Compiler).GetField("compMaxUncheckedOffsetForNullObject",

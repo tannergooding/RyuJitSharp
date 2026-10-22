@@ -107,7 +107,7 @@ internal static unsafe class Arm64CodeGenMemoryBarrierTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(!optimizationEnabled);
+        compiler.SetMinOpts(!optimizationEnabled);
         compiler.eeInfoInitialized = true;
         compiler.lvaCount = 1;
         compiler.lvaTable =

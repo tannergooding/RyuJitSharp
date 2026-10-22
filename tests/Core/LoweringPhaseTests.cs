@@ -211,7 +211,7 @@ internal static unsafe class LoweringPhaseTests
         compiler.fgNodeThreading = NodeThreading.LIR;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitConfig = new JitConfigValues();

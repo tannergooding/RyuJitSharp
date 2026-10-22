@@ -228,7 +228,7 @@ internal static unsafe class CastRemovalTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.lvaTable = new LclVarDsc[4];
         compiler.lvaCount = 1;
         JitTls.Compiler = compiler;

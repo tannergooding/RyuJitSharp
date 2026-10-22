@@ -29,10 +29,34 @@ internal static unsafe class SsaBookkeepingTests
                     compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 1))),
             };
             Assert.That(definition._vnPair, Is.EqualTo(new ValueNumPair()));
-            if (TestConfiguration.IsDebug)
-            {
-                Assert.That(definition._origVNPair, Is.EqualTo(new ValueNumPair()));
-            }
+        });
+    }
+
+    [Test]
+    public static void LocalValueNumberUpdateDetailsUseCompilerDebugData()
+    {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("SSA value-number update details are Debug-only.");
+        }
+
+        SsaLivenessTests.WithCompiler(1, compiler =>
+        {
+            compiler.SetLocalDebugFlag(0, LocalDebugFlags.KeepType, true);
+            var ssaNum = compiler.lvaTable[0].lvPerSsaData.AllocSsaNum();
+            var originalVNPair = new ValueNumPair(1, 2);
+
+            compiler.RecordLocalSsaValueNumberUpdate(0, ssaNum, originalVNPair);
+
+            var debugData = Compiler.DebugData.Get(compiler);
+            var ssaDebugData = debugData.LocalVariables![0].SsaDefinitions![0];
+            Assert.That(ssaDebugData.OriginalVNPair, Is.EqualTo(originalVNPair));
+            Assert.That(ssaDebugData.Updated, Is.True);
+
+            compiler.ResetLocalSsaDebugData(0);
+
+            Assert.That(debugData.LocalVariables[0].SsaDefinitions, Is.Null);
+            Assert.That(debugData.LocalVariables[0].Flags & LocalDebugFlags.KeepType, Is.Not.Zero);
         });
     }
 
@@ -195,8 +219,8 @@ internal static unsafe class SsaBookkeepingTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
-    private static extern ref byte* StressNames(ref JitConfigValues config);
+    private static ref byte* StressNames(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitStressModeNames;
 
     private static void WithPromotedLocal(Action<Compiler> action)
     {

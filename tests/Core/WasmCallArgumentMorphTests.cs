@@ -123,7 +123,7 @@ internal static unsafe class WasmCallArgumentMorphTests
                 : CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
             compiler.opts.compReloc = true;
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
 
             var address = compiler.gtNewIconHandleNode(0x1234, handleKind);
             var indir = new GenTreeIndir(GT_IND, TYP_INT, address);
@@ -141,7 +141,7 @@ internal static unsafe class WasmCallArgumentMorphTests
     public static void GcArrayAddressKeepsTheElementOffsetOutermost()
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             compiler.lvaTable[0].Type = TYP_REF;
             compiler.lvaTable[1].Type = TYP_INT;
             var array = compiler.gtNewLclvNode(TYP_REF, 0);

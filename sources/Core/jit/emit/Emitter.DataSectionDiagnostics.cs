@@ -24,7 +24,7 @@ public partial class Emitter
         var chunk = dataChunks;
         for (var data = section.dsdList; data is not null; data = data.dsNext, chunk++)
         {
-            if (Configuration.DEBUG && compiler.opts.disAddr)
+            if (Configuration.DEBUG && compiler.disAddr)
             {
                 jitprintf($"; @{FMT_PTR((void*)dspPtr(chunk->block))}\n");
             }

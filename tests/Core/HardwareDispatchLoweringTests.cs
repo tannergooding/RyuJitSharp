@@ -272,7 +272,7 @@ internal static unsafe class HardwareDispatchLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.lvaTable = [new() { Type = TYP_SIMD16 }, new() { Type = TYP_SIMD16 }, new() { Type = TYP_INT }];

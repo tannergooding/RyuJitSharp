@@ -434,8 +434,8 @@ internal static unsafe class CodeGenSharedDebugPublicationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_richDebugInfo")]
     private static extern ref int RichDebugConfig(ref JitConfigValues config);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_writeRichDebugInfoFile")]
-    private static extern ref byte* RichFileConfig(ref JitConfigValues config);
+    private static ref byte* RichFileConfig(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._writeRichDebugInfoFile;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_ordinal")]
     private static extern ref int Ordinal(InlineContext context);

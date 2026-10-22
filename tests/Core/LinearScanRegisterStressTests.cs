@@ -17,7 +17,7 @@ internal static class LinearScanRegisterStressTests
     {
         AssumeStressModeSupported();
         LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
-            StressMask(allocator) = 3;
+            TestConfiguration.SetLinearScanStressMask(allocator, 3);
             var candidates = SRBM_X64_R12 | SRBM_X64_RDI;
             var expected = Configuration.UNIX_AMD64_ABI ? SRBM_X64_R12 : SRBM_X64_RDI;
             Assert.That(StressLimit(allocator, null, TYP_INT, candidates), Is.EqualTo(expected));
@@ -29,7 +29,7 @@ internal static class LinearScanRegisterStressTests
     {
         AssumeStressModeSupported();
         LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
-            StressMask(allocator) = 3;
+            TestConfiguration.SetLinearScanStressMask(allocator, 3);
             var candidates = SRBM_X64_XMM3 | SRBM_X64_XMM6;
 
             Assert.That(StressLimit(allocator, null, TYP_FLOAT, candidates), Is.EqualTo(SRBM_X64_XMM6));
@@ -41,7 +41,7 @@ internal static class LinearScanRegisterStressTests
     {
         AssumeStressModeSupported();
         LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
-            StressMask(allocator) = 0x2000;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x2000);
             var candidates = SRBM_X64_XMM15 | SRBM_X64_XMM16;
 
             Assert.That(StressLimit(allocator, null, TYP_FLOAT, candidates), Is.EqualTo(SRBM_X64_XMM16));
@@ -53,7 +53,7 @@ internal static class LinearScanRegisterStressTests
     {
         AssumeStressModeSupported();
         LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
-            StressMask(allocator) = 0x4000;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x4000);
             var candidates = SRBM_X64_R15 | SRBM_X64_R16;
 
             Assert.That(StressLimit(allocator, null, TYP_INT, candidates), Is.EqualTo(SRBM_X64_R16));
@@ -66,7 +66,7 @@ internal static class LinearScanRegisterStressTests
         AssumeStressModeSupported();
         LinearScanLocalCandidatesTests.WithCandidates(1, (compiler, allocator) => {
             IntCalleeTrash(compiler) = SRBM_X64_RAX;
-            StressMask(allocator) = 2;
+            TestConfiguration.SetLinearScanStressMask(allocator, 2);
             BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
             var reference = new RefPosition(1, 2, null, RefType.RefTypeUse);
             TestConfiguration.SetMinimumRegisterCandidateCount(reference, 1);
@@ -85,7 +85,7 @@ internal static class LinearScanRegisterStressTests
         AssumeStressModeSupported();
         LinearScanLocalCandidatesTests.WithCandidates(1, (compiler, allocator) => {
             IntCalleeTrash(compiler) = SRBM_X64_RAX;
-            StressMask(allocator) = 2;
+            TestConfiguration.SetLinearScanStressMask(allocator, 2);
             var reference = new RefPosition(1, 2, null, RefType.RefTypeUse)
             {
                 registerAssignment = SRBM_X64_RBX,
@@ -107,7 +107,7 @@ internal static class LinearScanRegisterStressTests
         AssumeStressModeSupported();
         LinearScanLocalCandidatesTests.WithCandidates(1, (compiler, allocator) => {
             compiler.opts.compDbgEnC = true;
-            StressMask(allocator) = 1;
+            TestConfiguration.SetLinearScanStressMask(allocator, 1);
             var reference = new RefPosition(1, 2, null, RefType.RefTypeUse)
             {
                 registerAssignment = SRBM_X64_RBX,
@@ -124,7 +124,7 @@ internal static class LinearScanRegisterStressTests
     {
         AssumeStressModeSupported();
         LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
-            StressMask(allocator) = 3;
+            TestConfiguration.SetLinearScanStressMask(allocator, 3);
             Assert.That(StressLimit(allocator, null, TYP_MASK, SRBM_X64_K1 | SRBM_X64_K2),
                 Is.EqualTo(SRBM_X64_K1 | SRBM_X64_K2));
         });
@@ -134,10 +134,7 @@ internal static class LinearScanRegisterStressTests
     private static extern regMask StressLimit(
         LinearScan allocator, RefPosition? reference, var_types type, regMask candidates);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regsBusyUntilKill")]
+[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regsBusyUntilKill")]
     private static extern ref regMaskTP BusyUntilKill(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmIntCalleeTrash")]

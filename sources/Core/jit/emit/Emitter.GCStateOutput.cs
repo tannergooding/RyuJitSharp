@@ -26,7 +26,7 @@ public partial class Emitter
             return;
         }
 
-        if (Configuration.DEBUG && (_compiler.verbose || _compiler.opts.disasmWithGC))
+        if (Configuration.DEBUG && (_compiler.verbose || _compiler.disasmWithGC))
         {
             VarSetOps.Assign(_compiler, ref debugThisGCrefVars, vars);
         }

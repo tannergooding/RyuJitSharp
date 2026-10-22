@@ -7,6 +7,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static RyuJitSharp.CorJitAllocMemFlag;
+using static RyuJitSharp.Emitter.EmitterStatistics;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GCInfo.GCtype;
 
@@ -406,7 +407,7 @@ public partial class Emitter
                 {
                     if (compiler.opts.disAsm || compiler.verbose)
                     {
-                        if (compiler.verbose || compiler.opts.disasmWithGC)
+                        if (compiler.verbose || compiler.disasmWithGC)
                         {
                             jitprintf("\n");
                             emitDispIG(ig);
@@ -416,7 +417,7 @@ public partial class Emitter
                             jitprintf($"\n{emitLabelString(ig)}:");
                             if (!compiler.opts.disDiffable)
                             {
-                                if (compiler.opts.disAddr)
+                                if (compiler.disAddr)
                                 {
                                     jitprintf("            ");
                                 }
@@ -486,7 +487,7 @@ public partial class Emitter
                             emitUpdateLiveGCregs(GCT_BYREF, new regMaskTP(byrefRegs), cp);
                         }
                     }
-                    if (Configuration.DEBUG && (compiler.verbose || compiler.opts.disasmWithGC))
+                    if (Configuration.DEBUG && (compiler.verbose || compiler.disasmWithGC))
                     {
                         emitDispGCInfoDelta();
                     }
@@ -536,7 +537,7 @@ public partial class Emitter
                         }
                         _ = emitIssue1Instr(ig, id, &cp);
                         if ((compiler.opts.disAsm || (Configuration.DEBUG && compiler.verbose)) &&
-                            ((Configuration.DEBUG && compiler.opts.disAddr) || compiler.opts.disAlignment))
+                            ((Configuration.DEBUG && compiler.disAddr) || compiler.opts.disAlignment))
                         {
                             var afterInstrAddr = (nuint)cp;
                             var curIns = id.idIns();
@@ -687,15 +688,15 @@ public partial class Emitter
                         {
                             var debugInfo = jmp.idDebugOnlyInfo();
                             assert(debugInfo is not null);
-                            if ((debugInfo.idNum == unchecked((uint)DebugJumpSelector.INTERESTING_JUMP_NUM)) ||
-                                (DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
+                            if ((debugInfo.idNum == unchecked((uint)global::RyuJitSharp.Compiler.DebugData.DebugJumpSelector.INTERESTING_JUMP_NUM)) ||
+                                (global::RyuJitSharp.Compiler.DebugData.DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
                             {
                                 if (Configuration.TARGET_ARM)
                                 {
                                     jitprintf("[5] This output is broken for ARM, since it doesn't properly decode the jump offsets of " +
                                         "the instruction at adr\n");
                                 }
-                                if (DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
+                                if (global::RyuJitSharp.Compiler.DebugData.DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
                                 {
                                     jitprintf($"[5] Jump {debugInfo.idNum}:\n");
                                 }

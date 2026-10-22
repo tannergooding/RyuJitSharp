@@ -127,7 +127,7 @@ public partial class Compiler
             return;
         }
 
-        if ((fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
+        if (Configuration.DEBUG && (fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
         {
             return;
         }

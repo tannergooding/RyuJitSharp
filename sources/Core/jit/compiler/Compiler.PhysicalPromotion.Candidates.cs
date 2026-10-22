@@ -9,8 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private static ConfigMethodRange s_physicalPromotionRange;
-
     private unsafe bool PhysicalPromotionIsEnabled()
     {
         if (!opts.OptEnabled(CLFLG_STRUCTPROMOTE) || fgNoStructPromotion)
@@ -26,8 +24,8 @@ public partial class Compiler
 
         if (Configuration.DEBUG)
         {
-            s_physicalPromotionRange.EnsureInit(JitConfig.JitEnablePhysicalPromotionRange);
-            if (!s_physicalPromotionRange.Contains(info.compMethodHash()))
+            DebugData.MethodRangeData.s_physicalPromotionRange.EnsureInit(JitConfig.JitEnablePhysicalPromotionRange);
+            if (!DebugData.MethodRangeData.s_physicalPromotionRange.Contains(info.compMethodHash()))
             {
                 return false;
             }

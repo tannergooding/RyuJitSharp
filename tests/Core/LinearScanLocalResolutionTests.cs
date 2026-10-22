@@ -405,7 +405,7 @@ internal static class LinearScanLocalResolutionTests
             var tree = new GenTreeLclVar(TYP_INT, 0);
             tree.SetLastUse(0, true);
             var reference = MakeReference(interval, tree, RefType.RefTypeUse, REG_RCX);
-            StressMask(allocator) = 0x80;
+            TestConfiguration.SetLinearScanStressMask(allocator, 0x80);
             Assign(allocator, allocator.physRegs[(int)REG_RCX], interval);
 
             Resolve(allocator, block, tree, reference);
@@ -479,6 +479,4 @@ internal static class LinearScanLocalResolutionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enregisterLocalVars")]
     private static extern ref bool EnregisterLocals(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
-    private static extern ref int StressMask(LinearScan allocator);
 }

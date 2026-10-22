@@ -245,7 +245,7 @@ internal static unsafe class HardwareConditionalSelectLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.info.compCompHnd = jitInfo;
         if (supportsAvx512)
         {

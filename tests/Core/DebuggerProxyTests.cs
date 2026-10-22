@@ -135,6 +135,16 @@ internal static class DebuggerProxyTests
                 Configuration.DETAILED_FATAL_ERROR_MESSAGES
                     ? "Debugger lookups are only available in Debug builds."
                     : "RJS-1229"));
+
+        _ = Assert.Throws<InvalidOperationException>(() => Globals.dFindTreeInTree(null, 0));
+        _ = Assert.Throws<InvalidOperationException>(() => Globals.dFindStmt(0));
+        _ = Assert.Throws<InvalidOperationException>(() => Globals.dFindBlock(0));
+        _ = Assert.Throws<InvalidOperationException>(() => Globals.dFindLoop(0));
+        Assert.That(Globals.dbTree, Is.Null);
+        Assert.That(Globals.dbStmt, Is.Null);
+        Assert.That(Globals.dbTreeBlock, Is.Null);
+        Assert.That(Globals.dbBlock, Is.Null);
+        Assert.That(Globals.dbLoop, Is.Null);
     }
 
     [Test]
@@ -280,38 +290,35 @@ internal static class DebuggerProxyTests
     }
 
     [Test]
-    public static void LocalVariableDebuggerDisplayIncludesItsOwnedDebugReason()
+    public static void LocalVariableDebuggerDisplayUsesDescriptorState()
     {
         var local = default(LclVarDsc);
         local.Type = TYP_INT;
         local.lvSlotNum = 9;
 
-        if (TestConfiguration.IsDebug)
+        Assert.That(
+            GetDebuggerDisplayText(local, typeof(LclVarDsc)),
+            Is.EqualTo($"[V9: {local.Type.Name}]"));
+    }
+
+    [Test]
+    public static void LocalVariableDebugReasonUsesCompilerDebugData()
+    {
+        SsaLivenessTests.WithCompiler(1, compiler =>
         {
-            local.lvReason = "split temporary";
+            if (TestConfiguration.IsDebug)
+            {
+                compiler.SetLocalDebugReason(0, "split temporary");
 
-            var copied = local;
-            var expected = $"[V9: {local.Type.Name}-split temporary]";
-            Assert.That(GetDebuggerDisplayText(copied, typeof(LclVarDsc)), Is.EqualTo(expected));
-
-            var locals = new[] { local };
-            Array.Resize(ref locals, 2);
-            Assert.That(GetDebuggerDisplayText(locals[0], typeof(LclVarDsc)), Is.EqualTo(expected));
-
-            Array.Clear(locals);
-            var clearedLocal = default(LclVarDsc);
-            Assert.That(
-                GetDebuggerDisplayText(locals[0], typeof(LclVarDsc)),
-                Is.EqualTo($"[V{clearedLocal.lvSlotNum}: {clearedLocal.Type.Name}]"));
-        }
-        else
-        {
-            Assert.That(
-                GetDebuggerDisplayText(local, typeof(LclVarDsc)),
-                Is.EqualTo($"[V9: {local.Type.Name}]"));
-            _ = Assert.Throws<InvalidOperationException>(() => _ = local.lvReason);
-            _ = Assert.Throws<InvalidOperationException>(() => local.lvReason = "release misuse");
-        }
+                Assert.That(compiler.GetLocalDebugReason(0), Is.EqualTo("split temporary"));
+                Assert.That(Compiler.DebugData.Get(compiler).LocalVariables![0].Reason, Is.EqualTo("split temporary"));
+            }
+            else
+            {
+                _ = Assert.Throws<InvalidOperationException>(() => compiler.GetLocalDebugReason(0));
+                _ = Assert.Throws<InvalidOperationException>(() => compiler.SetLocalDebugReason(0, "release misuse"));
+            }
+        });
     }
 
     [Test]
@@ -324,10 +331,10 @@ internal static class DebuggerProxyTests
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
         Assert.That(
             typeof(Limit).GetMethod(nameof(object.ToString), declaredInstanceMethod) is not null,
-            Is.EqualTo(Configuration.DEBUG));
+            Is.True);
         Assert.That(
             typeof(Range).GetMethod(nameof(object.ToString), declaredInstanceMethod) is not null,
-            Is.EqualTo(Configuration.DEBUG));
+            Is.True);
 
         if (TestConfiguration.IsDebug)
         {
@@ -335,6 +342,13 @@ internal static class DebuggerProxyTests
             Assert.That(
                 new Range(new Limit(LimitType.Unknown), new Limit(LimitType.Constant, 3)).ToString(),
                 Is.EqualTo("<Unknown, 3>"));
+        }
+        else
+        {
+            Assert.That(new Limit(LimitType.Unknown).ToString(), Is.EqualTo(typeof(Limit).FullName));
+            Assert.That(
+                new Range(new Limit(LimitType.Unknown), new Limit(LimitType.Constant, 3)).ToString(),
+                Is.EqualTo(typeof(Range).FullName));
         }
     }
 

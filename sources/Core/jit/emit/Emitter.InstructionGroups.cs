@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using static RyuJitSharp.Emitter.EmitterStatistics;
 
 namespace RyuJitSharp;
 
@@ -11,8 +12,6 @@ public partial class Emitter
 {
     private const InsGroupFlags IGF_PROPAGATE_MASK =
         InsGroupFlags.Prolog | InsGroupFlags.Epilog | InsGroupFlags.FuncletProlog | InsGroupFlags.FuncletEpilog;
-
-    private static uint emitTotalIGcnt;
 
     private insGroup emitAllocAndLinkIG()
     {

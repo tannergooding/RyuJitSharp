@@ -43,7 +43,7 @@ public sealed partial class CodeGen
 
     private void genLogLabel(BasicBlock block)
     {
-        if (Configuration.DEBUG && _compiler.opts.dspCode)
+        if (Configuration.DEBUG && _compiler.dspCode)
         {
             jitprintf($"\n      L_M{unchecked((uint)_compiler.compMethodID):D3}_{FMT_BB(block.bbNum)}:\n");
         }

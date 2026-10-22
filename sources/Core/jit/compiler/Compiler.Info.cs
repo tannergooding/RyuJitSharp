@@ -43,6 +43,7 @@ public partial class Compiler
             if (!Configuration.DEBUG)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerMethodHashIsOnlyAvailableInDebugBuilds);
+                return default;
             }
 
             if (compMethodHashPrivate == 0)

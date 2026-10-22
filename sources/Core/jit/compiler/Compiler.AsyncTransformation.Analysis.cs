@@ -117,15 +117,15 @@ public partial class Compiler
 
     internal sealed class AsyncDefaultValueAnalysis(Compiler compiler)
     {
-        private static ConfigMethodRange s_range;
         private VARSET_TP[]? _mutatedVarsIn;
 
         public unsafe void Run()
         {
             if (Configuration.DEBUG)
             {
-                s_range.EnsureInit(JitConfig.JitAsyncDefaultValueAnalysisRange);
-                if (!s_range.Contains(compiler.info.compMethodHash()))
+                ref var range = ref DebugData.MethodRangeData.s_jitAsyncDefaultValueAnalysisRange;
+                range.EnsureInit(JitConfig.JitAsyncDefaultValueAnalysisRange);
+                if (!range.Contains(compiler.info.compMethodHash()))
                 {
                     JITDUMP("Default value analysis disabled because of method range\n");
                     _mutatedVarsIn = CreateSets(compiler);
@@ -218,7 +218,6 @@ public partial class Compiler
 
     internal sealed class AsyncPreservedValueAnalysis(Compiler compiler)
     {
-        private static ConfigMethodRange s_range;
         private HashSet<int> _awaitBlocks = [];
         private HashSet<int> _resumeReachableBlocks = [];
         private VARSET_TP[]? _mutatedVarsIn;
@@ -227,8 +226,9 @@ public partial class Compiler
         {
             if (Configuration.DEBUG)
             {
-                s_range.EnsureInit(JitConfig.JitAsyncPreservedValueAnalysisRange);
-                if (!s_range.Contains(compiler.info.compMethodHash()))
+                ref var range = ref DebugData.MethodRangeData.s_jitAsyncPreservedValueAnalysisRange;
+                range.EnsureInit(JitConfig.JitAsyncPreservedValueAnalysisRange);
+                if (!range.Contains(compiler.info.compMethodHash()))
                 {
                     JITDUMP("Preserved value analysis disabled because of method range\n");
                     _mutatedVarsIn = CreateSets(compiler);

@@ -9,8 +9,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private bool _genWriteBarrierUsed;
-
     internal bool genWriteBarrierUsed
     {
         get
@@ -21,7 +19,7 @@ public sealed partial class CodeGen
                 return false;
             }
 
-            return _genWriteBarrierUsed;
+            return Compiler.DebugData.Get(_compiler).CodeGenWriteBarrierUsed;
         }
     }
 
@@ -34,7 +32,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.DEBUG)
         {
-            _genWriteBarrierUsed = true;
+            Compiler.DebugData.Get(_compiler).CodeGenWriteBarrierUsed = true;
         }
 
         switch (writeBarrierForm)

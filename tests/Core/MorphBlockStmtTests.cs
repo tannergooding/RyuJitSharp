@@ -188,7 +188,7 @@ internal static unsafe class MorphBlockStmtTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 1;
         TestConfiguration.SetCompilerFullName(compiler, nameof(MorphBlockStmtTests));

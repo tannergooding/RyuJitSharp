@@ -818,8 +818,8 @@ internal static unsafe class ProfileSynthesisTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitSynthesisExceptionWeight")]
-    private static extern ref byte* ExceptionWeightConfig(ref JitConfigValues config);
+    private static ref byte* ExceptionWeightConfig(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitSynthesisExceptionWeight;
 
     [Test]
     public static void IncomingChecksSeparateMissingLikelihoodFromWeightBalance()
@@ -961,11 +961,11 @@ internal static unsafe class ProfileSynthesisTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitProfileChecks")]
-    private static extern ref int ProfileCheckConfig(ref JitConfigValues config);
+    private static ref int ProfileCheckConfig(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitProfileChecks;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitSynthesisUseSolver")]
-    private static extern ref int SolverConfig(ref JitConfigValues config);
+    private static ref int SolverConfig(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitSynthesisUseSolver;
 
     private static string Capture(Compiler compiler, Action action)
     {

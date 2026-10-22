@@ -2605,8 +2605,8 @@ public partial class Compiler
             {
                 unchecked
                 {
-                    genFlowNodeCnt += 1;
-                    genFlowNodeSize += NativeFlowEdgeSize;
+                    MeasurementData.BlockSize.s_FlowNodeCount += 1;
+                    MeasurementData.BlockSize.s_FlowNodeSize += NativeFlowEdgeSize;
                 }
             }
 
@@ -3480,7 +3480,7 @@ public partial class Compiler
             return true;
         }
 
-        if (fgPgoDeferredInconsistency)
+        if (Configuration.DEBUG && fgPgoDeferredInconsistency)
         {
             fgProfileDump("[deferred prior check failed -- skipping this check]\n", dump);
             return false;
@@ -4873,7 +4873,7 @@ public partial class Compiler
 
         // fgNormalizeEH assumes that this test has been passed and Ssa assumes that fgNormalizeEHTable has been run.
         // So do this unless we're in minOpts mode (and always in debug).
-        if (Configuration.DEBUG || !opts.MinOpts)
+        if (Configuration.DEBUG || !MinOpts)
         {
             fgCheckBasicBlockControlFlow();
         }
@@ -11584,9 +11584,9 @@ public partial class Compiler
         if (Configuration.DEBUG)
         {
             // Keep track of the highest # of tree nodes.
-            if (BasicBlock.s_nMaxTrees < rootNode._seqNum)
+            if (DebugData.s_nMaxTrees < rootNode._seqNum)
             {
-                BasicBlock.s_nMaxTrees = rootNode._seqNum;
+                DebugData.s_nMaxTrees = rootNode._seqNum;
             }
         }
     }
@@ -13858,7 +13858,7 @@ public partial class Compiler
             madeChanges = true;
         }
 
-        if (Configuration.DEBUG && opts.compGcChecks)
+        if (Configuration.DEBUG && compGcChecks)
         {
             for (var i = 0; i < info.compArgsCount; i++)
             {
@@ -14293,7 +14293,7 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        if (opts.MinOpts)
+        if (MinOpts)
         {
             JITDUMP("Method compiled with MinOpts; skipping.\n");
             return PhaseStatus.MODIFIED_NOTHING;
@@ -14915,7 +14915,7 @@ public partial class Compiler
         JITDUMP("*************** In fgSetBlockOrder()\n");
         if (Configuration.DEBUG)
         {
-            BasicBlock.s_nMaxTrees = 0;
+            DebugData.s_nMaxTrees = 0;
         }
         if (fgHasCycleWithoutGCSafePoint())
         {
@@ -14935,7 +14935,7 @@ public partial class Compiler
         {
             fgSetBlockOrder(block);
         }
-        JITDUMP($"The biggest BB has {BasicBlock.s_nMaxTrees,4} tree nodes\n");
+        JITDUMP($"The biggest BB has {DebugData.s_nMaxTrees,4} tree nodes\n");
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
@@ -15234,8 +15234,6 @@ public partial class Compiler
         return !info.compInitMem || (varDsc.lvIsTemp && !varDsc.HasGCPtr);
     }
 
-    private static ConfigMethodRange s_localAddrPropagationRange;
-
     private unsafe PhaseStatus fgLocalMorph()
     {
         bool madeChanges;
@@ -15262,9 +15260,10 @@ public partial class Compiler
             var activeAssertions = assertions;
             if (Configuration.DEBUG)
             {
-                s_localAddrPropagationRange.EnsureInit(JitConfig.JitEnableLocalAddrPropagationRange);
+                ref var localAddrPropagationRange = ref DebugData.MethodRangeData.s_localAddrPropagationRange;
+                localAddrPropagationRange.EnsureInit(JitConfig.JitEnableLocalAddrPropagationRange);
 
-                if (!s_localAddrPropagationRange.Contains(info.compMethodHash()))
+                if (!localAddrPropagationRange.Contains(info.compMethodHash()))
                 {
                     activeAssertions = null;
                 }

@@ -91,7 +91,7 @@ internal static unsafe class LinearScanRiscVStackArgumentTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         JitTls.Compiler = compiler;
 
         var codeGen = new CodeGen(compiler);

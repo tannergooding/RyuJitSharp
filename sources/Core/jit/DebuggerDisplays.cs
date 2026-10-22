@@ -235,16 +235,7 @@ public partial class GenTree
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
 public partial struct LclVarDsc
 {
-    private readonly string DebuggerDisplayText
-    {
-        get
-        {
-            var reason = Configuration.DEBUG ? lvReason : null;
-            return string.IsNullOrEmpty(reason)
-                ? $"[V{lvSlotNum}: {Type.Name}]"
-                : $"[V{lvSlotNum}: {Type.Name}-{reason}]";
-        }
-    }
+    private readonly string DebuggerDisplayText => $"[V{lvSlotNum}: {Type.Name}]";
 }
 
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]

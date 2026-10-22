@@ -346,7 +346,7 @@ internal static unsafe class StaticInitExpansionTests
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minOpts);
+        compiler.SetMinOpts(minOpts);
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
         CORINFO_METHOD_INFO methodInfo = default;

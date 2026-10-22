@@ -54,7 +54,9 @@ public partial class Compiler
         };
         if (Configuration.DEBUG)
         {
-            add.acdNum = acdCount++;
+            var debugData = GetDebugData();
+            add.acdNum = debugData.AddCodeDscCount;
+            debugData.AddCodeDscCount = unchecked(debugData.AddCodeDscCount + 1);
         }
 
         var map = fgGetAddCodeDscMap();

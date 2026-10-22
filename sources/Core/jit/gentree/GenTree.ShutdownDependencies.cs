@@ -81,14 +81,14 @@ public partial class GenTree
 
         for (var hash = 0; hash < BASH_HASH_SIZE; hash++)
         {
-            var count = BashHash[hash].bhCount;
+            var count = MeasurementData.NodeBashing.s_bashHash[hash].bhCount;
             if (count == 0)
             {
                 continue;
             }
 
-            var opOld = BashHash[hash].bhOperOld;
-            var opNew = BashHash[hash].bhOperNew;
+            var opOld = MeasurementData.NodeBashing.s_bashHash[hash].bhOperOld;
+            var opNew = MeasurementData.NodeBashing.s_bashHash[hash].bhOperNew;
             var oldSize = GetTrueSize((uint)opOld);
             var newSize = GetTrueSize((uint)opNew);
             var oldName = GetOperName(opOld);
@@ -106,10 +106,6 @@ public partial class GenTree
         output.Flush();
     }
 
-    private static readonly uint[] s_gtNodeCounts = Configuration.COUNT_AST_OPERS
-        ? new uint[(int)GT_COUNT + 1]
-        : [];
-
     internal static ref uint GetNodeCount(uint op)
     {
         if (!Configuration.COUNT_AST_OPERS)
@@ -117,7 +113,7 @@ public partial class GenTree
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GenTreeOperatorCountsAreNotEnabled);
         }
 
-        return ref s_gtNodeCounts[(int)op];
+        return ref MeasurementData.OperatorCounts.GetCount(op);
     }
 
     internal static byte GetTrueSize(uint op)

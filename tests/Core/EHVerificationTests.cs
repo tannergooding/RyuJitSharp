@@ -633,7 +633,7 @@ internal static unsafe class EHVerificationTests
         JitFlags flags = default;
         flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         JitTls.Compiler = compiler;
         JitConfig = new JitConfigValues();
         AltJitSkipOnAssert(ref JitConfig) = 1;
@@ -658,8 +658,8 @@ internal static unsafe class EHVerificationTests
         return 0;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
-    private static extern ref int AltJitSkipOnAssert(ref JitConfigValues config);
+    private static ref int AltJitSkipOnAssert(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._altJitSkipOnAssert;
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgVerifyHandlerTab")]
     private static extern void VerifyHandlerTable(Compiler compiler);

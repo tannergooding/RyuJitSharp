@@ -525,7 +525,7 @@ internal static unsafe class LivenessOrchestrationLIRTests
         compiler.info.compIsStatic = true;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         compiler.compHndBBtab = [];
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;

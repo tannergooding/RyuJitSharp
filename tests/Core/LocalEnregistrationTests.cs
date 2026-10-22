@@ -109,7 +109,7 @@ internal static unsafe class LocalEnregistrationTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(minopts);
+        compiler.SetMinOpts(minopts);
         compiler.opts.compFlags = minopts ? 0 : CLFLG_REGVAR;
         compiler.lvaRefCountState = RCS_NORMAL;
         compiler.lvaTable = new LclVarDsc[8];

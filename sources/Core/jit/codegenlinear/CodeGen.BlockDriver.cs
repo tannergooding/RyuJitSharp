@@ -11,7 +11,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.DEBUG)
         {
-            _genInterruptibleUsed = true;
+            Compiler.DebugData.Get(_compiler).CodeGenInterruptibleUsed = true;
             _compiler.fgSafeBasicBlockCreation = false;
             if (Configuration.TARGET_X86 && Interruptible && _compiler.compStackCheckOnCall)
             {
@@ -263,13 +263,14 @@ public sealed partial class CodeGen
                 {
                     assert((ilOffset.StmtLastILOffset <= _compiler.info.compILCodeSize) ||
                         (ilOffset.StmtLastILOffset == BAD_IL_OFFSET));
-                    if (_compiler.opts.dspCode && _compiler.opts.dspInstrs &&
+                    if (_compiler.dspCode && _compiler.dspInstrs &&
                         ilOffset.StmtLastILOffset != BAD_IL_OFFSET)
                     {
-                        while (_genCurDispOffset <= ilOffset.StmtLastILOffset)
+                        var debugData = Compiler.DebugData.Get(_compiler);
+                        while (debugData.CodeGenCurrentDisplayOffset <= ilOffset.StmtLastILOffset)
                         {
-                            _genCurDispOffset = unchecked(_genCurDispOffset +
-                                (uint)dumpSingleInstr(_compiler.info.compCode, (IL_OFFSET)_genCurDispOffset, ">    "));
+                            debugData.CodeGenCurrentDisplayOffset = unchecked(debugData.CodeGenCurrentDisplayOffset +
+                                (uint)dumpSingleInstr(_compiler.info.compCode, (IL_OFFSET)debugData.CodeGenCurrentDisplayOffset, ">    "));
                         }
                     }
                 }

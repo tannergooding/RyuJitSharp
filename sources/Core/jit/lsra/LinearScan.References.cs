@@ -14,7 +14,21 @@ public sealed partial class LinearScan
 
     private uint _currentBlockNumber;
 
-    private GenTree? _currentBuildNode;
+    private GenTree? _currentBuildNode
+    {
+        get
+        {
+            return Configuration.DEBUG ? Compiler.DebugData.Get(this).CurrentBuildNode : null;
+        }
+
+        set
+        {
+            if (Configuration.DEBUG)
+            {
+                Compiler.DebugData.Get(this).CurrentBuildNode = value;
+            }
+        }
+    }
 
     internal RefPosition newRefPositionRaw(LsraLocation nodeLocation, GenTree? treeNode, RefType refType)
     {

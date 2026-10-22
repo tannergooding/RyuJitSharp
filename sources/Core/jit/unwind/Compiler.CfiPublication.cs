@@ -19,7 +19,7 @@ public partial class Compiler
         var codes = CollectionsMarshal.AsSpan(func.cfiCodes);
         var unwindCodeBytes = unchecked(codes.Length * 8);
 
-        if (Configuration.DEBUG && opts.dspUnwind)
+        if (Configuration.DEBUG && dspUnwind)
         {
             DumpCfiInfo(true, startOffset, endOffset, codes);
         }
@@ -37,7 +37,7 @@ public partial class Compiler
             startOffset = func.coldStartLoc?.CodeOffset(emitter) ?? 0;
             endOffset = func.coldEndLoc?.CodeOffset(emitter) ?? unchecked((uint)info.compNativeCodeSize);
 
-            if (Configuration.DEBUG && opts.dspUnwind)
+            if (Configuration.DEBUG && dspUnwind)
             {
                 DumpCfiInfo(false, startOffset, endOffset, default);
             }

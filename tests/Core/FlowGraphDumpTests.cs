@@ -471,30 +471,30 @@ internal static unsafe class FlowGraphDumpTests
         }
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDumpFgHash")]
-    private static extern ref int Hash(ref JitConfigValues values);
+    private static ref int Hash(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitDumpFgHash;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDumpFg")]
-    private static extern ref JitConfigValues.MethodSet Methods(ref JitConfigValues values);
+    private static ref JitConfigValues.MethodSet Methods(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitDumpFg;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDumpFgDot")]
-    private static extern ref int Dot(ref JitConfigValues values);
+    private static ref int Dot(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitDumpFgDot;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDumpFgConstrained")]
-    private static extern ref int Constrained(ref JitConfigValues values);
+    private static ref int Constrained(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitDumpFgConstrained;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDumpFgMemorySsa")]
-    private static extern ref int MemorySsa(ref JitConfigValues values);
+    private static ref int MemorySsa(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitDumpFgMemorySsa;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDumpFgBlockFlags")]
-    private static extern ref int BlockFlags(ref JitConfigValues values);
+    private static ref int BlockFlags(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitDumpFgBlockFlags;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDumpFgBlockID")]
-    private static extern ref int BlockId(ref JitConfigValues values);
+    private static ref int BlockId(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitDumpFgBlockID;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDumpFgFile")]
-    private static extern ref byte* FileName(ref JitConfigValues values);
+    private static ref byte* FileName(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitDumpFgFile;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDumpFgDir")]
-    private static extern ref byte* DirectoryName(ref JitConfigValues values);
+    private static ref byte* DirectoryName(ref JitConfigValues values)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref values)._jitDumpFgDir;
 }

@@ -1275,8 +1275,8 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
         return 0;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
-    private static extern ref int AltJitSkipOnAssert(ref JitConfigValues config);
+    private static ref int AltJitSkipOnAssert(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._altJitSkipOnAssert;
 
     private static int Build(LinearScan allocator, GenTree node)
     {
@@ -1357,7 +1357,7 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaOutgoingArgSpaceSize.Value = outgoingArgSpace;
         TestConfiguration.SetCompilerFullName(compiler, nameof(ArmLinearScanNodeBuildingTests));
         if (TestConfiguration.IsDebug && captureAssertions)

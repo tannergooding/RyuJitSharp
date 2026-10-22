@@ -268,7 +268,7 @@ internal static unsafe class RangeEliminationTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaCount = 1;
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
         JitTls.Compiler = compiler;

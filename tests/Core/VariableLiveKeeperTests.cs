@@ -364,7 +364,7 @@ internal static unsafe class VariableLiveKeeperTests
         JitFlags flags = default;
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compDbgInfo = true;
         compiler.info.compMethodInfo = &methodInfo;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;

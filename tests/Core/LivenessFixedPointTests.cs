@@ -632,7 +632,7 @@ internal static unsafe class LivenessFixedPointTests
         compiler.info.compMethodInfo = &methodInfo;
         compiler.info.compIsStatic = true;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.compHndBBtab = [];
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;

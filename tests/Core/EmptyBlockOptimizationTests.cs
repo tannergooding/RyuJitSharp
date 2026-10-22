@@ -557,7 +557,7 @@ internal static unsafe class EmptyBlockOptimizationTests
         compiler.fgNodeThreading = lir ? NodeThreading.LIR : NodeThreading.None;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;

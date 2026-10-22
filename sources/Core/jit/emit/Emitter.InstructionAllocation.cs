@@ -4,19 +4,13 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using static RyuJitSharp.GCInfo.GCtype;
+using static RyuJitSharp.Emitter.EmitterStatistics;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
     private const int EMIT_MAX_IG_INS_COUNT = 256;
-
-    private static uint emitTotalInsCnt;
-    private static uint emitTotalIDescCnt;
-    private static uint emitTotalIDescSmallCnt;
-    private static uint emitTotalIDescJmpCnt;
-    private static uint emitTotalIDescLblCnt;
-    private static uint emitTotalIDescAlignCnt;
 
     private void emitRecordMemAllocation(nuint size)
     {

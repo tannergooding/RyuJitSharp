@@ -178,7 +178,7 @@ public partial class Emitter
             }
         }
 
-        if (Configuration.DEBUG && compiler.opts.disasmWithGC)
+        if (Configuration.DEBUG && compiler.disasmWithGC)
         {
             emitDispGCInfoDelta();
         }

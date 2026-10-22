@@ -86,6 +86,7 @@ public partial class Emitter
                 {
                     return false;
                 }
+
                 return true;
             }
             return false;

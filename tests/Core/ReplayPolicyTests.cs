@@ -123,7 +123,7 @@ internal static unsafe class ReplayPolicyTests
             }
 
             Assert.That(Assess(compiler, callee, 7).Decision.IsCandidate, Is.EqualTo(createFile));
-            var file = ReplayFile(null);
+            var file = Compiler.DebugData.InlineReplayData.ReplayFile;
             if (disableReplayBeforeFinalize)
             {
                 var config = JitConfig;
@@ -138,7 +138,7 @@ internal static unsafe class ReplayPolicyTests
                 Assert.That(file.CanRead, Is.False);
             }
 
-            Assert.That(ReplayFile(null), Is.Null);
+            Assert.That(Compiler.DebugData.InlineReplayData.ReplayFile, Is.Null);
             File.WriteAllText(path, Method(compiler, Inline(compiler, callee, 7)));
             Assert.That(Assess(compiler, callee, 7).Observation, Is.EqualTo(InlineObservation.CALLSITE_LOG_REPLAY_REJECT));
         });
@@ -223,9 +223,9 @@ internal static unsafe class ReplayPolicyTests
 
         var previousConfig = JitConfig;
         var previousCompiler = JitTls.Compiler;
-        var previousFile = ReplayFile(null);
-        var previousBanner = WroteReplayBanner(null);
-        var previousEof = EndOfFile(null);
+        var previousFile = Compiler.DebugData.InlineReplayData.ReplayFile;
+        var previousBanner = Compiler.DebugData.InlineReplayData.WroteReplayBanner;
+        var previousEof = Compiler.DebugData.InlineReplayData.EndOfFile;
         using var tls = TestConfiguration.CreateJitTls();
         fixed (byte* pointer = pathBytes)
         {
@@ -235,9 +235,9 @@ internal static unsafe class ReplayPolicyTests
             DumpXml(ref config) = 1;
             JitConfig = config;
             JitTls.Compiler = compiler;
-            ReplayFile(null) = null;
-            WroteReplayBanner(null) = false;
-            EndOfFile(null) = false;
+            Compiler.DebugData.InlineReplayData.ReplayFile = null;
+            Compiler.DebugData.InlineReplayData.WroteReplayBanner = false;
+            Compiler.DebugData.InlineReplayData.EndOfFile = false;
             try
             {
                 action(compiler, path);
@@ -245,9 +245,9 @@ internal static unsafe class ReplayPolicyTests
             finally
             {
                 ReplayPolicy.FinalizeXml();
-                ReplayFile(null) = previousFile;
-                WroteReplayBanner(null) = previousBanner;
-                EndOfFile(null) = previousEof;
+                Compiler.DebugData.InlineReplayData.ReplayFile = previousFile;
+                Compiler.DebugData.InlineReplayData.WroteReplayBanner = previousBanner;
+                Compiler.DebugData.InlineReplayData.EndOfFile = previousEof;
                 JitConfig = previousConfig;
                 JitTls.Compiler = previousCompiler;
                 File.Delete(path);
@@ -267,23 +267,14 @@ internal static unsafe class ReplayPolicyTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_compiler")]
     private static extern ref Compiler StrategyCompiler(InlineStrategy strategy);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitInlineReplayFile")]
-    private static extern ref byte* ReplayPath(ref JitConfigValues config);
+    private static ref byte* ReplayPath(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitInlineReplayFile;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitInlinePolicyReplay")]
-    private static extern ref int ReplayEnabled(ref JitConfigValues config);
+    private static ref int ReplayEnabled(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitInlinePolicyReplay;
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitInlineDumpXml")]
-    private static extern ref int DumpXml(ref JitConfigValues config);
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_replayFile")]
-    private static extern ref FileStream? ReplayFile(ReplayPolicy? policy);
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_wroteReplayBanner")]
-    private static extern ref bool WroteReplayBanner(ReplayPolicy? policy);
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_endOfFile")]
-    private static extern ref bool EndOfFile(ReplayPolicy? policy);
+    private static ref int DumpXml(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitInlineDumpXml;
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ScanUnsigned")]
     private static extern bool ScanUnsigned(ReplayPolicy? policy, ReadOnlySpan<byte> line, ReadOnlySpan<byte> prefix, uint radix, int width, out uint value);

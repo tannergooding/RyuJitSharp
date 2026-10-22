@@ -277,7 +277,7 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compDbgEnC = debugEnC;
         compiler.MethodHasPatchpoint = patchpoints;
         if (debugEnC)

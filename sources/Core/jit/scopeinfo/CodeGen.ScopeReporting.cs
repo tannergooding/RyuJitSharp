@@ -11,9 +11,20 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private TrnslLocalVarInfo[] genTrnslLocalVarInfo = [];
+    private TrnslLocalVarInfo[] genTrnslLocalVarInfo
+    {
+        get
+        {
+            return Compiler.DebugData.Get(this).TranslatedLocalVarInfo;
+        }
 
-    private struct TrnslLocalVarInfo
+        set
+        {
+            Compiler.DebugData.Get(this).TranslatedLocalVarInfo = value;
+        }
+    }
+
+    internal struct TrnslLocalVarInfo
     {
         public int tlviVarNum;
         public int tlviLVnum;
@@ -71,7 +82,7 @@ public sealed partial class CodeGen
 
         if (Configuration.DEBUG)
         {
-            _genTrnslLocalVarCount = unchecked((int)varsLocationsCount);
+            Compiler.DebugData.Get(_compiler).CodeGenTranslatedLocalVariableCount = unchecked((int)varsLocationsCount);
             genTrnslLocalVarInfo = new TrnslLocalVarInfo[varsLocationsCount];
         }
         if (keeper.getLiveRangesCount() > 0)
@@ -219,7 +230,7 @@ public sealed partial class CodeGen
             {
                 if (LVnum == _compiler.info.compVarScopes[scopeNum].vsdLVnum)
                 {
-                    name = _compiler.info.compVarScopes[scopeNum].vsdName;
+                    name = _compiler.GetVarScopeName(scopeNum);
                 }
             }
 

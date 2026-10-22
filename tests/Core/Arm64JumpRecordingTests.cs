@@ -220,7 +220,7 @@ internal static unsafe class Arm64JumpRecordingTests
 
         var (compiler, _, emitter) = CreateEmitter();
         var target = Label();
-        compiler.opts.compLongAddress = forceLong;
+        compiler.compLongAddress = forceLong;
         if (differentRegion)
         {
             target.SetFlags(BBF_COLD);

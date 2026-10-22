@@ -260,7 +260,7 @@ internal static unsafe class AsyncContextTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.info = new Compiler.Info();
         compiler.lvaTable = new LclVarDsc[9];
         compiler.lvaCount = 9;

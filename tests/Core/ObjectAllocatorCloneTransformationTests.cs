@@ -54,7 +54,7 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
         compiler.fgPredsComputed = true;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         JitTls.Compiler = compiler;
 
         try

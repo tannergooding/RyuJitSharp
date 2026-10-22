@@ -9,6 +9,8 @@ using static RyuJitSharp.Emitter.insSize;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 
+using static RyuJitSharp.Emitter.EmitterStatistics;
+
 namespace RyuJitSharp;
 
 public partial class Emitter

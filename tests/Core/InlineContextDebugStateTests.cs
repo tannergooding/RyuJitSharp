@@ -94,6 +94,10 @@ internal static class InlineContextDebugStateTests
             call._callDebugFlags = expectedFlags;
             call._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
             call._rawILOffset = 42;
+            var debugData = Compiler.DebugData.Get(call);
+            Assert.That(debugData.CallDebugFlags, Is.EqualTo(expectedFlags));
+            Assert.That(debugData.InlineObservation, Is.EqualTo(InlineObservation.CALLSITE_IS_CALL_TO_HELPER));
+            Assert.That(debugData.RawILOffset, Is.EqualTo(42));
             Assert.That(call._callDebugFlags, Is.EqualTo(expectedFlags));
             Assert.That(call._inlineObservation, Is.EqualTo(InlineObservation.CALLSITE_IS_CALL_TO_HELPER));
             Assert.That(call._rawILOffset, Is.EqualTo(42));

@@ -124,7 +124,7 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
     {
         WithCompiler((compiler, store) =>
         {
-            DisableBits(ref JitConfig) = bits;
+            TestConfiguration.SetJitConfigValue(ref JitConfig, "_jitDisableSimdVN", bits);
             var left = Operand(store, TYP_SIMD16, false);
             var right = Operand(store, TYP_SIMD16, false);
             var tree = new GenTreeHWIntrinsic(TYP_SIMD16, AddId, TYP_INT, 16, left, right);
@@ -453,21 +453,18 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
         return operand;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDisableSimdVN")]
-    private static extern ref int DisableBits(ref JitConfigValues config);
-
     private static void WithCompiler(Action<Compiler, ValueNumStore> action)
     {
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
-        DisableBits(ref JitConfig) = 0;
+        TestConfiguration.SetJitConfigValue(ref JitConfig, "_jitDisableSimdVN", 0);
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         JitTls.Compiler = compiler;
         try
         {

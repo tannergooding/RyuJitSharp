@@ -356,14 +356,14 @@ internal static unsafe class AssertionArithmeticTests
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         object config = default(JitConfigValues);
-        var maxLocals = typeof(JitConfigValues).GetField("_jitMaxLocalsToTrack",
+        var maxLocals = TestConfiguration.GetJitConfigField("_jitMaxLocalsToTrack",
             BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException();
         maxLocals.SetValue(config, 1024);
         JitConfig = (JitConfigValues)config;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.lvaCount = 2;
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
         compiler.compCurBB = new BasicBlock(null, null) { bbNum = 1 };

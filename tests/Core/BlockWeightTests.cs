@@ -287,7 +287,7 @@ internal static unsafe class BlockWeightTests
         using var tls = TestConfiguration.CreateJitTls();
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitTls.Compiler = compiler;

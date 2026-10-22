@@ -107,10 +107,10 @@ internal static unsafe class ObjectAllocatorAllocationAnalysisTests
     {
         var previousConfig = JitConfig;
         object config = previousConfig;
-        var field = typeof(JitConfigValues).GetField("_jitObjectStackAllocationConditionalEscape",
+        var field = TestConfiguration.GetJitConfigField("_jitObjectStackAllocationConditionalEscape",
             BindingFlags.NonPublic | BindingFlags.Instance) ?? throw new InvalidOperationException("Missing config field.");
         field.SetValue(config, 0);
-        field = typeof(JitConfigValues).GetField("_jitObjectStackAllocationTrackFields",
+        field = TestConfiguration.GetJitConfigField("_jitObjectStackAllocationTrackFields",
             BindingFlags.NonPublic | BindingFlags.Instance) ?? throw new InvalidOperationException("Missing field config.");
         field.SetValue(config, trackFields ? 1 : 0);
         JitConfig = (JitConfigValues)config;

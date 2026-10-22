@@ -414,7 +414,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_MINOPT | (trackedLocal ? CLFLG_REGVAR : 0);
         compiler.compFloatingPointUsed = true;
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);

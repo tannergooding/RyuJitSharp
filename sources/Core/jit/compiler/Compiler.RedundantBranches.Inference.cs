@@ -288,8 +288,6 @@ public partial class Compiler
         return RelopResult.Unknown;
     }
 
-    private static ConfigMethodRange s_jitEnableRboRange;
-
     private unsafe void optRelopImpliesRelop(ref RelopImplicationInfo info)
     {
         assert(!info.CanInfer);
@@ -317,10 +315,11 @@ public partial class Compiler
 
         if (Configuration.DEBUG)
         {
-            s_jitEnableRboRange.EnsureInit(JitConfig.JitEnableRboRange);
+            DebugData.MethodRangeData.s_jitEnableRboRange.EnsureInit(JitConfig.JitEnableRboRange);
         }
 
-        var inRange = !Configuration.DEBUG || s_jitEnableRboRange.Contains(impInlineRoot.info.compMethodHash());
+        var inRange = !Configuration.DEBUG ||
+            DebugData.MethodRangeData.s_jitEnableRboRange.Contains(impInlineRoot.info.compMethodHash());
 
         var domFunc = domApp.Func;
         var treeApp = new VNFuncApp();

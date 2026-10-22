@@ -700,7 +700,7 @@ internal static unsafe class Arm64MemoryLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(!optimized);
+        compiler.SetMinOpts(!optimized);
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.compHndBBtab = [];

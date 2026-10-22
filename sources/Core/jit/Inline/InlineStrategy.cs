@@ -7,7 +7,6 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Threading;
 
 namespace RyuJitSharp;
 
@@ -56,20 +55,6 @@ public sealed partial class InlineStrategy
     private int _currentSizeEstimate;
     private bool _hasForceViaDiscretionary;
     private bool _hasHardwareIntrinsicCheck;
-
-    private CLRRandom? _random;
-
-    private static class XmlDumpState
-    {
-        internal static bool HasDumpedDataHeader;
-        internal static bool HasDumpedXmlHeader;
-        internal static readonly Lock WriterLock = new();
-    }
-
-    private static class InlineRangeState
-    {
-        internal static ConfigMethodRange DisabledRange;
-    }
 
     public InlineStrategy(Compiler compiler)
     {
@@ -287,13 +272,15 @@ public sealed partial class InlineStrategy
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineStressRandomStateIsOnlyAvailableInDebugBuilds);
         }
 
-        var random = _random;
+        var debugData = global::RyuJitSharp.Compiler.DebugData.Get(_compiler);
+        var random = debugData.InlineStressRandom;
 
         if (random is null)
         {
             random = CreateRandom(optionalSeed);
-            _random = random;
+            debugData.InlineStressRandom = random;
         }
+
         return random;
     }
 
@@ -317,7 +304,7 @@ public sealed partial class InlineStrategy
             return false;
         }
 
-        if (!InlineRangeState.DisabledRange.IsInit)
+        if (!global::RyuJitSharp.Compiler.DebugData.MethodRangeData.DisabledRange.IsInit)
         {
             // If we have a config string we have at least one entry.  Count
             // number of spaces in our config string to see if there are
@@ -332,10 +319,11 @@ public sealed partial class InlineStrategy
                 }
             }
 
-            InlineRangeState.DisabledRange.EnsureInit(pNoInlineRangeUtf8, 2 * entryCount);
-            assert(!InlineRangeState.DisabledRange.Error);
+            global::RyuJitSharp.Compiler.DebugData.MethodRangeData.DisabledRange.EnsureInit(pNoInlineRangeUtf8, 2 * entryCount);
+            assert(!global::RyuJitSharp.Compiler.DebugData.MethodRangeData.DisabledRange.Error);
         }
-        return InlineRangeState.DisabledRange.Contains(_compiler.info.compMethodHash());
+
+        return global::RyuJitSharp.Compiler.DebugData.MethodRangeData.DisabledRange.Contains(_compiler.info.compMethodHash());
     }
 
     // Create context for the specified inline candidate contained in the specified statement.

@@ -51,7 +51,7 @@ internal static unsafe class InlineCandidateTests
         try
         {
             object config = new JitConfigValues();
-            var field = typeof(JitConfigValues).GetField("_jitGuardedDevirtualizationRequireInlining",
+            var field = TestConfiguration.GetJitConfigField("_jitGuardedDevirtualizationRequireInlining",
                 BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("Missing guarded devirtualization config field.");
             field.SetValue(config, requireInlining ? 1 : 0);

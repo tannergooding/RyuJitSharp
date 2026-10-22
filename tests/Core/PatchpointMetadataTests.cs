@@ -194,7 +194,7 @@ internal static unsafe class PatchpointMetadataTests
             ? CORINFO_GENERICS_CTXT_FROM_METHODDESC
             : CORINFO_GENERICS_CTXT_FROM_THIS;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.MethodHasPatchpoint = true;
         compiler.lvaCount = 10;
         compiler.lvaTable = new LclVarDsc[10];
@@ -221,8 +221,8 @@ internal static unsafe class PatchpointMetadataTests
             compiler.lvaTable[8].lvFramePointerBased = true;
             compiler.gsShadowVarInfo[8].ShadowCopy = BAD_VAR_NUM;
             compiler.compUsesUnknownSizeFrame = true;
-            compiler.lvaTable[8].UnknownSizeFrameIndex = unchecked((int)compiler.unkSizeFrame.AllocVector());
-            compiler.unkSizeFrame.FinalizeLayout();
+            compiler.lvaTable[8].UnknownSizeFrameIndex = unchecked((int)compiler.unkSizeFrame.AllocVector(compiler));
+            compiler.unkSizeFrame.FinalizeLayout(compiler);
             runtimeVectorLength = compiler.getRuntimeVectorTByteLength();
         }
         compiler.lvaCachedGenericContextArgOffs = saveFpLr ? -48 : 48;

@@ -351,7 +351,7 @@ internal static unsafe class WasmCompilerSpillRefsTests
         {
             JitFlags flags = default;
             compiler.opts.jitFlags = &flags;
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             compiler.fgNodeThreading = NodeThreading.LIR;
             compiler.lvaTable = new LclVarDsc[types.Length];
             for (var i = 0; i < types.Length; i++)

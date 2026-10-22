@@ -329,7 +329,7 @@ public sealed partial class Lowering
     private GenTreeOp? TryLowerMulWithConstant(GenTreeOp node)
     {
         assert(node.Oper is GT_MUL);
-        if (CompilerInstance.opts.MinOpts || !varTypeIsIntegral(node.Type) || node.HasOverflowCheck)
+        if (CompilerInstance.MinOpts || !varTypeIsIntegral(node.Type) || node.HasOverflowCheck)
         {
             return null;
         }

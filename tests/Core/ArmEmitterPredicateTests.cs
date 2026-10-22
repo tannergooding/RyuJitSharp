@@ -355,11 +355,11 @@ internal static class ArmEmitterPredicateTests
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             JitFlags flags = default;
             compiler.opts.jitFlags = &flags;
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
             JitTls.Compiler = compiler;
 
             object config = previousConfig;
-            var altJitAssertOnNyi = typeof(JitConfigValues).GetField(
+            var altJitAssertOnNyi = TestConfiguration.GetJitConfigField(
                 "_altJitAssertOnNYI",
                 BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("AltJitAssertOnNYI configuration field was not found.");

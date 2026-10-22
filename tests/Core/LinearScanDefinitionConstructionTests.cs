@@ -457,7 +457,7 @@ internal static unsafe class LinearScanDefinitionConstructionTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         if (enregisterLocalVars)
         {
             compiler.opts.compFlags |= CLFLG_REGVAR;

@@ -95,7 +95,7 @@ public sealed partial class Lowering
 
         if (!ulong.IsPow2(absDivisor))
         {
-            if (compiler.opts.MinOpts)
+            if (compiler.MinOpts)
             {
                 return false;
             }

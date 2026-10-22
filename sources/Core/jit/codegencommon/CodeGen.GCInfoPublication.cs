@@ -40,13 +40,13 @@ public sealed partial class CodeGen
         {
             if (Interruptible)
             {
-                gcHeaderISize += headerSize;
-                gcPtrMapISize += ptrMapSize;
+                Globals.CodeSizeStatisticsData.gcHeaderISize += headerSize;
+                Globals.CodeSizeStatisticsData.gcPtrMapISize += ptrMapSize;
             }
             else
             {
-                gcHeaderNSize += headerSize;
-                gcPtrMapNSize += ptrMapSize;
+                Globals.CodeSizeStatisticsData.gcHeaderNSize += headerSize;
+                Globals.CodeSizeStatisticsData.gcPtrMapNSize += ptrMapSize;
             }
         }
 
@@ -84,7 +84,7 @@ public sealed partial class CodeGen
     {
         Debug.Assert(Configuration.DUMP_GC_TABLES);
 
-        if (_compiler.opts.dspGCtbls)
+        if (_compiler.dspGCtbls)
         {
             var basePtr = infoPtr;
             GCInfo.InfoHdr dumpHeader = default;
@@ -94,7 +94,7 @@ public sealed partial class CodeGen
             var size = _gcInfo.gcInfoBlockHdrDump(basePtr, ref dumpHeader, out var methodSize);
             jitprintf("\n");
 
-            if (_compiler.opts.dspGCtbls)
+            if (_compiler.dspGCtbls)
             {
                 basePtr = (byte*)((nuint)basePtr + size);
                 size = _gcInfo.gcDumpPtrTable(basePtr, dumpHeader, methodSize);

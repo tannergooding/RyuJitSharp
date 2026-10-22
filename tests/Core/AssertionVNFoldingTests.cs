@@ -551,7 +551,7 @@ internal static unsafe class AssertionVNFoldingTests
                 var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
                 JitFlags flags = default;
                 compiler.opts.jitFlags = &flags;
-                compiler.opts.SetMinOpts(false);
+                compiler.SetMinOpts(false);
                 compiler.lvaTable = [new LclVarDsc { Type = TYP_BYREF }, new LclVarDsc { Type = TYP_BYREF },
                     new LclVarDsc { Type = TYP_I_IMPL }];
                 compiler.lvaCount = 3;

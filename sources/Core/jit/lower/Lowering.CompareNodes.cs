@@ -17,7 +17,7 @@ public sealed partial class Lowering
             return DecomposeLongCompare(comparison);
         }
 
-        if (comparison.Op2.Oper.IsIntegralConst && !CompilerInstance.opts.MinOpts)
+        if (comparison.Op2.Oper.IsIntegralConst && !CompilerInstance.MinOpts)
         {
             var next = OptimizeConstCompare(comparison);
             if (next != cmp)

@@ -71,7 +71,7 @@ internal static unsafe class CompilerRegallocFrameTests
     public static void MinoptsFrameRequirementMatchesNativePlatformPolicy()
     {
         WithCompiler((compiler, _) => {
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
 
             var requiresFrame = compiler.rpMustCreateEBPFrame(out var reason);
 
@@ -145,7 +145,7 @@ internal static unsafe class CompilerRegallocFrameTests
     {
         WithCompiler((compiler, codeGen) => {
             var allocator = new LinearScan(compiler);
-            compiler.opts.SetMinOpts(true);
+            compiler.SetMinOpts(true);
 
             SetFrameType(allocator);
 
@@ -198,7 +198,7 @@ internal static unsafe class CompilerRegallocFrameTests
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.info.compMethodInfo = &methodInfo;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
         CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;

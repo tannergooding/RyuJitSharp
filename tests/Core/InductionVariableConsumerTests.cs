@@ -53,7 +53,7 @@ internal static unsafe class InductionVariableConsumerTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.compHndBBtab = [];
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
@@ -210,7 +210,7 @@ internal static unsafe class InductionVariableConsumerTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         compiler.compHndBBtab = [];
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);

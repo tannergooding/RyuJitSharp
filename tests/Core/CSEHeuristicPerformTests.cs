@@ -32,8 +32,8 @@ internal static unsafe class CSEHeuristicPerformTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "moderateRefCnt")]
     private static extern ref double ModerateCutoff(CSE_Heuristic heuristic);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitCSEHash")]
-    private static extern ref int CseHash(ref JitConfigValues config);
+    private static ref int CseHash(ref JitConfigValues config)
+        => ref TestConfiguration.GetJitConfigDebugDataForWrite(ref config)._jitCSEHash;
 
     [Test]
     public static void BaseInitializationDispatchesToStandardHeuristic()
@@ -130,7 +130,7 @@ internal static unsafe class CSEHeuristicPerformTests
                 Assert.That(PromotionCount(compiler), Is.EqualTo(1));
                 if (TestConfiguration.IsDebug)
                 {
-                    Assert.That(compiler.lvaGetDesc(def.LclNum).lvReason, Is.EqualTo(FMT_CSE(index)));
+                    Assert.That(compiler.GetLocalDebugReason(def.LclNum), Is.EqualTo(FMT_CSE(index)));
                 }
             });
         });
@@ -340,7 +340,7 @@ internal static unsafe class CSEHeuristicPerformTests
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.SetMinOpts(false);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         TestConfiguration.SetCompilerFullName(compiler, nameof(CSEHeuristicPerformTests));

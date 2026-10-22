@@ -60,6 +60,7 @@ public partial class Compiler
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotStartedAStatement);
             __jitExceptionReturnResult131 = default;
         }
+
         return __jitExceptionReturnResult131;
     }
 }        private BitVecTraits ReadBackTraits {
@@ -80,7 +81,6 @@ public partial class Compiler
         return __jitExceptionReturnResult133;
     }
 }
-
         public Statement? StartBlock(BasicBlock block)
         {
             _currentBlock = block;

@@ -154,7 +154,7 @@ public abstract class GenTreeIntConCommon : GenTree
             return default!;
         }
 
-        if (Configuration.DEBUG && !comp.opts.compEnablePCRelAddr)
+        if (Configuration.DEBUG && !comp.compEnablePCRelAddr)
         {
             return false;
         }

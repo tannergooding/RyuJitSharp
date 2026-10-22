@@ -177,7 +177,7 @@ internal static unsafe class CodeGenSharedEHReportingTests
     {
         WithReporting((compiler, _, _) =>
         {
-            compiler.opts.SetMinOpts(false);
+            compiler.SetMinOpts(false);
             var block = new BasicBlock(null, null);
             var error = Assert.Throws<FatalJitException>(() => compiler.ehEmitCookie(block));
 
