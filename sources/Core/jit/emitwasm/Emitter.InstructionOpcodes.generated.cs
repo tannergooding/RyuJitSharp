@@ -443,6 +443,26 @@ public partial class Emitter
         unchecked((uint)(253)), // INS_i32x4_trunc_sat_u_f64x2_zero
         unchecked((uint)(254)), // INS_f64x2_convert_low_s_i32x4
         unchecked((uint)(255)), // INS_f64x2_convert_low_u_i32x4
+        unchecked((uint)(0x100)), // INS_i8x16_relaxed_swizzle
+        unchecked((uint)(0x101)), // INS_i32x4_relaxed_trunc_f32x4_s
+        unchecked((uint)(0x102)), // INS_i32x4_relaxed_trunc_f32x4_u
+        unchecked((uint)(0x103)), // INS_i32x4_relaxed_trunc_f64x2_s_zero
+        unchecked((uint)(0x104)), // INS_i32x4_relaxed_trunc_f64x2_u_zero
+        unchecked((uint)(0x105)), // INS_f32x4_relaxed_madd
+        unchecked((uint)(0x106)), // INS_f32x4_relaxed_nmadd
+        unchecked((uint)(0x107)), // INS_f64x2_relaxed_madd
+        unchecked((uint)(0x108)), // INS_f64x2_relaxed_nmadd
+        unchecked((uint)(0x109)), // INS_i8x16_relaxed_laneselect
+        unchecked((uint)(0x10A)), // INS_i16x8_relaxed_laneselect
+        unchecked((uint)(0x10B)), // INS_i32x4_relaxed_laneselect
+        unchecked((uint)(0x10C)), // INS_i64x2_relaxed_laneselect
+        unchecked((uint)(0x10D)), // INS_f32x4_relaxed_min
+        unchecked((uint)(0x10E)), // INS_f32x4_relaxed_max
+        unchecked((uint)(0x10F)), // INS_f64x2_relaxed_min
+        unchecked((uint)(0x110)), // INS_f64x2_relaxed_max
+        unchecked((uint)(0x111)), // INS_i16x8_relaxed_q15mulr_s
+        unchecked((uint)(0x112)), // INS_i16x8_relaxed_dot_i8x16_i7x16_s
+        unchecked((uint)(0x113)), // INS_i32x4_relaxed_dot_i8x16_i7x16_add_s
     ];
 
     private static ReadOnlySpan<byte> s_wasmOpcodePrefixes => [
@@ -879,6 +899,26 @@ public partial class Emitter
         unchecked((byte)(0xFD)), // INS_i32x4_trunc_sat_u_f64x2_zero
         unchecked((byte)(0xFD)), // INS_f64x2_convert_low_s_i32x4
         unchecked((byte)(0xFD)), // INS_f64x2_convert_low_u_i32x4
+        unchecked((byte)(0xFD)), // INS_i8x16_relaxed_swizzle
+        unchecked((byte)(0xFD)), // INS_i32x4_relaxed_trunc_f32x4_s
+        unchecked((byte)(0xFD)), // INS_i32x4_relaxed_trunc_f32x4_u
+        unchecked((byte)(0xFD)), // INS_i32x4_relaxed_trunc_f64x2_s_zero
+        unchecked((byte)(0xFD)), // INS_i32x4_relaxed_trunc_f64x2_u_zero
+        unchecked((byte)(0xFD)), // INS_f32x4_relaxed_madd
+        unchecked((byte)(0xFD)), // INS_f32x4_relaxed_nmadd
+        unchecked((byte)(0xFD)), // INS_f64x2_relaxed_madd
+        unchecked((byte)(0xFD)), // INS_f64x2_relaxed_nmadd
+        unchecked((byte)(0xFD)), // INS_i8x16_relaxed_laneselect
+        unchecked((byte)(0xFD)), // INS_i16x8_relaxed_laneselect
+        unchecked((byte)(0xFD)), // INS_i32x4_relaxed_laneselect
+        unchecked((byte)(0xFD)), // INS_i64x2_relaxed_laneselect
+        unchecked((byte)(0xFD)), // INS_f32x4_relaxed_min
+        unchecked((byte)(0xFD)), // INS_f32x4_relaxed_max
+        unchecked((byte)(0xFD)), // INS_f64x2_relaxed_min
+        unchecked((byte)(0xFD)), // INS_f64x2_relaxed_max
+        unchecked((byte)(0xFD)), // INS_i16x8_relaxed_q15mulr_s
+        unchecked((byte)(0xFD)), // INS_i16x8_relaxed_dot_i8x16_i7x16_s
+        unchecked((byte)(0xFD)), // INS_i32x4_relaxed_dot_i8x16_i7x16_add_s
     ];
 
     private static ReadOnlySpan<insFormat> s_wasmInstructionFormats => [
@@ -1315,6 +1355,26 @@ public partial class Emitter
         insFormat.IF_WASM_OPCODE, // INS_i32x4_trunc_sat_u_f64x2_zero
         insFormat.IF_WASM_OPCODE, // INS_f64x2_convert_low_s_i32x4
         insFormat.IF_WASM_OPCODE, // INS_f64x2_convert_low_u_i32x4
+        insFormat.IF_WASM_OPCODE, // INS_i8x16_relaxed_swizzle
+        insFormat.IF_WASM_OPCODE, // INS_i32x4_relaxed_trunc_f32x4_s
+        insFormat.IF_WASM_OPCODE, // INS_i32x4_relaxed_trunc_f32x4_u
+        insFormat.IF_WASM_OPCODE, // INS_i32x4_relaxed_trunc_f64x2_s_zero
+        insFormat.IF_WASM_OPCODE, // INS_i32x4_relaxed_trunc_f64x2_u_zero
+        insFormat.IF_WASM_OPCODE, // INS_f32x4_relaxed_madd
+        insFormat.IF_WASM_OPCODE, // INS_f32x4_relaxed_nmadd
+        insFormat.IF_WASM_OPCODE, // INS_f64x2_relaxed_madd
+        insFormat.IF_WASM_OPCODE, // INS_f64x2_relaxed_nmadd
+        insFormat.IF_WASM_OPCODE, // INS_i8x16_relaxed_laneselect
+        insFormat.IF_WASM_OPCODE, // INS_i16x8_relaxed_laneselect
+        insFormat.IF_WASM_OPCODE, // INS_i32x4_relaxed_laneselect
+        insFormat.IF_WASM_OPCODE, // INS_i64x2_relaxed_laneselect
+        insFormat.IF_WASM_OPCODE, // INS_f32x4_relaxed_min
+        insFormat.IF_WASM_OPCODE, // INS_f32x4_relaxed_max
+        insFormat.IF_WASM_OPCODE, // INS_f64x2_relaxed_min
+        insFormat.IF_WASM_OPCODE, // INS_f64x2_relaxed_max
+        insFormat.IF_WASM_OPCODE, // INS_i16x8_relaxed_q15mulr_s
+        insFormat.IF_WASM_OPCODE, // INS_i16x8_relaxed_dot_i8x16_i7x16_s
+        insFormat.IF_WASM_OPCODE, // INS_i32x4_relaxed_dot_i8x16_i7x16_add_s
     ];
 
 }

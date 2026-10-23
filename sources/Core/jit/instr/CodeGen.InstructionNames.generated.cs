@@ -4468,6 +4468,26 @@ public sealed partial class CodeGen
 'i', '3', '2', 'x', '4', '.', 't', 'r', 'u', 'n', 'c', '_', 's', 'a', 't', '_', 'u', '_', 'f', '6', '4', 'x', '2', '_', 'z', 'e', 'r', 'o', '\0', // "i32x4.trunc_sat_u_f64x2_zero"
 'f', '6', '4', 'x', '2', '.', 'c', 'o', 'n', 'v', 'e', 'r', 't', '_', 'l', 'o', 'w', '_', 's', '_', 'i', '3', '2', 'x', '4', '\0', // "f64x2.convert_low_s_i32x4"
 'f', '6', '4', 'x', '2', '.', 'c', 'o', 'n', 'v', 'e', 'r', 't', '_', 'l', 'o', 'w', '_', 'u', '_', 'i', '3', '2', 'x', '4', '\0', // "f64x2.convert_low_u_i32x4"
+'i', '8', 'x', '1', '6', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 's', 'w', 'i', 'z', 'z', 'l', 'e', '\0', // "i8x16.relaxed_swizzle"
+'i', '3', '2', 'x', '4', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 't', 'r', 'u', 'n', 'c', '_', 'f', '3', '2', 'x', '4', '_', 's', '\0', // "i32x4.relaxed_trunc_f32x4_s"
+'i', '3', '2', 'x', '4', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 't', 'r', 'u', 'n', 'c', '_', 'f', '3', '2', 'x', '4', '_', 'u', '\0', // "i32x4.relaxed_trunc_f32x4_u"
+'i', '3', '2', 'x', '4', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 't', 'r', 'u', 'n', 'c', '_', 'f', '6', '4', 'x', '2', '_', 's', '_', 'z', 'e', 'r', 'o', '\0', // "i32x4.relaxed_trunc_f64x2_s_zero"
+'i', '3', '2', 'x', '4', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 't', 'r', 'u', 'n', 'c', '_', 'f', '6', '4', 'x', '2', '_', 'u', '_', 'z', 'e', 'r', 'o', '\0', // "i32x4.relaxed_trunc_f64x2_u_zero"
+'f', '3', '2', 'x', '4', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'm', 'a', 'd', 'd', '\0', // "f32x4.relaxed_madd"
+'f', '3', '2', 'x', '4', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'n', 'm', 'a', 'd', 'd', '\0', // "f32x4.relaxed_nmadd"
+'f', '6', '4', 'x', '2', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'm', 'a', 'd', 'd', '\0', // "f64x2.relaxed_madd"
+'f', '6', '4', 'x', '2', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'n', 'm', 'a', 'd', 'd', '\0', // "f64x2.relaxed_nmadd"
+'i', '8', 'x', '1', '6', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'l', 'a', 'n', 'e', 's', 'e', 'l', 'e', 'c', 't', '\0', // "i8x16.relaxed_laneselect"
+'i', '1', '6', 'x', '8', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'l', 'a', 'n', 'e', 's', 'e', 'l', 'e', 'c', 't', '\0', // "i16x8.relaxed_laneselect"
+'i', '3', '2', 'x', '4', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'l', 'a', 'n', 'e', 's', 'e', 'l', 'e', 'c', 't', '\0', // "i32x4.relaxed_laneselect"
+'i', '6', '4', 'x', '2', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'l', 'a', 'n', 'e', 's', 'e', 'l', 'e', 'c', 't', '\0', // "i64x2.relaxed_laneselect"
+'f', '3', '2', 'x', '4', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'm', 'i', 'n', '\0', // "f32x4.relaxed_min"
+'f', '3', '2', 'x', '4', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'm', 'a', 'x', '\0', // "f32x4.relaxed_max"
+'f', '6', '4', 'x', '2', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'm', 'i', 'n', '\0', // "f64x2.relaxed_min"
+'f', '6', '4', 'x', '2', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'm', 'a', 'x', '\0', // "f64x2.relaxed_max"
+'i', '1', '6', 'x', '8', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'q', '1', '5', 'm', 'u', 'l', 'r', '_', 's', '\0', // "i16x8.relaxed_q15mulr_s"
+'i', '1', '6', 'x', '8', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'd', 'o', 't', '_', 'i', '8', 'x', '1', '6', '_', 'i', '7', 'x', '1', '6', '_', 's', '\0', // "i16x8.relaxed_dot_i8x16_i7x16_s"
+'i', '3', '2', 'x', '4', '.', 'r', 'e', 'l', 'a', 'x', 'e', 'd', '_', 'd', 'o', 't', '_', 'i', '8', 'x', '1', '6', '_', 'i', '7', 'x', '1', '6', '_', 'a', 'd', 'd', '_', 's', '\0', // "i32x4.relaxed_dot_i8x16_i7x16_add_s"
     ];
 
     private static ReadOnlySpan<int> s_instructionNameRanges
@@ -11285,5 +11305,25 @@ public sealed partial class CodeGen
         31854, 28, // INS_i32x4_trunc_sat_u_f64x2_zero
         31883, 25, // INS_f64x2_convert_low_s_i32x4
         31909, 25, // INS_f64x2_convert_low_u_i32x4
+        31935, 21, // INS_i8x16_relaxed_swizzle
+        31957, 27, // INS_i32x4_relaxed_trunc_f32x4_s
+        31985, 27, // INS_i32x4_relaxed_trunc_f32x4_u
+        32013, 32, // INS_i32x4_relaxed_trunc_f64x2_s_zero
+        32046, 32, // INS_i32x4_relaxed_trunc_f64x2_u_zero
+        32079, 18, // INS_f32x4_relaxed_madd
+        32098, 19, // INS_f32x4_relaxed_nmadd
+        32118, 18, // INS_f64x2_relaxed_madd
+        32137, 19, // INS_f64x2_relaxed_nmadd
+        32157, 24, // INS_i8x16_relaxed_laneselect
+        32182, 24, // INS_i16x8_relaxed_laneselect
+        32207, 24, // INS_i32x4_relaxed_laneselect
+        32232, 24, // INS_i64x2_relaxed_laneselect
+        32257, 17, // INS_f32x4_relaxed_min
+        32275, 17, // INS_f32x4_relaxed_max
+        32293, 17, // INS_f64x2_relaxed_min
+        32311, 17, // INS_f64x2_relaxed_max
+        32329, 23, // INS_i16x8_relaxed_q15mulr_s
+        32353, 31, // INS_i16x8_relaxed_dot_i8x16_i7x16_s
+        32385, 35, // INS_i32x4_relaxed_dot_i8x16_i7x16_add_s
     ];
 }

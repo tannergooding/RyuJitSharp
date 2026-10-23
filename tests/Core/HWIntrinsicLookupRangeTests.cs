@@ -3,6 +3,7 @@
 using NUnit.Framework;
 using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.NamedIntrinsic;
+using static RyuJitSharp.instruction;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
@@ -36,6 +37,16 @@ internal static unsafe class HWIntrinsicLookupRangeTests
         else if (Configuration.TARGET_WASM)
         {
             Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_PackedSimd, "Add"u8), Is.EqualTo(NI_PackedSimd_Add));
+
+            CORINFO_SIG_INFO relaxedSig = default;
+            relaxedSig.numArgs = 1;
+            Assert.That(
+                HWIntrinsicInfo.LookupId(&relaxedSig, InstructionSet_RelaxedSimd, "ConvertToInt32Native"u8),
+                Is.EqualTo(NI_RelaxedSimd_ConvertToInt32Native));
+            Assert.That(HWIntrinsicInfo.lookupIsa(NI_RelaxedSimd_SwizzleNative), Is.EqualTo(InstructionSet_RelaxedSimd));
+            Assert.That(
+                HWIntrinsicInfo.lookupIns(NI_RelaxedSimd_SwizzleNative, TYP_BYTE, compiler: null),
+                Is.EqualTo(INS_i8x16_relaxed_swizzle));
         }
         else
         {
@@ -71,6 +82,8 @@ internal static unsafe class HWIntrinsicLookupRangeTests
             Assert.That(HWIntrinsicInfo.NeedsNormalizeSmallTypeToInt(NI_PackedSimd_Add), Is.False);
             Assert.That(HWIntrinsicInfo.AvxOnlyCompatible(NI_PackedSimd_Add), Is.False);
             Assert.That(HWIntrinsicInfo.MaybeMemoryStore(NI_PackedSimd_Store), Is.False);
+            Assert.That(HWIntrinsicInfo.IsCommutative(NI_RelaxedSimd_MaxNative), Is.True);
+            Assert.That(HWIntrinsicInfo.HasImmediateOperand(NI_RelaxedSimd_SwizzleNative), Is.False);
         }
         else
         {
@@ -112,14 +125,14 @@ internal static unsafe class HWIntrinsicLookupRangeTests
         }
         else if (Configuration.TARGET_WASM)
         {
-            expectedCount = 208;
+            expectedCount = 219;
             if (TestConfiguration.IsDebug)
             {
-                expectedHash = 0x2631CE8A5AACB2F1UL;
+                expectedHash = 0x30AF92507D4DF48BUL;
             }
             else
             {
-                expectedHash = 0xFF4D09D72ECED4A5UL;
+                expectedHash = 0xC5CE14001D135046UL;
             }
         }
         else

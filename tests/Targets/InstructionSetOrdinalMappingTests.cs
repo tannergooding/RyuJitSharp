@@ -78,6 +78,7 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         Assert.That((int)CORINFO_InstructionSet.InstructionSet_ARM64_Fp16, Is.EqualTo(7));
         Assert.That((int)CORINFO_InstructionSet.InstructionSet_RISCV64_Zba, Is.EqualTo(2));
         Assert.That((int)CORINFO_InstructionSet.InstructionSet_WASM32_PackedSimd, Is.EqualTo(2));
+        Assert.That((int)CORINFO_InstructionSet.InstructionSet_WASM32_RelaxedSimd, Is.EqualTo(4));
 
         if (Configuration.TARGET_XARCH)
         {
@@ -105,7 +106,38 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         else if (Configuration.TARGET_WASM)
         {
             AssertNativeOrdinal(InstructionSet_PackedSimd, 2);
+            AssertNativeOrdinal(InstructionSet_RelaxedSimd, 4);
         }
+    }
+
+    [Test]
+    public static void WasmRelaxedSimdPreservesItsAbiAndReadyToRunIdentities()
+    {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the Wasm target.");
+
+        Assert.That((int)ReadyToRunInstructionSet.READYTORUN_INSTRUCTION_RelaxedSimd, Is.EqualTo(96));
+        Assert.That(Globals.InstructionSetToString(InstructionSet_RelaxedSimd), Is.EqualTo("RelaxedSimd"));
+        Assert.That(
+            Globals.InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet.READYTORUN_INSTRUCTION_RelaxedSimd),
+            Is.EqualTo(InstructionSet_RelaxedSimd));
+
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        Assert.That(LookupInstructionSet(compiler, "RelaxedSimd"u8), Is.EqualTo(InstructionSet_RelaxedSimd));
+
+        var validFlags = default(CORINFO_InstructionSetFlags);
+        validFlags.AddInstructionSet(InstructionSet_WasmBase);
+        validFlags.AddInstructionSet(InstructionSet_PackedSimd);
+        validFlags.AddInstructionSet(InstructionSet_RelaxedSimd);
+        validFlags = Globals.EnsureInstructionSetFlagsAreValid(validFlags);
+        Assert.That(validFlags.HasInstructionSet(InstructionSet_WasmBase), Is.True);
+        Assert.That(validFlags.HasInstructionSet(InstructionSet_PackedSimd), Is.True);
+        Assert.That(validFlags.HasInstructionSet(InstructionSet_RelaxedSimd), Is.True);
+
+        var missingPackedSimd = default(CORINFO_InstructionSetFlags);
+        missingPackedSimd.AddInstructionSet(InstructionSet_WasmBase);
+        missingPackedSimd.AddInstructionSet(InstructionSet_RelaxedSimd);
+        missingPackedSimd = Globals.EnsureInstructionSetFlagsAreValid(missingPackedSimd);
+        Assert.That(missingPackedSimd.HasInstructionSet(InstructionSet_RelaxedSimd), Is.False);
     }
 
     [Test]
@@ -204,6 +236,7 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         else if (Configuration.TARGET_WASM)
         {
             Assert.That(Globals.InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet.READYTORUN_INSTRUCTION_PackedSimd), Is.EqualTo(InstructionSet_PackedSimd));
+            Assert.That(Globals.InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet.READYTORUN_INSTRUCTION_RelaxedSimd), Is.EqualTo(InstructionSet_RelaxedSimd));
         }
     }
 
@@ -255,6 +288,9 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         Assert.That(Globals.TryGetNativeInstructionSetOrdinal(instructionSet, out var nativeOrdinal), Is.True);
         Assert.That(nativeOrdinal, Is.EqualTo(expectedNativeOrdinal));
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "lookupInstructionSet")]
+    private static extern ManagedInstructionSet LookupInstructionSet(Compiler compiler, ReadOnlySpan<byte> className);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte Notify(ICorJitInfo* self, CORINFO_InstructionSet instructionSet, byte supported, byte preserve)

@@ -42,6 +42,12 @@ internal static unsafe class AbiHeaderTests
     }
 
     [Test]
+    public static void JitEeVersionIdentifierMatchesTheNativeContract()
+    {
+        Assert.That(JITEEVersionIdentifier, Is.EqualTo(new Guid("D55CA4F5-C533-4C6C-A211-521303884BDB")));
+    }
+
+    [Test]
     public static void DefaultInformationHasNoSegments()
     {
         AbiPassingInformation info = default;
