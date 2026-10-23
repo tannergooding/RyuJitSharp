@@ -1973,6 +1973,17 @@ public partial struct HWIntrinsicInfo
         ushort.MaxValue, // NI_PackedSimd_Xor
         ushort.MaxValue, // NI_PackedSimd_ZeroExtendWideningLower
         ushort.MaxValue, // NI_PackedSimd_ZeroExtendWideningUpper
+        ushort.MaxValue, // NI_RelaxedSimd_ConvertToInt32Native
+        ushort.MaxValue, // NI_RelaxedSimd_ConvertToUInt32Native
+        ushort.MaxValue, // NI_RelaxedSimd_DotProductAddNative
+        ushort.MaxValue, // NI_RelaxedSimd_DotProductNative
+        ushort.MaxValue, // NI_RelaxedSimd_LaneSelectNative
+        ushort.MaxValue, // NI_RelaxedSimd_MaxNative
+        ushort.MaxValue, // NI_RelaxedSimd_MinNative
+        ushort.MaxValue, // NI_RelaxedSimd_MultiplyAddEstimate
+        ushort.MaxValue, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        ushort.MaxValue, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        ushort.MaxValue, // NI_RelaxedSimd_SwizzleNative
         ushort.MaxValue, // NI_WasmBase_LeadingZeroCount
         ushort.MaxValue, // NI_WasmBase_TrailingZeroCount
     ];
@@ -4780,6 +4791,17 @@ public partial struct HWIntrinsicInfo
         ushort.MaxValue, // NI_PackedSimd_Xor
         ushort.MaxValue, // NI_PackedSimd_ZeroExtendWideningLower
         ushort.MaxValue, // NI_PackedSimd_ZeroExtendWideningUpper
+        ushort.MaxValue, // NI_RelaxedSimd_ConvertToInt32Native
+        ushort.MaxValue, // NI_RelaxedSimd_ConvertToUInt32Native
+        ushort.MaxValue, // NI_RelaxedSimd_DotProductAddNative
+        ushort.MaxValue, // NI_RelaxedSimd_DotProductNative
+        ushort.MaxValue, // NI_RelaxedSimd_LaneSelectNative
+        ushort.MaxValue, // NI_RelaxedSimd_MaxNative
+        ushort.MaxValue, // NI_RelaxedSimd_MinNative
+        ushort.MaxValue, // NI_RelaxedSimd_MultiplyAddEstimate
+        ushort.MaxValue, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        ushort.MaxValue, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        ushort.MaxValue, // NI_RelaxedSimd_SwizzleNative
         ushort.MaxValue, // NI_WasmBase_LeadingZeroCount
         ushort.MaxValue, // NI_WasmBase_TrailingZeroCount
     ];
@@ -7960,8 +7982,19 @@ public partial struct HWIntrinsicInfo
         203, // NI_PackedSimd_Xor
         204, // NI_PackedSimd_ZeroExtendWideningLower
         205, // NI_PackedSimd_ZeroExtendWideningUpper
-        206, // NI_WasmBase_LeadingZeroCount
-        207, // NI_WasmBase_TrailingZeroCount
+        206, // NI_RelaxedSimd_ConvertToInt32Native
+        207, // NI_RelaxedSimd_ConvertToUInt32Native
+        208, // NI_RelaxedSimd_DotProductAddNative
+        209, // NI_RelaxedSimd_DotProductNative
+        210, // NI_RelaxedSimd_LaneSelectNative
+        211, // NI_RelaxedSimd_MaxNative
+        212, // NI_RelaxedSimd_MinNative
+        213, // NI_RelaxedSimd_MultiplyAddEstimate
+        214, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        215, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        216, // NI_RelaxedSimd_SwizzleNative
+        217, // NI_WasmBase_LeadingZeroCount
+        218, // NI_WasmBase_TrailingZeroCount
     ];
 
     private static ReadOnlySpan<ushort> s_WasmUnionIndexByTableIndex => [
@@ -8171,8 +8204,19 @@ public partial struct HWIntrinsicInfo
         1960, // NI_PackedSimd_Xor
         1961, // NI_PackedSimd_ZeroExtendWideningLower
         1962, // NI_PackedSimd_ZeroExtendWideningUpper
-        1963, // NI_WasmBase_LeadingZeroCount
-        1964, // NI_WasmBase_TrailingZeroCount
+        1963, // NI_RelaxedSimd_ConvertToInt32Native
+        1964, // NI_RelaxedSimd_ConvertToUInt32Native
+        1965, // NI_RelaxedSimd_DotProductAddNative
+        1966, // NI_RelaxedSimd_DotProductNative
+        1967, // NI_RelaxedSimd_LaneSelectNative
+        1968, // NI_RelaxedSimd_MaxNative
+        1969, // NI_RelaxedSimd_MinNative
+        1970, // NI_RelaxedSimd_MultiplyAddEstimate
+        1971, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        1972, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        1973, // NI_RelaxedSimd_SwizzleNative
+        1974, // NI_WasmBase_LeadingZeroCount
+        1975, // NI_WasmBase_TrailingZeroCount
     ];
 
 }

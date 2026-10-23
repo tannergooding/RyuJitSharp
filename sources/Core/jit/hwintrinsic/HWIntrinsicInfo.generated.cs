@@ -20210,6 +20210,17 @@ public partial struct HWIntrinsicInfo
         HW_Category_SIMD, // NI_PackedSimd_Xor
         HW_Category_SIMD, // NI_PackedSimd_ZeroExtendWideningLower
         HW_Category_SIMD, // NI_PackedSimd_ZeroExtendWideningUpper
+        HW_Category_SIMD, // NI_RelaxedSimd_ConvertToInt32Native
+        HW_Category_SIMD, // NI_RelaxedSimd_ConvertToUInt32Native
+        HW_Category_SIMD, // NI_RelaxedSimd_DotProductAddNative
+        HW_Category_SIMD, // NI_RelaxedSimd_DotProductNative
+        HW_Category_SIMD, // NI_RelaxedSimd_LaneSelectNative
+        HW_Category_SIMD, // NI_RelaxedSimd_MaxNative
+        HW_Category_SIMD, // NI_RelaxedSimd_MinNative
+        HW_Category_SIMD, // NI_RelaxedSimd_MultiplyAddEstimate
+        HW_Category_SIMD, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        HW_Category_SIMD, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        HW_Category_SIMD, // NI_RelaxedSimd_SwizzleNative
         HW_Category_Scalar, // NI_WasmBase_LeadingZeroCount
         HW_Category_Scalar, // NI_WasmBase_TrailingZeroCount
     ];
@@ -20421,6 +20432,17 @@ public partial struct HWIntrinsicInfo
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_PackedSimd_Xor
         HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ZeroExtendWideningLower
         HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ZeroExtendWideningUpper
+        HW_Flag_BaseTypeFromFirstArg, // NI_RelaxedSimd_ConvertToInt32Native
+        HW_Flag_BaseTypeFromFirstArg, // NI_RelaxedSimd_ConvertToUInt32Native
+        HW_Flag_BaseTypeFromFirstArg, // NI_RelaxedSimd_DotProductAddNative
+        HW_Flag_BaseTypeFromFirstArg, // NI_RelaxedSimd_DotProductNative
+        HW_Flag_BaseTypeFromFirstArg, // NI_RelaxedSimd_LaneSelectNative
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_RelaxedSimd_MaxNative
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_RelaxedSimd_MinNative
+        HW_Flag_BaseTypeFromFirstArg, // NI_RelaxedSimd_MultiplyAddEstimate
+        HW_Flag_BaseTypeFromFirstArg, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        HW_Flag_BaseTypeFromFirstArg, // NI_RelaxedSimd_SwizzleNative
         HW_Flag_InvalidNodeId | HW_Flag_NoFloatingPointUsed, // NI_WasmBase_LeadingZeroCount
         HW_Flag_InvalidNodeId | HW_Flag_NoFloatingPointUsed, // NI_WasmBase_TrailingZeroCount
     ];
@@ -20632,6 +20654,17 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_PackedSimd_Xor
         unchecked((byte)(-1)), // NI_PackedSimd_ZeroExtendWideningLower
         unchecked((byte)(-1)), // NI_PackedSimd_ZeroExtendWideningUpper
+        unchecked((byte)(-1)), // NI_RelaxedSimd_ConvertToInt32Native
+        unchecked((byte)(-1)), // NI_RelaxedSimd_ConvertToUInt32Native
+        unchecked((byte)(-1)), // NI_RelaxedSimd_DotProductAddNative
+        unchecked((byte)(-1)), // NI_RelaxedSimd_DotProductNative
+        unchecked((byte)(-1)), // NI_RelaxedSimd_LaneSelectNative
+        unchecked((byte)(-1)), // NI_RelaxedSimd_MaxNative
+        unchecked((byte)(-1)), // NI_RelaxedSimd_MinNative
+        unchecked((byte)(-1)), // NI_RelaxedSimd_MultiplyAddEstimate
+        unchecked((byte)(-1)), // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        unchecked((byte)(-1)), // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        unchecked((byte)(-1)), // NI_RelaxedSimd_SwizzleNative
         unchecked((byte)(-1)), // NI_WasmBase_LeadingZeroCount
         unchecked((byte)(-1)), // NI_WasmBase_TrailingZeroCount
     ];
@@ -20843,6 +20876,17 @@ public partial struct HWIntrinsicInfo
         284, 284, 284, 284, 284, 284, 284, 284, 284, 284, // NI_PackedSimd_Xor
         340, 340, 368, 368, 391, 391, 0, 0, 0, 0, // NI_PackedSimd_ZeroExtendWideningLower
         341, 341, 369, 369, 392, 392, 0, 0, 0, 0, // NI_PackedSimd_ZeroExtendWideningUpper
+        0, 0, 0, 0, 0, 0, 0, 0, 434, 436, // NI_RelaxedSimd_ConvertToInt32Native
+        0, 0, 0, 0, 0, 0, 0, 0, 435, 437, // NI_RelaxedSimd_ConvertToUInt32Native
+        452, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_RelaxedSimd_DotProductAddNative
+        451, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_RelaxedSimd_DotProductNative
+        442, 442, 443, 443, 444, 444, 445, 445, 0, 0, // NI_RelaxedSimd_LaneSelectNative
+        0, 0, 0, 0, 0, 0, 0, 0, 447, 449, // NI_RelaxedSimd_MaxNative
+        0, 0, 0, 0, 0, 0, 0, 0, 446, 448, // NI_RelaxedSimd_MinNative
+        0, 0, 0, 0, 0, 0, 0, 0, 438, 440, // NI_RelaxedSimd_MultiplyAddEstimate
+        0, 0, 0, 0, 0, 0, 0, 0, 439, 441, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        0, 0, 450, 0, 0, 0, 0, 0, 0, 0, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        433, 433, 0, 0, 0, 0, 0, 0, 0, 0, // NI_RelaxedSimd_SwizzleNative
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_WasmBase_LeadingZeroCount
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_WasmBase_TrailingZeroCount
     ];
@@ -21054,6 +21098,17 @@ public partial struct HWIntrinsicInfo
         InstructionSet_PackedSimd, // NI_PackedSimd_Xor
         InstructionSet_PackedSimd, // NI_PackedSimd_ZeroExtendWideningLower
         InstructionSet_PackedSimd, // NI_PackedSimd_ZeroExtendWideningUpper
+        InstructionSet_RelaxedSimd, // NI_RelaxedSimd_ConvertToInt32Native
+        InstructionSet_RelaxedSimd, // NI_RelaxedSimd_ConvertToUInt32Native
+        InstructionSet_RelaxedSimd, // NI_RelaxedSimd_DotProductAddNative
+        InstructionSet_RelaxedSimd, // NI_RelaxedSimd_DotProductNative
+        InstructionSet_RelaxedSimd, // NI_RelaxedSimd_LaneSelectNative
+        InstructionSet_RelaxedSimd, // NI_RelaxedSimd_MaxNative
+        InstructionSet_RelaxedSimd, // NI_RelaxedSimd_MinNative
+        InstructionSet_RelaxedSimd, // NI_RelaxedSimd_MultiplyAddEstimate
+        InstructionSet_RelaxedSimd, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        InstructionSet_RelaxedSimd, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        InstructionSet_RelaxedSimd, // NI_RelaxedSimd_SwizzleNative
         InstructionSet_WasmBase, // NI_WasmBase_LeadingZeroCount
         InstructionSet_WasmBase, // NI_WasmBase_TrailingZeroCount
     ];
@@ -21265,6 +21320,17 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_PackedSimd_Xor
         unchecked((byte)(-1)), // NI_PackedSimd_ZeroExtendWideningLower
         unchecked((byte)(-1)), // NI_PackedSimd_ZeroExtendWideningUpper
+        unchecked((byte)(-1)), // NI_RelaxedSimd_ConvertToInt32Native
+        unchecked((byte)(-1)), // NI_RelaxedSimd_ConvertToUInt32Native
+        unchecked((byte)(-1)), // NI_RelaxedSimd_DotProductAddNative
+        unchecked((byte)(-1)), // NI_RelaxedSimd_DotProductNative
+        unchecked((byte)(-1)), // NI_RelaxedSimd_LaneSelectNative
+        unchecked((byte)(-1)), // NI_RelaxedSimd_MaxNative
+        unchecked((byte)(-1)), // NI_RelaxedSimd_MinNative
+        unchecked((byte)(-1)), // NI_RelaxedSimd_MultiplyAddEstimate
+        unchecked((byte)(-1)), // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        unchecked((byte)(-1)), // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        unchecked((byte)(-1)), // NI_RelaxedSimd_SwizzleNative
         unchecked((byte)(-1)), // NI_WasmBase_LeadingZeroCount
         unchecked((byte)(-1)), // NI_WasmBase_TrailingZeroCount
     ];
@@ -21462,6 +21528,12 @@ public partial struct HWIntrinsicInfo
 'X', 'o', 'r', '\0', // NI_PackedSimd_Xor
 'Z', 'e', 'r', 'o', 'E', 'x', 't', 'e', 'n', 'd', 'W', 'i', 'd', 'e', 'n', 'i', 'n', 'g', 'L', 'o', 'w', 'e', 'r', '\0', // NI_PackedSimd_ZeroExtendWideningLower
 'Z', 'e', 'r', 'o', 'E', 'x', 't', 'e', 'n', 'd', 'W', 'i', 'd', 'e', 'n', 'i', 'n', 'g', 'U', 'p', 'p', 'e', 'r', '\0', // NI_PackedSimd_ZeroExtendWideningUpper
+'D', 'o', 't', 'P', 'r', 'o', 'd', 'u', 'c', 't', 'A', 'd', 'd', 'N', 'a', 't', 'i', 'v', 'e', '\0', // NI_RelaxedSimd_DotProductAddNative
+'D', 'o', 't', 'P', 'r', 'o', 'd', 'u', 'c', 't', 'N', 'a', 't', 'i', 'v', 'e', '\0', // NI_RelaxedSimd_DotProductNative
+'L', 'a', 'n', 'e', 'S', 'e', 'l', 'e', 'c', 't', 'N', 'a', 't', 'i', 'v', 'e', '\0', // NI_RelaxedSimd_LaneSelectNative
+'M', 'u', 'l', 't', 'i', 'p', 'l', 'y', 'A', 'd', 'd', 'N', 'e', 'g', 'a', 't', 'e', 'd', 'E', 's', 't', 'i', 'm', 'a', 't', 'e', '\0', // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+'M', 'u', 'l', 't', 'i', 'p', 'l', 'y', 'R', 'o', 'u', 'n', 'd', 'e', 'd', 'Q', '1', '5', 'N', 'a', 't', 'i', 'v', 'e', '\0', // NI_RelaxedSimd_MultiplyRoundedQ15Native
+'S', 'w', 'i', 'z', 'z', 'l', 'e', 'N', 'a', 't', 'i', 'v', 'e', '\0', // NI_RelaxedSimd_SwizzleNative
 'L', 'e', 'a', 'd', 'i', 'n', 'g', 'Z', 'e', 'r', 'o', 'C', 'o', 'u', 'n', 't', '\0', // NI_WasmBase_LeadingZeroCount
 'T', 'r', 'a', 'i', 'l', 'i', 'n', 'g', 'Z', 'e', 'r', 'o', 'C', 'o', 'u', 'n', 't', '\0', // NI_WasmBase_TrailingZeroCount
     ];
@@ -21673,8 +21745,19 @@ public partial struct HWIntrinsicInfo
         2567, 3, // NI_PackedSimd_Xor
         2571, 23, // NI_PackedSimd_ZeroExtendWideningLower
         2595, 23, // NI_PackedSimd_ZeroExtendWideningUpper
-        2619, 16, // NI_WasmBase_LeadingZeroCount
-        2636, 17, // NI_WasmBase_TrailingZeroCount
+        319, 20, // NI_RelaxedSimd_ConvertToInt32Native
+        408, 21, // NI_RelaxedSimd_ConvertToUInt32Native
+        2619, 19, // NI_RelaxedSimd_DotProductAddNative
+        2639, 16, // NI_RelaxedSimd_DotProductNative
+        2656, 16, // NI_RelaxedSimd_LaneSelectNative
+        1079, 9, // NI_RelaxedSimd_MaxNative
+        1135, 9, // NI_RelaxedSimd_MinNative
+        1155, 19, // NI_RelaxedSimd_MultiplyAddEstimate
+        2673, 26, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        2700, 24, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        2725, 13, // NI_RelaxedSimd_SwizzleNative
+        2739, 16, // NI_WasmBase_LeadingZeroCount
+        2756, 17, // NI_WasmBase_TrailingZeroCount
     ];
 
     private static ReadOnlySpan<byte> s_WasmNumArgs => [
@@ -21884,6 +21967,17 @@ public partial struct HWIntrinsicInfo
         2, // NI_PackedSimd_Xor
         1, // NI_PackedSimd_ZeroExtendWideningLower
         1, // NI_PackedSimd_ZeroExtendWideningUpper
+        1, // NI_RelaxedSimd_ConvertToInt32Native
+        1, // NI_RelaxedSimd_ConvertToUInt32Native
+        3, // NI_RelaxedSimd_DotProductAddNative
+        2, // NI_RelaxedSimd_DotProductNative
+        3, // NI_RelaxedSimd_LaneSelectNative
+        2, // NI_RelaxedSimd_MaxNative
+        2, // NI_RelaxedSimd_MinNative
+        3, // NI_RelaxedSimd_MultiplyAddEstimate
+        3, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        2, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        2, // NI_RelaxedSimd_SwizzleNative
         1, // NI_WasmBase_LeadingZeroCount
         1, // NI_WasmBase_TrailingZeroCount
     ];
@@ -22095,6 +22189,17 @@ public partial struct HWIntrinsicInfo
         16, // NI_PackedSimd_Xor
         16, // NI_PackedSimd_ZeroExtendWideningLower
         16, // NI_PackedSimd_ZeroExtendWideningUpper
+        16, // NI_RelaxedSimd_ConvertToInt32Native
+        16, // NI_RelaxedSimd_ConvertToUInt32Native
+        16, // NI_RelaxedSimd_DotProductAddNative
+        16, // NI_RelaxedSimd_DotProductNative
+        16, // NI_RelaxedSimd_LaneSelectNative
+        16, // NI_RelaxedSimd_MaxNative
+        16, // NI_RelaxedSimd_MinNative
+        16, // NI_RelaxedSimd_MultiplyAddEstimate
+        16, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        16, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        16, // NI_RelaxedSimd_SwizzleNative
         0, // NI_WasmBase_LeadingZeroCount
         0, // NI_WasmBase_TrailingZeroCount
     ];
@@ -23033,6 +23138,7 @@ public partial struct HWIntrinsicInfo
         65535, 65535, // InstructionSet_Zicond
         65535, 65535, // InstructionSet_WasmBase
         65535, 65535, // InstructionSet_PackedSimd
+        65535, 65535, // InstructionSet_RelaxedSimd
     ];
 
     private static ReadOnlySpan<ushort> s_arm64IsaRangeBounds => [
@@ -23129,6 +23235,7 @@ public partial struct HWIntrinsicInfo
         65535, 65535, // InstructionSet_Zicond
         65535, 65535, // InstructionSet_WasmBase
         65535, 65535, // InstructionSet_PackedSimd
+        65535, 65535, // InstructionSet_RelaxedSimd
     ];
 
     private static ReadOnlySpan<ushort> s_wasmIsaRangeBounds => [
@@ -23223,8 +23330,9 @@ public partial struct HWIntrinsicInfo
         65535, 65535, // InstructionSet_Zbb
         65535, 65535, // InstructionSet_Zbs
         65535, 65535, // InstructionSet_Zicond
-        206, 207, // InstructionSet_WasmBase
+        217, 218, // InstructionSet_WasmBase
         142, 205, // InstructionSet_PackedSimd
+        206, 216, // InstructionSet_RelaxedSimd
     ];
 
 

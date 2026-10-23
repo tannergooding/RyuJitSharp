@@ -194,6 +194,7 @@ public enum ReadyToRunInstructionSet
     READYTORUN_INSTRUCTION_Cssc = 93,
 
     READYTORUN_INSTRUCTION_Zicond = 94,
-
     READYTORUN_INSTRUCTION_Fp16 = 95,
-}
+    READYTORUN_INSTRUCTION_RelaxedSimd = 96,
+
+};

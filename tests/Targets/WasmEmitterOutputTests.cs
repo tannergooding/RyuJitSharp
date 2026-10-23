@@ -108,6 +108,47 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
+    [TestCase(INS_i8x16_relaxed_swizzle, 0x100)]
+    [TestCase(INS_i32x4_relaxed_trunc_f32x4_s, 0x101)]
+    [TestCase(INS_i32x4_relaxed_trunc_f32x4_u, 0x102)]
+    [TestCase(INS_i32x4_relaxed_trunc_f64x2_s_zero, 0x103)]
+    [TestCase(INS_i32x4_relaxed_trunc_f64x2_u_zero, 0x104)]
+    [TestCase(INS_f32x4_relaxed_madd, 0x105)]
+    [TestCase(INS_f32x4_relaxed_nmadd, 0x106)]
+    [TestCase(INS_f64x2_relaxed_madd, 0x107)]
+    [TestCase(INS_f64x2_relaxed_nmadd, 0x108)]
+    [TestCase(INS_i8x16_relaxed_laneselect, 0x109)]
+    [TestCase(INS_i16x8_relaxed_laneselect, 0x10A)]
+    [TestCase(INS_i32x4_relaxed_laneselect, 0x10B)]
+    [TestCase(INS_i64x2_relaxed_laneselect, 0x10C)]
+    [TestCase(INS_f32x4_relaxed_min, 0x10D)]
+    [TestCase(INS_f32x4_relaxed_max, 0x10E)]
+    [TestCase(INS_f64x2_relaxed_min, 0x10F)]
+    [TestCase(INS_f64x2_relaxed_max, 0x110)]
+    [TestCase(INS_i16x8_relaxed_q15mulr_s, 0x111)]
+    [TestCase(INS_i16x8_relaxed_dot_i8x16_i7x16_s, 0x112)]
+    [TestCase(INS_i32x4_relaxed_dot_i8x16_i7x16_add_s, 0x113)]
+    public static void RelaxedSimdInstructionsUseTheirPinnedPrefixedOpcodes(instruction ins, int opcode)
+    {
+        WithEmitter((compiler, emitter) =>
+        {
+            var buffer = stackalloc byte[4];
+            new Span<byte>(buffer, 4).Fill(0xA5);
+            emitter.writeableOffset = 0;
+            emitter.emitCodeBlock = buffer;
+
+            var descriptor = TestEmitter.Constant(0);
+            descriptor.idIns(ins);
+            descriptor.idInsFmt(Emitter.insFormat.IF_WASM_OPCODE);
+            var next = buffer;
+            _ = EmitOutputInstrWasm(emitter, new insGroup(), descriptor, &next);
+
+            Assert.That((nuint)next, Is.EqualTo((nuint)(buffer + 3)));
+            Assert.That(new ReadOnlySpan<byte>(buffer, 3).ToArray(),
+                Is.EqualTo(new byte[] { 0xFD, unchecked((byte)((opcode & 0x7F) | 0x80)), unchecked((byte)(opcode >> 7)) }));
+        });
+    }
+
     [TestCase(true, INS_i32_const)]
     [TestCase(false, INS_global_get)]
     public static void ContainedHandleIndirectionUsesTheTargetAddressBase(

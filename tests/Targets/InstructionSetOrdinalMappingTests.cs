@@ -78,6 +78,7 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         Assert.That((int)CORINFO_InstructionSet.InstructionSet_ARM64_Fp16, Is.EqualTo(7));
         Assert.That((int)CORINFO_InstructionSet.InstructionSet_RISCV64_Zba, Is.EqualTo(2));
         Assert.That((int)CORINFO_InstructionSet.InstructionSet_WASM32_PackedSimd, Is.EqualTo(2));
+        Assert.That((int)CORINFO_InstructionSet.InstructionSet_WASM32_RelaxedSimd, Is.EqualTo(4));
 
         if (Configuration.TARGET_XARCH)
         {
@@ -105,6 +106,7 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         else if (Configuration.TARGET_WASM)
         {
             AssertNativeOrdinal(InstructionSet_PackedSimd, 2);
+            AssertNativeOrdinal(InstructionSet_RelaxedSimd, 4);
         }
     }
 
@@ -180,9 +182,17 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         }
         else if (Configuration.TARGET_WASM)
         {
+            flags.AddInstructionSet(InstructionSet_WasmBase);
             flags.AddInstructionSet(InstructionSet_PackedSimd);
+            flags.AddInstructionSet(InstructionSet_RelaxedSimd);
             flags.Set64BitInstructionSetVariants();
             Assert.That(flags.HasInstructionSet(InstructionSet_PackedSimd), Is.True);
+            Assert.That(flags.HasInstructionSet(InstructionSet_RelaxedSimd), Is.True);
+
+            var incompleteFlags = default(CORINFO_InstructionSetFlags);
+            incompleteFlags.AddInstructionSet(InstructionSet_RelaxedSimd);
+            incompleteFlags = Globals.EnsureInstructionSetFlagsAreValid(incompleteFlags);
+            Assert.That(incompleteFlags.HasInstructionSet(InstructionSet_RelaxedSimd), Is.False);
         }
     }
 
@@ -204,6 +214,8 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         else if (Configuration.TARGET_WASM)
         {
             Assert.That(Globals.InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet.READYTORUN_INSTRUCTION_PackedSimd), Is.EqualTo(InstructionSet_PackedSimd));
+            Assert.That(Globals.InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet.READYTORUN_INSTRUCTION_RelaxedSimd),
+                Is.EqualTo(InstructionSet_RelaxedSimd));
         }
     }
 

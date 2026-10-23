@@ -103,6 +103,7 @@ public enum ManagedInstructionSet
     InstructionSet_Zicond = 90,
     InstructionSet_WasmBase = 91,
     InstructionSet_PackedSimd = 92,
+    InstructionSet_RelaxedSimd = 93,
 
 
     InstructionSet_Vector = 126,
@@ -208,6 +209,7 @@ public enum CORINFO_InstructionSet : int
     InstructionSet_WASM32_WasmBase = 1,
     InstructionSet_WASM32_PackedSimd = 2,
     InstructionSet_WASM32_Vector128 = 3,
+    InstructionSet_WASM32_RelaxedSimd = 4,
 
     Vector = 126,
     None = 127,

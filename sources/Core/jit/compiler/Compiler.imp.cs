@@ -23559,6 +23559,10 @@ public partial class Compiler
             {
                 return InstructionSet_PackedSimd;
             }
+            if (NameEquals(className, "RelaxedSimd"u8))
+            {
+                return InstructionSet_RelaxedSimd;
+            }
             if (NameEquals(className, "Vector128"u8) || NameEquals(className, "Vector128`1"u8))
             {
                 return InstructionSet_Vector128;

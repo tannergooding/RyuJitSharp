@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "bc980bc92e8093ca338810351b3db05dc073f1fa",
-    "targetObservedAt": "2026-10-22",
-    "reconciledCommit": "bc980bc92e8093ca338810351b3db05dc073f1fa"
+    "targetCommit": "10f036b868ac4733c9554f0f56af47f0fdb4adc1",
+    "targetObservedAt": "2026-10-23",
+    "reconciledCommit": "10f036b868ac4733c9554f0f56af47f0fdb4adc1"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Resume full-runtime parity at the unresolved dynamic TLS input-ownership boundary. Keep D015 accepted and preserve the residual exact-pinned FullDump diagnostic, formatting, and node-ID differences. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested. The source refresh through bc980bc9 is reconciled, but source synchronization and focused tests do not establish full machine-code or runtime parity.",
+    "nextAction": "Resume full-runtime parity at the unresolved dynamic TLS input-ownership boundary. Keep D015 accepted and preserve the residual exact-pinned FullDump diagnostic, formatting, and node-ID differences. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested. Oracle source through 10f036b8 is reconciled; the Core Debug/Release builds, focused Core tests, and focused browser-wasm target tests pass, but source synchronization and focused tests do not establish full machine-code or runtime parity.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": null,
     "evidenceLinks": [
@@ -22,7 +22,9 @@
       "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\manifest.json",
       "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\d015-normalized-importation-comparison.json",
       "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\d015-normalized-diff-summary.json",
-      "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\d015-normalized-full-dump.diff"
+      "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\d015-normalized-full-dump.diff",
+      "artifacts\\oracle-refresh-10f036-evidence.json",
+      "artifacts\\oracle-refresh-10f036-hunk-dispositions.md"
     ],
 
     "validationGaps": [
@@ -1497,7 +1499,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845",
-    "reconciledCommit": "bc980bc92e8093ca338810351b3db05dc073f1fa",
+    "reconciledCommit": "10f036b868ac4733c9554f0f56af47f0fdb4adc1",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

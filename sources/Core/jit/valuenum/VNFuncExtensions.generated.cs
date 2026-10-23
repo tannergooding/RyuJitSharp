@@ -2286,6 +2286,17 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_PackedSimd_Xor
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_PackedSimd_ZeroExtendWideningLower
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_PackedSimd_ZeroExtendWideningUpper
+        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_RelaxedSimd_ConvertToInt32Native
+        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_RelaxedSimd_ConvertToUInt32Native
+        (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_RelaxedSimd_DotProductAddNative
+        (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_RelaxedSimd_DotProductNative
+        (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_RelaxedSimd_LaneSelectNative
+        (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_RelaxedSimd_MaxNative
+        (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_RelaxedSimd_MinNative
+        (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_RelaxedSimd_MultiplyAddEstimate
+        (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_RelaxedSimd_MultiplyAddNegatedEstimate
+        (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_RelaxedSimd_MultiplyRoundedQ15Native
+        (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_RelaxedSimd_SwizzleNative
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_WasmBase_LeadingZeroCount
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_WasmBase_TrailingZeroCount
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_HWI_INTRINSIC_END

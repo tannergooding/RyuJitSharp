@@ -5977,6 +5977,26 @@ public sealed partial class CodeGen
         (insInfoFlags)(0), // INS_i32x4_trunc_sat_u_f64x2_zero
         (insInfoFlags)(0), // INS_f64x2_convert_low_s_i32x4
         (insInfoFlags)(0), // INS_f64x2_convert_low_u_i32x4
+        (insInfoFlags)(0), // INS_i8x16_relaxed_swizzle
+        (insInfoFlags)(0), // INS_i32x4_relaxed_trunc_f32x4_s
+        (insInfoFlags)(0), // INS_i32x4_relaxed_trunc_f32x4_u
+        (insInfoFlags)(0), // INS_i32x4_relaxed_trunc_f64x2_s_zero
+        (insInfoFlags)(0), // INS_i32x4_relaxed_trunc_f64x2_u_zero
+        (insInfoFlags)(0), // INS_f32x4_relaxed_madd
+        (insInfoFlags)(0), // INS_f32x4_relaxed_nmadd
+        (insInfoFlags)(0), // INS_f64x2_relaxed_madd
+        (insInfoFlags)(0), // INS_f64x2_relaxed_nmadd
+        (insInfoFlags)(0), // INS_i8x16_relaxed_laneselect
+        (insInfoFlags)(0), // INS_i16x8_relaxed_laneselect
+        (insInfoFlags)(0), // INS_i32x4_relaxed_laneselect
+        (insInfoFlags)(0), // INS_i64x2_relaxed_laneselect
+        (insInfoFlags)(0), // INS_f32x4_relaxed_min
+        (insInfoFlags)(0), // INS_f32x4_relaxed_max
+        (insInfoFlags)(0), // INS_f64x2_relaxed_min
+        (insInfoFlags)(0), // INS_f64x2_relaxed_max
+        (insInfoFlags)(0), // INS_i16x8_relaxed_q15mulr_s
+        (insInfoFlags)(0), // INS_i16x8_relaxed_dot_i8x16_i7x16_s
+        (insInfoFlags)(0), // INS_i32x4_relaxed_dot_i8x16_i7x16_add_s
     ];
 
     internal static ReadOnlySpan<insInfoFlags> instInfo
