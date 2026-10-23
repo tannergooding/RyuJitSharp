@@ -10,14 +10,14 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Continue full-runtime parity after closing the System.Private.Xml mismatch. The current 5a518 managed PMI disassembly matches native-repeat byte-for-byte across 18,255 headers and 3,898,117 code bytes; native and native-repeat retain 345 raw method-body differences with no code-size changes. Next verify whether the B526 System.Double:Hypot FullDump assertion, confirmed at 7462, still blocks a matched CoreLib capture at current pin 5a518; then continue with reachable CoreLib cohorts and retain raw comment/RWD-only blocks without normalization. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Continue full-runtime parity after closing the System.Private.Xml mismatch. The current 5a518 managed PMI disassembly matches native-repeat byte-for-byte across 18,255 headers and 3,898,117 code bytes; native and native-repeat retain 345 raw method-body differences with no code-size changes. B526 now reproduces in targeted native, native-repeat, and managed captures at 5a518 (exit 0xC0000602), blocking FullDump but not disassembly. Next run matched 5a518 CoreLib disassembly captures for native, native-repeat, and managed, retaining raw comment/RWD-only blocks without normalization. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
       "scope": "Continue pinned Windows x64 full-runtime parity after reconciling the System.Private.Xml codegen mismatches.",
       "completionCondition": "Complete the remaining CoreLib FullDump and raw-disassembly parity boundaries, fixing managed-only differences and retaining confirmed native defects or unapproved raw differences without normalization.",
       "validation": "AssertionTests and ImporterEffectsTests passed 298/298 in Debug and 289/289 in Release. The pinned 5a518 System.Private.Xml capture covered 18,189 methods across 1,435 types (one skipped type, six skipped methods) and 18,255 disassembly headers. Managed output is byte-identical to native-repeat at 3,898,117 code bytes (SHA256 48454B79C783B65C179E158067406B0E3C9C4172330EA553EC2CEE9DA5FE1A07); native and native-repeat differ in 345 method bodies with no code-size changes. Both ReadAsync overloads now have native-matching code sizes (535 and 1,942 bytes), and the regression test covers both VN null-comparison polarities.",
       "deferrals": [
-        "B526 is confirmed at the 7462 Windows-x64 Checked FullDump boundary at System.Double:Hypot; verify its status at current pin 5a518 before treating it as the active CoreLib blocker, and preserve pinned behavior.",
+        "B526 reproduces at current pin 5a518: targeted native, native-repeat, and managed System.Double:Hypot captures all exit 0xC0000602 at the same Generate code assertion. This blocks FullDump coverage; preserve pinned behavior.",
         "CoreLib disassembly still has raw non-ASCII comment and RWD absolute-pointer differences. Preserve the raw blocks and do not add comparison allowances without approval.",
         "Filtered System.Collections FullDump captures still assert at OrderedDictionary.RemoveEntryFromBucket during Do value numbering; retain raw traces and do not claim full-dump parity."
       ]
@@ -32,6 +32,9 @@
       "artifacts\\oracle-refresh-system-private-xml-5a518-assertion-fix\\readasync-native\\manifest.json",
       "artifacts\\oracle-refresh-system-private-xml-5a518-assertion-fix\\readasync-managed\\manifest.json",
       "artifacts\\oracle-refresh-system-private-xml-5a518-assertion-fix\\readasync-full-dump-comparison.json",
+      "artifacts\\corelib-full-dump-b526-5a518-check\\native\\manifest.json",
+      "artifacts\\corelib-full-dump-b526-5a518-check\\native-repeat\\manifest.json",
+      "artifacts\\corelib-full-dump-b526-5a518-check\\managed\\manifest.json",
       "artifacts\\oracle-refresh-system-private-xml-5a518-65b2f6b4-minopts-diagnostic\\managed-current-vs-native-importation.json",
       "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\tls-caller-trace-comparison.json",
       "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\native\\manifest.json",

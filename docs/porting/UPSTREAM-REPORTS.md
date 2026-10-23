@@ -35,7 +35,7 @@ deviation is explicitly approved.
 | B365 | `Compiler::gtCallGetDefinedRetBufLclAddr` | Forced register spilling with GC stress triggers a Checked assertion when an outer reload hides a `PUTARG_REG` wrapper around the retbuf local address. Ordinary configuration succeeds; no ordinary miscompilation or memory-safety impact is established. | Inspect reload/copy wrappers before checking the putarg and retbuf shape. | Preserve pinned managed behavior; report contains the native repro and supporting dump. |
 | B394 | `ValueNumStore::RunTests` | Enabling native component tests asserts because a self-test expects the pre-canonicalized operand order for a commutative VN expression. Production canonicalization puts the non-handle constant in argument one. | Update the self-test to assert the canonical operand order. | Preserve pinned canonicalization and assertion; report contains the native repro. |
 | B524 | `jitstd::list::merge` | When source nodes remain after merging, native links the source tail into the destination but does not clear the source's head, tail, or size. Both lists then share nodes, making later traversal/destruction unsafe. The pinned JIT has no `list.merge` call sites. | Clear the source list after transferring the remaining chain, while preserving merge ordering. | Preserve pinned managed behavior until the upstream correction is incorporated; the defect was reported in [dotnet/runtime#135435](https://github.com/dotnet/runtime/issues/135435). |
-| B526 | `CodeGenInterface::dumpSiVarLoc` (`src/coreclr/jit/scopeinfo.cpp`) | Checked Windows-x64 native and managed CoreLib FullDump captures reach `System.Double:Hypot` with a live XMM16 local. XMM16 is deliberately represented as `VLT_INVALID` because it cannot be encoded in debugger scope info, but the Debug variable-live-range printer has no `VLT_INVALID` case and asserts in its default branch after emitting the block. | Print an explicit unavailable marker for `VLT_INVALID`, or omit such ranges from diagnostic history consistently with the scope-info publication filter. | Preserve the pinned diagnostic behavior until an upstream correction is incorporated; all three captures are incomplete. |
+| B526 | `CodeGenInterface::dumpSiVarLoc` (`src/coreclr/jit/scopeinfo.cpp`) | Confirmed at 7462 and reproduced at reconciled 5a518 in Windows-x64 Checked: native and managed CoreLib FullDump captures reach `System.Double:Hypot` with a live XMM16 local. XMM16 is deliberately represented as `VLT_INVALID` because it cannot be encoded in debugger scope info, but the Debug variable-live-range printer has no `VLT_INVALID` case and asserts in its default branch after emitting the block. | Print an explicit unavailable marker for `VLT_INVALID`, or omit such ranges from diagnostic history consistently with the scope-info publication filter. | Preserve the pinned diagnostic behavior until an upstream correction is incorporated; all three captures are incomplete. |
 
 ## Detailed reports
 
@@ -278,6 +278,16 @@ after 7,083 of the expected 75,676 method headers. The managed assertion is at
 branch. Native and managed method-header sequences match through the failure;
 the native-repeat order diverges at zero-based header index 3,090. This is a
 debug-diagnostic failure, not evidence of a generated-code defect.
+
+The failure also reproduces at reconciled revision
+`5a518c3fcb295c89a73404d9f20c398dafdce845`. Targeted Windows x64 Debug JIT-dump
+captures of `System.Double:Hypot(double,double):double` produced one method
+header and exited with `0xC0000602` in native, native-repeat, and managed runs.
+The native assertion is at `scopeinfo.cpp:722`; the managed assertion is at
+`CodeGen.VariableLiveKeeper.Diagnostics.cs:143`. All captures report IL size
+625 and method hash `0x2c99e8f9`. These targeted captures confirm the failure
+at the current pin but do not establish full-CoreLib dump coverage; manifests
+and raw output are under `artifacts\corelib-full-dump-b526-5a518-check`.
 
 `siVarLoc::storeVariableInRegisters` intentionally sets `VLT_INVALID` for
 locations such as XMM16 that cannot be encoded in debugger scope information.
