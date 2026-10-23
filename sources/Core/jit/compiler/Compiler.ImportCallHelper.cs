@@ -3996,10 +3996,9 @@ public partial class Compiler
 
         private unsafe var_types Devirt(Compiler compiler, GenTreeCall call)
         {
-            var probing = compiler.impConsiderCallProbe(call, opcodeOffs);
-
-            // See if we can devirt if we aren't probing.
-            if (!probing && compiler.opts.OptimizationEnabled)
+            // See if we can devirt. This is done before considering whether the call needs a probe,
+            // since a call we manage to devirtualize is no longer virtual and so needs no probe.
+            if (compiler.opts.OptimizationEnabled)
             {
                 if (call.IsDevirtualizationCandidate(compiler))
                 {
@@ -4040,6 +4039,8 @@ public partial class Compiler
                     compiler.considerGuardedDevirtualization(call, opcodeOffs, isInterface: false, call._callMethHnd, NO_CLASS_HANDLE, ref contextHandle);
                 }
             }
+
+            compiler.impConsiderCallProbe(call, opcodeOffs);
 
             //-------------------------------------------------------------------------
             // The "this" pointer for "newobj"

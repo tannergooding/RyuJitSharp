@@ -944,6 +944,12 @@ public partial class Compiler
     {
         JITDUMP($"Considering guarded devirtualization at IL offset {ilOffset} (0x{ilOffset:x})\n");
 
+        if (compClassifyGDVProbeType(call) is not GDVProbeType.None)
+        {
+            JITDUMP("Call will be probed for instrumentation, no guarded devirtualization.\n");
+            return;
+        }
+
         if (call.IsGenericVirtual(this))
         {
             JITDUMP("Generic virtual methods are not supported by guarded devirtualization, sorry.\n");
@@ -2881,17 +2887,13 @@ public partial class Compiler
     /// <summary>Consider whether a call should get a histogram probe and mark it if so.</summary>
     /// <param name="call">The call</param>
     /// <param name="ilOffset">The precise IL offset of the call</param>
-    /// <returns>True if the call was marked such that we will add a class or method probe for it.</returns>
-    public unsafe bool impConsiderCallProbe(GenTreeCall call, IL_OFFSET ilOffset)
+    public unsafe void impConsiderCallProbe(GenTreeCall call, IL_OFFSET ilOffset)
     {
-        // Possibly instrument. Note for OSR+PGO we will instrument when
-        // optimizing and (currently) won't devirtualize. We may want
-        // to revisit -- if we can devirtualize we should be able to
-        // suppress the probe.
+        // Possibly instrument.
         //
         if (!opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR))
         {
-            return false;
+            return;
         }
 
         assert(opts.OptimizationDisabled || opts.IsInstrumentedAndOptimized);
@@ -2903,7 +2905,7 @@ public partial class Compiler
         //
         if (compClassifyGDVProbeType(call) is GDVProbeType.None)
         {
-            return false;
+            return;
         }
 
         assert(compCurBB is not null);
@@ -2918,8 +2920,6 @@ public partial class Compiler
 
         // Flag block as needing scrutiny
         compCurBB.SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
-
-        return true;
     }
 
     /// <summary>convert a helper call to a user call and mark it for inlining.</summary>

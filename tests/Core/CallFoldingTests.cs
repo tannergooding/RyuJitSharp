@@ -140,8 +140,66 @@ internal static unsafe class CallFoldingTests
         });
     }
 
+    [Test]
+    public static void InstrumentedDelegateProbeSuppressesGuardedDevirtualization()
+    {
+        var previous = JitConfig;
+        JitConfig = default;
+        DelegateProfiling(ref JitConfig) = 1;
+
+        try
+        {
+            WithCompiler("Type", "Other", (compiler, call) =>
+            {
+                var previousMaxTypeChecks = GdvMaxTypeChecks(ref JitConfig);
+                GdvMaxTypeChecks(ref JitConfig) = 1;
+
+                try
+                {
+                    compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
+                    compiler.fgPgoMethodProfiles = 1;
+
+                    var method = (nint)call._callMethHnd;
+                    ICorJitInfo.PgoInstrumentationSchema schema = new() {
+                        ILOffset = 12,
+                        Count = 1,
+                        Other = 100,
+                        InstrumentationKind = ICorJitInfo.PgoInstrumentationKind.GetLikelyMethod,
+                    };
+                    call._callMoreFlags |= GTF_CALL_M_DELEGATE_INV;
+                    call._inlineContext = (InlineContext)RuntimeHelpers.GetUninitializedObject(typeof(InlineContext));
+                    call._inlineContext.PgoInfo = new PgoInfo {
+                        PgoData = (byte*)&method,
+                        PgoSchema = &schema,
+                        PgoSchemaCount = 1,
+                    };
+                    s_gdvClassQueries = 0;
+                    s_gdvMethodQueries = 0;
+
+                    CORINFO_CONTEXT_STRUCT_* context = null;
+                    compiler.considerGuardedDevirtualization(call, 12, false, call._callMethHnd, null, ref context);
+
+                    Assert.That(s_gdvClassQueries, Is.Zero);
+                    Assert.That(s_gdvMethodQueries, Is.Zero);
+                    Assert.That(call.InlineCandidatesCount, Is.Zero);
+                }
+                finally
+                {
+                    GdvMaxTypeChecks(ref JitConfig) = previousMaxTypeChecks;
+                }
+            });
+        }
+        finally
+        {
+            JitConfig = previous;
+        }
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitGuardedDevirtualizationMaxTypeChecks")]
     private static extern ref int GdvMaxTypeChecks(ref JitConfigValues config);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDelegateProfiling")]
+    private static extern ref int DelegateProfiling(ref JitConfigValues config);
 
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR)]
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT)]

@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "upstream-synchronization",
-    "nextAction": "The RelaxedSimd generator-input and managed ABI batch is integrated and validated; the overall upstream pin remains 5a518. Next port importercalls.cpp's devirtualization/probe ordering and GDV probe exclusion in Compiler.ImportCallHelper.cs and Compiler.imp.cs, add a focused instrumentation regression, then validate the importer selection in Debug and Release. Preserve B526/B527 and the dynamic TLS boundary, and keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Port codegenlinear.cpp's catch-return target emission, compiler.hpp's throwing-tree safe-point rule, and fgopt.cpp's stale GC-poll flag cleanup into CodeGen.BlockEnd.cs, Compiler.RedundantZeroInit.cs, and Compiler.fg.cs. Add focused regressions and validate the codegen/flowgraph/safepoint selection in Debug and Release; the importer probe/GDV batch is already committed. Keep the overall pin at 5a518 until all remaining paths pass, preserve B526/B527 and the dynamic TLS boundary, and keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
       "scope": "Reconcile all 20 changed src/coreclr/jit and src/coreclr/inc paths plus the mapped InstructionSetDesc.txt input from 5a518c3fcb295c89a73404d9f20c398dafdce845 to ad029a35a82f87a2b5ef4472abf9e5cefcae9f11, preserving prior cleanup and pinning only after acceptance.",
@@ -1612,7 +1612,8 @@
         "src\\coreclr\\jit\\importercalls.cpp"
       ],
       "csharp": [
-        "sources\\Core\\jit\\compiler\\Compiler.imp.cs"
+        "sources\\Core\\jit\\compiler\\Compiler.imp.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.ImportCallHelper.cs"
       ],
       "sourceCommit": "24543ddd2ef1009f07462883cc299d43e19c2e8e"
     },
