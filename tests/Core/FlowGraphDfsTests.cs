@@ -464,7 +464,8 @@ internal static unsafe class FlowGraphDfsTests
             compiler.fgLastBB = retained;
             dead.bbRefs = 0;
             retained.bbRefs = 0;
-            retained.SetFlags(BasicBlockFlags.BBF_DONT_REMOVE | BasicBlockFlags.BBF_INTERNAL);
+            retained.SetFlags(BasicBlockFlags.BBF_DONT_REMOVE | BasicBlockFlags.BBF_INTERNAL |
+                BasicBlockFlags.BBF_NEEDS_GCPOLL | BasicBlockFlags.BBF_HAS_SUPPRESSGC_CALL);
             compiler._dfsTree = ComputeDfs(compiler, false);
 
             var previousDfs = compiler._dfsTree;
@@ -481,6 +482,8 @@ internal static unsafe class FlowGraphDfsTests
                 Assert.That(retained.HasFlag(BasicBlockFlags.BBF_REMOVED), Is.False);
                 Assert.That(retained.HasFlag(BasicBlockFlags.BBF_INTERNAL), Is.False);
                 Assert.That(retained.HasFlag(BasicBlockFlags.BBF_IMPORTED), Is.True);
+                Assert.That(retained.HasFlag(BasicBlockFlags.BBF_NEEDS_GCPOLL), Is.False);
+                Assert.That(retained.HasFlag(BasicBlockFlags.BBF_HAS_SUPPRESSGC_CALL), Is.False);
             });
         }
         finally

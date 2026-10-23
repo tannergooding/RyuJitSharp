@@ -246,6 +246,46 @@ internal static unsafe class CodeGenBlockDriverTests
         });
     }
 
+    [Test]
+    public static void CatchRetFallthroughTargetWithoutCodeEmitsNop()
+    {
+        WithDriver((compiler, codeGen) =>
+        {
+            var blocks = Blocks(compiler, BBJ_EHCATCHRET, BBJ_ALWAYS, BBJ_RETURN);
+            compiler.fgPredsComputed = true;
+            blocks[0].TargetEdge = compiler.fgAddRefPred(blocks[1], blocks[0]);
+            blocks[1].TargetEdge = compiler.fgAddRefPred(blocks[2], blocks[1]);
+            blocks[1].SetFlags(BBF_HAS_LABEL);
+            compiler.compCurBB = blocks[1];
+            blocks[1].bbEmitCookie = codeGen.Emitter.emitCurIG;
+
+            codeGen.genEmitEndBlock(blocks[1]);
+
+            Assert.That(Descriptors(codeGen).Select(id => id.idIns()), Is.EqualTo((instruction[])[INS_nop]));
+        });
+    }
+
+    [Test]
+    public static void CatchRetTargetWithoutCodeDisablesRemovableJumpCandidate()
+    {
+        WithDriver((compiler, codeGen) =>
+        {
+            var blocks = Blocks(compiler, BBJ_EHCATCHRET, BBJ_ALWAYS, BBJ_RETURN, BBJ_RETURN);
+            compiler.fgPredsComputed = true;
+            blocks[0].TargetEdge = compiler.fgAddRefPred(blocks[1], blocks[0]);
+            blocks[1].TargetEdge = compiler.fgAddRefPred(blocks[3], blocks[1]);
+            blocks[1].SetFlags(BBF_HAS_LABEL);
+            blocks[3].SetFlags(BBF_HAS_LABEL);
+            compiler.compCurBB = blocks[1];
+            blocks[1].bbEmitCookie = codeGen.Emitter.emitCurIG;
+
+            codeGen.genEmitEndBlock(blocks[1]);
+
+            Assert.That(Descriptors(codeGen).Select(id => id.idIns()), Is.EqualTo((instruction[])[INS_jmp]));
+            Assert.That(ContainsRemovableJumpCandidates(codeGen.Emitter), Is.False);
+        });
+    }
+
     [TestCase(false, false, false)]
     [TestCase(true, false, true)]
     [TestCase(false, true, true)]
@@ -490,6 +530,9 @@ internal static unsafe class CodeGenBlockDriverTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitPlaceholderLast")]
     internal static extern ref insGroup? LastPlaceholder(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitContainsRemovableJmpCandidates")]
+    private static extern ref bool ContainsRemovableJumpCandidates(Emitter emitter);
 
     private static readonly List<string?> s_assertions = [];
 

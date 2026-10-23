@@ -137,6 +137,10 @@ public sealed partial class CodeGen
                     {
                         instGen(INS_nop);
                     }
+                    if (genIsCatchRetTargetWithoutCode(block))
+                    {
+                        instGen(INS_nop);
+                    }
                     if (Configuration.FEATURE_LOOP_ALIGN)
                     {
                         removedJmp = true;
@@ -149,7 +153,8 @@ public sealed partial class CodeGen
                 }
                 else if (Configuration.TARGET_XARCH)
                 {
-                    var isRemovableJmpCandidate = !_compiler.fgInDifferentRegions(block, block.Target);
+                    var isRemovableJmpCandidate =
+                        !_compiler.fgInDifferentRegions(block, block.Target) && !genIsCatchRetTargetWithoutCode(block);
                     inst_JMP(EJ_jmp, block.Target, isRemovableJmpCandidate);
                 }
                 else
@@ -203,6 +208,27 @@ public sealed partial class CodeGen
                 Emitter.emitConnectAlignInstrWithCurIG();
             }
         }
+    }
+
+    // A pending thread abort is re-raised at this address, so keep the address within the target block's EH region.
+    private bool genIsCatchRetTargetWithoutCode(BasicBlock block)
+    {
+        var emitter = GetEmitter();
+        if ((block.bbEmitCookie != emitter.emitCurIG) || emitter.emitCurIGnonEmpty())
+        {
+            return false;
+        }
+
+        foreach (var predBlock in block.PredBlocks)
+        {
+            if (predBlock.Kind is BBJ_EHCATCHRET)
+            {
+                assert(block.HasFlag(BBF_HAS_LABEL));
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void inst_JMP_Wasm(emitJumpKind jump, BasicBlock target)

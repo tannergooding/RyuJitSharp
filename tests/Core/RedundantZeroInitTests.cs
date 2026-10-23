@@ -50,12 +50,17 @@ internal static unsafe class RedundantZeroInitTests
                 compiler.gtNewIconNode(TYP_I_IMPL, 1),
                 compiler.gtNewIconNode(TYP_INT, 0), new ClassLayout(8));
             var scalar = compiler.gtNewIconNode(TYP_INT, 1);
+            var throwing = compiler.gtNewBinaryNode(GT_DIV, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 0));
+            throwing.Flags |= GTF_EXCEPT;
 
             Assert.That(compiler.IsPotentialGCSafePoint(call), Is.True);
             Assert.That((aggregate.Flags & GTF_CALL) != 0, Is.True);
             Assert.That(compiler.IsPotentialGCSafePoint(aggregate), Is.True);
             Assert.That(compiler.IsPotentialGCSafePoint(blockStore), Is.True);
             Assert.That(compiler.IsPotentialGCSafePoint(scalar), Is.False);
+            Assert.That((throwing.Flags & GTF_CALL) != 0, Is.False);
+            Assert.That(compiler.IsPotentialGCSafePoint(throwing), Is.True);
         });
     }
 
