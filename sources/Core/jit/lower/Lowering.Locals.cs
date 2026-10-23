@@ -445,8 +445,7 @@ public sealed partial class Lowering
             }
         }
 
-        if ((Configuration.TARGET_XARCH || Configuration.TARGET_ARM || Configuration.TARGET_ARM64 ||
-             Configuration.TARGET_RISCV64) &&
+        if (Configuration.TARGET_RISCV64 &&
             (storeLoc.Oper is GT_STORE_LCL_VAR) && source.IsIconHandle() &&
             source.AsIntCon().FitsInAddrBase(CompilerInstance) &&
             source.AsIntCon().AddrNeedsReloc(CompilerInstance))

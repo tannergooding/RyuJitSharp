@@ -10,28 +10,35 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Continue the active System.Xml SetupEncoding importer batch. After it closes, resume full-runtime parity at the unresolved dynamic TLS input-ownership boundary; keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested. The oracle refresh through 5a518c3f is reconciled; the exact-pinned 21-method capture is nonexecuting and retains residual FullDump diagnostic/formatting/node-ID differences after the accepted D015 replacement, so do not claim machine-code or runtime parity.",
+    "nextAction": "Continue full-runtime parity after closing the System.Private.Xml mismatch. The current 5a518 managed PMI disassembly matches native-repeat byte-for-byte across 18,255 headers and 3,898,117 code bytes; native and native-repeat retain 345 raw method-body differences with no code-size changes. Next verify whether the B526 System.Double:Hypot FullDump assertion, confirmed at 7462, still blocks a matched CoreLib capture at current pin 5a518; then continue with reachable CoreLib cohorts and retain raw comment/RWD-only blocks without normalization. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
-      "scope": "Fix and validate the managed System.Xml.XmlTextReaderImpl:SetupEncoding(System.Text.Encoding) importer regression against pinned native behavior.",
-      "completionCondition": "CEE_POP of a loaded struct uses gtChangeOperToNullCheck for the native-equivalent GT_NULLCHECK tree; the focused regression test passes in Debug and Release, and the complete System.Private.Xml disassembly matches native and native-repeat byte-for-byte.",
-      "validation": "ImporterEffectsTests passed 102/102 in Debug and 95/95 in Release. Matched Windows x64 PMI captures covered 18,188 methods (1,435 types; one skipped type and six skipped methods); all 18,254 disassembly headers and 3,901,136 code bytes match across native, native-repeat, and managed. Raw Importation differences remain the same 25 process-specific handle lines in managed and native-repeat; do not canonicalize them.",
+      "scope": "Continue pinned Windows x64 full-runtime parity after reconciling the System.Private.Xml codegen mismatches.",
+      "completionCondition": "Complete the remaining CoreLib FullDump and raw-disassembly parity boundaries, fixing managed-only differences and retaining confirmed native defects or unapproved raw differences without normalization.",
+      "validation": "AssertionTests and ImporterEffectsTests passed 298/298 in Debug and 289/289 in Release. The pinned 5a518 System.Private.Xml capture covered 18,189 methods across 1,435 types (one skipped type, six skipped methods) and 18,255 disassembly headers. Managed output is byte-identical to native-repeat at 3,898,117 code bytes (SHA256 48454B79C783B65C179E158067406B0E3C9C4172330EA553EC2CEE9DA5FE1A07); native and native-repeat differ in 345 method bodies with no code-size changes. Both ReadAsync overloads now have native-matching code sizes (535 and 1,942 bytes), and the regression test covers both VN null-comparison polarities.",
       "deferrals": [
-        "The full-CoreLib FullDump gate remains blocked by B526 at System.Double:Hypot.",
-        "The System.Collections value-numbering assertion and CoreLib comment/RWD-only blocks remain unresolved; preserve raw differences and do not apply a comparison allowance.",
-        "The 144-method dynamic-TLS extra callback count remains unexplained; do not change TLS constants."
+        "B526 is confirmed at the 7462 Windows-x64 Checked FullDump boundary at System.Double:Hypot; verify its status at current pin 5a518 before treating it as the active CoreLib blocker, and preserve pinned behavior.",
+        "CoreLib disassembly still has raw non-ASCII comment and RWD absolute-pointer differences. Preserve the raw blocks and do not add comparison allowances without approval.",
+        "Filtered System.Collections FullDump captures still assert at OrderedDictionary.RemoveEntryFromBucket during Do value numbering; retain raw traces and do not claim full-dump parity."
       ]
     },
     "evidenceLinks": [
       "artifacts\\jit-analysis\\conditional-cleanup\\CCB-1205-acceptance.json",
       "artifacts\\conditional-cleanup\\INV-A6698B8BBC3D\\acceptance.json",
-      "artifacts\\oracle-update-eee5433a20bfda15bda74135eeb51e6a341ce2e6-5a518c3fcb295c89a73404d9f20c398dafdce845\\generator-evidence.json",
-      "artifacts\\oracle-refresh-native-corpus-5a518c3f-libs\\manifest.json",
-      "artifacts\\oracle-refresh-native-repeat-corpus-5a518c3f\\manifest.json",
-      "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\manifest.json",
-      "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\d015-normalized-importation-comparison.json",
-      "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\d015-normalized-diff-summary.json",
-      "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\d015-normalized-full-dump.diff"
+      "artifacts\\oracle-refresh-system-private-xml-5a518-65b2f6b4\\native\\disasm\\manifest.json",
+      "artifacts\\oracle-refresh-system-private-xml-5a518-65b2f6b4\\native-repeat\\disasm\\manifest.json",
+      "artifacts\\oracle-refresh-system-private-xml-5a518-assertion-fix\\full-managed-capture\\disasm\\manifest.json",
+      "artifacts\\oracle-refresh-system-private-xml-5a518-assertion-fix\\system-private-xml-disasm-comparison.json",
+      "artifacts\\oracle-refresh-system-private-xml-5a518-assertion-fix\\readasync-native\\manifest.json",
+      "artifacts\\oracle-refresh-system-private-xml-5a518-assertion-fix\\readasync-managed\\manifest.json",
+      "artifacts\\oracle-refresh-system-private-xml-5a518-assertion-fix\\readasync-full-dump-comparison.json",
+      "artifacts\\oracle-refresh-system-private-xml-5a518-65b2f6b4-minopts-diagnostic\\managed-current-vs-native-importation.json",
+      "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\tls-caller-trace-comparison.json",
+      "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\native\\manifest.json",
+      "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\native-repeat\\manifest.json",
+      "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\managed\\manifest.json",
+      "artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-23_01_04_41_net11.0.trx",
+      "artifacts\\tst\\Release\\tagoo_GOODING-ZEN4_2026-10-23_01_04_49_net11.0.trx"
     ],
 
     "validationGaps": [
@@ -439,10 +446,10 @@
       }
     },
     "dynamicTlsInputBoundary": {
-      "status": "no-allocation-or-offset-divergence-reproduced",
-      "finding": "At pinned revision 7462, matched native, native-repeat, and managed captures covered 144 TaskFactory<T>.FromAsyncImpl methods. Native and managed each made 53 TLS allocations with identical sequences. Native made one Task.t_currentTask field/block-info request per selected method; managed made two, with the extra request attributed to the same top-level caller identities. The returned field and block metadata matched, including TLS index 6 and offsets 88, 304, and 312. Native-repeat caller traces matched after process-address normalization. Importation prefixes were raw-identical for 112/144 methods; the other 32 had only SignatureToLookupInfoMap address-registration lines differing, with the same difference set in the native-repeat control and no canonicalization. The immediate reason for the additional managed callback is not established.",
-      "nextAction": "Do not change TLS constants based on this capture. Retain the unexplained callback-count difference as an open evidence limit, not as a reproduced index/offset mismatch. Instrument the immediate EE callback call stack only if a later matched output comparison implicates this boundary.",
-      "evidence": "artifacts\\dynamic-tls-inputs\\evidence-boundary-7462-caller-trace.json; artifacts\\dynamic-tls-inputs\\capture-7462-corelib-pmi-caller-trace-900s\\tls-caller-trace-comparison.json; artifacts\\dynamic-tls-inputs\\capture-7462-corelib-pmi-caller-trace-900s\\importation-extracts\\raw-diff-analysis.json; pinned source context: 7462dfde2f76321b730888f1102a8c3a4bcdecb0 src/coreclr/vm/jitinterface.cpp:1290-1308,1320-1324; src/coreclr/vm/threadstatics.cpp:698-762,1159-1204; sources/Core/jit/compiler/Compiler.imp.cs:12609-12619."
+      "status": "extra-callback-explained-by-nonexecuting-altjit-fallback",
+      "finding": "At pinned revision 5a518c3f, matched native, native-repeat, and managed captures covered 144 TaskFactory<T>.FromAsyncImpl methods. Each run observed 53 TLS allocations with identical normalized sequences. Native made one Task.t_currentTask field/block-info callback per selected method; the managed AltJit run made two, with identical caller identity sets, field type index 36, and numeric block metadata (TLS index 6, access 0, TLS pointer offset 88, max-blocks offset 320, blocks offset 328, base offset 320). Runtime source explains the extra callback: with DOTNET_RunAltJitCode=0, a successful AltJit compilation is discarded and returns CORJIT_SKIPPED before the default JIT compiles the same method. The additional callback is therefore the expected second JIT pass, not a TLS value divergence. Raw Importation prefixes remain unequal across all 144 methods because of address-valued lines; no canonicalization was applied.",
+      "nextAction": "Do not change TLS constants. Treat the callback-count difference as explained for this nonexecuting AltJit capture; reopen the boundary only if a future matched capture reproduces a numeric TLS index or offset mismatch. This capture does not establish generated-code execution parity.",
+      "evidence": "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\tls-caller-trace-comparison.json; artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\capture-summary.json; pinned source: src/coreclr/jit/jitconfigvalues.h:226-228 and src/coreclr/jit/compiler.cpp:7173-7177."
     }
   },
   "sourceMap": [

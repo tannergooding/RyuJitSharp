@@ -195,7 +195,8 @@ public partial class Compiler
             if ((vn1 != ValueNumStore.NoVN) && (op1.Type is TYP_REF) &&
                 (vn2 == ValueNumStore.VNForNull()))
             {
-                return optAddAssertion(AssertionDsc.CreateVNNonNullAssertion(this, vn1));
+                return optAddAssertion(AssertionDsc.CreateConstLclVarAssertion(
+                    this, BAD_VAR_NUM, vn1, (nint)0, vn2, equals));
             }
 
             // Native limits this backup to non-handle int32 constants for throughput.

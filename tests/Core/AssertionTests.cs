@@ -1847,8 +1847,9 @@ internal static unsafe class AssertionTests
         }, local: false);
     }
 
-    [Test]
-    public static void GlobalReferenceNullBranchCreatesAssertionForNonCallExpressions()
+    [TestCase(GT_EQ)]
+    [TestCase(GT_NE)]
+    public static void GlobalReferenceNullBranchCreatesAssertionForNonCallExpressions(genTreeOps operation)
     {
         WithCompiler(compiler => {
             var store = new ValueNumStore(compiler);
@@ -1858,12 +1859,14 @@ internal static unsafe class AssertionTests
             value._vnPair.SetBoth(valueVN);
             var nullValue = compiler.gtNewNull();
             nullValue._vnPair.SetBoth(ValueNumStore.VNForNull());
-            var comparison = compiler.gtNewBinaryNode(GT_NE, TYP_INT, value, nullValue);
+            var comparison = compiler.gtNewBinaryNode(operation, TYP_INT, value, nullValue);
 
             var info = compiler.optAssertionGenJtrue(compiler.gtNewUnaryNode(GT_JTRUE, TYP_VOID, comparison));
 
             Assert.That(info.HasAssertion, Is.True);
-            Assert.That(compiler.optGetAssertion(info.AssertionIndex).Op1.VN, Is.EqualTo(valueVN));
+            var assertion = compiler.optGetAssertion(info.AssertionIndex);
+            Assert.That(assertion.Op1.VN, Is.EqualTo(valueVN));
+            Assert.That(assertion.Kind, Is.EqualTo(operation == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL));
         }, local: false);
     }
 
