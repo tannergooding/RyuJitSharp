@@ -3,32 +3,23 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845",
-    "targetObservedAt": "2026-10-21",
-    "reconciledCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845"
+    "targetCommit": "ad029a35a82f87a2b5ef4472abf9e5cefcae9f11",
+    "targetObservedAt": "2026-10-23",
+    "reconciledCommit": "ad029a35a82f87a2b5ef4472abf9e5cefcae9f11"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "upstream-synchronization",
-    "nextAction": "The catch-return codegen, throwing-tree GC safe-point, and unreachable-block GC-poll fixes are implemented with focused regressions. Next reconcile lower.cpp::LowerVirtualVtableCall for non-fixed-register targets, then port partial-constant Vector.Create lowering across xarch and ARM64 with tests for constant masks, zero lanes, and negative zero. The overall pin remains 5a518; preserve B526/B527 and the dynamic TLS boundary, and keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "The runtime oracle update from 5a518c3fcb295c89a73404d9f20c398dafdce845 to ad029a35a82f87a2b5ef4472abf9e5cefcae9f11 is reconciled across all changed native paths and the mapped generator input. The next oracle update should capture an immutable dotnet/runtime revision after ad029a35a82f87a2b5ef4472abf9e5cefcae9f11 and compare it with this pin. Preserve B526/B527 and the dynamic TLS evidence boundary; keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
-    "activeBatch": {
-      "scope": "Reconcile all 20 changed src/coreclr/jit and src/coreclr/inc paths plus the mapped InstructionSetDesc.txt input from 5a518c3fcb295c89a73404d9f20c398dafdce845 to ad029a35a82f87a2b5ef4472abf9e5cefcae9f11, preserving prior cleanup and pinning only after acceptance.",
-      "completionCondition": "Every changed native path and mapped generator input has a converted, retained-with-concrete-dependency, or evidence-backed no-managed-surface disposition; generated deltas are reviewed and integrated with their inputs; focused Debug/Release builds and tests plus relevant non-x64 target checks pass. Preserve B526/B527 and the dynamic TLS ownership boundary; do not advance the oracle pin while any relevant hunk remains unresolved.",
-      "validation": "AssertionTests and ImporterEffectsTests passed 298/298 in Debug and 289/289 in Release. The pinned 5a518 System.Private.Xml capture covered 18,189 methods across 1,435 types (one skipped type, six skipped methods) and 18,255 disassembly headers. Managed output is byte-identical to native-repeat at 3,898,117 code bytes (SHA256 48454B79C783B65C179E158067406B0E3C9C4172330EA553EC2CEE9DA5FE1A07); native and native-repeat differ in 345 method bodies with no code-size changes. Both ReadAsync overloads have native-matching code sizes (535 and 1,942 bytes), and the regression test covers both VN null-comparison polarities. Current-pin CoreLib PMI runs report 4,284 types, 75,697 methods, 60 skipped types, and 1,267 skipped methods; each produced 75,845 header and code-size markers. Native and native-repeat totals are 8,424,620 and 8,424,557 bytes; managed is 8,424,558 bytes. The managed broad JitDisasm output embeds three headers and one code-size marker, so raw per-method comparison is unavailable. Filtered full-PMI captures at method index 2244 produce byte-identical native/managed RunFinalizers assembly (501 bytes, Thread.t_currentThread index 5); filtered CultureInfo.get_CurrentUICulture blocks also match byte-for-byte at 115 bytes. Filtered 5a518 System.Collections captures all exit 0xC0000602 at the same OrderedDictionary.RemoveEntryFromBucket Do value numbering assertion. Nine broad CoreLib size-difference methods were isolated with 27 PrepOne captures; all completed with matching headers and pinned binary hashes. Native/native-repeat blocks match byte-for-byte for all nine, and all nine code sizes match across variants. Eight managed blocks match native exactly; Thread.JoinInternal differs only in TLS index/offset (5/0x28 native versus 2/0x10 managed), with 1,419-byte code in all three. Instrumented full-PMI Thread.JoinInternal captures produced the same 75,697-method enumeration sequence and identical CoreCLR/CoreLib/PMI hashes; native indexed Thread.t_currentThread at 2/1,419 bytes, native-repeat at 5/1,431 bytes, and managed at 2/1,419 bytes. Method-filtered captures of all three embedded-marker methods had matching native/repeat results; ModuleHandle and StaticsHelpers match managed byte-for-byte, while Thread.InitializeCurrentThread has only the same TLS index/offset difference (code size 239 bytes in all variants).",
-      "deferrals": [
-        "B526 reproduces at current pin 5a518: targeted native, native-repeat, and managed System.Double:Hypot captures all exit 0xC0000602 at the same Generate code assertion. This blocks FullDump coverage; preserve pinned behavior.",
-        "The managed broad CoreLib stream embeds three method headers and one code-size marker. Raw byte-slice comparison records 12 native/native-repeat, 317 native/managed, and 310 repeat/managed block differences; global identity-keyed code-size comparisons reconcile to 9/11/2 mismatches. Five blocks touch embedded-header boundaries. Targeted captures resolve the non-TLS candidates, but the broad stream still does not establish full method-body equality.",
-        "System.GC:RunFinalizers changes TLS index/code size in the broad wildcard disassembly capture but matches native in the full-PMI method-filtered capture. Treat this as a capture-order/runtime-input boundary; do not change JIT constants.",
-        "Filtered 5a518 PMI captures revalidate all 16 prior 7462 raw blocks: native/managed has 13 non-ASCII-comment-only differences and 3 RWD-only differences; native/native-repeat is identical except for the 3 RWD-only records. All 16 expected method code sizes match in all variants. RWD pointers remain raw and unnormalized.",
-        "Current-pin filtered System.Collections FullDump captures assert in gtDispVN at OrderedDictionary.RemoveEntryFromBucket during Do value numbering with exit 0xC0000602; tracked as B527. Native and managed raw comparisons first differ on the D015 profile diagnostic; preserve traces and do not claim full-dump parity.",
-        "Instrumented full-PMI Thread.JoinInternal captures show native repeat variation under identical native JIT, CoreCLR, CoreLib, PMI, and method enumeration: index 2/1,419 bytes versus index 5/1,431 bytes. Managed matched the first native run at index 2/1,419 bytes. The TLS/code-size boundary is process-order-sensitive, not a stable managed-only difference.",
-        "The raw CoreLib method-block inventory has 317 native/managed and 310 native-repeat/managed differences. First changed lines classify 285 as TLS index/offset, 13 as non-ASCII comments, 3 as RWD addresses, and 16 as other; all 16 other entries have method-filtered evidence, including exact matches for ModuleHandle, StaticsHelpers, Marvin, Hashtable, and SharedArrayPool methods. Do not treat this inventory as full CoreLib byte equality.",
-        "Three managed broad-disassembly markers are embedded within other output lines and one code-size record is embedded. Exact method-filtered captures show ModuleHandle.ResolveTypeHandle (600 bytes) and StaticsHelpers.GetGCThreadStaticsByIndexSlow (183 bytes) are byte-identical across variants; Thread.InitializeCurrentThread is 239 bytes in all variants but emits TLS index 5/offset 0x28 in native and 2/offset 0x10 in managed.",
-        "All remaining non-TLS first-difference candidates were method-filtered: ModuleHandle P/Invoke (219 bytes), StaticsHelpers.GetOptimizedGCThreadStaticBase (142), both Marvin.ComputeHash32 overloads (25/366), Hashtable(int,float) constructor (398), and SharedArrayPool<TimeZoneInfo+TimeTransition> lambda/Trim (48/992) match byte-for-byte across native, native-repeat, and managed."
-      ]
-    },
     "evidenceLinks": [
+      "artifacts\\oracle-update-ad029\\phase-corpus-partialcreate\\native\\manifest.json",
+      "artifacts\\oracle-update-ad029\\phase-corpus-partialcreate\\native-repeat\\manifest.json",
+      "artifacts\\oracle-update-ad029\\phase-corpus-partialcreate\\native-repeat-importation.json",
+      "artifacts\\oracle-update-ad029\\phase-corpus-partialcreate\\managed\\manifest.json",
+      "artifacts\\oracle-update-ad029\\phase-corpus-partialcreate\\importation-comparison.json",
+      "artifacts\\oracle-update-ad029\\phase-corpus-partialcreate\\full-dump-comparison.json",
+      "artifacts\\oracle-update-ad029\\phase-corpus-partialcreate\\managed-execution\\manifest.json",
       "artifacts\\jit-analysis\\conditional-cleanup\\CCB-1205-acceptance.json",
       "artifacts\\conditional-cleanup\\INV-A6698B8BBC3D\\acceptance.json",
       "artifacts\\oracle-refresh-system-private-xml-5a518-65b2f6b4\\native\\disasm\\manifest.json",
@@ -1692,6 +1683,24 @@
         "tests\\Core\\AssertionTests.cs"
       ],
       "sourceCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
+    },
+    {
+      "area": "runtime-main-vector-create-and-vtable-lowering",
+      "native": [
+        "src\\coreclr\\jit\\gentree.h",
+        "src\\coreclr\\jit\\lower.cpp",
+        "src\\coreclr\\jit\\lower.h",
+        "src\\coreclr\\jit\\lowerarmarch.cpp",
+        "src\\coreclr\\jit\\lowerxarch.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\gentree\\GenTreeVecCon.cs",
+        "sources\\Core\\jit\\lower\\Lowering.CallTargets.cs",
+        "sources\\Core\\jit\\lower\\Lowering.HardwareCreate.cs",
+        "sources\\Core\\jit\\lower\\Lowering.Arm64HardwareVectors.cs"
+      ],
+      "disposition": "The native lower.cpp partial-constant helper is split across managed GenTreeVecCon mask extraction and shared Lowering.HardwareCreate logic, with distinct xarch and ARM64 entry points; virtual-call this-use ownership is in Lowering.CallTargets. lower.h has no separate managed declaration surface.",
+      "sourceCommit": "ad029a35a82f87a2b5ef4472abf9e5cefcae9f11"
     }
   ],
   "generatorInputMapping": {

@@ -61,6 +61,11 @@ internal static class PortingCorpus
             return 10;
         }
 
+        if (PartialVectorCreate(5).GetElement(0) != 1)
+        {
+            return 21;
+        }
+
         if (SynchronizedReturn(5) != 6)
         {
             return 11;
@@ -159,6 +164,9 @@ internal static class PortingCorpus
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int FoldHardware(int value) => (Vector128.Create(3) + Vector128.Create(4)).ToScalar() + value;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Vector128<int> PartialVectorCreate(int value) => Vector128.Create(1, 2, value, 4);
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Synchronized)]
     public static int SynchronizedReturn(int value) => value + 1;

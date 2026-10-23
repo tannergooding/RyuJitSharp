@@ -70,6 +70,164 @@ internal static unsafe class HardwareConstructionLoweringTests
         });
     }
 
+    [TestCase(NI_Vector_CreateScalar, 0x1UL)]
+    [TestCase(NI_Vector_CreateScalarUnsafe, 0xFUL)]
+    [TestCase(NI_Vector_Create, 0xFUL)]
+    public static void ConstantCreationReturnsItsConstantLaneMask(NamedIntrinsic intrinsic, ulong expectedMask)
+    {
+        WithCompiler(compiler => {
+            var scalar = new GenTreeDblCon(TYP_FLOAT, -0.0);
+            var create = new GenTreeHWIntrinsic(TYP_SIMD16, intrinsic, TYP_FLOAT, 16, scalar);
+            simd64_t value = default;
+
+            Assert.That(
+                GenTreeVecCon.IsHWIntrinsicCreateConstant(
+                    intrinsic, TYP_FLOAT, 16, create.Operands, ref value, out var constantMask),
+                Is.True);
+            Assert.That(unchecked((ulong)constantMask.RawBits), Is.EqualTo(expectedMask));
+        });
+    }
+
+    [Test]
+    public static void PartialCreationReturnsTheExactConstantOperandMask()
+    {
+        WithCompiler(compiler => {
+            var create = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Vector_Create, TYP_FLOAT, 16,
+                new GenTreeDblCon(TYP_FLOAT, 1.0),
+                new GenTreeDblCon(TYP_FLOAT, -0.0),
+                new GenTreeLclVar(TYP_FLOAT, 0),
+                new GenTreeDblCon(TYP_FLOAT, 0.0));
+            simd64_t value = default;
+
+            Assert.That(
+                GenTreeVecCon.IsHWIntrinsicCreateConstant(
+                    create.HWIntrinsicId, create.SimdBaseType, create.SimdSize, create.Operands,
+                    ref value, out var constantMask),
+                Is.False);
+            Assert.That(unchecked((ulong)constantMask.RawBits), Is.EqualTo(0b1011UL));
+            Assert.That(value.u32[0], Is.EqualTo(0x3F800000U));
+            Assert.That(value.u32[1], Is.EqualTo(0x80000000U));
+            Assert.That(value.u32[2], Is.Zero);
+            Assert.That(value.u32[3], Is.Zero);
+        });
+    }
+
+    [Test]
+    public static void ConstantLaneProfitabilityCountsRawNegativeZeroBits()
+    {
+        simd64_t value = default;
+        value.u32[1] = 0x80000000U;
+        value.u32[2] = 0x3F800000U;
+        simdmask_t mask = default;
+        mask.u64[0] = 0b1111;
+
+        Assert.That(
+            CountNonZeroConstantElementCount(null, ref value, mask, TYP_FLOAT),
+            Is.EqualTo(2));
+
+        mask.u64[0] = 0b1001;
+        Assert.That(
+            CountNonZeroConstantElementCount(null, ref value, mask, TYP_FLOAT),
+            Is.Zero);
+    }
+
+    [Test]
+    public static void PartiallyConstantCreateUsesVectorConstantForMultipleNonzeroLanes()
+    {
+        Assume.That(Configuration.TARGET_XARCH, "This lowering test requires the xarch target.");
+
+        WithCompiler(compiler => {
+            EnableIsa(compiler, InstructionSet_X86Base);
+            var first = compiler.gtNewIconNode(TYP_INT, 1);
+            var second = compiler.gtNewIconNode(TYP_INT, 2);
+            var third = compiler.gtNewLclvNode(TYP_INT, 0);
+            var fourth = compiler.gtNewLclvNode(TYP_INT, 1);
+            var create = compiler.gtNewSimdHWIntrinsicNode(
+                TYP_SIMD16, NI_Vector_Create, TYP_INT, 16, first, second, third, fourth);
+            var user = new GenTreeUnOp(GT_NEG, TYP_SIMD16, create) { IsUnusedValue = true };
+            var block = NewBlock(first, second, third, fourth, create, user);
+            simd64_t inputValue = default;
+            Assert.That(
+                GenTreeVecCon.IsHWIntrinsicCreateConstant(
+                    create.HWIntrinsicId, create.SimdBaseType, create.SimdSize, create.Operands,
+                    ref inputValue, out var inputMask),
+                Is.False);
+            Assert.That(inputValue.i32[0], Is.EqualTo(1));
+            Assert.That(inputValue.i32[1], Is.EqualTo(2));
+            Assert.That(unchecked((ulong)inputMask.RawBits), Is.EqualTo(0b11UL));
+
+            Assert.That(LowerCreate(NewLowering(compiler, block), create), Is.SameAs(user));
+
+            var constantVectors = new List<GenTreeVecCon>();
+            var insertCount = 0;
+            for (var node = block.FirstNode; node is not null; node = node.Next)
+            {
+                if (node is GenTreeVecCon vector)
+                {
+                    constantVectors.Add(vector);
+                }
+                else if ((node is GenTreeHWIntrinsic intrinsicNode) &&
+                    (intrinsicNode.HWIntrinsicId is NI_X86Base_Insert))
+                {
+                    insertCount++;
+                }
+            }
+
+            Assert.That(constantVectors, Has.Count.EqualTo(1));
+            var constantVector = constantVectors[0];
+            var vectorValue = constantVector.SimdVal;
+            int[] lanes = [vectorValue.i32[0], vectorValue.i32[1], vectorValue.i32[2], vectorValue.i32[3]];
+            Assert.That(lanes, Is.EqualTo((int[])[1, 2, 0, 0]));
+            Assert.That(insertCount, Is.EqualTo(2));
+            Assert.That(user.Op1, Is.TypeOf<GenTreeHWIntrinsic>());
+            CheckLir(compiler, block);
+        });
+    }
+
+    [Test]
+    public static void PartiallyConstantFloatCreatePreservesNegativeZeroAndZeroLanes()
+    {
+        Assume.That(Configuration.TARGET_XARCH, "This lowering test requires the xarch target.");
+
+        WithCompiler(compiler => {
+            EnableIsa(compiler, InstructionSet_X86Base);
+            var first = new GenTreeDblCon(TYP_FLOAT, 1.0);
+            var second = new GenTreeDblCon(TYP_FLOAT, -0.0);
+            var third = new GenTreeDblCon(TYP_FLOAT, 0.0);
+            var fourth = compiler.gtNewLclvNode(TYP_FLOAT, 0);
+            var create = compiler.gtNewSimdHWIntrinsicNode(
+                TYP_SIMD16, NI_Vector_Create, TYP_FLOAT, 16, first, second, third, fourth);
+            var user = new GenTreeUnOp(GT_NEG, TYP_SIMD16, create) { IsUnusedValue = true };
+            var block = NewBlock(first, second, third, fourth, create, user);
+
+            Assert.That(LowerCreate(NewLowering(compiler, block), create), Is.SameAs(user));
+
+            var constantVectors = new List<GenTreeVecCon>();
+            var insertCount = 0;
+            for (var node = block.FirstNode; node is not null; node = node.Next)
+            {
+                if (node is GenTreeVecCon vector)
+                {
+                    constantVectors.Add(vector);
+                }
+                else if ((node is GenTreeHWIntrinsic intrinsicNode) &&
+                    (intrinsicNode.HWIntrinsicId is NI_X86Base_Insert))
+                {
+                    insertCount++;
+                }
+            }
+
+            Assert.That(constantVectors, Has.Count.EqualTo(1));
+            var value = constantVectors[0].SimdVal;
+            Assert.That(value.u32[0], Is.EqualTo(0x3F800000U));
+            Assert.That(value.u32[1], Is.EqualTo(0x80000000U));
+            Assert.That(value.u32[2], Is.Zero);
+            Assert.That(value.u32[3], Is.Zero);
+            Assert.That(insertCount, Is.EqualTo(1));
+            CheckLir(compiler, block);
+        });
+    }
+
     [TestCase(NI_Vector_Create, false)]
     [TestCase(NI_Vector_CreateScalar, true)]
     [TestCase(NI_Vector_CreateScalarUnsafe, false)]
@@ -666,6 +824,13 @@ internal static unsafe class HardwareConstructionLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerHWIntrinsicCreate")]
     private static extern GenTree? LowerCreate(Lowering lowering, GenTreeHWIntrinsic node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "NonZeroConstantElementCount")]
+    private static extern int CountNonZeroConstantElementCount(
+        Lowering? lowering,
+        ref simd64_t simdVal,
+        simdmask_t constantMask,
+        var_types simdBaseType);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerHWIntrinsicWithElement")]
     private static extern GenTree? LowerWithElement(Lowering lowering, GenTreeHWIntrinsic node);

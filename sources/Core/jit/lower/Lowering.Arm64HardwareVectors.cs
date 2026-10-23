@@ -25,7 +25,7 @@ public sealed partial class Lowering
         assert(varTypeIsArithmetic(baseType));
         assert(size != 0);
         var constant = GenTreeVecCon.IsHWIntrinsicCreateConstant(
-            id, baseType, size, node.Operands, ref value);
+            id, baseType, size, node.Operands, ref value, out var constantMask);
         var scalar = HWIntrinsicInfo.IsVectorCreateScalar(id);
         var count = node.Operands.Length;
         if (constant && (count == 1) && IsValidConstForMovImmArm64(node))
@@ -82,6 +82,11 @@ public sealed partial class Lowering
 
             node.ChangeHWIntrinsicId(id);
             return LowerNode(node);
+        }
+
+        if (NonZeroConstantElementCount(ref value, constantMask, baseType) >= 2)
+        {
+            return LowerHWIntrinsicCreateWithInserts(node, ref value, constantMask);
         }
 
         var current = InsertNewSimdCreateScalarUnsafeNode(simdType, node.GetOp(1), baseType, size);

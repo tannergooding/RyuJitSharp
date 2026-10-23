@@ -301,8 +301,9 @@ differences in the comparison tooling.
 Build `sources\PortingCorpus\PortingCorpus.csproj` in Release. Its output is
 `artifacts\bin\sources\PortingCorpus\Release\net11.0\PortingCorpus.dll`.
 It covers arithmetic, branches, locals, direct and managed indirect calls,
-inlining, scalar and hardware-intrinsic folding, synchronized methods, generic
-exception handling, P/Invoke transitions, return merging and local addresses.
+inlining, scalar and hardware-intrinsic folding, partially constant
+`Vector128.Create`, synchronized methods, generic exception handling, P/Invoke
+transitions, return merging and local addresses.
 `FoldConstants` uses `BitConverter` intrinsics to keep constants in IL until JIT
 import, exercising casts and arithmetic without Roslyn folding them first.
 `FoldFloating` exercises addition of negative zero, multiplication/division by

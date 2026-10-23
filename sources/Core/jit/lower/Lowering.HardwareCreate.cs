@@ -4,11 +4,111 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+    private static int NonZeroConstantElementCount(
+        ref simd_t simdVal,
+        simdmask_t constantMask,
+        var_types simdBaseType)
+    {
+        var elementSize = (int)genTypeSize(simdBaseType);
+        var maskBits = unchecked((ulong)constantMask.RawBits);
+        var simdBytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref simdVal, 1));
+        var count = 0;
+
+        while (maskBits != 0)
+        {
+            var elementIndex = BitOperations.TrailingZeroCount(maskBits);
+            maskBits &= maskBits - 1;
+
+            var byteOffset = elementIndex * elementSize;
+            for (var byteIndex = 0; byteIndex < elementSize; byteIndex++)
+            {
+                if (simdBytes[byteOffset + byteIndex] != 0)
+                {
+                    count++;
+                    break;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    private GenTree? LowerHWIntrinsicCreateWithInserts(
+        GenTreeHWIntrinsic node,
+        ref simd_t simdVal,
+        simdmask_t constantMask)
+    {
+        var simdType = node.Type;
+        var simdBaseType = node.SimdBaseType;
+        var simdSize = node.SimdSize;
+        var argCount = node.Operands.Length;
+
+        if ((simdSize == 8) && (simdType is TYP_DOUBLE))
+        {
+            simdType = TYP_SIMD8;
+        }
+
+        assert(simdType is TYP_SIMD8 or TYP_SIMD16);
+        var maskBits = unchecked((ulong)constantMask.RawBits);
+        assert(BitOperations.PopCount(maskBits) >= 2);
+
+        var vector = CompilerInstance.gtNewVconNode(simdType);
+        vector.SimdVal = simdVal;
+        BlockRange().InsertBefore(node, vector);
+
+        GenTree result = vector;
+        for (var index = 1; index <= argCount; index++)
+        {
+            var operand = node.GetOp(index);
+            var constantBit = 1UL << (index - 1);
+            if ((maskBits & constantBit) != 0)
+            {
+                if (!Configuration.TARGET_64BIT && operand.Oper.IsLong)
+                {
+                    BlockRange().Remove(operand.AsOp().Op1);
+                    assert(operand.AsOp().Op2 is not null);
+                    BlockRange().Remove(operand.AsOp().Op2);
+                }
+
+                BlockRange().Remove(operand);
+                continue;
+            }
+
+            var elementIndex = CompilerInstance.gtNewIconNode(TYP_INT, index - 1);
+            var insertionPoint = LIR.LastNode(result, operand);
+            var insert = CompilerInstance.gtNewSimdWithElementNode(
+                simdType,
+                result,
+                elementIndex,
+                operand,
+                simdBaseType,
+                simdSize);
+            BlockRange().InsertAfter(insertionPoint, elementIndex, insert);
+            result = insert;
+            _ = LowerNode(insert);
+        }
+
+        if (BlockRange().TryGetUse(node, out var use))
+        {
+            use.ReplaceWith(result);
+        }
+        else
+        {
+            result.IsUnusedValue = true;
+        }
+
+        var next = node.Next;
+        BlockRange().Remove(node);
+        return next;
+    }
+
     private unsafe GenTree? LowerHWIntrinsicCreate(GenTreeHWIntrinsic node)
     {
         if (!Configuration.TARGET_XARCH)
@@ -35,7 +135,7 @@ public sealed partial class Lowering
 
         var op1 = node.GetOp(1);
         var isConstant = GenTreeVecCon.IsHWIntrinsicCreateConstant(
-            intrinsicId, simdBaseType, simdSize, node.Operands, ref simdVal);
+            intrinsicId, simdBaseType, simdSize, node.Operands, ref simdVal, out var constantMask);
         var isCreateScalar = HWIntrinsicInfo.IsVectorCreateScalar(intrinsicId);
         var argCnt = node.Operands.Length;
 
@@ -157,6 +257,7 @@ public sealed partial class Lowering
             }
 
             assert(simdType is TYP_SIMD16);
+
             tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseType, 16);
 
             if ((simdBaseType is not TYP_DOUBLE) && CompilerInstance.compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -290,6 +391,11 @@ public sealed partial class Lowering
         }
 
         assert(simdType is TYP_SIMD16);
+        if (NonZeroConstantElementCount(ref simdVal, constantMask, simdBaseType) >= 2)
+        {
+            return LowerHWIntrinsicCreateWithInserts(node, ref simdVal, constantMask);
+        }
+
         tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseType, 16);
 
         switch (simdBaseType)

@@ -197,6 +197,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-wasm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-wasm')))">
+    <Compile Include="..\Core\CallTargetLoweringTests.cs" Link="CallTargetLoweringTests.cs" />
     <Compile Include="..\Core\CodeGenBlockDriverTargetTests.cs" Link="CodeGenBlockDriverTargetTests.cs" />
     <Compile Include="..\Core\CodeGenSharedGenerationTests.cs" Link="CodeGenSharedGenerationTests.cs" />
     <Compile Include="..\Core\FlowGraphDelegateConstructorTests.cs" Link="FlowGraphDelegateConstructorTests.cs" />

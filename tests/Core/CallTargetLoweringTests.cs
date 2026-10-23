@@ -20,6 +20,7 @@ internal static unsafe class CallTargetLoweringTests
     [Test]
     public static void MaterializingAUseRechecksOnlyTheInsertedRange()
     {
+        Assume.That(Configuration.HAS_FIXED_REGISTER_SET, "This lowering assertion requires fixed-register operand containment.");
         WithCompiler((compiler, block, lowering, unused) => {
             compiler.lvaTable = [new LclVarDsc()];
             compiler.lvaCount = 1;
@@ -82,6 +83,7 @@ internal static unsafe class CallTargetLoweringTests
     [Test]
     public static void DirectVirtualStubCallKeepsTargetInHiddenArgumentOnAmd64()
     {
+        Assume.That(Configuration.TARGET_AMD64);
         WithCompiler((compiler, block, lowering, _) => {
             var call = new GenTreeCall(TYP_VOID) {
                 _callType = CT_USER_FUNC,
@@ -100,6 +102,7 @@ internal static unsafe class CallTargetLoweringTests
     [Test]
     public static void DispatchHelperConvertsIndirectStubCallWithoutDroppingTheCellArgument()
     {
+        Assume.That(Configuration.HAS_FIXED_REGISTER_SET);
         WithCompiler((compiler, block, lowering, _) => {
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_USE_DISPATCH_HELPERS);
             compiler.info.compMatchedVM = true;
@@ -144,9 +147,7 @@ internal static unsafe class CallTargetLoweringTests
             ee->SlotOffset = slot;
 
             var (call, thisValue, putArg) = NewInstanceCall();
-            block.InsertAtEnd(thisValue);
-            block.InsertAtEnd(putArg);
-            block.InsertAtEnd(call);
+            InsertInstanceCall(block, thisValue, putArg, call);
 
             var target = Invoke(lowering, "LowerVirtualVtableCall", call);
             Assert.That(target?.Oper, Is.EqualTo(GT_IND));
@@ -177,9 +178,7 @@ internal static unsafe class CallTargetLoweringTests
             ee->Relative = true;
 
             var (call, thisValue, putArg) = NewInstanceCall();
-            block.InsertAtEnd(thisValue);
-            block.InsertAtEnd(putArg);
-            block.InsertAtEnd(call);
+            InsertInstanceCall(block, thisValue, putArg, call);
 
             var target = Invoke(lowering, "LowerVirtualVtableCall", call);
             Assert.That(target?.Oper, Is.EqualTo(GT_ADD));
@@ -210,6 +209,7 @@ internal static unsafe class CallTargetLoweringTests
     [Test]
     public static void DelegateInvokeMovesInstanceLoadAfterArgumentEvaluation()
     {
+        Assume.That(Configuration.HAS_FIXED_REGISTER_SET);
         WithCompiler((compiler, block, lowering, _) => {
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.offsetOfDelegateInstance = 16;
@@ -228,7 +228,7 @@ internal static unsafe class CallTargetLoweringTests
             Assert.That(target?.AsIndir().Addr.AsAddrMode().Offset, Is.EqualTo(24));
             Assert.That(target?.AsIndir().Addr.AsAddrMode().BaseAddress, Is.Not.SameAs(thisValue));
 
-            var newThis = putArg.Op1;
+            var newThis = putArg.AsUnOp().Op1;
             Assert.That(newThis.Oper, Is.EqualTo(GT_IND));
             Assert.That(newThis.AsIndir().Addr.AsAddrMode().Offset, Is.EqualTo(16));
             Assert.That(otherArg.Next, Is.SameAs(newThis.AsIndir().Addr));
@@ -237,10 +237,54 @@ internal static unsafe class CallTargetLoweringTests
         });
     }
 
-    private static (GenTreeCall Call, GenTreeLclVar ThisValue, GenTreeUnOp PutArg) NewInstanceCall()
+    [Test]
+    public static void NonFixedRegisterVtableCallReplacesTheOwnedThisArgument()
+    {
+        Assume.That(!Configuration.HAS_FIXED_REGISTER_SET, "This test requires a non-fixed-register target.");
+
+        WithCompiler((compiler, block, lowering, ee) => {
+            compiler.lvaTable = [new LclVarDsc()];
+            compiler.lvaCount = 1;
+            ee->ChunkOffset = Globals.CORINFO_VIRTUALCALL_NO_CHUNK;
+            ee->SlotOffset = 24;
+
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var receiver = new GenTreeIndir(GT_IND, TYP_REF, address);
+            var call = new GenTreeCall(TYP_VOID) {
+                _callType = CT_USER_FUNC,
+                _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x1234,
+            };
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(receiver)
+                .WithWellKnownArg(WellKnownArg.ThisPointer));
+            block.InsertAtEnd(address);
+            block.InsertAtEnd(receiver);
+            block.InsertAtEnd(call);
+
+            var target = Invoke(lowering, "LowerVirtualVtableCall", call);
+
+            Assert.That(target?.Oper, Is.EqualTo(GT_IND));
+            Assert.That(call.Args.ThisArg?.Node.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(call.Args.ThisArg?.Node, Is.Not.SameAs(receiver));
+        });
+    }
+
+    private static void InsertInstanceCall(BasicBlock block, GenTreeLclVar thisValue, GenTree argument, GenTreeCall call)
+    {
+        if (!ReferenceEquals(thisValue, argument))
+        {
+            block.InsertAtEnd(thisValue);
+        }
+
+        block.InsertAtEnd(argument);
+        block.InsertAtEnd(call);
+    }
+
+    private static (GenTreeCall Call, GenTreeLclVar ThisValue, GenTree PutArg) NewInstanceCall()
     {
         var thisValue = new GenTreeLclVar(TYP_REF, 0);
-        var putArg = new GenTreeUnOp(GT_PUTARG_REG, TYP_REF, thisValue);
+        GenTree putArg = Configuration.HAS_FIXED_REGISTER_SET
+            ? new GenTreeUnOp(GT_PUTARG_REG, TYP_REF, thisValue)
+            : thisValue;
         var call = new GenTreeCall(TYP_VOID) {
             _callType = CT_USER_FUNC,
             _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x1234,

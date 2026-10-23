@@ -95,8 +95,20 @@ public sealed partial class Lowering
         var thisArg = call.IsTailCallViaJitHelper ? call.Args.GetArgByIndex(0) : call.Args.ThisArg;
         assert(thisArg is not null);
         var thisArgNode = thisArg.Node;
-        assert(thisArgNode.Oper is GT_PUTARG_REG);
-        var thisPtr = thisArgNode.AsUnOp().Op1;
+        GenTree thisPtr;
+        LIR.Use thisPtrUse;
+
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            assert(thisArgNode.Oper is GT_PUTARG_REG);
+            thisPtr = thisArgNode.AsUnOp().Op1;
+            thisPtrUse = new LIR.Use(BlockRange(), ref thisArgNode.AsUnOp().Op1Ref, thisArgNode);
+        }
+        else
+        {
+            thisPtr = thisArgNode;
+            thisPtrUse = new LIR.Use(BlockRange(), ref thisArg.NodeRef, call);
+        }
 
         int localNumber;
         if (thisPtr.Oper is GT_LCL_VAR or GT_LCL_FLD)
@@ -110,7 +122,6 @@ public sealed partial class Lowering
                 _vtableCallTemp = CompilerInstance.lvaGrabTemp(true, "virtual vtable call");
             }
 
-            var thisPtrUse = new LIR.Use(BlockRange(), ref thisArgNode.AsUnOp().Op1Ref, thisArgNode);
             _ = ReplaceWithLclVar(thisPtrUse, _vtableCallTemp);
             localNumber = _vtableCallTemp;
         }
