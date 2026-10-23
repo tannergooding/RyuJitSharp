@@ -36,6 +36,7 @@ deviation is explicitly approved.
 | B394 | `ValueNumStore::RunTests` | Enabling native component tests asserts because a self-test expects the pre-canonicalized operand order for a commutative VN expression. Production canonicalization puts the non-handle constant in argument one. | Update the self-test to assert the canonical operand order. | Preserve pinned canonicalization and assertion; report contains the native repro. |
 | B524 | `jitstd::list::merge` | When source nodes remain after merging, native links the source tail into the destination but does not clear the source's head, tail, or size. Both lists then share nodes, making later traversal/destruction unsafe. The pinned JIT has no `list.merge` call sites. | Clear the source list after transferring the remaining chain, while preserving merge ordering. | Preserve pinned managed behavior until the upstream correction is incorporated; the defect was reported in [dotnet/runtime#135435](https://github.com/dotnet/runtime/issues/135435). |
 | B526 | `CodeGenInterface::dumpSiVarLoc` (`src/coreclr/jit/scopeinfo.cpp`) | Confirmed at 7462 and reproduced at reconciled 5a518 in Windows-x64 Checked: native and managed CoreLib FullDump captures reach `System.Double:Hypot` with a live XMM16 local. XMM16 is deliberately represented as `VLT_INVALID` because it cannot be encoded in debugger scope info, but the Debug variable-live-range printer has no `VLT_INVALID` case and asserts in its default branch after emitting the block. | Print an explicit unavailable marker for `VLT_INVALID`, or omit such ranges from diagnostic history consistently with the scope-info publication filter. | Preserve the pinned diagnostic behavior until an upstream correction is incorporated; all three captures are incomplete. |
+| B527 | `Compiler::gtDispVN` (`src/coreclr/jit/gentree.cpp`) | Reproduced at reconciled 5a518 in Windows-x64 Checked: native, native-repeat, and managed FullDump captures reach `OrderedDictionary.RemoveEntryFromBucket` during value numbering, then assert because a tree has a liberal VN but no conservative VN. The assertion occurs in the tree-dump helper; no generated-code difference is established. | Determine whether a liberal-only VN pair is valid at this dump point. If it is, make the diagnostic printer handle an unavailable conservative VN; otherwise fix the VN assignment before printing. | Preserve pinned diagnostic behavior. All captures stop before codegen; the cause of the missing conservative VN remains unresolved. |
 
 ## Detailed reports
 
@@ -302,3 +303,29 @@ The manifests, assertion text, dumps, and native repeat comparison are under
 `artifacts\corelib-full-parity-7462`. None of the captures establishes
 full-CoreLib parity. Keep the managed diagnostic behavior aligned with the
 pinned source until an upstream correction is accepted.
+
+### B527: FullDump asserts while printing an incomplete VN pair
+
+**Confirmed in native RyuJIT** at reconciled revision
+`5a518c3fcb295c89a73404d9f20c398dafdce845`, Windows x64 Checked. Targeted
+`PREPALL-QUIET` FullDump captures of `System.Collections.dll` each produced one
+matching header for
+``System.Collections.Generic.OrderedDictionary`2[System.__Canon,System.Nullable`1[int]]:RemoveEntryFromBucket(int):this``
+and exited with `0xC0000602` during `Do value numbering`. Native and
+native-repeat assert on
+`tree->gtVNPair.GetConservative() != ValueNumStore::NoVN` at `gentree.cpp:13020`;
+managed asserts on the corresponding
+`tree._vnPair.Conservative != ValueNumStore.NoVN` at
+`Compiler.gt.cs:3597`.
+
+`gtDispVN` prints a value-number pair when its liberal VN is present and asserts
+that the conservative VN is also present before printing it. The raw dumps end
+while visiting `BB06`, `STMT00031`; the cause of the missing conservative VN is
+not established. This is a diagnostic failure during a compiler phase, not
+evidence of a generated-code or runtime mismatch. The native/managed raw dump
+comparison first differs at the D015 profile diagnostic on line 590; no
+canonicalization was applied. Preserve the raw captures and keep FullDump
+coverage blocked until the VN-pair lifecycle or printer behavior is resolved.
+
+The native, native-repeat, and managed manifests, raw dumps, and comparisons
+are under `artifacts\corelib-disasm-5a518\system-collections-full-dump`.

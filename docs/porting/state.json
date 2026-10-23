@@ -10,16 +10,18 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Continue full-runtime parity after closing the System.Private.Xml mismatch. The current 5a518 managed PMI disassembly matches native-repeat byte-for-byte across 18,255 headers and 3,898,117 code bytes; native and native-repeat retain 345 raw method-body differences with no code-size changes. B526 now reproduces in targeted native, native-repeat, and managed captures at 5a518 (exit 0xC0000602), blocking FullDump but not disassembly. Next run matched 5a518 CoreLib disassembly captures for native, native-repeat, and managed, retaining raw comment/RWD-only blocks without normalization. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Continue current-pin full-runtime parity beyond the System.Private.Xml batch. The broad CoreLib JitDisasm output is not suitable for raw per-method comparison because managed output interleaves method markers; method-filtered full-PMI captures show RunFinalizers and CultureInfo.get_CurrentUICulture match native codegen. The System.Collections OrderedDictionary.RemoveEntryFromBucket assertion now reproduces on native, native-repeat, and managed at 5a518 and is tracked as B527; its Do value numbering failure is a shared capture blocker, not parity evidence. Next revalidate the prior 7462 CoreLib comment/RWD-only blocks at 5a518 with method-filtered PMI captures, retaining raw output. Preserve B526, B527, and the wildcard TLS-order boundary; keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
       "scope": "Continue pinned Windows x64 full-runtime parity after reconciling the System.Private.Xml codegen mismatches.",
       "completionCondition": "Complete the remaining CoreLib FullDump and raw-disassembly parity boundaries, fixing managed-only differences and retaining confirmed native defects or unapproved raw differences without normalization.",
-      "validation": "AssertionTests and ImporterEffectsTests passed 298/298 in Debug and 289/289 in Release. The pinned 5a518 System.Private.Xml capture covered 18,189 methods across 1,435 types (one skipped type, six skipped methods) and 18,255 disassembly headers. Managed output is byte-identical to native-repeat at 3,898,117 code bytes (SHA256 48454B79C783B65C179E158067406B0E3C9C4172330EA553EC2CEE9DA5FE1A07); native and native-repeat differ in 345 method bodies with no code-size changes. Both ReadAsync overloads now have native-matching code sizes (535 and 1,942 bytes), and the regression test covers both VN null-comparison polarities.",
+      "validation": "AssertionTests and ImporterEffectsTests passed 298/298 in Debug and 289/289 in Release. The pinned 5a518 System.Private.Xml capture covered 18,189 methods across 1,435 types (one skipped type, six skipped methods) and 18,255 disassembly headers. Managed output is byte-identical to native-repeat at 3,898,117 code bytes (SHA256 48454B79C783B65C179E158067406B0E3C9C4172330EA553EC2CEE9DA5FE1A07); native and native-repeat differ in 345 method bodies with no code-size changes. Both ReadAsync overloads have native-matching code sizes (535 and 1,942 bytes), and the regression test covers both VN null-comparison polarities. Current-pin CoreLib PMI runs report 4,284 types, 75,697 methods, 60 skipped types, and 1,267 skipped methods; each produced 75,845 header and code-size markers. Native and native-repeat totals are 8,424,620 and 8,424,557 bytes; managed is 8,424,558 bytes. The managed broad JitDisasm output embeds three headers and one code-size marker, so raw per-method comparison is unavailable. Filtered full-PMI captures at method index 2244 produce byte-identical native/managed RunFinalizers assembly (501 bytes, Thread.t_currentThread index 5); filtered CultureInfo.get_CurrentUICulture blocks also match byte-for-byte at 115 bytes. Filtered 5a518 System.Collections captures all exit 0xC0000602 at the same OrderedDictionary.RemoveEntryFromBucket Do value numbering assertion.",
       "deferrals": [
         "B526 reproduces at current pin 5a518: targeted native, native-repeat, and managed System.Double:Hypot captures all exit 0xC0000602 at the same Generate code assertion. This blocks FullDump coverage; preserve pinned behavior.",
-        "CoreLib disassembly still has raw non-ASCII comment and RWD absolute-pointer differences. Preserve the raw blocks and do not add comparison allowances without approval.",
-        "Filtered System.Collections FullDump captures still assert at OrderedDictionary.RemoveEntryFromBucket during Do value numbering; retain raw traces and do not claim full-dump parity."
+        "The managed broad CoreLib disassembly stream interleaves method output markers; raw per-method body comparison is unavailable. Preserve captures and use filtered PMI captures without normalizing the output.",
+        "System.GC:RunFinalizers changes TLS index/code size in the broad wildcard disassembly capture but matches native in the full-PMI method-filtered capture. Treat this as a capture-order/runtime-input boundary; do not change JIT constants.",
+        "Raw non-ASCII comment and RWD pointer differences were observed in the 7462 CoreLib capture; they are not re-established at 5a518 and remain unapproved for normalization.",
+        "Current-pin filtered System.Collections FullDump captures assert in gtDispVN at OrderedDictionary.RemoveEntryFromBucket during Do value numbering with exit 0xC0000602; tracked as B527. Native and managed raw comparisons first differ on the D015 profile diagnostic; preserve traces and do not claim full-dump parity."
       ]
     },
     "evidenceLinks": [
@@ -35,6 +37,28 @@
       "artifacts\\corelib-full-dump-b526-5a518-check\\native\\manifest.json",
       "artifacts\\corelib-full-dump-b526-5a518-check\\native-repeat\\manifest.json",
       "artifacts\\corelib-full-dump-b526-5a518-check\\managed\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\native\\disasm\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\native-repeat-serial\\disasm\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\managed-serial\\disasm\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\system-private-corelib-disasm-comparison.json",
+      "artifacts\\corelib-disasm-5a518\\method-disasm\\native\\RunFinalizers\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\method-disasm\\native-repeat\\RunFinalizers\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\method-disasm\\managed\\RunFinalizers\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\native-fullsequence1\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\managed-fullsequence1\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\runfinalizers-method-disasm-comparison.json",
+      "artifacts\\corelib-disasm-5a518\\pmi-currentuiculture\\native\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\pmi-currentuiculture\\managed\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\pmi-currentuiculture\\currentuiculture-method-disasm-comparison.json",
+      "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native-repeat\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\managed\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native-vs-native-repeat.json",
+      "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native-vs-managed.json",
+      "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native-repeat-vs-managed.json",
+      "artifacts\\corelib-disasm-5a518\\tls-trace-exact\\native\\capture\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\tls-trace-exact\\native-repeat\\capture\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\tls-trace-exact\\managed\\capture\\manifest.json",
       "artifacts\\oracle-refresh-system-private-xml-5a518-65b2f6b4-minopts-diagnostic\\managed-current-vs-native-importation.json",
       "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\tls-caller-trace-comparison.json",
       "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\native\\manifest.json",
@@ -374,7 +398,25 @@
           "artifacts\\corelib-full-parity-7462\\system-collections-full-dump-target-repro1\\managed\\manifest.json",
           "artifacts\\corelib-full-parity-7462\\system-collections-full-dump-target-repro1\\native-repeat-comparison.json",
           "artifacts\\corelib-full-parity-7462\\system-collections-full-dump-target-repro1\\managed-comparison.json"
-        ]
+        ],
+        "currentPin": {
+          "nativeCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845",
+          "method": "System.Collections.Generic.OrderedDictionary`2[System.__Canon,System.Nullable`1[int]]:RemoveEntryFromBucket(int):this",
+          "stage": "Do value numbering",
+          "exitCode": "0xC0000602",
+          "methodHeaders": 1,
+          "nativeAndRepeatAssertion": "tree->gtVNPair.GetConservative() != ValueNumStore::NoVN at gentree.cpp:13020",
+          "managedAssertion": "tree._vnPair.Conservative != ValueNumStore.NoVN at Compiler.gt.cs:3597",
+          "rawComparison": "First native/managed difference is the D015 profile diagnostic at line 590; no canonicalization applied.",
+          "evidence": [
+            "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native\\manifest.json",
+            "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native-repeat\\manifest.json",
+            "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\managed\\manifest.json",
+            "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native-vs-native-repeat.json",
+            "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native-vs-managed.json",
+            "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native-repeat-vs-managed.json"
+          ]
+        }
       },
       "systemLinqExpressionsDisassembly": {
         "architecture": "Windows x64",
@@ -449,10 +491,10 @@
       }
     },
     "dynamicTlsInputBoundary": {
-      "status": "extra-callback-explained-by-nonexecuting-altjit-fallback",
-      "finding": "At pinned revision 5a518c3f, matched native, native-repeat, and managed captures covered 144 TaskFactory<T>.FromAsyncImpl methods. Each run observed 53 TLS allocations with identical normalized sequences. Native made one Task.t_currentTask field/block-info callback per selected method; the managed AltJit run made two, with identical caller identity sets, field type index 36, and numeric block metadata (TLS index 6, access 0, TLS pointer offset 88, max-blocks offset 320, blocks offset 328, base offset 320). Runtime source explains the extra callback: with DOTNET_RunAltJitCode=0, a successful AltJit compilation is discarded and returns CORJIT_SKIPPED before the default JIT compiles the same method. The additional callback is therefore the expected second JIT pass, not a TLS value divergence. Raw Importation prefixes remain unequal across all 144 methods because of address-valued lines; no canonicalization was applied.",
-      "nextAction": "Do not change TLS constants. Treat the callback-count difference as explained for this nonexecuting AltJit capture; reopen the boundary only if a future matched capture reproduces a numeric TLS index or offset mismatch. This capture does not establish generated-code execution parity.",
-      "evidence": "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\tls-caller-trace-comparison.json; artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\capture-summary.json; pinned source: src/coreclr/jit/jitconfigvalues.h:226-228 and src/coreclr/jit/compiler.cpp:7173-7177."
+      "status": "TaskFactory-callback-explained; wildcard-disasm-TLS-order-sensitive",
+      "finding": "The prior 144-method TaskFactory<T>.FromAsyncImpl capture remains explained: native and managed observed identical 53-allocation sequences and numeric metadata; managed's second Task.t_currentTask callback was the expected nonexecuting AltJit pass before default-JIT fallback. In an uninstrumented 5a518 CoreLib wildcard JitDisasm capture, System.GC:RunFinalizers uses Thread.t_currentThread index 5/native and 2/managed (501/503 code bytes). A filtered PREPALL capture at Pmi method index 2244 instead produces byte-identical native/managed assembly at 501 bytes and index 5; filtered CultureInfo.get_CurrentUICulture also matches at 115 bytes. The EE-only traces are sensitive to runtime instrumentation: an instrumented root with native clrjit C67A reported indices 3/2, while a root retaining native clrjit 106BB and managed clrjit 50320 reported 5/5. These traces show allocation-order sensitivity but cannot be transferred to the uninstrumented wildcard capture. No JIT constants were changed.",
+      "nextAction": "Do not change TLS constants. Continue using method-filtered PREPALL captures when wildcard disassembly changes the TLS allocation order or interleaves output. Keep the broad raw captures and instrumentation manifests separate; reopen the EE-input boundary only with an uninstrumented matched capture that isolates the relevant Pmi sequence.",
+      "evidence": "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\tls-caller-trace-comparison.json; artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\capture-summary.json; artifacts\\corelib-disasm-5a518\\method-disasm\\native\\RunFinalizers\\manifest.json; artifacts\\corelib-disasm-5a518\\method-disasm\\managed\\RunFinalizers\\manifest.json; artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\native-fullsequence1\\manifest.json; artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\managed-fullsequence1\\manifest.json; artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\runfinalizers-method-disasm-comparison.json; artifacts\\corelib-disasm-5a518\\pmi-currentuiculture\\currentuiculture-method-disasm-comparison.json; artifacts\\corelib-disasm-5a518\\tls-trace\\native\\manifest.json; artifacts\\corelib-disasm-5a518\\tls-trace\\managed-capture\\manifest.json; artifacts\\corelib-disasm-5a518\\tls-trace-exact\\native\\capture\\manifest.json; artifacts\\corelib-disasm-5a518\\tls-trace-exact\\managed\\capture\\manifest.json; pinned source: src/coreclr/jit/jitconfigvalues.h:226-228, src/coreclr/jit/compiler.cpp:7173-7177, and 5a518 src/coreclr/vm/jitinterface.cpp::getThreadLocalFieldInfo."
     }
   },
   "sourceMap": [
