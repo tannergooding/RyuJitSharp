@@ -456,14 +456,28 @@ public partial class Compiler
 
                 if (((mflags & (CORINFO_FLG_VIRTUAL | CORINFO_FLG_EnC)) is (CORINFO_FLG_VIRTUAL | CORINFO_FLG_EnC)) && (opcode is CEE_CALLVIRT))
                 {
-                    NO_WAY("Virtual call to a function added via EnC is not supported");
+                    if (Configuration.DEBUG)
+                    {
+                        NO_WAY("Virtual call to a function added via EnC is not supported");
+                    }
+                    else
+                    {
+                        NO_WAY(default, default, 0);
+                    }
                 }
 
                 if ((sigInfo.callConv & CORINFO_CALLCONV_MASK) is not CORINFO_CALLCONV_DEFAULT
                                                               and not CORINFO_CALLCONV_VARARG
                                                               and not CORINFO_CALLCONV_NATIVEVARARG)
                 {
-                    BADCODE("Bad calling convention");
+                    if (Configuration.DEBUG)
+                    {
+                        BADCODE("Bad calling convention");
+                    }
+                    else
+                    {
+                        BADCODE(default, default, 0);
+                    }
                 }
 
                 //-------------------------------------------------------------------------
@@ -757,7 +771,14 @@ public partial class Compiler
 
                     default:
                     {
-                        NO_WAY("unknown call kind");
+                        if (Configuration.DEBUG)
+                        {
+                            NO_WAY("unknown call kind");
+                        }
+                        else
+                        {
+                            NO_WAY(default, default, 0);
+                        }
 
                         break;
                     }
@@ -819,7 +840,14 @@ public partial class Compiler
             {
                 if (!compFeatureVarArg())
                 {
-                    BADCODE("Varargs not supported.");
+                    if (Configuration.DEBUG)
+                    {
+                        BADCODE("Varargs not supported.");
+                    }
+                    else
+                    {
+                        BADCODE(default, default, 0);
+                    }
                 }
 
                 call.Flags |= GTF_CALL_POP_ARGS;
@@ -969,7 +997,14 @@ public partial class Compiler
 
                     if (clsHnd is null)
                     {
-                        NO_WAY("CALLI on parameterized type");
+                        if (Configuration.DEBUG)
+                        {
+                            NO_WAY("CALLI on parameterized type");
+                        }
+                        else
+                        {
+                            NO_WAY(default, default, 0);
+                        }
                     }
 
                     assert(opcode != CEE_CALLI);
@@ -1283,7 +1318,15 @@ public partial class Compiler
 
                         default:
                         {
-                            unreached();
+                            if (Configuration.DEBUG)
+                            {
+                                unreached();
+                            }
+                            else
+                            {
+                                unreached(default, 0);
+                            }
+
                             break;
                         }
                     }
@@ -1419,7 +1462,14 @@ public partial class Compiler
             {
                 if ((compiler.info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) is not 0)
                 {
-                    BADCODE("TailAwait is not supported in async methods that capture contexts");
+                    if (Configuration.DEBUG)
+                    {
+                        BADCODE("TailAwait is not supported in async methods that capture contexts");
+                    }
+                    else
+                    {
+                        BADCODE(default, default, 0);
+                    }
                 }
 
                 compiler._nextAwaitIsTail = true;
@@ -1870,7 +1920,14 @@ public partial class Compiler
                             return null;
                         }
 
-                        noway_assert(rawHandle.Type.Size == TYP_I_IMPL.Size);
+                        if (Configuration.DEBUG || Configuration.MEASURE_NOWAY)
+                        {
+                            noway_assert(rawHandle.Type.Size == TYP_I_IMPL.Size);
+                        }
+                        else
+                        {
+                            noway_assert(rawHandle.Type.Size == TYP_I_IMPL.Size, default, default, 0);
+                        }
 
                         var rawHandleSlot = compiler.lvaGrabTemp(shortLifetime: true, "rawHandle");
                         compiler.impStoreToTemp(rawHandleSlot, rawHandle, CHECK_SPILL_NONE);
@@ -2338,7 +2395,14 @@ public partial class Compiler
 
                                 default:
                                 {
-                                    NO_WAY("Intrinsic not supported in this path.");
+                                    if (Configuration.DEBUG)
+                                    {
+                                        NO_WAY("Intrinsic not supported in this path.");
+                                    }
+                                    else
+                                    {
+                                        NO_WAY(default, default, 0);
+                                    }
 
                                     break;
                                 }
@@ -3350,7 +3414,15 @@ public partial class Compiler
 
                                             default:
                                             {
-                                                unreached();
+                                                if (Configuration.DEBUG)
+                                                {
+                                                    unreached();
+                                                }
+                                                else
+                                                {
+                                                    unreached(default, 0);
+                                                }
+
                                                 break;
                                             }
                                         }
@@ -3903,10 +3975,15 @@ public partial class Compiler
                 {
                     NYI_WASM("Unhandled must expand intrinsic");
                 }
-                else
+                else if (Configuration.DEBUG)
                 {
                     NO_WAY("Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
                 }
+                else
+                {
+                    NO_WAY(default, default, 0);
+                }
+
                 return compiler.impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, methHnd, sigInfo, mustExpand);
             }
 
