@@ -16,7 +16,7 @@ public static partial class SM_OPCODEExtensions
             get
             {
                 assert(opcode < SM_COUNT);
-                return s_names[(int)(opcode)];
+                return Compiler.DebugData.SMOpcodeNamesData.Names[(int)(opcode)];
             }
         }
     }

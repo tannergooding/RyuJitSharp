@@ -7035,7 +7035,7 @@ public enum SM_OPCODE
             var name = parts[0].AsSpan().Trim();
             var nameString = parts[1].AsSpan().Trim();
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {nameString}, // {name}");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                {nameString}, // {name}");
         });
 
         var codeSeqsBuilder = ProcessMacroBasedFile(@"Inputs\smopcode.def", "SMOPDEF(", (builder, inputFile, line, prefix, parts) => {
@@ -7198,8 +7198,18 @@ public static partial class SM_OPCODEExtensions
         CODE_SEQUENCE_END,
     ];
 
-    private static readonly string[] s_names = [
-{{namesBuilder}}    ];
+}
+
+public partial class Compiler
+{
+    internal sealed partial class DebugData
+    {
+        internal static class SMOpcodeNamesData
+        {
+            internal static readonly string[] Names = [
+{{namesBuilder}}            ];
+        }
+    }
 }
 """);
     }
