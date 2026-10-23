@@ -4179,7 +4179,7 @@ public partial class Compiler
 
             if (Configuration.DEBUG && compiler.verbose && !compiler.compIsForInlining)
             {
-                jitprintf($"OPTIONS: MinOpts() == {dspBool(compiler.MinOpts)}\n");
+                jitprintf($"OPTIONS: opts.MinOpts() == {dspBool(compiler.MinOpts)}\n");
             }
 
             // Control the optimizations
