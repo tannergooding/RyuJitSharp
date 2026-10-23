@@ -10,19 +10,22 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Capture the three managed methods whose headers were embedded inside other disassembly lines at 5a518: System.ModuleHandle.ResolveTypeHandle, System.Runtime.CompilerServices.StaticsHelpers.GetGCThreadStaticsByIndexSlow, and System.Threading.Thread.InitializeCurrentThread. Compare method-filtered native, native-repeat, and managed blocks without normalization. The instrumented full-PMI trace now shows identical 75,697-method PMI enumeration sequences but native runs assign Thread.t_currentThread index 2/5 and emit 1,419/1,431 bytes; managed assigns index 2 and emits 1,419 bytes. Treat this as process-order-sensitive EE TLS input, not a stable managed-only mismatch. FullDump remains blocked by B526/B527; keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "The pinned 5a518 disasm investigation has method-filtered results for every non-TLS raw-difference family and a byte-preserving full-stream inventory. No stable managed-only code-size difference remains in the investigated methods; the remaining broad TLS differences vary with native process order, and FullDump stops at confirmed B526/B527 assertions. Preserve these limits without changing constants or normalizing output. Before publication, review the recorded boundaries and request explicit push authorization; keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
       "scope": "Continue pinned Windows x64 full-runtime parity after reconciling the System.Private.Xml codegen mismatches.",
-      "completionCondition": "Complete the remaining CoreLib FullDump and raw-disassembly parity boundaries, fixing managed-only differences and retaining confirmed native defects or unapproved raw differences without normalization.",
-      "validation": "AssertionTests and ImporterEffectsTests passed 298/298 in Debug and 289/289 in Release. The pinned 5a518 System.Private.Xml capture covered 18,189 methods across 1,435 types (one skipped type, six skipped methods) and 18,255 disassembly headers. Managed output is byte-identical to native-repeat at 3,898,117 code bytes (SHA256 48454B79C783B65C179E158067406B0E3C9C4172330EA553EC2CEE9DA5FE1A07); native and native-repeat differ in 345 method bodies with no code-size changes. Both ReadAsync overloads have native-matching code sizes (535 and 1,942 bytes), and the regression test covers both VN null-comparison polarities. Current-pin CoreLib PMI runs report 4,284 types, 75,697 methods, 60 skipped types, and 1,267 skipped methods; each produced 75,845 header and code-size markers. Native and native-repeat totals are 8,424,620 and 8,424,557 bytes; managed is 8,424,558 bytes. The managed broad JitDisasm output embeds three headers and one code-size marker, so raw per-method comparison is unavailable. Filtered full-PMI captures at method index 2244 produce byte-identical native/managed RunFinalizers assembly (501 bytes, Thread.t_currentThread index 5); filtered CultureInfo.get_CurrentUICulture blocks also match byte-for-byte at 115 bytes. Filtered 5a518 System.Collections captures all exit 0xC0000602 at the same OrderedDictionary.RemoveEntryFromBucket Do value numbering assertion. Nine broad CoreLib size-difference methods were isolated with 27 PrepOne captures; all completed with matching headers and pinned binary hashes. Native/native-repeat blocks match byte-for-byte for all nine, and all nine code sizes match across variants. Eight managed blocks match native exactly; Thread.JoinInternal differs only in TLS index/offset (5/0x28 native versus 2/0x10 managed), with 1,419-byte code in all three. Instrumented full-PMI Thread.JoinInternal captures produced the same 75,697-method enumeration sequence and identical CoreCLR/CoreLib/PMI hashes; native indexed Thread.t_currentThread at 2/1,419 bytes, native-repeat at 5/1,431 bytes, and managed at 2/1,419 bytes.",
+      "completionCondition": "Complete current-pin CoreLib parity triage: verify method-specific codegen where raw output is reliable, retain process-order TLS inputs and confirmed native assertions as named boundaries, and do not claim full-CoreLib equality or alter compiler behavior without repeatable oracle evidence.",
+      "validation": "AssertionTests and ImporterEffectsTests passed 298/298 in Debug and 289/289 in Release. The pinned 5a518 System.Private.Xml capture covered 18,189 methods across 1,435 types (one skipped type, six skipped methods) and 18,255 disassembly headers. Managed output is byte-identical to native-repeat at 3,898,117 code bytes (SHA256 48454B79C783B65C179E158067406B0E3C9C4172330EA553EC2CEE9DA5FE1A07); native and native-repeat differ in 345 method bodies with no code-size changes. Both ReadAsync overloads have native-matching code sizes (535 and 1,942 bytes), and the regression test covers both VN null-comparison polarities. Current-pin CoreLib PMI runs report 4,284 types, 75,697 methods, 60 skipped types, and 1,267 skipped methods; each produced 75,845 header and code-size markers. Native and native-repeat totals are 8,424,620 and 8,424,557 bytes; managed is 8,424,558 bytes. The managed broad JitDisasm output embeds three headers and one code-size marker, so raw per-method comparison is unavailable. Filtered full-PMI captures at method index 2244 produce byte-identical native/managed RunFinalizers assembly (501 bytes, Thread.t_currentThread index 5); filtered CultureInfo.get_CurrentUICulture blocks also match byte-for-byte at 115 bytes. Filtered 5a518 System.Collections captures all exit 0xC0000602 at the same OrderedDictionary.RemoveEntryFromBucket Do value numbering assertion. Nine broad CoreLib size-difference methods were isolated with 27 PrepOne captures; all completed with matching headers and pinned binary hashes. Native/native-repeat blocks match byte-for-byte for all nine, and all nine code sizes match across variants. Eight managed blocks match native exactly; Thread.JoinInternal differs only in TLS index/offset (5/0x28 native versus 2/0x10 managed), with 1,419-byte code in all three. Instrumented full-PMI Thread.JoinInternal captures produced the same 75,697-method enumeration sequence and identical CoreCLR/CoreLib/PMI hashes; native indexed Thread.t_currentThread at 2/1,419 bytes, native-repeat at 5/1,431 bytes, and managed at 2/1,419 bytes. Method-filtered captures of all three embedded-marker methods had matching native/repeat results; ModuleHandle and StaticsHelpers match managed byte-for-byte, while Thread.InitializeCurrentThread has only the same TLS index/offset difference (code size 239 bytes in all variants).",
       "deferrals": [
         "B526 reproduces at current pin 5a518: targeted native, native-repeat, and managed System.Double:Hypot captures all exit 0xC0000602 at the same Generate code assertion. This blocks FullDump coverage; preserve pinned behavior.",
-        "The managed broad CoreLib disassembly stream interleaves method output markers; raw per-method body comparison is unavailable. Preserve captures and use filtered PMI captures without normalizing the output.",
+        "The managed broad CoreLib stream embeds three method headers and one code-size marker. Raw byte-slice comparison records 12 native/native-repeat, 317 native/managed, and 310 repeat/managed block differences; global identity-keyed code-size comparisons reconcile to 9/11/2 mismatches. Five blocks touch embedded-header boundaries. Targeted captures resolve the non-TLS candidates, but the broad stream still does not establish full method-body equality.",
         "System.GC:RunFinalizers changes TLS index/code size in the broad wildcard disassembly capture but matches native in the full-PMI method-filtered capture. Treat this as a capture-order/runtime-input boundary; do not change JIT constants.",
         "Filtered 5a518 PMI captures revalidate all 16 prior 7462 raw blocks: native/managed has 13 non-ASCII-comment-only differences and 3 RWD-only differences; native/native-repeat is identical except for the 3 RWD-only records. All 16 expected method code sizes match in all variants. RWD pointers remain raw and unnormalized.",
         "Current-pin filtered System.Collections FullDump captures assert in gtDispVN at OrderedDictionary.RemoveEntryFromBucket during Do value numbering with exit 0xC0000602; tracked as B527. Native and managed raw comparisons first differ on the D015 profile diagnostic; preserve traces and do not claim full-dump parity.",
-        "Instrumented full-PMI Thread.JoinInternal captures show native repeat variation under identical native JIT, CoreCLR, CoreLib, PMI, and method enumeration: index 2/1,419 bytes versus index 5/1,431 bytes. Managed matched the first native run at index 2/1,419 bytes. The TLS/code-size boundary is process-order-sensitive, not a stable managed-only difference."
+        "Instrumented full-PMI Thread.JoinInternal captures show native repeat variation under identical native JIT, CoreCLR, CoreLib, PMI, and method enumeration: index 2/1,419 bytes versus index 5/1,431 bytes. Managed matched the first native run at index 2/1,419 bytes. The TLS/code-size boundary is process-order-sensitive, not a stable managed-only difference.",
+        "The raw CoreLib method-block inventory has 317 native/managed and 310 native-repeat/managed differences. First changed lines classify 285 as TLS index/offset, 13 as non-ASCII comments, 3 as RWD addresses, and 16 as other; all 16 other entries have method-filtered evidence, including exact matches for ModuleHandle, StaticsHelpers, Marvin, Hashtable, and SharedArrayPool methods. Do not treat this inventory as full CoreLib byte equality.",
+        "Three managed broad-disassembly markers are embedded within other output lines and one code-size record is embedded. Exact method-filtered captures show ModuleHandle.ResolveTypeHandle (600 bytes) and StaticsHelpers.GetGCThreadStaticsByIndexSlow (183 bytes) are byte-identical across variants; Thread.InitializeCurrentThread is 239 bytes in all variants but emits TLS index 5/offset 0x28 in native and 2/offset 0x10 in managed.",
+        "All remaining non-TLS first-difference candidates were method-filtered: ModuleHandle P/Invoke (219 bytes), StaticsHelpers.GetOptimizedGCThreadStaticBase (142), both Marvin.ComputeHash32 overloads (25/366), Hashtable(int,float) constructor (398), and SharedArrayPool<TimeZoneInfo+TimeTransition> lambda/Trim (48/992) match byte-for-byte across native, native-repeat, and managed."
       ]
     },
     "evidenceLinks": [
@@ -64,6 +67,8 @@
       "artifacts\\corelib-disasm-5a518\\filtered-7462-blocks-5a518\\native-repeat\\manifest.json",
       "artifacts\\corelib-disasm-5a518\\filtered-7462-blocks-5a518\\managed\\manifest.json",
       "artifacts\\corelib-disasm-5a518\\filtered-7462-blocks-5a518\\comparison.json",
+      "artifacts\\corelib-disasm-5a518\\Compare-RawCoreLibMethodBlocks.py",
+      "artifacts\\corelib-disasm-5a518\\raw-corelib-method-block-comparison.json",
       "artifacts\\corelib-disasm-5a518\\Capture-PrepOneCodeSizeMethods.ps1",
       "artifacts\\corelib-disasm-5a518\\Compare-PrepOneCodeSizeMethods.py",
       "artifacts\\corelib-disasm-5a518\\prep-one-code-size-nodump-5a518\\manifest.json",
@@ -78,6 +83,27 @@
       "artifacts\\corelib-disasm-5a518\\threadjoin-fullpmi-tls-trace-5a518-1\\native\\manifest.json",
       "artifacts\\corelib-disasm-5a518\\threadjoin-fullpmi-tls-trace-5a518-1\\native-repeat\\manifest.json",
       "artifacts\\corelib-disasm-5a518\\threadjoin-fullpmi-tls-trace-5a518-1\\managed\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\Capture-EmbeddedDisasmMethods.ps1",
+      "artifacts\\corelib-disasm-5a518\\Compare-EmbeddedDisasmMethods.py",
+      "artifacts\\corelib-disasm-5a518\\embedded-disasm-methods-5a518-3\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\embedded-disasm-methods-5a518-3\\comparison.json",
+      "artifacts\\corelib-disasm-5a518\\remaining-raw-difference-methods-5a518-4\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\remaining-raw-difference-methods-5a518-4\\comparison.json",
+      "artifacts\\corelib-disasm-5a518\\Probe-HashtableCtorPmiIndices.ps1",
+      "artifacts\\corelib-disasm-5a518\\hashtable-ctor-index-probe-5a518-1\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\Capture-TimeZonePoolPmiMethods.ps1",
+      "artifacts\\corelib-disasm-5a518\\Compare-TimeZonePoolPmiMethods.py",
+      "artifacts\\corelib-disasm-5a518\\timezone-pool-fullpmi-5a518-1\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\timezone-pool-fullpmi-5a518-1\\comparison.json",
+      "artifacts\\corelib-disasm-5a518\\remaining-raw-difference-methods-5a518-4\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\remaining-raw-difference-methods-5a518-4\\comparison.json",
+      "artifacts\\corelib-disasm-5a518\\Probe-HashtableCtorPmiIndices.ps1",
+      "artifacts\\corelib-disasm-5a518\\hashtable-ctor-index-probe-5a518-1\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\Capture-TimeZonePoolPmiMethods.ps1",
+      "artifacts\\corelib-disasm-5a518\\Compare-TimeZonePoolPmiMethods.py",
+      "artifacts\\corelib-disasm-5a518\\timezone-pool-fullpmi-5a518-1\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\timezone-pool-fullpmi-5a518-1\\comparison.json",
+      "artifacts\\corelib-disasm-5a518\\raw-corelib-method-block-comparison.json",
       "artifacts\\corelib-disasm-5a518\\Capture-ThreadJoinTlsTrace.ps1",
       "artifacts\\corelib-disasm-5a518\\threadjoin-tls-trace-5a518-1\\manifest.json",
       "artifacts\\corelib-disasm-5a518\\threadjoin-tls-trace-5a518-1\\native\\manifest.json",
@@ -419,7 +445,7 @@
           "nativeVsNativeRepeat": "All 9 assembly blocks are byte-identical; none of the broad code-size mismatches reproduce.",
           "nativeVsManaged": "8 of 9 blocks are byte-identical. Thread.JoinInternal differs only in dynamic TLS index/offset: native and native-repeat use index 5/offset 0x28; managed uses index 2/offset 0x10. Code size is 1,419 bytes in all three.",
           "codeSizes": "All 9 methods have matching code sizes across native, native-repeat, and managed.",
-          "limitation": "Fresh-process PrepOne captures do not reproduce the broad PREPALL compilation order; the Thread.JoinInternal EE TLS input boundary remains open.",
+          "limitation": "Fresh-process PrepOne captures do not reproduce broad PREPALL allocation order; full-PMI native repeats themselves vary the Thread.t_currentThread index/code size.",
           "evidence": [
             "artifacts\\corelib-disasm-5a518\\prep-one-code-size-nodump-5a518\\manifest.json",
             "artifacts\\corelib-disasm-5a518\\prep-one-code-size-nodump-5a518\\comparison.json",
@@ -442,6 +468,65 @@
               "artifacts\\corelib-disasm-5a518\\threadjoin-fullpmi-tls-trace-5a518-1\\native-repeat\\manifest.json",
               "artifacts\\corelib-disasm-5a518\\threadjoin-fullpmi-tls-trace-5a518-1\\managed\\manifest.json"
             ]
+            },
+            "embeddedMarkers": {
+              "managedEmbeddedHeaders": 3,
+              "managedEmbeddedCodeSizeMarkers": 1,
+              "filteredMethods": 3,
+              "methodResults": {
+                "System.ModuleHandle:ResolveTypeHandle(int,System.RuntimeTypeHandle[],System.RuntimeTypeHandle[]):System.RuntimeTypeHandle:this": "600 bytes; byte-identical across native, native-repeat, and managed.",
+                "System.Runtime.CompilerServices.StaticsHelpers:GetGCThreadStaticsByIndexSlow(int):byref": "183 bytes; byte-identical across native, native-repeat, and managed.",
+                "System.Threading.Thread:InitializeCurrentThread():System.Threading.Thread": "239 bytes in all variants; native/native-repeat byte-identical; managed differs only in Thread.t_currentThread TLS index/offset (5/0x28 versus 2/0x10)."
+              },
+              "rawComparison": "Raw full-CoreLib blocks were split at marker byte offsets without discarding bytes. Code-size records are separately mapped by their embedded method identity; raw slices retain prefix bytes and are not normalized.",
+              "evidence": [
+                "artifacts\\corelib-disasm-5a518\\embedded-disasm-methods-5a518-3\\manifest.json",
+                "artifacts\\corelib-disasm-5a518\\embedded-disasm-methods-5a518-3\\comparison.json",
+                "artifacts\\corelib-disasm-5a518\\raw-corelib-method-block-comparison.json"
+              ]
+            },
+            "targetedOtherRawDifferences": {
+              "methodResults": {
+                "System.ModuleHandle:<ResolveType>g____PInvoke|17_0": "219 bytes; byte-identical across native, native-repeat, and managed.",
+                "System.Runtime.CompilerServices.StaticsHelpers:GetOptimizedGCThreadStaticBase": "142 bytes; byte-identical across all variants.",
+                "System.Marvin:ComputeHash32(System.ReadOnlySpan`1[byte],ulong)": "25 bytes; byte-identical across all variants.",
+                "System.Marvin:ComputeHash32(byref,uint,uint,uint)": "366 bytes; byte-identical across all variants.",
+                "System.Collections.Hashtable:.ctor(int,float)": "398 bytes; byte-identical across all variants.",
+                "SharedArrayPool<TimeZoneInfo+TimeTransition> lambda": "48 bytes; byte-identical across native, native-repeat, and managed.",
+                "SharedArrayPool<TimeZoneInfo+TimeTransition>.Trim": "992 bytes; byte-identical across native, native-repeat, and managed."
+              },
+              "evidence": [
+                "artifacts\\corelib-disasm-5a518\\remaining-raw-difference-methods-5a518-4\\comparison.json",
+                "artifacts\\corelib-disasm-5a518\\timezone-pool-fullpmi-5a518-1\\comparison.json"
+              ]
+            },
+            "currentPinRawBlockComparison": {
+              "methodHeadersPerVariant": 75845,
+              "headerSequencesEqual": false,
+              "managedEmbeddedHeaders": 3,
+              "managedEmbeddedCodeSizeMarkers": 1,
+              "rawBlockDifferences": {
+                "nativeVsNativeRepeat": 12,
+                "nativeVsManaged": 317,
+                "nativeRepeatVsManaged": 310
+              },
+              "globalCodeSizeMismatchCounts": {
+                "nativeVsNativeRepeat": 9,
+                "nativeVsManaged": 11,
+                "nativeRepeatVsManaged": 2
+              },
+              "nativeVsManagedFirstDifferenceCategories": {
+                "tlsIndexOrOffset": 285,
+                "nonAsciiComments": 13,
+                "rwdAddresses": 3,
+                "other": 16
+              },
+              "interpretation": "First-line categories are triage, not an exhaustive per-instruction proof. All 16 'other' identities now have targeted captures. Broad header order and process-order-sensitive TLS inputs prevent a full CoreLib byte-equality claim.",
+              "evidence": [
+                "artifacts\\corelib-disasm-5a518\\raw-corelib-method-block-comparison.json",
+                "artifacts\\corelib-disasm-5a518\\system-private-corelib-disasm-comparison.json"
+              ]
+            }
           }
         }
       },
@@ -569,10 +654,9 @@
     "dynamicTlsInputBoundary": {
       "status": "TaskFactory-callback-explained; CoreLib-TLS-index-varies-across-native-repeats",
       "finding": "The prior 144-method TaskFactory<T>.FromAsyncImpl capture remains explained: native and managed observed identical 53-allocation sequences and numeric metadata; managed's second Task.t_currentTask callback was the expected nonexecuting AltJit pass before default-JIT fallback. In an uninstrumented 5a518 CoreLib wildcard JitDisasm capture, System.GC:RunFinalizers uses Thread.t_currentThread index 5/native and 2/managed (501/503 code bytes). A filtered PREPALL capture at Pmi method index 2244 instead produces byte-identical native/managed assembly at 501 bytes and index 5; filtered CultureInfo.get_CurrentUICulture also matches at 115 bytes. Instrumented full-PMI Thread.JoinInternal captures with the same 75,697-method enumeration sequence show native index 2/code 1,419, native-repeat index 5/code 1,431, and managed index 2/code 1,419. The native and native-repeat runs have identical native JIT, instrumented CoreCLR, CoreLib, and PMI hashes. Thus this capture has no stable native TLS index; the same native compiler produces both layouts, and managed matched the first native run. No JIT constants were changed.",
-      "nextAction": "Inspect the 5a518 broad CoreLib disassembly captures around the three embedded method headers and one embedded code-size marker. Determine whether a byte-preserving method-block comparison is possible without dropping or normalizing bytes; otherwise retain that boundary and proceed to the remaining named FullDump blockers B526/B527. Treat Thread.t_currentThread allocation as process-order-sensitive EE input; do not change constants or normalize output.",
-      "evidence": "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\tls-caller-trace-comparison.json; artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\capture-summary.json; artifacts\\corelib-disasm-5a518\\method-disasm\\native\\RunFinalizers\\manifest.json; artifacts\\corelib-disasm-5a518\\method-disasm\\managed\\RunFinalizers\\manifest.json; artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\native-fullsequence1\\manifest.json; artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\managed-fullsequence1\\manifest.json; artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\runfinalizers-method-disasm-comparison.json; artifacts\\corelib-disasm-5a518\\pmi-currentuiculture\\currentuiculture-method-disasm-comparison.json; artifacts\\corelib-disasm-5a518\\prep-one-code-size-nodump-5a518\\comparison.json; artifacts\\corelib-disasm-5a518\\threadjoin-tls-trace-5a518-1\\manifest.json; artifacts\\corelib-disasm-5a518\\threadjoin-fullpmi-tls-trace-5a518-1\\analysis.json; artifacts\\corelib-disasm-5a518\\threadjoin-fullpmi-tls-trace-5a518-1\\native\\manifest.json; artifacts\\corelib-disasm-5a518\\threadjoin-fullpmi-tls-trace-5a518-1\\native-repeat\\manifest.json; artifacts\\corelib-disasm-5a518\\threadjoin-fullpmi-tls-trace-5a518-1\\managed\\manifest.json; artifacts\\corelib-disasm-5a518\\tls-trace\\native\\manifest.json; artifacts\\corelib-disasm-5a518\\tls-trace\\managed-capture\\manifest.json; artifacts\\corelib-disasm-5a518\\tls-trace-exact\\native\\capture\\manifest.json; artifacts\\corelib-disasm-5a518\\tls-trace-exact\\managed\\capture\\manifest.json; pinned source: src/coreclr/jit/jitconfigvalues.h:226-228, src/coreclr/jit/compiler.cpp:7173-7177, and 5a518 src/coreclr/vm/jitinterface.cpp::getThreadLocalFieldInfo."
-    }
-  },
+      "nextAction": "The raw method-block inventory and targeted non-TLS rechecks are complete for the current 5a518 capture. Preserve full-stream differences and process-order-sensitive TLS outputs without normalization; do not change JIT constants. Reopen only if a new oracle capture or upstream correction resolves B526/B527 or supplies a reproducible EE allocation sequence.",
+      "evidence": "artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\tls-caller-trace-comparison.json; artifacts\\oracle-refresh-dynamic-tls-5a518-9bf6eaa4\\capture-summary.json; artifacts\\corelib-disasm-5a518\\method-disasm\\native\\RunFinalizers\\manifest.json; artifacts\\corelib-disasm-5a518\\method-disasm\\managed\\RunFinalizers\\manifest.json; artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\native-fullsequence1\\manifest.json; artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\managed-fullsequence1\\manifest.json; artifacts\\corelib-disasm-5a518\\pmi-runfinalizers\\runfinalizers-method-disasm-comparison.json; artifacts\\corelib-disasm-5a518\\pmi-currentuiculture\\currentuiculture-method-disasm-comparison.json; artifacts\\corelib-disasm-5a518\\prep-one-code-size-nodump-5a518\\comparison.json; artifacts\\corelib-disasm-5a518\\threadjoin-tls-trace-5a518-1\\manifest.json; artifacts\\corelib-disasm-5a518\\threadjoin-fullpmi-tls-trace-5a518-1\\analysis.json; artifacts\\corelib-disasm-5a518\\embedded-disasm-methods-5a518-3\\comparison.json; artifacts\\corelib-disasm-5a518\\raw-corelib-method-block-comparison.json; artifacts\\corelib-disasm-5a518\\tls-trace\\native\\manifest.json; artifacts\\corelib-disasm-5a518\\tls-trace\\managed-capture\\manifest.json; artifacts\\corelib-disasm-5a518\\tls-trace-exact\\native\\capture\\manifest.json; artifacts\\corelib-disasm-5a518\\tls-trace-exact\\managed\\capture\\manifest.json; pinned source: src/coreclr/jit/jitconfigvalues.h:226-228, src/coreclr/jit/compiler.cpp:7173-7177, and 5a518 src/coreclr/vm/jitinterface.cpp::getThreadLocalFieldInfo.",
+    },
   "sourceMap": [
     {
       "area": "universal-async-resume-codegen",
