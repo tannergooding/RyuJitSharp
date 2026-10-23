@@ -59,7 +59,6 @@ public sealed partial class ValueNumStore
     private Dictionary<simd16_t, ValueNum>? _simd16CnsMap;
     private Dictionary<simd32_t, ValueNum>? _simd32CnsMap;
     private Dictionary<simd64_t, ValueNum>? _simd64CnsMap;
-    private Dictionary<simdscalable_t, ValueNum>? _simdScalableCnsMap;
     private Dictionary<simdmaskvalue_t, ValueNum>? _simdMaskCnsMap;
 
     private static void EnsureSimdSupported()
@@ -120,8 +119,17 @@ public sealed partial class ValueNumStore
 
     public ValueNum VNForSimdScalableCon(in simdscalable_t value)
     {
+        if (Configuration.TARGET_ARM64)
+        {
+            EnsureArm64SimdSupported();
+
+            var constants = Arm64Data.GetSimdScalableCnsMap(this);
+            return VnForConst(value, value, constants, TYP_SIMD_ARM64);
+        }
+
         EnsureArm64SimdSupported();
-        return VnForConst(value, value, _simdScalableCnsMap ??= [], TYP_SIMD_ARM64);
+        JitExceptionHelpers.ThrowUnreachableException();
+        return default;
     }
 
     public ValueNum VNForSimdMaskCon(in simdmask_t value)
@@ -139,10 +147,17 @@ public sealed partial class ValueNumStore
 
     public ValueNum VNForSimdMaskScalableCon(in simdmaskscalable_t value)
     {
-        EnsureArm64SimdSupported();
-        var storage = simdmaskvalue_t.FromScalable(value);
+        if (Configuration.TARGET_ARM64)
+        {
+            EnsureArm64SimdSupported();
+            var storage = simdmaskvalue_t.FromScalable(value);
 
-        return VnForConst(storage, storage, _simdMaskCnsMap ??= [], TYP_MASK);
+            return VnForConst(storage, storage, _simdMaskCnsMap ??= [], TYP_MASK);
+        }
+
+        EnsureArm64SimdSupported();
+        JitExceptionHelpers.ThrowUnreachableException();
+        return default;
     }
 
     private T GetVectorConstant<T>(ValueNum vn, var_types type) where T : unmanaged
@@ -172,8 +187,15 @@ public sealed partial class ValueNumStore
 
     public simdscalable_t GetConstantSimdScalable(ValueNum vn)
     {
+        if (Configuration.TARGET_ARM64)
+        {
+            EnsureArm64SimdSupported();
+            return GetVectorConstant<simdscalable_t>(vn, TYP_SIMD_ARM64);
+        }
+
         EnsureArm64SimdSupported();
-        return GetVectorConstant<simdscalable_t>(vn, TYP_SIMD_ARM64);
+        JitExceptionHelpers.ThrowUnreachableException();
+        return default;
     }
 
     public simdmaskvalue_t GetConstantSimdMaskValue(ValueNum vn)
@@ -288,8 +310,16 @@ public sealed partial class ValueNumStore
             return VNForSimd32Con(simd32_t.Zero);
         case TYP_SIMD64:
             return VNForSimd64Con(simd64_t.Zero);
-        case TYP_SIMD_ARM64:
+        case TYP_SIMD_ARM64 when Configuration.TARGET_ARM64:
+        {
             return VNForSimdScalableCon(simdscalable_t.Zero);
+        }
+        case TYP_SIMD_ARM64:
+        {
+            EnsureArm64SimdSupported();
+            JitExceptionHelpers.ThrowUnreachableException();
+            return default;
+        }
         case TYP_MASK:
             return VNForSimdMaskCon(simdmask_t.Zero);
         default:

@@ -60,6 +60,23 @@ internal static class Arm64ScalableValueNumTests
         });
     }
 
+    [Test]
+    public static void TreeVectorPredicatesRecognizeScalableZeroAndAllBits()
+    {
+        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+            compiler.vnStore = new ValueNumStore(compiler);
+            var vector = new GenTreeVecCon(TYP_SIMD_ARM64);
+
+            Assert.That(vector.IsZero, Is.True);
+            Assert.That(vector.IsAllBitsSet, Is.False);
+
+            vector.SimdScalableVal = simdscalable_t.AllBitsSet;
+
+            Assert.That(vector.IsZero, Is.False);
+            Assert.That(vector.IsAllBitsSet, Is.True);
+        });
+    }
+
     [TestCase(SimdScalableRepeated, 9UL)]
     [TestCase(SimdScalableScalar, 9UL)]
     [TestCase(SimdScalableSequence, 0UL)]
@@ -106,6 +123,26 @@ internal static class Arm64ScalableValueNumTests
 
             value.Index.u64[0] ^= 1;
             Assert.That(store.VNForSimdScalableCon(value), Is.Not.EqualTo(vn));
+        });
+    }
+
+    [Test]
+    public static void ScalableConstantMapsArePerStore()
+    {
+        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+            var firstStore = new ValueNumStore(compiler);
+            var secondStore = new ValueNumStore(compiler);
+            var firstValue = Value(TYP_LONG, SimdScalableRepeated, 1, 0);
+            var secondValue = Value(TYP_LONG, SimdScalableRepeated, 2, 0);
+            var firstFirst = firstStore.VNForSimdScalableCon(firstValue);
+            var firstSecond = firstStore.VNForSimdScalableCon(secondValue);
+            var secondSecond = secondStore.VNForSimdScalableCon(secondValue);
+            var secondFirst = secondStore.VNForSimdScalableCon(firstValue);
+
+            Assert.That(firstStore.GetConstantSimdScalable(firstFirst), Is.EqualTo(firstValue));
+            Assert.That(firstStore.GetConstantSimdScalable(firstSecond), Is.EqualTo(secondValue));
+            Assert.That(secondStore.GetConstantSimdScalable(secondSecond), Is.EqualTo(secondValue));
+            Assert.That(secondStore.GetConstantSimdScalable(secondFirst), Is.EqualTo(firstValue));
         });
     }
 

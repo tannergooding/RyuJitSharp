@@ -16,10 +16,17 @@ public sealed partial class ValueNumStore
         assert(varTypeIsSimd(type));
         if (type is TYP_SIMD_ARM64)
         {
-            EnsureArm64SimdSupported();
-            var value = BroadcastConstantToSimdScalable(baseType, operand);
+            if (Configuration.TARGET_ARM64)
+            {
+                EnsureArm64SimdSupported();
+                var value = BroadcastConstantToSimdScalable(baseType, operand);
 
-            return VNForSimdScalableCon(value);
+                return VNForSimdScalableCon(value);
+            }
+
+            EnsureArm64SimdSupported();
+            JitExceptionHelpers.ThrowUnreachableException();
+            return default;
         }
 
         if (type is TYP_SIMD32 or TYP_SIMD64)
@@ -40,32 +47,46 @@ public sealed partial class ValueNumStore
     public simdscalable_t GetConstantSimdScalable(var_types baseType, ValueNum operand)
     {
         EnsureHardwareIntrinsicsSupported();
-        EnsureArm64SimdSupported();
-        assert(IsVNConstant(operand));
-
-        if (TypeOfVN(operand) == TYP_SIMD_ARM64)
+        if (Configuration.TARGET_ARM64)
         {
-            return GetConstantSimdScalable(operand);
+            EnsureArm64SimdSupported();
+            assert(IsVNConstant(operand));
+
+            if (TypeOfVN(operand) == TYP_SIMD_ARM64)
+            {
+                return GetConstantSimdScalable(operand);
+            }
+
+            return BroadcastConstantToSimdScalable(baseType, operand);
         }
 
-        return BroadcastConstantToSimdScalable(baseType, operand);
+        EnsureArm64SimdSupported();
+        JitExceptionHelpers.ThrowUnreachableException();
+        return default;
     }
 
     private simdscalable_t BroadcastConstantToSimdScalable(var_types baseType, ValueNum operand)
     {
-        EnsureArm64SimdSupported();
-        assert(IsVNConstant(operand));
-        assert(!varTypeIsSimd(TypeOfVN(operand)));
-        var index = default(simd8_t);
-        var bytes = GetSimdArgumentBytes(TYP_SIMD8, baseType, operand);
-        bytes.AsSpan(0, baseType.Size).CopyTo(index.AsSpan<byte>());
-
-        return new simdscalable_t
+        if (Configuration.TARGET_ARM64)
         {
-            BaseType = baseType,
-            Kind = SimdScalableKind.SimdScalableRepeated,
-            Index = index,
-        };
+            EnsureArm64SimdSupported();
+            assert(IsVNConstant(operand));
+            assert(!varTypeIsSimd(TypeOfVN(operand)));
+            var index = default(simd8_t);
+            var bytes = GetSimdArgumentBytes(TYP_SIMD8, baseType, operand);
+            bytes.AsSpan(0, baseType.Size).CopyTo(index.AsSpan<byte>());
+
+            return new simdscalable_t
+            {
+                BaseType = baseType,
+                Kind = SimdScalableKind.SimdScalableRepeated,
+                Index = index,
+            };
+        }
+
+        EnsureArm64SimdSupported();
+        JitExceptionHelpers.ThrowUnreachableException();
+        return default;
     }
 
     private ValueNum EvaluateSimdCvtMaskToVectorVN(var_types type, var_types baseType, ValueNum operand)
@@ -77,18 +98,25 @@ public sealed partial class ValueNumStore
         var argument = GetConstantSimdMaskValue(operand);
         if (type is TYP_SIMD_ARM64)
         {
-            EnsureArm64SimdSupported();
-            if (!argument.IsScalable)
+            if (Configuration.TARGET_ARM64)
             {
-                return NoVN;
+                EnsureArm64SimdSupported();
+                if (!argument.IsScalable)
+                {
+                    return NoVN;
+                }
+
+                var result = default(simdscalable_t);
+                if (!EvaluateSimdCvtScalableMaskToVector(baseType, ref result, argument.Scalable))
+                {
+                    return NoVN;
+                }
+                return VNForSimdScalableCon(result);
             }
 
-            var result = default(simdscalable_t);
-            if (!EvaluateSimdCvtScalableMaskToVector(baseType, ref result, argument.Scalable))
-            {
-                return NoVN;
-            }
-            return VNForSimdScalableCon(result);
+            EnsureArm64SimdSupported();
+            JitExceptionHelpers.ThrowUnreachableException();
+            return default;
         }
 
         if (argument.IsScalable)
@@ -131,14 +159,21 @@ public sealed partial class ValueNumStore
 
         if (type is TYP_SIMD_ARM64)
         {
-            EnsureArm64SimdSupported();
-            var argument = GetConstantSimdScalable(operand);
-            var result = default(simdmaskscalable_t);
-            if (!EvaluateSimdCvtScalableVectorToMask(baseType, ref result, argument))
+            if (Configuration.TARGET_ARM64)
             {
-                return NoVN;
+                EnsureArm64SimdSupported();
+                var argument = GetConstantSimdScalable(operand);
+                var result = default(simdmaskscalable_t);
+                if (!EvaluateSimdCvtScalableVectorToMask(baseType, ref result, argument))
+                {
+                    return NoVN;
+                }
+                return VNForSimdMaskScalableCon(result);
             }
-            return VNForSimdMaskScalableCon(result);
+
+            EnsureArm64SimdSupported();
+            JitExceptionHelpers.ThrowUnreachableException();
+            return default;
         }
 
         if (type is TYP_SIMD32 or TYP_SIMD64)

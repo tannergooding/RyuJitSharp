@@ -108,9 +108,18 @@ public sealed partial class ValueNumStore
                         case TYP_SIMD64:
                             Defs = new simd64_t[ChunkSize];
                             break;
-                        case TYP_SIMD_ARM64:
+                        case TYP_SIMD_ARM64 when Configuration.FEATURE_SIMD && Configuration.TARGET_ARM64:
+                        {
                             Defs = new simdscalable_t[ChunkSize];
                             break;
+                        }
+                        case TYP_SIMD_ARM64:
+                        {
+                            EnsureArm64SimdSupported();
+                            JitExceptionHelpers.ThrowUnreachableException();
+                            Defs = default;
+                            break;
+                        }
                         case TYP_MASK:
                             Defs = new simdmaskvalue_t[ChunkSize];
                             break;

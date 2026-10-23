@@ -66,6 +66,13 @@ public sealed class GenTreeVecCon : GenTree
         {
             if (Type is TYP_SIMD_ARM64)
             {
+                if (!Configuration.TARGET_ARM64)
+                {
+                    RequireScalable();
+                    JitExceptionHelpers.ThrowUnreachableException();
+                    return false;
+                }
+
                 RequireScalable();
                 return _simdScalableVal.IsAllBitsSet;
             }
@@ -84,6 +91,13 @@ public sealed class GenTreeVecCon : GenTree
         {
             if (Type is TYP_SIMD_ARM64)
             {
+                if (!Configuration.TARGET_ARM64)
+                {
+                    RequireScalable();
+                    JitExceptionHelpers.ThrowUnreachableException();
+                    return false;
+                }
+
                 RequireScalable();
                 return _simdScalableVal.IsZero;
             }

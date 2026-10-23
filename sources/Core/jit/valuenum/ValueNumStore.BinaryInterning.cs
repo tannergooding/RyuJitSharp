@@ -225,8 +225,16 @@ public sealed partial class ValueNumStore
                 return VNForSimd32Con(simd32_t.AllBitsSet);
             case TYP_SIMD64:
                 return VNForSimd64Con(simd64_t.AllBitsSet);
-            case TYP_SIMD_ARM64:
+            case TYP_SIMD_ARM64 when Configuration.TARGET_ARM64:
+            {
                 return VNForSimdScalableCon(simdscalable_t.AllBitsSet);
+            }
+            case TYP_SIMD_ARM64:
+            {
+                EnsureArm64SimdSupported();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+            }
             case TYP_MASK when !Configuration.FEATURE_MASKED_HW_INTRINSICS:
                 JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
                 return default;
