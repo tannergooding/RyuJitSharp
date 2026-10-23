@@ -212,9 +212,17 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         }
         else if (Configuration.TARGET_WASM)
         {
+            flags.AddInstructionSet(InstructionSet_WasmBase);
             flags.AddInstructionSet(InstructionSet_PackedSimd);
+            flags.AddInstructionSet(InstructionSet_RelaxedSimd);
             flags.Set64BitInstructionSetVariants();
             Assert.That(flags.HasInstructionSet(InstructionSet_PackedSimd), Is.True);
+            Assert.That(flags.HasInstructionSet(InstructionSet_RelaxedSimd), Is.True);
+
+            var incompleteFlags = default(CORINFO_InstructionSetFlags);
+            incompleteFlags.AddInstructionSet(InstructionSet_RelaxedSimd);
+            incompleteFlags = Globals.EnsureInstructionSetFlagsAreValid(incompleteFlags);
+            Assert.That(incompleteFlags.HasInstructionSet(InstructionSet_RelaxedSimd), Is.False);
         }
     }
 

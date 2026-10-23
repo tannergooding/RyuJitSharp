@@ -9,9 +9,10 @@
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
-    "stage": "upstream-synchronization",
-    "nextAction": "The runtime oracle update from 5a518c3fcb295c89a73404d9f20c398dafdce845 to ad029a35a82f87a2b5ef4472abf9e5cefcae9f11 is reconciled across all changed native paths and the mapped generator input. The next oracle update should capture an immutable dotnet/runtime revision after ad029a35a82f87a2b5ef4472abf9e5cefcae9f11 and compare it with this pin. Preserve B526/B527 and the dynamic TLS evidence boundary; keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "stage": "full-runtime-parity-verification",
+    "nextAction": "Resume full-runtime parity at the unresolved dynamic TLS input-ownership boundary. Preserve B526/B527, the accepted D015 diagnostic, and residual exact-pinned FullDump differences. The ad029a35a82f87a2b5ef4472abf9e5cefcae9f11 source refresh is reconciled; the next oracle refresh should capture an immutable runtime revision after that pin. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
+    "activeBatch": null,
     "evidenceLinks": [
       "artifacts\\oracle-update-ad029\\phase-corpus-partialcreate\\native\\manifest.json",
       "artifacts\\oracle-update-ad029\\phase-corpus-partialcreate\\native-repeat\\manifest.json",
@@ -1523,6 +1524,24 @@
       "sourceCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
     },
     {
+      "area": "runtime-main-vector-create-and-vtable-lowering",
+      "native": [
+        "src\\coreclr\\jit\\gentree.h",
+        "src\\coreclr\\jit\\lower.cpp",
+        "src\\coreclr\\jit\\lower.h",
+        "src\\coreclr\\jit\\lowerarmarch.cpp",
+        "src\\coreclr\\jit\\lowerxarch.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\gentree\\GenTreeVecCon.cs",
+        "sources\\Core\\jit\\lower\\Lowering.CallTargets.cs",
+        "sources\\Core\\jit\\lower\\Lowering.Arm64HardwareVectors.cs",
+        "sources\\Core\\jit\\lower\\Lowering.HardwareCreate.cs"
+      ],
+      "disposition": "The native lower.cpp partial-constant helper is split across managed GenTreeVecCon mask extraction and shared Lowering.HardwareCreate logic, with distinct xarch and ARM64 entry points; virtual-call this-use ownership is in Lowering.CallTargets. lower.h has no separate managed declaration surface.",
+      "sourceCommit": "ad029a35a82f87a2b5ef4472abf9e5cefcae9f11"
+    },
+    {
       "area": "symbolic-checked-bound-ranges",
       "native": [
         "src\\coreclr\\jit\\assertionprop.cpp",
@@ -1600,13 +1619,24 @@
     {
       "area": "importercalls-managed-importer-partial",
       "native": [
+        "src\\coreclr\\jit\\compiler.h",
         "src\\coreclr\\jit\\importercalls.cpp"
       ],
       "csharp": [
         "sources\\Core\\jit\\compiler\\Compiler.imp.cs",
         "sources\\Core\\jit\\compiler\\Compiler.ImportCallHelper.cs"
       ],
-      "sourceCommit": "24543ddd2ef1009f07462883cc299d43e19c2e8e"
+      "sourceCommit": "bc980bc92e8093ca338810351b3db05dc073f1fa"
+    },
+    {
+      "area": "exception-flag-gc-safe-point",
+      "native": [
+        "src\\coreclr\\jit\\compiler.hpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.RedundantZeroInit.cs"
+      ],
+      "sourceCommit": "bc980bc92e8093ca338810351b3db05dc073f1fa"
     },
     {
       "area": "unreachable-block-gc-poll-and-throwing-safe-point",
@@ -1683,24 +1713,6 @@
         "tests\\Core\\AssertionTests.cs"
       ],
       "sourceCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
-    },
-    {
-      "area": "runtime-main-vector-create-and-vtable-lowering",
-      "native": [
-        "src\\coreclr\\jit\\gentree.h",
-        "src\\coreclr\\jit\\lower.cpp",
-        "src\\coreclr\\jit\\lower.h",
-        "src\\coreclr\\jit\\lowerarmarch.cpp",
-        "src\\coreclr\\jit\\lowerxarch.cpp"
-      ],
-      "csharp": [
-        "sources\\Core\\jit\\gentree\\GenTreeVecCon.cs",
-        "sources\\Core\\jit\\lower\\Lowering.CallTargets.cs",
-        "sources\\Core\\jit\\lower\\Lowering.HardwareCreate.cs",
-        "sources\\Core\\jit\\lower\\Lowering.Arm64HardwareVectors.cs"
-      ],
-      "disposition": "The native lower.cpp partial-constant helper is split across managed GenTreeVecCon mask extraction and shared Lowering.HardwareCreate logic, with distinct xarch and ARM64 entry points; virtual-call this-use ownership is in Lowering.CallTargets. lower.h has no separate managed declaration surface.",
-      "sourceCommit": "ad029a35a82f87a2b5ef4472abf9e5cefcae9f11"
     }
   ],
   "generatorInputMapping": {

@@ -46,21 +46,25 @@ internal static unsafe class RedundantZeroInitTests
         SsaLivenessTests.WithCompiler(1, compiler => {
             var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_INDIRECT, null);
             var aggregate = new GenTreeOp(GT_ADD, TYP_INT, call, compiler.gtNewIconNode(TYP_INT, 1));
+            var throwingAdd = new GenTreeOp(GT_ADD, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 2), compiler.gtNewIconNode(TYP_INT, 3));
+            throwingAdd.Flags |= GTF_EXCEPT;
             var blockStore = new GenTreeBlk(TYP_STRUCT,
                 compiler.gtNewIconNode(TYP_I_IMPL, 1),
                 compiler.gtNewIconNode(TYP_INT, 0), new ClassLayout(8));
             var scalar = compiler.gtNewIconNode(TYP_INT, 1);
-            var throwing = compiler.gtNewBinaryNode(GT_DIV, TYP_INT,
+            var throwingDivision = compiler.gtNewBinaryNode(GT_DIV, TYP_INT,
                 compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 0));
-            throwing.Flags |= GTF_EXCEPT;
+            throwingDivision.Flags |= GTF_EXCEPT;
 
             Assert.That(compiler.IsPotentialGCSafePoint(call), Is.True);
             Assert.That((aggregate.Flags & GTF_CALL) != 0, Is.True);
             Assert.That(compiler.IsPotentialGCSafePoint(aggregate), Is.True);
+            Assert.That(compiler.IsPotentialGCSafePoint(throwingAdd), Is.True);
             Assert.That(compiler.IsPotentialGCSafePoint(blockStore), Is.True);
             Assert.That(compiler.IsPotentialGCSafePoint(scalar), Is.False);
-            Assert.That((throwing.Flags & GTF_CALL) != 0, Is.False);
-            Assert.That(compiler.IsPotentialGCSafePoint(throwing), Is.True);
+            Assert.That((throwingDivision.Flags & GTF_CALL) != 0, Is.False);
+            Assert.That(compiler.IsPotentialGCSafePoint(throwingDivision), Is.True);
         });
     }
 

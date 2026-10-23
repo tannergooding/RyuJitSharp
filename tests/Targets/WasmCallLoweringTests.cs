@@ -103,6 +103,38 @@ internal static unsafe class WasmCallLoweringTests
         });
     }
 
+    [Test]
+    public static void VirtualVtableCallCanMaterializeAnUnwrappedThisArgument()
+    {
+        WithLowering((compiler, lowering, block) => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getMethodVTableOffset = &GetMethodVTableOffset;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+
+            var receiverBase = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            var receiverOffset = compiler.gtNewIconNode(TYP_I_IMPL, 8);
+            var receiver = compiler.gtNewBinaryNode(GT_ADD, TYP_I_IMPL, receiverBase, receiverOffset);
+            var call = new GenTreeCall(TYP_VOID)
+            {
+                _callType = CT_USER_FUNC,
+                _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x1234,
+            };
+            var thisArg = call.Args.PushBack(
+                NewCallArg.CreateForPrimitive(receiver).WithWellKnownArg(WellKnownArg.ThisPointer));
+            block.InsertAtEnd(receiverBase);
+            block.InsertAtEnd(receiverOffset);
+            block.InsertAtEnd(receiver);
+            block.InsertAtEnd(call);
+
+            var target = LowerVirtualVtableCall(lowering, call);
+
+            Assert.That(target.Oper, Is.EqualTo(GT_IND));
+            Assert.That(thisArg.Node.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(thisArg.Node.AsLclVar().LclNum, Is.Not.Zero);
+        });
+    }
+
     [TestCase(GT_EQ, false, true)]
     [TestCase(GT_EQ, true, true)]
     [TestCase(GT_NE, false, true)]
@@ -179,6 +211,19 @@ internal static unsafe class WasmCallLoweringTests
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetAlignment(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* handle, byte doubleAlign) => 4;
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetMethodVTableOffset(
+        ICorJitInfo* self,
+        CORINFO_METHOD_STRUCT_* method,
+        int* offsetOfIndirection,
+        int* offsetAfterIndirection,
+        bool* isRelative)
+    {
+        *offsetOfIndirection = CORINFO_VIRTUALCALL_NO_CHUNK;
+        *offsetAfterIndirection = 8;
+        *isRelative = false;
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SpillStructCallResult")]
     private static extern GenTreeLclVar SpillStructCallResult(Lowering lowering, GenTreeCall call);
 
@@ -190,6 +235,9 @@ internal static unsafe class WasmCallLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerArgsForCall")]
     private static extern void LowerArgsForCall(Lowering lowering, GenTreeCall call);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerVirtualVtableCall")]
+    private static extern GenTree LowerVirtualVtableCall(Lowering lowering, GenTreeCall call);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckCompare")]
     private static extern void ContainCheckCompare(Lowering lowering, GenTreeOp comparison);

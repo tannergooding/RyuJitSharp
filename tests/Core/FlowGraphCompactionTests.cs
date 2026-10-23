@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
@@ -591,6 +592,26 @@ internal static unsafe class FlowGraphCompactionTests
             Assert.That(block.bbWeight, Is.EqualTo(42));
             Assert.That(block.bbLiveOut, Is.EqualTo(new nint[] { 2 }));
             Assert.That(block.bbLiveOut, Is.Not.SameAs(target.bbLiveOut));
+        });
+    }
+
+    [Test]
+    public static void ConvertingAnUnreachableDontRemoveBlockClearsGcPollRequirements()
+    {
+        WithCompiler(false, compiler => {
+            var (_, block, _, _) = CreateGraph(compiler);
+            block.SetFlags(BBF_DONT_REMOVE | BBF_NEEDS_GCPOLL | BBF_HAS_SUPPRESSGC_CALL);
+
+            var method = typeof(Compiler).GetMethod(
+                "fgRemoveUnreachableBlocks",
+                BindingFlags.Instance | BindingFlags.NonPublic) ??
+                throw new InvalidOperationException("The unreachable-block removal method is unavailable.");
+            var result = method.Invoke(compiler,
+                [new Func<BasicBlock, bool>(candidate => ReferenceEquals(candidate, block))]);
+
+            Assert.That(result, Is.EqualTo(true));
+            Assert.That(block.Kind, Is.EqualTo(BBJ_THROW));
+            Assert.That(block.HasAnyFlag(BBF_NEEDS_GCPOLL | BBF_HAS_SUPPRESSGC_CALL), Is.EqualTo(BBF_EMPTY));
         });
     }
 

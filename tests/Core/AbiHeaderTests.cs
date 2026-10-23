@@ -64,6 +64,16 @@ internal static unsafe class AbiHeaderTests
         Assert.That(info.StackBytesConsumed(), Is.Zero);
     }
 
+    [Test]
+    public static void JitEeVersionIdentifierMatchesThePinnedNativeContract()
+    {
+        Assert.That(JITEEVersionIdentifier, Is.EqualTo(new Guid(
+            0xD55CA4F5,
+            0xC533,
+            0x4C6C,
+            0xA2, 0x11, 0x52, 0x13, 0x03, 0x88, 0x4B, 0xDB)));
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(4)]

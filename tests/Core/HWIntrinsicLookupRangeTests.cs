@@ -1,5 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.NamedIntrinsic;
@@ -43,6 +45,8 @@ internal static unsafe class HWIntrinsicLookupRangeTests
             Assert.That(
                 HWIntrinsicInfo.LookupId(&relaxedSig, InstructionSet_RelaxedSimd, "ConvertToInt32Native"u8),
                 Is.EqualTo(NI_RelaxedSimd_ConvertToInt32Native));
+            Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_RelaxedSimd, "SwizzleNative"u8),
+                Is.EqualTo(NI_RelaxedSimd_SwizzleNative));
             Assert.That(HWIntrinsicInfo.lookupIsa(NI_RelaxedSimd_SwizzleNative), Is.EqualTo(InstructionSet_RelaxedSimd));
             Assert.That(
                 HWIntrinsicInfo.lookupIns(NI_RelaxedSimd_SwizzleNative, TYP_BYTE, compiler: null),
@@ -52,6 +56,15 @@ internal static unsafe class HWIntrinsicLookupRangeTests
         {
             Assert.Fail("Unsupported target with hardware-intrinsic and SIMD support.");
         }
+    }
+
+    [Test]
+    public static void RelaxedSimdClassNameMapsToItsInstructionSet()
+    {
+        Assume.That(Configuration.TARGET_WASM);
+
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        Assert.That(LookupInstructionSet(compiler, "RelaxedSimd"u8), Is.EqualTo(InstructionSet_RelaxedSimd));
     }
 
     [Test]
@@ -84,6 +97,9 @@ internal static unsafe class HWIntrinsicLookupRangeTests
             Assert.That(HWIntrinsicInfo.MaybeMemoryStore(NI_PackedSimd_Store), Is.False);
             Assert.That(HWIntrinsicInfo.IsCommutative(NI_RelaxedSimd_MaxNative), Is.True);
             Assert.That(HWIntrinsicInfo.HasImmediateOperand(NI_RelaxedSimd_SwizzleNative), Is.False);
+            Assert.That(HWIntrinsicInfo.lookupIsa(NI_RelaxedSimd_SwizzleNative), Is.EqualTo(InstructionSet_RelaxedSimd));
+            Assert.That(HWIntrinsicInfo.lookupIns(NI_RelaxedSimd_SwizzleNative, TYP_BYTE, compiler: null),
+                Is.EqualTo(INS_i8x16_relaxed_swizzle));
         }
         else
         {
@@ -183,6 +199,9 @@ internal static unsafe class HWIntrinsicLookupRangeTests
         Assert.That(count, Is.EqualTo(expectedCount));
         Assert.That(hash, Is.EqualTo(expectedHash), $"HWI table snapshot mismatch: {count} rows, {hash:X16}.");
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "lookupInstructionSet")]
+    private static extern ManagedInstructionSet LookupInstructionSet(Compiler compiler, ReadOnlySpan<byte> className);
 
     private static ulong AppendHash(ulong hash, uint value)
     {

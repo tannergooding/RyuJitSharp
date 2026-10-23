@@ -23,6 +23,36 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CodeGenBlockDriverTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void EmptyJumpToNextEmitsANopForCatchReturnTargets(bool hasCatchReturnPredecessor)
+    {
+        WithDriver((compiler, codeGen) =>
+        {
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
+            var block = blocks[0];
+            block.TargetEdge = new FlowEdge(block, blocks[1], null);
+            if (hasCatchReturnPredecessor)
+            {
+                var catchReturn = BasicBlock.New(compiler, BBJ_EHCATCHRET);
+                block.bbPreds = new FlowEdge(catchReturn, block, null);
+                block.SetFlags(BBF_HAS_LABEL);
+            }
+
+            var first = codeGen.Emitter.emitCurIG;
+            codeGen.genCodeForBlock(block);
+
+            var instructions = CodeGenLocalHeapTests.AllDescriptors(first, codeGen)
+                .Select(id => id.idIns())
+                .ToArray();
+            Assert.That(instructions, Has.Length.EqualTo(hasCatchReturnPredecessor ? 1 : 0));
+            if (hasCatchReturnPredecessor)
+            {
+                Assert.That(instructions[0], Is.EqualTo(INS_nop));
+            }
+        });
+    }
+
     [Test]
     public static void StatementLastILOffsetUsesGenTreeDebugData()
     {

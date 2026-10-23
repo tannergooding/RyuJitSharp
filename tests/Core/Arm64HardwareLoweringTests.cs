@@ -144,10 +144,10 @@ internal static unsafe class Arm64HardwareLoweringTests
     public static void PartiallyConstantFloatVectorCreatePreservesNegativeZeroAndZeroLanes()
     {
         WithLowering((compiler, lowering, block) => {
-            var first = new GenTreeDblCon(TYP_FLOAT, 1.0);
-            var second = new GenTreeDblCon(TYP_FLOAT, -0.0);
-            var third = new GenTreeDblCon(TYP_FLOAT, 0.0);
-            var fourth = compiler.gtNewLclvNode(TYP_FLOAT, 0);
+            var first = new GenTreeDblCon(TYP_FLOAT, -0.0);
+            var second = new GenTreeDblCon(TYP_FLOAT, 1.0);
+            var third = compiler.gtNewLclvNode(TYP_FLOAT, 0);
+            var fourth = new GenTreeDblCon(TYP_FLOAT, 0.0);
             var create = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Vector_Create, TYP_FLOAT, 16,
                 first, second, third, fourth);
             var user = new GenTreeUnOp(GT_NEG, TYP_SIMD16, create) { IsUnusedValue = true };
@@ -171,12 +171,14 @@ internal static unsafe class Arm64HardwareLoweringTests
             }
 
             Assert.That(constantVector, Is.Not.Null);
-            Assert.That(constantVector!.SimdVal.u32[0], Is.EqualTo(0x3F800000U));
-            Assert.That(constantVector.SimdVal.u32[1], Is.EqualTo(0x80000000U));
+            Assert.That(constantVector!.SimdVal.u32[0], Is.EqualTo(0x80000000U));
+            Assert.That(constantVector.SimdVal.u32[1], Is.EqualTo(0x3F800000U));
             Assert.That(constantVector.SimdVal.u32[2], Is.Zero);
             Assert.That(constantVector.SimdVal.u32[3], Is.Zero);
             Assert.That(insertCount, Is.EqualTo(1));
             Assert.That(user.Op1, Is.TypeOf<GenTreeHWIntrinsic>());
+            Assert.That(block.TryGetUse(third, out var use), Is.True);
+            Assert.That(use.Def(), Is.SameAs(third));
             if (TestConfiguration.IsDebug)
             {
                 Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);

@@ -225,8 +225,6 @@ public sealed class GenTreeVecCon : GenTree
         ref simd_t simdVal,
         out simdmask_t constantMask)
     {
-        constantMask = default;
-
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
             JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicConstantEvaluationIsUnsupportedOnThisTarget);
@@ -234,6 +232,7 @@ public sealed class GenTreeVecCon : GenTree
 
         var argCount = operands.Length;
         var constantCount = 0;
+        constantMask = default;
 
         switch (intrinsic)
         {
