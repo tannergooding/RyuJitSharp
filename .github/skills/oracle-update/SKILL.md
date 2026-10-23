@@ -125,6 +125,26 @@ Do not claim complete parity while `state.json:checkpoint.dynamicTlsInputBoundar
 remains unresolved; do not change its constants or erase its evidence as part
 of an oracle refresh.
 
+## Reconcile the RyuJitSharp publication base
+
+The `dotnet/runtime` oracle revision and the RyuJitSharp publication branch are
+independent. Before publishing an oracle update, fetch the explicitly authorized
+destination branch (normally `main`) and compare it with the current branch's
+merge base:
+
+- Inventory every intervening commit and changed path. Review overlapping
+  hunks against the cleanup and the current oracle port; do not assume that a
+  conflict-free merge, a matching filename, or a passing build proves the
+  changes were reconciled.
+- For each changed path, establish whether the final content is already
+  equivalent, intentionally superseded by a later pinned native revision, or
+  newly integrated. Preserve both cleanup invariants and unique destination
+  changes; never resolve a whole file by blindly taking one side.
+- Integrate the destination with a normal merge when it has advanced. Re-run
+  only checks invalidated by the resulting content, then confirm the intended
+  destination is an ancestor of the publication commit. Never force-push to
+  bypass a non-fast-forward.
+
 ## Record and commit
 
 Only after all relevant hunks are reconciled and validation passes:

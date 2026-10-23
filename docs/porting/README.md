@@ -46,6 +46,14 @@ Push or open a PR only with explicit authorization; a local commit is not
 publication approval. Do not rewrite published history or update other branches
 without separate approval.
 
+The `dotnet/runtime` oracle SHA is independent of the RyuJitSharp publication
+base. Before publishing an oracle update, fetch the requested destination branch
+and review every intervening commit and overlapping path against the port and
+cleanup. A merge or clean build does not establish that this reconciliation is
+complete; resolve conflicts by hunk, preserve later oracle-derived fixes, and
+rerun checks invalidated by the merged content. Never force-push to resolve a
+non-fast-forward.
+
 Fix the whole relevant behavior rather than a fragment selected to get one test
 running. Preserve target-specific control flow and dependencies. Keep unsupported
 paths explicit and terminating, and record their remaining behavior when it

@@ -32,6 +32,11 @@ checkpoint, and load only the relevant sections of the
   and apply relevant deltas to the managed implementation. Keep the source map
   sparse and record only non-obvious mappings, active exceptions, and unresolved
   decisions; do not recreate a native-source inventory.
+- The `dotnet/runtime` oracle pin and the RyuJitSharp publication base are
+  separate revisions. Before publishing an oracle update, fetch the intended
+  destination branch, inspect every intervening commit and overlapping path
+  against the cleanup, and verify the final tree retains or supersedes each
+  change. Resolve conflicts by hunk, not by selecting an entire side.
 - Keep the mapping sparse. Conventionally, `src/coreclr/jit/<stem>.{h,cpp}`
   maps to `sources/Core/jit/<stem>/`; `Compiler` partials span several native
   files. Verify symbol matches, and record non-obvious mappings for active work.
