@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Continue current-pin full-runtime parity beyond the System.Private.Xml batch. The broad CoreLib JitDisasm output is not suitable for raw per-method comparison because managed output interleaves method markers; method-filtered full-PMI captures show RunFinalizers and CultureInfo.get_CurrentUICulture match native codegen. The System.Collections OrderedDictionary.RemoveEntryFromBucket assertion now reproduces on native, native-repeat, and managed at 5a518 and is tracked as B527; its Do value numbering failure is a shared capture blocker, not parity evidence. Next revalidate the prior 7462 CoreLib comment/RWD-only blocks at 5a518 with method-filtered PMI captures, retaining raw output. Preserve B526, B527, and the wildcard TLS-order boundary; keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Continue current-pin full-runtime parity beyond the System.Private.Xml batch. The broad CoreLib JitDisasm output is not suitable for raw per-method comparison because managed output interleaves method markers; filtered PMI captures show RunFinalizers and CultureInfo.get_CurrentUICulture match native codegen. The 16 prior 7462 comment/RWD-only blocks are now revalidated at 5a518: all 13 non-ASCII comment changes and three absolute RWD pointer changes remain raw-only with identical code sizes. Next isolate the nine CoreLib code-size differences between the broad native and native-repeat captures with method-filtered PMI runs; the managed broad capture matches native-repeat on those methods. The System.Collections OrderedDictionary.RemoveEntryFromBucket assertion reproduces on native, native-repeat, and managed at 5a518 and is tracked as B527; its Do value numbering failure is a shared capture blocker, not parity evidence. Preserve B526, B527, and the wildcard TLS-order boundary; keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
       "scope": "Continue pinned Windows x64 full-runtime parity after reconciling the System.Private.Xml codegen mismatches.",
@@ -20,7 +20,7 @@
         "B526 reproduces at current pin 5a518: targeted native, native-repeat, and managed System.Double:Hypot captures all exit 0xC0000602 at the same Generate code assertion. This blocks FullDump coverage; preserve pinned behavior.",
         "The managed broad CoreLib disassembly stream interleaves method output markers; raw per-method body comparison is unavailable. Preserve captures and use filtered PMI captures without normalizing the output.",
         "System.GC:RunFinalizers changes TLS index/code size in the broad wildcard disassembly capture but matches native in the full-PMI method-filtered capture. Treat this as a capture-order/runtime-input boundary; do not change JIT constants.",
-        "Raw non-ASCII comment and RWD pointer differences were observed in the 7462 CoreLib capture; they are not re-established at 5a518 and remain unapproved for normalization.",
+        "Filtered 5a518 PMI captures revalidate all 16 prior 7462 raw blocks: native/managed has 13 non-ASCII-comment-only differences and 3 RWD-only differences; native/native-repeat is identical except for the 3 RWD-only records. All 16 expected method code sizes match in all variants. RWD pointers remain raw and unnormalized.",
         "Current-pin filtered System.Collections FullDump captures assert in gtDispVN at OrderedDictionary.RemoveEntryFromBucket during Do value numbering with exit 0xC0000602; tracked as B527. Native and managed raw comparisons first differ on the D015 profile diagnostic; preserve traces and do not claim full-dump parity."
       ]
     },
@@ -56,6 +56,13 @@
       "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native-vs-native-repeat.json",
       "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native-vs-managed.json",
       "artifacts\\corelib-disasm-5a518\\system-collections-full-dump\\native-repeat-vs-managed.json",
+      "artifacts\\corelib-disasm-5a518\\Capture-FilteredBlockDisasm.ps1",
+      "artifacts\\corelib-disasm-5a518\\Compare-FilteredBlockDisasm.py",
+      "artifacts\\corelib-disasm-5a518\\filtered-7462-blocks-5a518\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\filtered-7462-blocks-5a518\\native\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\filtered-7462-blocks-5a518\\native-repeat\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\filtered-7462-blocks-5a518\\managed\\manifest.json",
+      "artifacts\\corelib-disasm-5a518\\filtered-7462-blocks-5a518\\comparison.json",
       "artifacts\\corelib-disasm-5a518\\tls-trace-exact\\native\\capture\\manifest.json",
       "artifacts\\corelib-disasm-5a518\\tls-trace-exact\\native-repeat\\capture\\manifest.json",
       "artifacts\\corelib-disasm-5a518\\tls-trace-exact\\managed\\capture\\manifest.json",
@@ -367,7 +374,22 @@
           "addressDelta": "0x9140000"
         },
         "nativeRepeat": "Byte-identical",
-        "evidence": "artifacts\\corelib-full-parity-7462\\cse-register-count-fix1\\full-disasm-comparison.json"
+        "evidence": "artifacts\\corelib-full-parity-7462\\cse-register-count-fix1\\full-disasm-comparison.json",
+        "currentPinFilteredBlocks": {
+          "nativeCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845",
+          "expectedHistoricalBlocks": 16,
+          "capturedHeadersPerVariant": 20,
+          "expectedMethodsFound": "All 16 historical method identities are present in native, native-repeat, and managed captures; four extra overloads were selected by method-name filters.",
+          "headerSequences": "Identical across all three captures.",
+          "nativeVsNativeRepeat": "13 expected blocks are byte-identical; 3 RWD-only blocks differ by raw absolute pointers (right-minus-left -0x60).",
+          "nativeVsManaged": "13 expected blocks differ only in non-ASCII comments; 3 RWD-only blocks differ by raw absolute pointers (right-minus-left -0x10060).",
+          "codeSizes": "All 16 expected blocks match across all three variants; all 20 captured headers also have matching code-size records.",
+          "normalization": "None; raw disassembly and RWD addresses are preserved.",
+          "evidence": [
+            "artifacts\\corelib-disasm-5a518\\filtered-7462-blocks-5a518\\manifest.json",
+            "artifacts\\corelib-disasm-5a518\\filtered-7462-blocks-5a518\\comparison.json"
+          ]
+        }
       },
       "systemCollectionsDisassembly": {
         "architecture": "Windows x64",
