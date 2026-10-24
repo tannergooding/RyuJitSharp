@@ -354,32 +354,14 @@ public sealed partial class CodeGen
             siEndBlock(block);
         }
         SubtractStackLevel(savedStkLvl);
-        if (Configuration.DEBUG)
+        var foundMismatchedRegVar = false;
+        genCheckMismatchedLiveRegVars(block, ref foundMismatchedRegVar);
+        if (foundMismatchedRegVar)
         {
-            var mismatchLiveVars = VarSetOps.Diff(_compiler, block.bbLiveOut, _compiler.compCurLife);
-            VarSetOps.UnionD(_compiler, mismatchLiveVars, VarSetOps.Diff(_compiler, _compiler.compCurLife, block.bbLiveOut));
-            var foundMismatchedRegVar = false;
-            _ = VarSetOps.VisitBits(_compiler, mismatchLiveVars, varIndex =>
-            {
-                var varNum = _compiler.lvaTrackedIndexToLclNum(varIndex);
-                ref var varDsc = ref _compiler.lvaGetDesc(varNum);
-                if (varDsc.lvIsRegCandidate)
-                {
-                    if (!foundMismatchedRegVar)
-                    {
-                        JITDUMP($"Mismatched live reg vars after {FMT_BB(block.bbNum)}:");
-                        foundMismatchedRegVar = true;
-                    }
-                    JITDUMP($" V{varNum:D2}");
-                }
-                return true;
-            });
-            if (foundMismatchedRegVar)
-            {
-                JITDUMP("\n");
-                assert(false, "Found mismatched live reg var(s) after block");
-            }
+            JITDUMP("\n");
+            assert(false, "Found mismatched live reg var(s) after block");
         }
+
         noway_assert(genStackLevel == 0);
         genEmitEndBlock(block);
         if (Configuration.DEBUG && _compiler.verbose)
@@ -387,6 +369,30 @@ public sealed partial class CodeGen
             getVariableLiveKeeper().dumpBlockVariableLiveRanges(block);
         }
         _compiler.compCurBB = null;
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void genCheckMismatchedLiveRegVars(BasicBlock block, ref bool foundMismatchedRegVar)
+    {
+        var mismatchLiveVars = VarSetOps.Diff(_compiler, block.bbLiveOut, _compiler.compCurLife);
+        VarSetOps.UnionD(_compiler, mismatchLiveVars, VarSetOps.Diff(_compiler, _compiler.compCurLife, block.bbLiveOut));
+        var found = foundMismatchedRegVar;
+        _ = VarSetOps.VisitBits(_compiler, mismatchLiveVars, varIndex =>
+        {
+            var varNum = _compiler.lvaTrackedIndexToLclNum(varIndex);
+            ref var varDsc = ref _compiler.lvaGetDesc(varNum);
+            if (varDsc.lvIsRegCandidate)
+            {
+                if (!found)
+                {
+                    JITDUMP($"Mismatched live reg vars after {FMT_BB(block.bbNum)}:");
+                    found = true;
+                }
+                JITDUMP($" V{varNum:D2}");
+            }
+            return true;
+        });
+        foundMismatchedRegVar = found;
     }
 
     private void genEmitStartBlock(BasicBlock block)
