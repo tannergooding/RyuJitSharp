@@ -27,14 +27,15 @@ public sealed partial class RangeCheck
         }
 
         assert(comp.apTraits is not null);
-        var result = false;
-        _ = BitVecOps.VisitBits(comp.apTraits, assertions, bitIndex =>
+        var iterator = new BitVecOps.Iter(comp.apTraits, assertions);
+        uint bitIndex = 0;
+        while (iterator.NextElem(ref bitIndex))
         {
             var assertion = comp.optGetAssertion(GetAssertionIndex((ushort)bitIndex));
             if (!assertion.Op1.KindIs(O1K_VN) ||
                 !assertion.Op2.KindIs(O2K_VN_ADD_CNS) || (assertion.Op2.Cns != 0))
             {
-                return true;
+                continue;
             }
 
             var op1VN = assertion.Op1.VN;
@@ -56,14 +57,11 @@ public sealed partial class RangeCheck
             if ((next != ValueNumStore.NoVN) &&
                 IsBoundLessOrEqual(comp, assertions, next, hi, equalOnly, budget - 1))
             {
-                result = true;
-                return false;
+                return true;
             }
+        }
 
-            return true;
-        });
-
-        return result;
+        return false;
     }
 
     private static bool CanUsePreferredBound(
