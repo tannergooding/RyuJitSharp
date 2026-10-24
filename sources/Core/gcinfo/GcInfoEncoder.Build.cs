@@ -104,7 +104,7 @@ public sealed unsafe partial class GcInfoEncoder : IDisposable
 
         if (registers + stackSlots + untracked == 0)
         {
-            FinishMeasurements(slimHeader, (uint)callSites.Length, (uint)ranges.Length, registers, stackSlots, untracked);
+            FinishMeasurements((uint)callSites.Length, (uint)ranges.Length, registers, stackSlots, untracked);
             return;
         }
 
@@ -120,7 +120,7 @@ public sealed unsafe partial class GcInfoEncoder : IDisposable
             WriteInterruptibleRanges(transitions, ranges, liveState, couldBeLive);
         }
 
-        FinishMeasurements(slimHeader, (uint)callSites.Length, (uint)ranges.Length, registers, stackSlots, untracked);
+        FinishMeasurements((uint)callSites.Length, (uint)ranges.Length, registers, stackSlots, untracked);
     }
 
     private bool BuildHeader()

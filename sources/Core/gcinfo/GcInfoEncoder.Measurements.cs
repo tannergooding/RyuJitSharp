@@ -84,32 +84,6 @@ public sealed unsafe partial class GcInfoEncoder
             this[field] = unchecked(this[field] + bits);
             TotalSize = unchecked(TotalSize + bits);
         }
-
-        public void Add(GcInfoSize other)
-        {
-            TotalSize = unchecked(TotalSize + other.TotalSize);
-            NumMethods = unchecked(NumMethods + other.NumMethods);
-            NumCallSites = unchecked(NumCallSites + other.NumCallSites);
-            NumRanges = unchecked(NumRanges + other.NumRanges);
-            NumRegs = unchecked(NumRegs + other.NumRegs);
-            NumStack = unchecked(NumStack + other.NumStack);
-            NumUntracked = unchecked(NumUntracked + other.NumUntracked);
-            NumTransitions = unchecked(NumTransitions + other.NumTransitions);
-            SizeOfCode = unchecked(SizeOfCode + other.SizeOfCode);
-
-            for (var i = 0; i < m_Fields.Length; i++)
-            {
-                m_Fields[i] = unchecked(m_Fields[i] + other.m_Fields[i]);
-            }
-        }
-    }
-
-    private static class MeasurementTotals
-    {
-        internal static readonly GcInfoSize FullInfo = new();
-        internal static readonly GcInfoSize PartialInfo = new();
-        internal static nuint SlimHeaders;
-        internal static nuint FatHeaders;
     }
 
     internal readonly GcInfoSize? m_CurrentMethodSize;
@@ -146,7 +120,7 @@ public sealed unsafe partial class GcInfoEncoder
         m_CurrentMethodSize?.Record(field, bits);
     }
 
-    private void FinishMeasurements(bool slimHeader, uint callSites, uint ranges, uint registers, uint stack, uint untracked)
+    private void FinishMeasurements(uint callSites, uint ranges, uint registers, uint stack, uint untracked)
     {
         var currentMethodSize = m_CurrentMethodSize;
 
@@ -157,15 +131,6 @@ public sealed unsafe partial class GcInfoEncoder
 
         assert(currentMethodSize.TotalSize == m_Info1.GetBitCount() + m_Info2.GetBitCount());
 
-        if (slimHeader)
-        {
-            MeasurementTotals.SlimHeaders++;
-        }
-        else
-        {
-            MeasurementTotals.FatHeaders++;
-        }
-
         currentMethodSize.NumMethods = 1;
         currentMethodSize.NumCallSites = callSites;
         currentMethodSize.NumRanges = ranges;
@@ -173,14 +138,5 @@ public sealed unsafe partial class GcInfoEncoder
         currentMethodSize.NumStack = stack;
         currentMethodSize.NumUntracked = untracked;
         currentMethodSize.SizeOfCode = m_CodeLength;
-
-        if (ranges != 0)
-        {
-            MeasurementTotals.FullInfo.Add(currentMethodSize);
-        }
-        else
-        {
-            MeasurementTotals.PartialInfo.Add(currentMethodSize);
-        }
     }
 }
