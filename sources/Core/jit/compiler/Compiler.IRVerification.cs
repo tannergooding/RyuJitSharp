@@ -232,6 +232,10 @@ public partial class Compiler
                             assert(intrinsic.SimdSize is 16 or 32);
                             break;
                         }
+                        case NI_X86Base_DivRem or NI_X86Base_X64_DivRem when Configuration.TARGET_XARCH:
+                        {
+                            break;
+                        }
                         case NI_ArmBase_Yield when Configuration.TARGET_ARM64:
                         case NI_Sve_GatherPrefetch16Bit when Configuration.TARGET_ARM64:
                         case NI_Sve_GatherPrefetch32Bit when Configuration.TARGET_ARM64:

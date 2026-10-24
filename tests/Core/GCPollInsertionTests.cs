@@ -76,7 +76,6 @@ internal static unsafe class GCPollInsertionTests
             _ = Append(compiler, block, UnmanagedCall(compiler, true));
             var ret = Append(compiler, block, compiler.gtNewUnaryNode(GT_RETURN, TYP_INT, compiler.gtNewIconNode(TYP_INT, 7)));
             ret.SetDebugInfo(new DebugInfo(null, new ILLocation(23, 0)));
-            block.SetFlags(BBF_HAS_SUPPRESSGC_CALL);
             if (mode == 2)
             {
                 compiler.genReturnBB = block;
@@ -114,21 +113,16 @@ internal static unsafe class GCPollInsertionTests
         }, minOpts);
     }
 
-    [TestCase(false, false, false, false)]
-    [TestCase(false, true, false, false)]
-    [TestCase(false, true, true, true)]
-    [TestCase(true, false, false, true)]
-    [TestCase(true, true, false, true)]
-    public static void SelectionUsesFlagsOnlyInMinOpts(bool suppressed, bool staleFlag, bool minOpts, bool expands)
+    [TestCase(false, false, false)]
+    [TestCase(false, true, false)]
+    [TestCase(true, false, true)]
+    [TestCase(true, true, true)]
+    public static void SelectionScansCallsInBothModes(bool suppressed, bool minOpts, bool expands)
     {
         WithCompiler((compiler, block) => {
             if (suppressed)
             {
                 _ = Append(compiler, block, UnmanagedCall(compiler, true));
-            }
-            if (staleFlag)
-            {
-                block.SetFlags(BBF_HAS_SUPPRESSGC_CALL);
             }
             _ = Append(compiler, block, compiler.gtNewUnaryNode(GT_RETURN, TYP_INT, compiler.gtNewIconNode(TYP_INT, 0)));
             Assert.That(compiler.fgInsertGCPolls(), Is.EqualTo(expands
@@ -175,7 +169,6 @@ internal static unsafe class GCPollInsertionTests
             var successor = compiler.fgNewBBafter(BBJ_RETURN, block, true);
             var edge = compiler.fgAddRefPred(successor, block);
             block.SetKindAndTargetEdge(kind, edge);
-            block.SetFlags(BBF_HAS_SUPPRESSGC_CALL);
             if (kind is BBJ_CALLFINALLY)
             {
                 block.SetFlags(BBF_RETLESS_CALL);

@@ -14864,7 +14864,7 @@ public partial class Compiler
                 changed |= block.NumSucc > 0;
 
                 block.RemoveFlags(BBF_REMOVED | BBF_INTERNAL);
-                block.RemoveFlags(BBF_NEEDS_GCPOLL | BBF_HAS_SUPPRESSGC_CALL);
+                block.RemoveFlags(BBF_NEEDS_GCPOLL);
                 block.SetFlags(BBF_IMPORTED);
                 block.SetKindAndTargetEdge(BBJ_THROW, null);
                 block.bbSetRunRarely();

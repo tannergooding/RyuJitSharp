@@ -4756,7 +4756,7 @@ public partial class Compiler
             }
             else
             {
-                instParam = impTokenToHandle(resolvedToken, mustRestoreHandle: true);
+                instParam = impTokenToHandle(resolvedToken);
 
                 if (instParam is null)
                 {
@@ -4803,7 +4803,7 @@ public partial class Compiler
             }
             else
             {
-                instParam = impParentClassTokenToHandle(resolvedToken, mustRestoreHandle: true);
+                instParam = impParentClassTokenToHandle(resolvedToken);
 
                 if (instParam is null)
                 {
@@ -5725,8 +5725,7 @@ public partial class Compiler
             // Don't optimize, just call the helper and be done with it.
             JITDUMP($" helper call because: {(canExpandInline ? "optimizing for size" : "nullable")}\n");
 
-            // Ensure that the value class is restored
-            op2 = impTokenToHandle(resolvedToken, mustRestoreHandle: true);
+            op2 = impTokenToHandle(resolvedToken);
 
             if (op2 is null)
             {
@@ -9673,8 +9672,7 @@ public partial class Compiler
 
                     if (!IsAot)
                     {
-                        // Need to restore array classes before creating array objects on the heap
-                        op1 = impTokenToHandle(resolvedToken, mustRestoreHandle: true);
+                        op1 = impTokenToHandle(resolvedToken);
 
                         if (op1 is null)
                         {
@@ -9729,8 +9727,7 @@ public partial class Compiler
                                 {
                                     if (Configuration.FEATURE_READYTORUN && IsAot)
                                     {
-                                        // Need to restore array classes before creating array objects on the heap
-                                        op1 = impTokenToHandle(resolvedToken, mustRestoreHandle: true);
+                                        op1 = impTokenToHandle(resolvedToken);
                                     }
                                     assert(op1 is not null);
                                     op1 = gtNewHelperCallNode(TYP_REF, CORINFO_HELP_NEWARR_1_MAYBEFROZEN, op1, op2);
@@ -9759,7 +9756,7 @@ public partial class Compiler
                             //      3) Allocate the new array
                             // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                            op1 = impTokenToHandle(resolvedToken, mustRestoreHandle: true);
+                            op1 = impTokenToHandle(resolvedToken);
 
                             if (op1 is null)
                             {
@@ -9986,7 +9983,7 @@ public partial class Compiler
 
                     if (!IsAot)
                     {
-                        op2 = impTokenToHandle(resolvedToken, mustRestoreHandle: false);
+                        op2 = impTokenToHandle(resolvedToken);
 
                         if (op2 is null)
                         {
@@ -10028,7 +10025,7 @@ public partial class Compiler
                                 //      3) Perform the 'is instance' check on the input object
                                 // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                                op2 = impTokenToHandle(resolvedToken, mustRestoreHandle: false);
+                                op2 = impTokenToHandle(resolvedToken);
 
                                 if (op2 is null)
                                 {
@@ -10147,7 +10144,7 @@ public partial class Compiler
 
                     var tokenType = info.compCompHnd->getTokenTypeAsHandle(&resolvedToken);
 
-                    var op1 = impTokenToHandle(resolvedToken, mustRestoreHandle: true);
+                    var op1 = impTokenToHandle(resolvedToken);
 
                     if (op1 is null)
                     {
@@ -10512,7 +10509,7 @@ public partial class Compiler
 
                     if (!IsAot)
                     {
-                        op2 = impTokenToHandle(resolvedToken, mustRestoreHandle: false);
+                        op2 = impTokenToHandle(resolvedToken);
 
                         if (op2 is null)
                         {
@@ -10769,7 +10766,7 @@ public partial class Compiler
                     impResolveToken(codeAddr, out var resolvedToken, CORINFO_TOKENKIND_Class);
                     JITDUMP($" {resolvedToken.token:X8}");
 
-                    var op2 = impTokenToHandle(resolvedToken, mustRestoreHandle: true);
+                    var op2 = impTokenToHandle(resolvedToken);
 
                     if (op2 is null)
                     {
@@ -15960,14 +15957,14 @@ public partial class Compiler
         return null;
     }
 
-    public GenTree? impParentClassTokenToHandle(in CORINFO_RESOLVED_TOKEN resolvedToken, bool mustRestoreHandle = false)
+    public GenTree? impParentClassTokenToHandle(in CORINFO_RESOLVED_TOKEN resolvedToken)
     {
-        return impTokenToHandle(resolvedToken, out _, mustRestoreHandle, importParent: true);
+        return impTokenToHandle(resolvedToken, out _, importParent: true);
     }
 
-    public GenTree? impParentClassTokenToHandle(in CORINFO_RESOLVED_TOKEN resolvedToken, out bool runtimeLookup, bool mustRestoreHandle = false)
+    public GenTree? impParentClassTokenToHandle(in CORINFO_RESOLVED_TOKEN resolvedToken, out bool runtimeLookup)
     {
-        return impTokenToHandle(resolvedToken, out runtimeLookup, mustRestoreHandle, importParent: true);
+        return impTokenToHandle(resolvedToken, out runtimeLookup, importParent: true);
     }
 
     /// <summary>Spill the stack and insert IR that poisons all implicit byrefs.</summary>
@@ -19892,20 +19889,19 @@ public partial class Compiler
         }
     }
 
-    public GenTree? impTokenToHandle(in CORINFO_RESOLVED_TOKEN resolvedToken, bool mustRestoreHandle = false, bool importParent = false)
-        => impTokenToHandle(resolvedToken, out _, mustRestoreHandle, importParent);
+    public GenTree? impTokenToHandle(in CORINFO_RESOLVED_TOKEN resolvedToken, bool importParent = false)
+        => impTokenToHandle(resolvedToken, out _, importParent);
 
     /// <summary>Given a type token, generate code that will evaluate to the correct handle representation of that token (type handle, field handle, or method handle)</summary>
     /// <param name="resolvedToken"></param>
     /// <param name="runtimeLookup"></param>
-    /// <param name="mustRestoreHandle"></param>
     /// <param name="importParent"></param>
     /// <returns></returns>
     /// <remarks>
     ///   <para>For most cases, the handle is determined at compile-time, and the code generated is simply an embedded handle.</para>
     ///   <para>Run-time lookup is required if the enclosing method is shared between instantiations and the token refers to formal type parameters whose instantiation is not known at compile-time.</para>
     /// </remarks>
-    public unsafe GenTree? impTokenToHandle(in CORINFO_RESOLVED_TOKEN resolvedToken, out bool runtimeLookup, bool mustRestoreHandle = false, bool importParent = false)
+    public unsafe GenTree? impTokenToHandle(in CORINFO_RESOLVED_TOKEN resolvedToken, out bool runtimeLookup, bool importParent = false)
     {
         assert(!fgGlobalMorph);
 
@@ -19917,35 +19913,6 @@ public partial class Compiler
         }
 
         runtimeLookup = embedInfo.lookup.lookupKind.needsRuntimeLookup;
-
-        if (mustRestoreHandle && !embedInfo.lookup.lookupKind.needsRuntimeLookup)
-        {
-            switch (embedInfo.handleType)
-            {
-                case CORINFO_HANDLETYPE_CLASS:
-                {
-                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun((CORINFO_CLASS_HANDLE)(embedInfo.compileTimeHandle));
-                    break;
-                }
-
-                case CORINFO_HANDLETYPE_METHOD:
-                {
-                    info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun((CORINFO_METHOD_HANDLE)(embedInfo.compileTimeHandle));
-                    break;
-                }
-
-                case CORINFO_HANDLETYPE_FIELD:
-                {
-                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(info.compCompHnd->getFieldClass((CORINFO_FIELD_HANDLE)(embedInfo.compileTimeHandle)));
-                    break;
-                }
-
-                default:
-                {
-                    break;
-                }
-            }
-        }
 
         // Generate the full lookup tree. May be null if we're abandoning an inline attempt.
         var handleType = importParent ? GTF_ICON_CLASS_HDL : gtTokenToIconFlags(resolvedToken.token);

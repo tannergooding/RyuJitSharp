@@ -212,6 +212,11 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                     Flags |= GTF_EXCEPT;
                     break;
                 }
+                case NI_X86Base_DivRem or NI_X86Base_X64_DivRem when Configuration.TARGET_XARCH:
+                {
+                    Flags |= GTF_EXCEPT;
+                    break;
+                }
                 case NI_ArmBase_Yield or NI_Sve_GatherPrefetch16Bit or NI_Sve_GatherPrefetch32Bit or
                     NI_Sve_GatherPrefetch64Bit or NI_Sve_GatherPrefetch8Bit or NI_Sve_Prefetch16Bit or
                     NI_Sve_Prefetch32Bit or NI_Sve_Prefetch64Bit or NI_Sve_Prefetch8Bit or NI_Sve_GetFfrByte or

@@ -40,9 +40,6 @@ public enum BasicBlockFlags : long
     /// <summary>Last block of a cloned finally region</summary>
     BBF_CLONED_FINALLY_END = 1L << 8,
 
-    /// <summary>BB contains a call to a method with SuppressGCTransitionAttribute</summary>
-    BBF_HAS_SUPPRESSGC_CALL = 1L << 9,
-
     /// <summary>BB needs a label</summary>
     BBF_HAS_LABEL = 1L << 10,
 

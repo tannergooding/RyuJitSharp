@@ -1944,6 +1944,10 @@ public partial class GenTree
                         assert(varTypeIsInt(hwintrinsic.SimdBaseType));
                         flags |= (ExceptionSetFlags.OverflowException | ExceptionSetFlags.DivideByZeroException);
                     }
+                    else if (intrinsicId is NI_X86Base_DivRem or NI_X86Base_X64_DivRem)
+                    {
+                        flags |= (ExceptionSetFlags.OverflowException | ExceptionSetFlags.DivideByZeroException);
+                    }
                 }
 
                 return flags;

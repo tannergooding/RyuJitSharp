@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "ad029a35a82f87a2b5ef4472abf9e5cefcae9f11",
-    "targetObservedAt": "2026-10-23",
-    "reconciledCommit": "ad029a35a82f87a2b5ef4472abf9e5cefcae9f11"
+    "targetCommit": "47e0d08aa903b476781b746c081d1e2144e1d30c",
+    "targetObservedAt": "2026-10-24",
+    "reconciledCommit": "47e0d08aa903b476781b746c081d1e2144e1d30c"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Resume full-runtime parity at the unresolved dynamic TLS input-ownership boundary. Preserve B526/B527, the accepted D015 diagnostic, and residual exact-pinned FullDump differences. The ad029a35a82f87a2b5ef4472abf9e5cefcae9f11 source refresh is reconciled; the next oracle refresh should capture an immutable runtime revision after that pin. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Resume full-runtime parity at the unresolved dynamic TLS input-ownership boundary. Preserve B526/B527, the accepted D015 diagnostic, and residual exact-pinned FullDump differences. The 47e0d08aa903b476781b746c081d1e2144e1d30c oracle refresh is reconciled. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": null,
     "evidenceLinks": [
@@ -361,7 +361,15 @@
       "Focused browser-wasm tests selected by FullyQualifiedName~Wasm passed in Debug (198/198) and Release (193/193); logs: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-16_01_30_21_net11.0.trx and artifacts\\tst\\Release\\tagoo_GOODING-ZEN4_2026-10-16_01_30_25_net11.0.trx. The broader Debug Target suite had 10 shared ArithmeticMorphTests failures and aborted on an ImporterCallTests host crash; the same failures and crash reproduced at clean HEAD f96b8aff82106ab3ee5ec0f94d352d736d83e8c9, so it is not reported as a pass.",
       "The broad win-arm64 Debug baseline remains 10 failures (4 scalable TYP_SIMD clone, 3 embedded-FMA, 2 constant-count intrinsic, 1 jump-table) and 2 not executed; it is not reported as passing or attributed to this refresh.",
       "Focused oracle-refresh checks passed after the final changes: Debug Core comparison/loop-hoisting/range/method-name tests (119/119), plus selected win-arm64 target tests in Debug (94/94) and Release (86/86). Logs: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-17_01_16_09_net11.0.trx, artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-17_01_16_38_net11.0.trx, and artifacts\\tst\\Release\\tagoo_GOODING-ZEN4_2026-10-17_01_16_36_net11.0.trx. The Core Release test-project build stopped before execution on errors in unrelated tests/Core/RedundantZeroInitTests.cs:315 (missing DEBUG-only field) and tests/Core/DiscretionaryPolicyTests.cs:467 (CA1812); the selected target Release tests completed.",
-      "2026-10-20 oracle refresh validation: full-analysis Debug solution build succeeded; all directly affected Core Debug tests passed (312/312; artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-20_01_23_13_net11.0.trx); focused Wasm GC-array address target tests passed in Debug and Release (1/1 each; artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-20_01_28_21_net11.0.trx and artifacts\\tst\\Release\\tagoo_GOODING-ZEN4_2026-10-20_01_28_28_net11.0.trx); Release Core compiler builds succeeded for the host and browser-wasm targets. The full-analysis Release solution build remains blocked before test execution by the existing unrelated CS1061 at tests/Core/RedundantZeroInitTests.cs:315 and CA1812 at tests/Core/DiscretionaryPolicyTests.cs:467."
+      "2026-10-20 oracle refresh validation: full-analysis Debug solution build succeeded; all directly affected Core Debug tests passed (312/312; artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-20_01_23_13_net11.0.trx); focused Wasm GC-array address target tests passed in Debug and Release (1/1 each; artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-20_01_28_21_net11.0.trx and artifacts\\tst\\Release\\tagoo_GOODING-ZEN4_2026-10-20_01_28_28_net11.0.trx); Release Core compiler builds succeeded for the host and browser-wasm targets. The full-analysis Release solution build remains blocked before test execution by the existing unrelated CS1061 at tests/Core/RedundantZeroInitTests.cs:315 and CA1812 at tests/Core/DiscretionaryPolicyTests.cs:467.",
+      "artifacts\\oracle-update-ad029a35-47e0d08a\\oracle-head-capture.txt",
+      "artifacts\\oracle-update-ad029a35-47e0d08a\\runtime-diff.patch",
+      "artifacts\\oracle-update-ad029a35-47e0d08a\\hunk-dispositions.tsv",
+      "artifacts\\oracle-update-47e0d08a-targeted\\native-fullmanageddeps\\manifest.json",
+      "artifacts\\oracle-update-47e0d08a-targeted\\managed-execution\\manifest.json",
+      "artifacts\\oracle-update-47e0d08a-targeted\\compare-importation.json",
+      "artifacts\\oracle-update-47e0d08a-targeted\\compare-fulldump.json",
+      "artifacts\\oracle-update-47e0d08a-targeted\\codegen-parity.json"
     ],
     "parityEvidence": {
       "asyncResumeCodegen": {
@@ -1723,8 +1731,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "ad029a35a82f87a2b5ef4472abf9e5cefcae9f11",
-    "reconciledCommit": "ad029a35a82f87a2b5ef4472abf9e5cefcae9f11",
+    "targetInputCommit": "47e0d08aa903b476781b746c081d1e2144e1d30c",
+    "reconciledCommit": "47e0d08aa903b476781b746c081d1e2144e1d30c",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

@@ -174,17 +174,7 @@ public partial class Compiler
                 (CORINFO_CLASS_HANDLE*)exactClassesPtr);
         }
 
-        var allTrulyExact = true;
-        for (var i = 0; i < numExactClasses; i++)
-        {
-            if (!info.compCompHnd->isExactType((CORINFO_CLASS_HANDLE)exactClasses[i]))
-            {
-                allTrulyExact = false;
-                break;
-            }
-        }
-
-        if ((numExactClasses > 0) && allTrulyExact)
+        if (numExactClasses > 0)
         {
             // Preserve native integer rounding: three candidates leave a 1% throwing fallback.
             for (var i = 0; i < numExactClasses; i++)

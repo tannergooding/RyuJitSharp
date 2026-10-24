@@ -1724,6 +1724,31 @@ internal static unsafe class HardwareIntrinsicInitializationTests
         });
     }
 
+    [TestCase(NI_X86Base_DivRem, TYP_INT)]
+    [TestCase(NI_X86Base_DivRem, TYP_UINT)]
+    [TestCase(NI_X86Base_X64_DivRem, TYP_LONG)]
+    [TestCase(NI_X86Base_X64_DivRem, TYP_ULONG)]
+    public static void DivRemIsMarkedAsThrowing(NamedIntrinsic id, var_types baseType)
+    {
+        Assume.That(Configuration.TARGET_XARCH && Configuration.FEATURE_HW_INTRINSICS,
+            "requires xarch hardware intrinsic support");
+
+        WithCompiler(compiler => {
+            var operands = new GenTree[3];
+            for (var index = 0; index < operands.Length; index++)
+            {
+                operands[index] = new GenTreeLclVar(baseType.ActualType, index);
+            }
+
+            var intrinsic = new GenTreeHWIntrinsic(TYP_STRUCT, id, baseType, 0, operands);
+            var exceptions = ExceptionSetFlags.OverflowException | ExceptionSetFlags.DivideByZeroException;
+
+            Assert.That(HWIntrinsicInfo.HasSpecialSideEffect(id), Is.True);
+            Assert.That(intrinsic.Flags & GTF_EXCEPT, Is.EqualTo(GTF_EXCEPT));
+            Assert.That(intrinsic.Exceptions(compiler), Is.EqualTo(exceptions));
+        });
+    }
+
     [TestCase(TYP_BYTE, TYP_INT)]
     [TestCase(TYP_UBYTE, TYP_UINT)]
     [TestCase(TYP_SHORT, TYP_INT)]

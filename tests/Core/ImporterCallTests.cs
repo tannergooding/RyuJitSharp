@@ -435,7 +435,7 @@ internal static unsafe class ImporterCallTests
                 Assert.That(compiler.lvaTable[compiler.impBoxTemp].lvSingleDef, Is.EqualTo(enumState == TypeCompareState.Must));
                 Assert.That(compiler.stackState.esStackDepth, Is.EqualTo(1));
                 Assert.That(compiler.stackState.esStack[0].val.Oper, Is.EqualTo(genTreeOps.GT_BOX));
-                Assert.That(restoreCount, Is.EqualTo(1));
+                Assert.That(restoreCount, Is.Zero);
                 Assert.That(enumQueries, Is.EqualTo(1));
             });
         }

@@ -183,13 +183,11 @@ internal static unsafe class LateCastExpansionTests
     [TestCase(2)]
     [TestCase(3)]
     [TestCase(4)]
-    [TestCase(5)]
     public static void IneligibleInputsLeaveOriginalGraphIntact(int mode)
     {
         WithCompiler((compiler, body) => {
             s_targetExact = mode < 4;
-            s_exactCount = mode == 5 ? 1 : 0;
-            s_candidateExact = mode != 5;
+            s_exactCount = 0;
             var helper = mode >= 4 ? CORINFO_HELP_ISINSTANCEOFINTERFACE : CORINFO_HELP_CHKCASTCLASS;
             var call = NewCall(compiler, helper);
             var original = Append(compiler, body, compiler.gtNewStoreLclVarNode(1, call));
@@ -208,6 +206,22 @@ internal static unsafe class LateCastExpansionTests
             Assert.That(compiler.Blocks.Count(), Is.EqualTo(2));
             Assert.That(original.TreeList.Contains(call), Is.True);
         }, minOpts: mode == 3);
+    }
+
+    [Test]
+    public static void ReturnedClassCandidatesAreUsedWithoutExactTypeRechecks()
+    {
+        WithCompiler((compiler, body) => {
+            s_targetExact = false;
+            s_candidateExact = false;
+            s_exactCount = 1;
+            var call = NewCall(compiler, CORINFO_HELP_ISINSTANCEOFINTERFACE);
+            var original = Append(compiler, body, compiler.gtNewStoreLclVarNode(1, call));
+
+            Assert.That(compiler.fgLateCastExpansion(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.Blocks.Count(block => block.Kind is BBJ_COND), Is.EqualTo(2));
+            Assert.That(original.TreeList.Contains(call), Is.False);
+        });
     }
 
     private static GenTreeCall NewCall(Compiler compiler, CorInfoHelpFunc helper, bool unknownTarget = false)

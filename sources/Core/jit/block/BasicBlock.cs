@@ -1934,7 +1934,6 @@ public sealed partial class BasicBlock : LIR.Range
         dspFlag(this, BBF_REMOVED, "del");
         dspFlag(this, BBF_DONT_REMOVE, "keep");
         dspFlag(this, BBF_INTERNAL, "internal");
-        dspFlag(this, BBF_HAS_SUPPRESSGC_CALL, "sup-gc");
         dspFlag(this, BBF_HAS_LABEL, "label");
         dspFlag(this, BBF_HAS_JMP, "jmp");
         dspFlag(this, BBF_HAS_CALL, "hascall");

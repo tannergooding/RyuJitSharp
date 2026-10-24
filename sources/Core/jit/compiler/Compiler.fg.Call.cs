@@ -637,7 +637,7 @@ public partial class Compiler
         assert(compCurBB is not null);
         if (fgGlobalMorph && call.IsUnmanaged && call.IsSuppressGCTransition)
         {
-            compCurBB.SetFlags(BBF_HAS_SUPPRESSGC_CALL | BBF_GC_SAFE_POINT);
+            compCurBB.SetFlags(BBF_GC_SAFE_POINT);
             optMethodFlags |= OMF_NEEDS_GCPOLLS;
         }
 

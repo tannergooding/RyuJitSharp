@@ -3254,7 +3254,7 @@ public partial class Compiler
                                 JITDUMP("Optimizing constrained box-this obj.getType() to direct type construction\n");
                                 _ = compiler.impPopStack();
 
-                                var typeHandleOp = compiler.impTokenToHandle(constrainedResolvedToken, mustRestoreHandle: true);
+                                var typeHandleOp = compiler.impTokenToHandle(constrainedResolvedToken);
 
                                 if (typeHandleOp is null)
                                 {

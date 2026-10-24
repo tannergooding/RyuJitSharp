@@ -596,11 +596,11 @@ internal static unsafe class FlowGraphCompactionTests
     }
 
     [Test]
-    public static void ConvertingAnUnreachableDontRemoveBlockClearsGcPollRequirements()
+    public static void ConvertingAnUnreachableDontRemoveBlockClearsGcPollRequirement()
     {
         WithCompiler(false, compiler => {
             var (_, block, _, _) = CreateGraph(compiler);
-            block.SetFlags(BBF_DONT_REMOVE | BBF_NEEDS_GCPOLL | BBF_HAS_SUPPRESSGC_CALL);
+            block.SetFlags(BBF_DONT_REMOVE | BBF_NEEDS_GCPOLL);
 
             var method = typeof(Compiler).GetMethod(
                 "fgRemoveUnreachableBlocks",
@@ -611,7 +611,7 @@ internal static unsafe class FlowGraphCompactionTests
 
             Assert.That(result, Is.EqualTo(true));
             Assert.That(block.Kind, Is.EqualTo(BBJ_THROW));
-            Assert.That(block.HasAnyFlag(BBF_NEEDS_GCPOLL | BBF_HAS_SUPPRESSGC_CALL), Is.EqualTo(BBF_EMPTY));
+            Assert.That(block.HasFlag(BBF_NEEDS_GCPOLL), Is.False);
         });
     }
 

@@ -1067,7 +1067,7 @@ public partial struct HWIntrinsicInfo
         HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_MaybeMemoryLoad, // NI_X86Base_ConvertToVector128Int64
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_ConvertToVector128Single
         HW_Flag_NoFloatingPointUsed | HW_Flag_RmwIntrinsic, // NI_X86Base_Crc32
-        HW_Flag_NoFloatingPointUsed | HW_Flag_BaseTypeFromSecondArg | HW_Flag_MultiReg | HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_RmwIntrinsic, // NI_X86Base_DivRem
+        HW_Flag_NoFloatingPointUsed | HW_Flag_BaseTypeFromSecondArg | HW_Flag_MultiReg | HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_RmwIntrinsic | HW_Flag_SpecialSideEffect_Other, // NI_X86Base_DivRem
         HW_Flag_NoFlag, // NI_X86Base_Divide
         HW_Flag_CopyUpperBits, // NI_X86Base_DivideScalar
         HW_Flag_FullRangeIMM | HW_Flag_NoEvexSemantics, // NI_X86Base_DotProduct
@@ -1172,7 +1172,7 @@ public partial struct HWIntrinsicInfo
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_SpecialCodeGen, // NI_X86Base_X64_ConvertToInt64WithTruncation
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_SpecialCodeGen, // NI_X86Base_X64_ConvertToUInt64
         HW_Flag_NoFloatingPointUsed | HW_Flag_RmwIntrinsic, // NI_X86Base_X64_Crc32
-        HW_Flag_NoFloatingPointUsed | HW_Flag_BaseTypeFromSecondArg | HW_Flag_MultiReg | HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_RmwIntrinsic, // NI_X86Base_X64_DivRem
+        HW_Flag_NoFloatingPointUsed | HW_Flag_BaseTypeFromSecondArg | HW_Flag_MultiReg | HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_RmwIntrinsic | HW_Flag_SpecialSideEffect_Other, // NI_X86Base_X64_DivRem
         HW_Flag_FullRangeIMM | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsScalarT, // NI_X86Base_X64_Extract
         HW_Flag_FullRangeIMM | HW_Flag_CanBenefitFromConstantProp, // NI_X86Base_X64_Insert
         HW_Flag_NoFloatingPointUsed | HW_Flag_NoRMWSemantics | HW_Flag_SpecialCodeGen, // NI_X86Base_X64_PopCount

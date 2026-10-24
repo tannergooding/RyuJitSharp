@@ -69,14 +69,7 @@ public partial class Compiler
         for (var block = fgFirstBB; block is not null; block = block.Next)
         {
             compCurBB = block;
-            if (opts.OptimizationDisabled)
-            {
-                if (block.HasAnyFlag(BBF_HAS_SUPPRESSGC_CALL | BBF_NEEDS_GCPOLL) == 0)
-                {
-                    continue;
-                }
-            }
-            else if (!blockNeedsGCPoll(block))
+            if (!blockNeedsGCPoll(block))
             {
                 continue;
             }

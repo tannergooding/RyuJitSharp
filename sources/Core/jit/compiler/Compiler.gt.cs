@@ -8309,7 +8309,7 @@ public partial class Compiler
     {
         var usingReadyToRunHelper = false;
         var helper = CORINFO_HELP_UNDEF;
-        var opHandle = impTokenToHandle(resolvedToken, mustRestoreHandle: true, useParent);
+        var opHandle = impTokenToHandle(resolvedToken, importParent: useParent);
         var lookup = default(CORINFO_CONST_LOOKUP);
 
         if (Configuration.FEATURE_READYTORUN && IsAot)
