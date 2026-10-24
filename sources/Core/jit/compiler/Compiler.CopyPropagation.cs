@@ -10,15 +10,12 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private static class CopyPropagationData
-    {
-        private static ConditionalWeakTable<LclNumToLiveDefsMap, CopyPropKeyOrder>? s_keyOrders;
+    private static ConditionalWeakTable<LclNumToLiveDefsMap, CopyPropKeyOrder>? s_copyPropKeyOrders;
 
-        internal static CopyPropKeyOrder GetKeyOrder(LclNumToLiveDefsMap names)
-        {
-            var keyOrders = LazyStatic.GetOrCreate(ref s_keyOrders);
-            return keyOrders.GetValue(names, static _ => new CopyPropKeyOrder());
-        }
+    private static CopyPropKeyOrder GetCopyPropKeyOrder(LclNumToLiveDefsMap names)
+    {
+        var keyOrders = LazyStatic.GetOrCreate(ref s_copyPropKeyOrders);
+        return keyOrders.GetValue(names, static _ => new CopyPropKeyOrder());
     }
 
     private sealed class CopyPropKeyOrder
@@ -122,7 +119,7 @@ public partial class Compiler
 
     public void optBlockCopyPropPopStacks(BasicBlock block, LclNumToLiveDefsMap curSsaName)
     {
-        var order = CopyPropagationData.GetKeyOrder(curSsaName);
+        var order = GetCopyPropKeyOrder(curSsaName);
         foreach (var statement in block.Statements)
         {
             foreach (var tree in statement.TreeList)
@@ -165,7 +162,7 @@ public partial class Compiler
         }
 
         JITDUMP("{ ");
-        foreach (var local in CopyPropagationData.GetKeyOrder(curSsaName).Keys(curSsaName))
+        foreach (var local in GetCopyPropKeyOrder(curSsaName).Keys(curSsaName))
         {
             var definition = curSsaName[local].Peek();
             var number = definition.SsaNum == SsaConfig.RESERVED_SSA_NUM ? "NA" : $"{definition.SsaNum}";
@@ -185,7 +182,7 @@ public partial class Compiler
         var lclDefVN = varSsaDsc._vnPair.Conservative;
         assert(lclDefVN != ValueNumStore.NoVN);
 
-        foreach (var newLclNum in CopyPropagationData.GetKeyOrder(curSsaName).Keys(curSsaName))
+        foreach (var newLclNum in GetCopyPropKeyOrder(curSsaName).Keys(curSsaName))
         {
             if (lclNum == newLclNum)
             {
@@ -304,7 +301,7 @@ public partial class Compiler
         {
             stack = new CopyPropSsaDefStack();
             curSsaName.Add(lclNum, stack);
-            CopyPropagationData.GetKeyOrder(curSsaName).Add(lclNum);
+            GetCopyPropKeyOrder(curSsaName).Add(lclNum);
         }
         stack.Push(new CopyPropSsaDef(this, lclNum, ssaNum, lclNode));
     }
@@ -382,7 +379,7 @@ public partial class Compiler
         {
             if (Configuration.DEBUG)
             {
-                foreach (var local in CopyPropagationData.GetKeyOrder(_curSsaName).Keys(_curSsaName))
+                foreach (var local in GetCopyPropKeyOrder(_curSsaName).Keys(_curSsaName))
                 {
                     assert(_compiler.lvaGetDesc(local).lvIsParam || local == _compiler.info.compThisArg);
                     assert(_curSsaName[local].Count == 1);
