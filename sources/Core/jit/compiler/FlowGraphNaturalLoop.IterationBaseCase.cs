@@ -83,10 +83,18 @@ public sealed partial class FlowGraphNaturalLoop
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnexpectedLoopComparisonArgument,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default)
-    );
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        FatalJitErrorCode.UnexpectedLoopComparisonArgument,
+                        oper);
+                }
+                else
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        FatalJitErrorCode.UnexpectedLoopComparisonArgument);
+                }
+
                 return default!;
             }
         }
@@ -128,10 +136,18 @@ public sealed partial class FlowGraphNaturalLoop
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnexpectedLoopComparisonArgument,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default)
-    );
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        FatalJitErrorCode.UnexpectedLoopComparisonArgument,
+                        oper);
+                }
+                else
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        FatalJitErrorCode.UnexpectedLoopComparisonArgument);
+                }
+
                 return default!;
             }
         }

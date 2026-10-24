@@ -175,10 +175,18 @@ public partial class Emitter
                 assert(dsc.dsType == dataSection.sectionType.data);
                 if (dsc.dsType != dataSection.sectionType.data)
                 {
-                    FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnexpectedDataSectionType,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? dsc.dsType : default)
-    );
+                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnexpectedDataSectionType,
+                            dsc.dsType);
+                    }
+                    else
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnexpectedDataSectionType);
+                    }
+
                     return;
                 }
                 var size = checked((int)dscSize);

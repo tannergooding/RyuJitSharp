@@ -158,10 +158,18 @@ public partial class Emitter
                 assert(data.dsType == dataSection.sectionType.data);
                 if (data.dsType != dataSection.sectionType.data)
                 {
-                    FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnexpectedDataSectionType,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? data.dsType : default)
-    );
+                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnexpectedDataSectionType,
+                            data.dsType);
+                    }
+                    else
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnexpectedDataSectionType);
+                    }
+
                     return;
                 }
                 var bytes = data.Data;
@@ -302,10 +310,18 @@ public partial class Emitter
 
                                 default:
                                 {
-                                    FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnexpectedDataSectionElementSize,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? elemSize : default)
-    );
+                                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                                    {
+                                        FatalJitException.ThrowFatalJitException(
+                                            FatalJitErrorCode.UnexpectedDataSectionElementSize,
+                                            elemSize);
+                                    }
+                                    else
+                                    {
+                                        FatalJitException.ThrowFatalJitException(
+                                            FatalJitErrorCode.UnexpectedDataSectionElementSize);
+                                    }
+
                                     return;
                                 }
                             }

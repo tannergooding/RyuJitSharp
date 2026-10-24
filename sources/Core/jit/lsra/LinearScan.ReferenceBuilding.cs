@@ -108,10 +108,18 @@ public sealed partial class LinearScan
         var interval = localIntervals[checked((int)varIndex)];
         if (interval is null)
         {
-            FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.TrackedLocalArgumentHasNoLSRAInterval,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? varIndex : default)
-    );
+            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    FatalJitErrorCode.TrackedLocalArgumentHasNoLSRAInterval,
+                    varIndex);
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException(
+                    FatalJitErrorCode.TrackedLocalArgumentHasNoLSRAInterval);
+            }
+
             return default!;
         }
         return interval;
@@ -146,10 +154,18 @@ public sealed partial class LinearScan
         assert(type is not TYP_UNDEF and not TYP_STRUCT);
         if (type is TYP_UNDEF or TYP_STRUCT)
         {
-            FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.LSRACannotDefineARegisterForArgument,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? type : default)
-    );
+            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    FatalJitErrorCode.LSRACannotDefineARegisterForArgument,
+                    type);
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException(
+                    FatalJitErrorCode.LSRACannotDefineARegisterForArgument);
+            }
+
             return default!;
         }
 
@@ -470,10 +486,18 @@ public sealed partial class LinearScan
             }
         }
 
-        FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.NoUpperVectorIntervalExistsForTrackedLocalArgument,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? varIndex : default)
-    );
+        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+        {
+            FatalJitException.ThrowFatalJitException(
+                FatalJitErrorCode.NoUpperVectorIntervalExistsForTrackedLocalArgument,
+                varIndex);
+        }
+        else
+        {
+            FatalJitException.ThrowFatalJitException(
+                FatalJitErrorCode.NoUpperVectorIntervalExistsForTrackedLocalArgument);
+        }
+
         return default!;
     }
 

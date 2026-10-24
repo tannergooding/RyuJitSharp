@@ -394,11 +394,19 @@ public partial class Emitter
                     {
                         emitDispIns(id, false, false, false);
                     }
-                    FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnexpectedGCReferenceStackInstructionFormatArgumentForArgument,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id.idInsFmt() : default),
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ins : default)
-    );
+                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnexpectedGCReferenceStackInstructionFormatArgumentForArgument,
+                            id.idInsFmt(),
+                            ins);
+                    }
+                    else
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnexpectedGCReferenceStackInstructionFormatArgumentForArgument);
+                    }
+
                     return default!;
                 }
             }

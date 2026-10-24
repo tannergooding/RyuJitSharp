@@ -82,10 +82,18 @@ public sealed partial class LinearScan
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnsupportedInitializationBlockKind,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? block._kind : default)
-    );
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                FatalJitErrorCode.UnsupportedInitializationBlockKind,
+                                block._kind);
+                        }
+                        else
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                FatalJitErrorCode.UnsupportedInitializationBlockKind);
+                        }
+
                         return default!;
                     }
                 }
@@ -173,10 +181,18 @@ public sealed partial class LinearScan
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnsupportedCopyBlockKind,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? block._kind : default)
-    );
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                FatalJitErrorCode.UnsupportedCopyBlockKind,
+                                block._kind);
+                        }
+                        else
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                FatalJitErrorCode.UnsupportedCopyBlockKind);
+                        }
+
                         return default!;
                     }
                 }
@@ -671,10 +687,18 @@ public sealed partial class LinearScan
                 }
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnsupportedStackArgumentKind,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? argument._kind : default)
-    );
+                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnsupportedStackArgumentKind,
+                            argument._kind);
+                    }
+                    else
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnsupportedStackArgumentKind);
+                    }
+
                     return default!;
                 }
             }

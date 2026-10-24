@@ -153,10 +153,18 @@ public sealed partial class LinearScan
                     {
                         if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
                         {
-                            FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnexpectedLocalResolutionReferenceArgument,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? kind : default)
-    );
+                            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                            {
+                                FatalJitException.ThrowFatalJitException(
+                                    FatalJitErrorCode.UnexpectedLocalResolutionReferenceArgument,
+                                    kind);
+                            }
+                            else
+                            {
+                                FatalJitException.ThrowFatalJitException(
+                                    FatalJitErrorCode.UnexpectedLocalResolutionReferenceArgument);
+                            }
+
                             return;
                         }
                         break;
@@ -191,10 +199,18 @@ public sealed partial class LinearScan
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnexpectedLocalResolutionReferenceArgument,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? kind : default)
-    );
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                FatalJitErrorCode.UnexpectedLocalResolutionReferenceArgument,
+                                kind);
+                        }
+                        else
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                FatalJitErrorCode.UnexpectedLocalResolutionReferenceArgument);
+                        }
+
                         return;
                     }
                 }

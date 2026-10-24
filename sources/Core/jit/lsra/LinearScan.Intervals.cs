@@ -44,10 +44,18 @@ public sealed partial class LinearScan
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.MissingRegisterBank,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? registerType : default)
-    );
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        FatalJitErrorCode.MissingRegisterBank,
+                        registerType);
+                }
+                else
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        FatalJitErrorCode.MissingRegisterBank);
+                }
+
                 return default!;
             }
         }

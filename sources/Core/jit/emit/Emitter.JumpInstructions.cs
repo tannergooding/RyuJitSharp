@@ -24,22 +24,40 @@ public partial class Emitter
         var index = unchecked((uint)jumpKind);
         if (index >= (uint)Configuration.EMIT_JUMPKIND_COUNT)
         {
-            FatalJitException.ThrowFatalJitException(
-        CORJIT_INTERNALERROR,
-        FatalJitErrorCode.InvalidJumpKind,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? jumpKind : default)
-    );
+            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.InvalidJumpKind,
+                    jumpKind);
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.InvalidJumpKind);
+            }
+
             return default!;
         }
 
         var result = emitReverseJumpKinds[(int)index];
         if ((jumpKind != EJ_NONE) && (result == EJ_NONE))
         {
-            FatalJitException.ThrowFatalJitException(
-        CORJIT_SKIPPED,
-        FatalJitErrorCode.MissingReverseJumpMapping,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? jumpKind : default)
-    );
+            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_SKIPPED,
+                    FatalJitErrorCode.MissingReverseJumpMapping,
+                    jumpKind);
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_SKIPPED,
+                    FatalJitErrorCode.MissingReverseJumpMapping);
+            }
+
             return default!;
         }
 
@@ -52,22 +70,40 @@ public partial class Emitter
         var jumpKindInstructions = emitJumpKindInstructions;
         if (index >= (uint)jumpKindInstructions.Length)
         {
-            FatalJitException.ThrowFatalJitException(
-        CORJIT_INTERNALERROR,
-        FatalJitErrorCode.InvalidJumpKind,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? jumpKind : default)
-    );
+            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.InvalidJumpKind,
+                    jumpKind);
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.InvalidJumpKind);
+            }
+
             return default!;
         }
 
         var result = jumpKindInstructions[(int)index];
         if ((jumpKind != EJ_NONE) && (result == INS_invalid))
         {
-            FatalJitException.ThrowFatalJitException(
-        CORJIT_SKIPPED,
-        FatalJitErrorCode.UnsupportedJumpKind,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? jumpKind : default)
-    );
+            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_SKIPPED,
+                    FatalJitErrorCode.UnsupportedJumpKind,
+                    jumpKind);
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_SKIPPED,
+                    FatalJitErrorCode.UnsupportedJumpKind);
+            }
+
             return default!;
         }
 

@@ -51,10 +51,18 @@ public sealed partial class LinearScan
                         if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
                         {
                             unreached();
-                            FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnexpectedReferenceKind,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? refType : default)
-    );
+                            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                            {
+                                FatalJitException.ThrowFatalJitException(
+                                    FatalJitErrorCode.UnexpectedReferenceKind,
+                                    refType);
+                            }
+                            else
+                            {
+                                FatalJitException.ThrowFatalJitException(
+                                    FatalJitErrorCode.UnexpectedReferenceKind);
+                            }
+
                             return;
                         }
                         break;
@@ -93,10 +101,18 @@ public sealed partial class LinearScan
                     default:
                     {
                         unreached();
-                        FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnexpectedReferenceKind,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? refType : default)
-    );
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                FatalJitErrorCode.UnexpectedReferenceKind,
+                                refType);
+                        }
+                        else
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                FatalJitErrorCode.UnexpectedReferenceKind);
+                        }
+
                         return;
                     }
                 }

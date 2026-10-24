@@ -76,10 +76,18 @@ public sealed partial class LinearScan
                 case GT_BLK:
                 case GT_INIT_VAL:
                 {
-                    FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnexpectedNonContainedArgumentInLSRANodeBuilding,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? tree.Oper : default)
-    );
+                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnexpectedNonContainedArgumentInLSRANodeBuilding,
+                            tree.Oper);
+                    }
+                    else
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnexpectedNonContainedArgumentInLSRANodeBuilding);
+                    }
+
                     return default!;
                 }
 

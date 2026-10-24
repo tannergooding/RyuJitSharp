@@ -49,10 +49,18 @@ public sealed partial class CodeGen
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.UnsupportedWriteBarrierForm,
-        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? writeBarrierForm : default)
-    );
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        FatalJitErrorCode.UnsupportedWriteBarrierForm,
+                        writeBarrierForm);
+                }
+                else
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        FatalJitErrorCode.UnsupportedWriteBarrierForm);
+                }
+
                 return default!;
             }
         }
