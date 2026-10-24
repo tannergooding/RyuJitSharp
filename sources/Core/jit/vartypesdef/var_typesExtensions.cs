@@ -102,7 +102,18 @@ public static partial class var_typesExtensions
                 case 16:
                     return TYP_COUNT;
                 default:
-                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ordinal : default));
+                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid,
+                            ordinal);
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid);
+                    }
+
                     return default;
             }
         }
@@ -128,7 +139,18 @@ public static partial class var_typesExtensions
                 case 22:
                     return TYP_COUNT;
                 default:
-                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ordinal : default));
+                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid,
+                            ordinal);
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid);
+                    }
+
                     return default;
             }
         }
@@ -152,7 +174,18 @@ public static partial class var_typesExtensions
                 case 21:
                     return TYP_COUNT;
                 default:
-                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ordinal : default));
+                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid,
+                            ordinal);
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid);
+                    }
+
                     return default;
             }
         }
@@ -172,7 +205,18 @@ public static partial class var_typesExtensions
             case 20:
                 return TYP_COUNT;
             default:
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ordinal : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid,
+                        ordinal);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid);
+                }
+
                 return default;
         }
     }

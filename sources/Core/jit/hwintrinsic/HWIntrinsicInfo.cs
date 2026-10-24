@@ -163,7 +163,17 @@ public readonly partial struct HWIntrinsicInfo
 
         if (tableIndex is ushort.MaxValue)
         {
-            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicArgumentIsNotPresentInTheConfiguredTargetSNativeMetadataTable, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id : default));
+            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(
+                    FatalJitErrorCode.HardwareIntrinsicArgumentIsNotPresentInTheConfiguredTargetSNativeMetadataTable,
+                    id);
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(
+                    FatalJitErrorCode.HardwareIntrinsicArgumentIsNotPresentInTheConfiguredTargetSNativeMetadataTable);
+            }
         }
 
         return tableIndex;

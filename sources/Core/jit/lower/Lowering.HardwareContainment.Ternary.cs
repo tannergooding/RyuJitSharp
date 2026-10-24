@@ -371,7 +371,17 @@ public sealed partial class Lowering
                                 NI_AVX512v3_MultiplyWideningAndAddSaturate) &&
                                 (intrinsicId < FIRST_NI_AVXVNNI || intrinsicId > LAST_NI_AVXVNNIINT_V512))
                             {
-                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnhandledTernaryHardwareIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsicId : default));
+                                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                                {
+                                    JitExceptionHelpers.ThrowInvalidOperationException(
+                                        FatalJitErrorCode.UnhandledTernaryHardwareIntrinsicArgument,
+                                        intrinsicId);
+                                }
+                                else
+                                {
+                                    JitExceptionHelpers.ThrowInvalidOperationException(
+                                        FatalJitErrorCode.UnhandledTernaryHardwareIntrinsicArgument);
+                                }
                             }
                             TryMakeSrcContainedOrRegOptional(node, op3);
                             break;
@@ -473,7 +483,18 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnhandledTernaryImmediateHardwareIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsicId : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnhandledTernaryImmediateHardwareIntrinsicArgument,
+                                intrinsicId);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnhandledTernaryImmediateHardwareIntrinsicArgument);
+                        }
+
                         return;
                     }
                 }

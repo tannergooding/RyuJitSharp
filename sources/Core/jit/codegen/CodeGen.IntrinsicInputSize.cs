@@ -28,7 +28,18 @@ public sealed partial class CodeGen
             case Input_64Bit:
                 return 8;
             default:
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InstructionArgumentHasNoInputSize, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ins : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.InstructionArgumentHasNoInputSize,
+                        ins);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.InstructionArgumentHasNoInputSize);
+                }
+
                 return default;
         }
     }

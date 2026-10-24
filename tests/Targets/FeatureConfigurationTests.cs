@@ -1016,6 +1016,12 @@ internal static class FeatureConfigurationTests
         });
     }
 
+    [Test]
+    public static void NativeVariableTypeOrdinalsRejectInvalidValues()
+    {
+        _ = Assert.Throws<InvalidOperationException>(() => var_typesExtensions.FromNativeOrdinal(int.MaxValue));
+    }
+
     private static void AssertNativeOrdinalRoundTrips(ValueNumStore store, params var_types[] types)
     {
         foreach (var type in types)

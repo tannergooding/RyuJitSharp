@@ -230,7 +230,18 @@ public sealed partial class Lowering
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnhandledQuaternaryImmediateHardwareIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsicId : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnhandledQuaternaryImmediateHardwareIntrinsicArgument,
+                        intrinsicId);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnhandledQuaternaryImmediateHardwareIntrinsicArgument);
+                }
+
                 return;
             }
         }

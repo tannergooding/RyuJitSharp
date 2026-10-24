@@ -223,7 +223,18 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnhandledBinaryImmediateHardwareIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsicId : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnhandledBinaryImmediateHardwareIntrinsicArgument,
+                                intrinsicId);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnhandledBinaryImmediateHardwareIntrinsicArgument);
+                        }
+
                         return;
                     }
                 }
@@ -256,7 +267,18 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnhandledBinaryHelperHardwareIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsicId : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnhandledBinaryHelperHardwareIntrinsicArgument,
+                                intrinsicId);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnhandledBinaryHelperHardwareIntrinsicArgument);
+                        }
+
                         return;
                     }
                 }

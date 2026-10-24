@@ -1591,9 +1591,18 @@ internal static class InstructionOrdinalMaps
     {
         if (!TryGetNativeInstructionOrdinal(ins, out var ordinal))
         {
-            JitExceptionHelpers.ThrowPlatformNotSupportedException(
-                FatalJitErrorCode.NativeInstructionOrdinalIsUnavailableForInstruction,
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ins : default);
+            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(
+                    FatalJitErrorCode.NativeInstructionOrdinalIsUnavailableForInstruction,
+                    ins);
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(
+                    FatalJitErrorCode.NativeInstructionOrdinalIsUnavailableForInstruction);
+            }
+
             return default;
         }
 

@@ -73,7 +73,18 @@ public partial class Compiler
 
                 default:
                 {
-                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedSaturatingIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id : default));
+                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            FatalJitErrorCode.UnexpectedSaturatingIntrinsicArgument,
+                            id);
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            FatalJitErrorCode.UnexpectedSaturatingIntrinsicArgument);
+                    }
+
                     func = default;
                     break;
                 }

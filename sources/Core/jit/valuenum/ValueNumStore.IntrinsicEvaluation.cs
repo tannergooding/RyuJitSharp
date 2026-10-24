@@ -136,7 +136,18 @@ public sealed partial class ValueNumStore
                         __jitExceptionResult725 = Math.Truncate(value);
                         break;
                     default:
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedDoubleMathIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedDoubleMathIntrinsicArgument,
+                                intrinsic);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedDoubleMathIntrinsicArgument);
+                        }
+
                         __jitExceptionResult725 = default;
                         break;
                 }
@@ -221,7 +232,18 @@ public sealed partial class ValueNumStore
                         __jitExceptionResult726 = MathF.Truncate(value);
                         break;
                     default:
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedFloatMathIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedFloatMathIntrinsicArgument,
+                                intrinsic);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedFloatMathIntrinsicArgument);
+                        }
+
                         __jitExceptionResult726 = default;
                         break;
                 }
@@ -249,7 +271,18 @@ public sealed partial class ValueNumStore
                         result = unchecked((int)MathF.Round(GetConstantSingle(argument)));
                         break;
                     default:
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedIntegralMathSourceArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedIntegralMathSourceArgument,
+                                intrinsic);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedIntegralMathSourceArgument);
+                        }
+
                         result = default;
                         break;
                 }
@@ -277,7 +310,18 @@ public sealed partial class ValueNumStore
                         result = BitOperations.PopCount(unchecked((uint)GetConstantInt32(argument)));
                         break;
                     default:
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedBitCountingIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedBitCountingIntrinsicArgument,
+                                intrinsic);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedBitCountingIntrinsicArgument);
+                        }
+
                         result = default;
                         break;
                 }
@@ -382,7 +426,18 @@ public sealed partial class ValueNumStore
                 __jitExceptionResult727 = VNF_PopCount;
                 break;
             default:
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedUnaryMathIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnsupportedUnaryMathIntrinsicArgument,
+                        intrinsic);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnsupportedUnaryMathIntrinsicArgument);
+                }
+
                 __jitExceptionResult727 = default;
                 break;
         }
@@ -423,7 +478,18 @@ public sealed partial class ValueNumStore
                         __jitExceptionResult728 = EvaluateMathMinMaxNative(leftDouble, rightDouble, false);
                         break;
                     default:
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedBinaryDoubleIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedBinaryDoubleIntrinsicArgument,
+                                intrinsic);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedBinaryDoubleIntrinsicArgument);
+                        }
+
                         __jitExceptionResult728 = default;
                         break;
                 }
@@ -452,7 +518,18 @@ public sealed partial class ValueNumStore
                         __jitExceptionResult729 = EvaluateMathMinMaxNative(leftSingle, rightSingle, false);
                         break;
                     default:
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedBinaryFloatIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedBinaryFloatIntrinsicArgument,
+                                intrinsic);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnsupportedBinaryFloatIntrinsicArgument);
+                        }
+
                         __jitExceptionResult729 = default;
                         break;
                 }
@@ -529,7 +606,18 @@ public sealed partial class ValueNumStore
                 __jitExceptionResult731 = VNF_Pow;
                 break;
             default:
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedBinaryMathIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnsupportedBinaryMathIntrinsicArgument,
+                        intrinsic);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnsupportedBinaryMathIntrinsicArgument);
+                }
+
                 __jitExceptionResult731 = default;
                 break;
         }
