@@ -320,8 +320,45 @@ internal static unsafe class CompilerTimingTests
     }
 
     [Test]
+    public static void ClrSummaryOmitsApiNamesWhenMeasurementIsDisabled()
+    {
+        const string measureClrApiCallsSwitch = "RyuJitSharp.MEASURE_CLRAPI_CALLS";
+        var hadMeasureClrApiCallsSwitch = AppContext.TryGetSwitch(measureClrApiCallsSwitch, out var measureClrApiCalls);
+        AppContext.SetSwitch(measureClrApiCallsSwitch, false);
+
+        var previousConfig = JitConfig;
+        JitConfig = new JitConfigValues();
+        ClrTimingEnabled(ref JitConfig) = 1;
+
+        try
+        {
+            var info = new CompTimeInfo(0) {
+                _totalCycles = (ulong)Stopwatch.Frequency,
+                _allClrApiCalls = 2,
+                _allClrApiCycles = (ulong)Stopwatch.Frequency
+            };
+            info._perClrApiCalls[(int)API_isIntrinsic] = 1;
+            info._perClrApiCycles[(int)API_isIntrinsic] = (ulong)Stopwatch.Frequency;
+            CompTimeSummaryInfo summary = default;
+            summary.AddInfo(info, includePhases: true);
+
+            var output = PrintSummary(summary);
+            Assert.That(output, Does.Not.Contain("isIntrinsic"));
+        }
+        finally
+        {
+            JitConfig = previousConfig;
+            AppContext.SetSwitch(measureClrApiCallsSwitch, hadMeasureClrApiCallsSwitch && measureClrApiCalls);
+        }
+    }
+
+    [Test]
     public static void ClrSummaryUsesNativeApiNamesHeaderAndInvariantNumbers()
     {
+        const string measureClrApiCallsSwitch = "RyuJitSharp.MEASURE_CLRAPI_CALLS";
+        var hadMeasureClrApiCallsSwitch = AppContext.TryGetSwitch(measureClrApiCallsSwitch, out var measureClrApiCalls);
+        AppContext.SetSwitch(measureClrApiCallsSwitch, true);
+
         var previousConfig = JitConfig;
         JitConfig = new JitConfigValues();
         ClrTimingEnabled(ref JitConfig) = 1;
@@ -354,6 +391,7 @@ internal static unsafe class CompilerTimingTests
         {
             CultureInfo.CurrentCulture = previousCulture;
             JitConfig = previousConfig;
+            AppContext.SetSwitch(measureClrApiCallsSwitch, hadMeasureClrApiCallsSwitch && measureClrApiCalls);
         }
     }
 

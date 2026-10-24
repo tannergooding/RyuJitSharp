@@ -295,7 +295,10 @@ public struct CompTimeSummaryInfo
             }
         }
 
-        if (extraInfo && (_total._allClrApiCalls > 0) && (_total._allClrApiCycles > 0))
+        if (Configuration.MEASURE_CLRAPI_CALLS &&
+            extraInfo &&
+            (_total._allClrApiCalls > 0) &&
+            (_total._allClrApiCycles > 0))
         {
             streamWriter.WriteLine();
 
