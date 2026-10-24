@@ -55,7 +55,26 @@ public sealed partial class ValueNumStore
         CEA_Count,
     }
 
-    private readonly record struct VNHandle(nint Value, GenTreeFlags Flags);
+    private readonly record struct VNHandle(nint Value, GenTreeFlags Flags)
+    {
+        public override string ToString()
+        {
+            if (!Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                return base.ToString()!;
+            }
+
+            var builder = new System.Text.StringBuilder();
+            _ = builder.Append(nameof(VNHandle));
+            _ = builder.Append(" { ");
+            if (PrintMembers(builder))
+            {
+                _ = builder.Append(' ');
+            }
+            _ = builder.Append('}');
+            return builder.ToString();
+        }
+    }
 
     private sealed class Chunk
     {

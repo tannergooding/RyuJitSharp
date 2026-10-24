@@ -404,6 +404,25 @@ internal static unsafe class NaturalLoopTests
     }
 
     [Test]
+    public static void LocalAddressAssertionToStringUsesConfiguredDetailLevel()
+    {
+        var assertion = new LocalEqualsLocalAddrAssertion(1, 2, 3);
+        var text = assertion.ToString();
+
+        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+        {
+            Assert.That(text,
+                Is.EqualTo("LocalEqualsLocalAddrAssertion { DestLclNum = 1, AddressLclNum = 2, AddressOffset = 3 }"));
+        }
+        else
+        {
+            Assert.That(text, Does.Not.Contain("DestLclNum"));
+            Assert.That(text, Does.Not.Contain("AddressLclNum"));
+            Assert.That(text, Does.Not.Contain("AddressOffset"));
+        }
+    }
+
+    [Test]
     public static void FullLocalAddressAssertionTablesReuseExistingFacts()
     {
         WithCompiler(compiler => {

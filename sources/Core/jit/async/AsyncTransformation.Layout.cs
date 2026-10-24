@@ -9,7 +9,26 @@ using System.Diagnostics;
 
 namespace RyuJitSharp;
 
-internal readonly record struct AsyncReturnTypeInfo(var_types ReturnType, ClassLayout? ReturnLayout);
+internal readonly record struct AsyncReturnTypeInfo(var_types ReturnType, ClassLayout? ReturnLayout)
+{
+    public override string ToString()
+    {
+        if (!Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+        {
+            return base.ToString()!;
+        }
+
+        var builder = new System.Text.StringBuilder();
+        _ = builder.Append(nameof(AsyncReturnTypeInfo));
+        _ = builder.Append(" { ");
+        if (PrintMembers(builder))
+        {
+            _ = builder.Append(' ');
+        }
+        _ = builder.Append('}');
+        return builder.ToString();
+    }
+}
 
 internal sealed class AsyncReturnInfo(AsyncReturnTypeInfo type)
 {

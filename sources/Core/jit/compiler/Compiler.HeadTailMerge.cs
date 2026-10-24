@@ -13,7 +13,26 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private readonly record struct HeadTailMergePredInfo(BasicBlock Block, Statement Stmt);
+    private readonly record struct HeadTailMergePredInfo(BasicBlock Block, Statement Stmt)
+    {
+        public override string ToString()
+        {
+            if (!Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                return base.ToString()!;
+            }
+
+            var builder = new System.Text.StringBuilder();
+            _ = builder.Append(nameof(HeadTailMergePredInfo));
+            _ = builder.Append(" { ");
+            if (PrintMembers(builder))
+            {
+                _ = builder.Append(' ');
+            }
+            _ = builder.Append('}');
+            return builder.ToString();
+        }
+    }
 
     public unsafe PhaseStatus fgHeadTailMerge(bool early)
     {

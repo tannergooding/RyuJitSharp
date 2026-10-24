@@ -11,6 +11,23 @@ namespace RyuJitSharp;
 
 internal readonly record struct LocalEqualsLocalAddrAssertion(int DestLclNum, int AddressLclNum, uint AddressOffset)
 {
+    public override string ToString()
+    {
+        if (!Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+        {
+            return base.ToString()!;
+        }
+
+        var builder = new System.Text.StringBuilder();
+        _ = builder.Append("LocalEqualsLocalAddrAssertion { ");
+        if (PrintMembers(builder))
+        {
+            _ = builder.Append(' ');
+        }
+        _ = builder.Append('}');
+        return builder.ToString();
+    }
+
     [Conditional("DEBUG")]
     internal void Print() => jitprintf($"V{DestLclNum:D2} = &V{AddressLclNum:D2}[+{AddressOffset:D3}]");
 }

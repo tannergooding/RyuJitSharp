@@ -25,7 +25,26 @@ public partial class Compiler
         15933877, 33040633, 68513161, 142069021, 294594427, 733045421,
     ];
 
-    private readonly record struct BoundCheckLocation(Statement Stmt, GenTreeBoundsChk Check, int StmtIdx);
+    private readonly record struct BoundCheckLocation(Statement Stmt, GenTreeBoundsChk Check, int StmtIdx)
+    {
+        public override string ToString()
+        {
+            if (!Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                return base.ToString()!;
+            }
+
+            var builder = new System.Text.StringBuilder();
+            _ = builder.Append(nameof(BoundCheckLocation));
+            _ = builder.Append(" { ");
+            if (PrintMembers(builder))
+            {
+                _ = builder.Append(' ');
+            }
+            _ = builder.Append('}');
+            return builder.ToString();
+        }
+    }
 
     private sealed class BoundsCheckInfo(in BoundCheckLocation location)
     {

@@ -16,7 +16,26 @@ public partial class Compiler
         GenTree store, GenTree source, bool dstInvolvesReplacements, bool srcInvolvesReplacements)
     {
         private readonly record struct Entry(PhysicalPromotionReplacement? ToReplacement,
-            PhysicalPromotionReplacement? FromReplacement, int Offset, var_types Type);
+            PhysicalPromotionReplacement? FromReplacement, int Offset, var_types Type)
+        {
+            public override string ToString()
+            {
+                if (!Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    return base.ToString()!;
+                }
+
+                var builder = new System.Text.StringBuilder();
+                _ = builder.Append(nameof(Entry));
+                _ = builder.Append(" { ");
+                if (PrintMembers(builder))
+                {
+                    _ = builder.Append(' ');
+                }
+                _ = builder.Append('}');
+                return builder.ToString();
+            }
+        }
 
         internal enum RemainderKind { None, Primitive, FullBlock }
 

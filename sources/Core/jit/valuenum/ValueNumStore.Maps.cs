@@ -10,7 +10,26 @@ namespace RyuJitSharp;
 
 public sealed partial class ValueNumStore
 {
-    private readonly record struct MapSelectWorkCacheEntry(ValueNum Result, ValueNum[] MemoryDependencies);
+    private readonly record struct MapSelectWorkCacheEntry(ValueNum Result, ValueNum[] MemoryDependencies)
+    {
+        public override string ToString()
+        {
+            if (!Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                return base.ToString()!;
+            }
+
+            var builder = new System.Text.StringBuilder();
+            _ = builder.Append(nameof(MapSelectWorkCacheEntry));
+            _ = builder.Append(" { ");
+            if (PrintMembers(builder))
+            {
+                _ = builder.Append(' ');
+            }
+            _ = builder.Append('}');
+            return builder.ToString();
+        }
+    }
 
     private readonly Dictionary<(ValueNum Map, ValueNum Index), MapSelectWorkCacheEntry> _mapSelectWorkCache = [];
     private readonly List<(ValueNum Map, ValueNum Index)> _fixedPointMapSels = [];

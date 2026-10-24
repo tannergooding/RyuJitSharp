@@ -10,7 +10,26 @@ namespace RyuJitSharp;
 
 public sealed partial class Rationalizer
 {
-    private readonly record struct ParameterUse(GenTreeLclVarCommon? Node, BasicBlock Block);
+    private readonly record struct ParameterUse(GenTreeLclVarCommon? Node, BasicBlock Block)
+    {
+        public override string ToString()
+        {
+            if (!Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                return base.ToString()!;
+            }
+
+            var builder = new System.Text.StringBuilder();
+            _ = builder.Append(nameof(ParameterUse));
+            _ = builder.Append(" { ");
+            if (PrintMembers(builder))
+            {
+                _ = builder.Append(' ');
+            }
+            _ = builder.Append('}');
+            return builder.ToString();
+        }
+    }
 
     private sealed class ParameterUses
     {

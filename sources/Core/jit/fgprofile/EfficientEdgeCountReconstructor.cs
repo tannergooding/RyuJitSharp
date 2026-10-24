@@ -36,6 +36,24 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         }
 
         public override int GetHashCode() => SourceKey ^ (TargetKey << 16);
+
+        public override string ToString()
+        {
+            if (!Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                return base.ToString()!;
+            }
+
+            var builder = new System.Text.StringBuilder();
+            _ = builder.Append(nameof(EdgeKey));
+            _ = builder.Append(" { ");
+            if (PrintMembers(builder))
+            {
+                _ = builder.Append(' ');
+            }
+            _ = builder.Append('}');
+            return builder.ToString();
+        }
     }
 
     internal sealed class Edge(BasicBlock source, BasicBlock target)
