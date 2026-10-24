@@ -199,7 +199,18 @@ public sealed partial class Lowering
 
                         default:
                         {
-                            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedTupleTypeArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? tupleType : default));
+                            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                            {
+                                JitExceptionHelpers.ThrowInvalidOperationException(
+                                    FatalJitErrorCode.UnexpectedTupleTypeArgument,
+                                    tupleType);
+                            }
+                            else
+                            {
+                                JitExceptionHelpers.ThrowInvalidOperationException(
+                                    FatalJitErrorCode.UnexpectedTupleTypeArgument);
+                            }
+
                             supportsRegOptional = false;
                             return false;
                         }
@@ -253,7 +264,18 @@ public sealed partial class Lowering
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedIntrinsicCategoryArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? category : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedIntrinsicCategoryArgument,
+                        category);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedIntrinsicCategoryArgument);
+                }
+
                 supportsRegOptional = false;
                 return false;
             }

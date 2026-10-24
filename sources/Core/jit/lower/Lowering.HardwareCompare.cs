@@ -155,7 +155,18 @@ public sealed partial class Lowering
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedVectorComparisonBaseTypeArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? baseType : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedVectorComparisonBaseTypeArgument,
+                        baseType);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedVectorComparisonBaseTypeArgument);
+                }
+
                 return default;
             }
         }

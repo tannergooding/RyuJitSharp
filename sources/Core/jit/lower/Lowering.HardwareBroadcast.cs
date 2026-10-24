@@ -113,7 +113,18 @@ public sealed partial class Lowering
                 __jitExceptionResult467 = NI_AVX512_BroadcastScalarToVector512;
                 break;
             default:
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedBroadcastSizeArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? simdType : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedBroadcastSizeArgument,
+                        simdType);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedBroadcastSizeArgument);
+                }
+
                 __jitExceptionResult467 = default;
                 break;
         }
@@ -135,7 +146,18 @@ public sealed partial class Lowering
                 __jitExceptionResult468 = CompilerInstance.gtNewLconNode(cnsVec.SimdVal.i64[0]);
                 break;
             default:
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedBroadcastTypeArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? broadcastType : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedBroadcastTypeArgument,
+                        broadcastType);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedBroadcastTypeArgument);
+                }
+
                 __jitExceptionResult468 = default;
                 break;
         }

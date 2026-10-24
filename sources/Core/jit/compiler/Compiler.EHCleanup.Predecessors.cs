@@ -64,7 +64,18 @@ public partial class Compiler
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedBlockKindArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? block.Kind : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedBlockKindArgument,
+                        block.Kind);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedBlockKindArgument);
+                }
+
                 return;
             }
         }

@@ -368,7 +368,18 @@ public partial class Compiler
             }
             default:
             {
-                JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.HandleArgumentInFgValueNumberAddExceptionSet, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? tree.Oper : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowUnreachableException(
+                        FatalJitErrorCode.HandleArgumentInFgValueNumberAddExceptionSet,
+                        tree.Oper);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowUnreachableException(
+                        FatalJitErrorCode.HandleArgumentInFgValueNumberAddExceptionSet);
+                }
+
                 return;
             }
         }

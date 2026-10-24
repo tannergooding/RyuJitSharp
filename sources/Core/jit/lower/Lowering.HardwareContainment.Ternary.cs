@@ -503,7 +503,18 @@ public sealed partial class Lowering
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedTernaryHardwareIntrinsicCategoryArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? category : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedTernaryHardwareIntrinsicCategoryArgument,
+                        category);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedTernaryHardwareIntrinsicCategoryArgument);
+                }
+
                 return;
             }
         }

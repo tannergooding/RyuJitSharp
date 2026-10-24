@@ -669,7 +669,18 @@ public partial class Compiler
             }
             default:
             {
-                JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.UnmappedVNHelperArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? helpFunc : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowUnreachableException(
+                        FatalJitErrorCode.UnmappedVNHelperArgument,
+                        helpFunc);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowUnreachableException(
+                        FatalJitErrorCode.UnmappedVNHelperArgument);
+                }
+
                 return default;
             }
         }

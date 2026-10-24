@@ -89,7 +89,18 @@ public readonly partial struct TernaryLogicInfo
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedTernaryLogicOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedTernaryLogicOperationArgument,
+                        oper);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedTernaryLogicOperationArgument);
+                }
+
                 return default;
             }
         }
@@ -141,7 +152,18 @@ public readonly partial struct TernaryLogicInfo
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedTernaryLogicOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedTernaryLogicOperationArgument,
+                        oper);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedTernaryLogicOperationArgument);
+                }
+
                 return default;
             }
         }

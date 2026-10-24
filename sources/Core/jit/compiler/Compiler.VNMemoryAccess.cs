@@ -105,7 +105,18 @@ public partial class Compiler
             }
 
             default:
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedStoreOperatorArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? store.Oper : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedStoreOperatorArgument,
+                        store.Oper);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedStoreOperatorArgument);
+                }
+
                 return;
         }
 

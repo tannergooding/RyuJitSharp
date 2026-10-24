@@ -77,7 +77,18 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedExitOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? exitOp : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedExitOperationArgument,
+                        exitOp);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedExitOperationArgument);
+                }
+
                 return default;
             }
         }
@@ -177,7 +188,18 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedRelationalOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedRelationalOperationArgument,
+                        oper);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedRelationalOperationArgument);
+                }
+
                 return default;
             }
         }
@@ -209,7 +231,18 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedExitOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedExitOperationArgument,
+                        oper);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedExitOperationArgument);
+                }
+
                 return default;
             }
         }
@@ -241,7 +274,18 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedExitOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedExitOperationArgument,
+                        oper);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedExitOperationArgument);
+                }
+
                 return default;
             }
         }
@@ -342,7 +386,18 @@ public sealed partial class ScalarEvolutionContext
 
                 default:
                 {
-                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedExitOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? exitOp : default));
+                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            FatalJitErrorCode.UnexpectedExitOperationArgument,
+                            exitOp);
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            FatalJitErrorCode.UnexpectedExitOperationArgument);
+                    }
+
                     relation = default!;
                     break;
                 }
@@ -408,7 +463,18 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedExitOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? exitOpVNF : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedExitOperationArgument,
+                        exitOpVNF);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedExitOperationArgument);
+                }
+
                 return null;
             }
         }

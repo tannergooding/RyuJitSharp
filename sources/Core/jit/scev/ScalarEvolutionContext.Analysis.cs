@@ -321,7 +321,18 @@ public sealed partial class ScalarEvolutionContext
 
                     default:
                     {
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedOperatorArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? tree.Oper : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnexpectedOperatorArgument,
+                                tree.Oper);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnexpectedOperatorArgument);
+                        }
+
                         return default!;
                     }
                 }

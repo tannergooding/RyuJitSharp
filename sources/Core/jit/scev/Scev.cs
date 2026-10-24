@@ -111,7 +111,18 @@ public class Scev
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? Oper : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument,
+                        Oper);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument);
+                }
+
                 return ScevVisit.Abort;
             }
         }
@@ -186,7 +197,18 @@ public class Scev
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? left.Oper : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument,
+                        left.Oper);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument);
+                }
+
                 return false;
             }
         }
@@ -240,7 +262,18 @@ public class Scev
 
                     default:
                     {
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedBinaryOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? binop.Oper : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnexpectedBinaryOperationArgument,
+                                binop.Oper);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.UnexpectedBinaryOperationArgument);
+                        }
+
                         operation = default!;
                         break;
                     }
@@ -271,7 +304,18 @@ public class Scev
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? Oper : default));
+                if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument,
+                        Oper);
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument);
+                }
+
                 return;
             }
         }

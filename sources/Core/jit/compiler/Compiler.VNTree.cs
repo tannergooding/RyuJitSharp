@@ -290,7 +290,18 @@ public partial class Compiler
 
                 default:
                 {
-                    JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.UnhandledLeafArgumentInFgValueNumberTree, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
+                    if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                    {
+                        JitExceptionHelpers.ThrowUnreachableException(
+                            FatalJitErrorCode.UnhandledLeafArgumentInFgValueNumberTree,
+                            oper);
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowUnreachableException(
+                            FatalJitErrorCode.UnhandledLeafArgumentInFgValueNumberTree);
+                    }
+
                     return;
                 }
             }

@@ -12,7 +12,17 @@ public sealed partial class Lowering
     {
         if (category is not HW_Category_IMM)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedQuaternaryHardwareIntrinsicCategoryArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? category : default));
+            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    FatalJitErrorCode.UnexpectedQuaternaryHardwareIntrinsicCategoryArgument,
+                    category);
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    FatalJitErrorCode.UnexpectedQuaternaryHardwareIntrinsicCategoryArgument);
+            }
         }
 
         var op1 = node.GetOp(1);
@@ -187,7 +197,18 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TernaryLogicControlArgumentWasNotNormalizedBeforeContainment, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? control : default));
+                        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.TernaryLogicControlArgumentWasNotNormalizedBeforeContainment,
+                                control);
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                FatalJitErrorCode.TernaryLogicControlArgumentWasNotNormalizedBeforeContainment);
+                        }
+
                         return;
                     }
                 }
