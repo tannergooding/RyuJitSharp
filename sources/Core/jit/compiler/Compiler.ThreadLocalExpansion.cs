@@ -229,7 +229,9 @@ public partial class Compiler
             firstNewStmt = firstNewStmt.NextStmt;
         }
 
-        var resultLocal = lvaGrabTemp(shortLifetime: true, "TLS field access");
+        var resultLocal = lvaGrabTemp(
+            shortLifetime: true,
+            Configuration.DEBUG ? "TLS field access" : string.Empty);
         lvaTable[resultLocal].Type = call.Type;
         var resultValue = gtNewLclvNode(call.Type, resultLocal);
         callUse = CloneThreadLocalTree(resultValue);

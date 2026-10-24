@@ -10118,7 +10118,9 @@ public partial class Compiler
                         call.InitializeStructReturnType(this, classHandle, call.UnmanagedCallConv);
                     }
 
-                    var resultTmp = lvaGrabTemp(true, "result of REFANYTYPE");
+                    var resultTmp = lvaGrabTemp(
+                        true,
+                        Configuration.DEBUG ? "result of REFANYTYPE" : string.Empty);
                     lvaSetStruct(resultTmp, classHandle, unsafeValueClsCheck: false);
 
                     var storeResult = gtNewStoreLclVarNode(resultTmp, call);
