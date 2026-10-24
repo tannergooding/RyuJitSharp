@@ -5,6 +5,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp;
 
@@ -17,7 +18,13 @@ public sealed partial class ValueNumStore
             internal Dictionary<simdscalable_t, ValueNum>? CnsMap;
         }
 
+        private sealed class SimdMaskValueMapData
+        {
+            internal Dictionary<simdmaskvalue_t, ValueNum>? CnsMap;
+        }
+
         private static ConditionalWeakTable<ValueNumStore, SimdScalableValueMapData>? s_simdScalableValueMaps;
+        private static ConditionalWeakTable<ValueNumStore, SimdMaskValueMapData>? s_simdMaskValueMaps;
 
         internal static Dictionary<simdscalable_t, ValueNum> GetSimdScalableCnsMap(ValueNumStore store)
         {
@@ -26,5 +33,44 @@ public sealed partial class ValueNumStore
 
             return data.CnsMap ??= [];
         }
+
+        internal static ValueNum VNForSimdMaskCon(ValueNumStore store, simdmaskvalue_t value)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_simdMaskValueMaps);
+            var data = instances.GetValue(store, static _ => new SimdMaskValueMapData());
+            var constants = data.CnsMap ??= [];
+
+            return store.VnForConst(value, value, constants, TYP_MASK);
+        }
+
+        internal static bool IsScalableSimdMask(ValueNumStore store, ValueNum vn)
+            => GetSimdMaskValue(store, vn).IsScalable;
+
+        internal static simdmask_t GetFixedSimdMask(ValueNumStore store, ValueNum vn)
+        {
+            var value = GetSimdMaskValue(store, vn);
+            noway_assert(!value.IsScalable);
+            return value.Fixed;
+        }
+
+        internal static simdmaskscalable_t GetScalableSimdMask(ValueNumStore store, ValueNum vn)
+        {
+            var value = GetSimdMaskValue(store, vn);
+            noway_assert(value.IsScalable);
+            return value.Scalable;
+        }
+
+        internal static bool TryGetScalableSimdMask(
+            ValueNumStore store,
+            ValueNum vn,
+            out simdmaskscalable_t scalableValue)
+        {
+            var value = GetSimdMaskValue(store, vn);
+            scalableValue = value.Scalable;
+            return value.IsScalable;
+        }
+
+        private static simdmaskvalue_t GetSimdMaskValue(ValueNumStore store, ValueNum vn)
+            => store.GetVectorConstant<simdmaskvalue_t>(vn, TYP_MASK);
     }
 }

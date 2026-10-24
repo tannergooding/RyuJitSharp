@@ -95,19 +95,18 @@ public sealed partial class ValueNumStore
         EnsureSimdSupported();
         EnsureMaskedHardwareIntrinsicsAvailable();
 
-        var argument = GetConstantSimdMaskValue(operand);
         if (type is TYP_SIMD_ARM64)
         {
             if (Configuration.TARGET_ARM64)
             {
                 EnsureArm64SimdSupported();
-                if (!argument.IsScalable)
+                if (!Arm64Data.TryGetScalableSimdMask(this, operand, out var scalableArgument))
                 {
                     return NoVN;
                 }
 
                 var result = default(simdscalable_t);
-                if (!EvaluateSimdCvtScalableMaskToVector(baseType, ref result, argument.Scalable))
+                if (!EvaluateSimdCvtScalableMaskToVector(baseType, ref result, scalableArgument))
                 {
                     return NoVN;
                 }
@@ -119,10 +118,12 @@ public sealed partial class ValueNumStore
             return default;
         }
 
-        if (argument.IsScalable)
+        if (Configuration.TARGET_ARM64 && Arm64Data.IsScalableSimdMask(this, operand))
         {
             return NoVN;
         }
+
+        var argument = GetConstantSimdMask(operand);
 
         if (type is TYP_SIMD32 or TYP_SIMD64)
         {
@@ -138,7 +139,7 @@ public sealed partial class ValueNumStore
             case TYP_SIMD64:
             {
                 var result = new byte[type.Size];
-                EvaluateSimdCvtMaskToVector(baseType, result, argument.Fixed);
+                EvaluateSimdCvtMaskToVector(baseType, result, argument);
 
                 return VNForGenericCon(type, result);
             }

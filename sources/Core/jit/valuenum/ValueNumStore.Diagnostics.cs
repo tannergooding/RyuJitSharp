@@ -344,20 +344,14 @@ public sealed partial class ValueNumStore
 
             case TYP_MASK:
             {
-                var storage = GetConstantSimdMaskValue(vn);
-                if (storage.IsScalable)
+                if (Configuration.TARGET_ARM64 &&
+                    Arm64Data.TryGetScalableSimdMask(this, vn, out var scalableValue))
                 {
-                    if (!Configuration.TARGET_ARM64)
-                    {
-                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ScalableMaskConstantsAreOnlySupportedOnARM64);
-                    }
-
-                    var value = storage.Scalable;
-                    jitprintf($"SimdMaskScalableCns[base:{value.BaseType.Name} idx:{value.Index}]");
+                    jitprintf($"SimdMaskScalableCns[base:{scalableValue.BaseType.Name} idx:{scalableValue.Index}]");
                 }
                 else
                 {
-                    var value = storage.Fixed;
+                    var value = GetConstantSimdMask(vn);
                     jitprintf($"SimdMaskCns[0x{value.u32[0]:x8}, 0x{value.u32[1]:x8}]");
                 }
                 break;

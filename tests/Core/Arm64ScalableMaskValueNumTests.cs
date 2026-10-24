@@ -29,7 +29,7 @@ internal static class Arm64ScalableMaskValueNumTests
             Assert.That(store.TypeOfVN(vn), Is.EqualTo(TYP_MASK));
             Assert.That(store.GetConstantSimdMask(vn).u64[0], Is.EqualTo(bits));
             Assert.That(store.VNForSimdMaskCon(value), Is.EqualTo(vn));
-            Assert.That(store.GetConstantSimdMaskValue(vn).IsScalable, Is.False);
+            Assert.That(store.IsSimdMaskScalable(vn), Is.False);
             var tree = new GenTreeMskCon(value);
             compiler.fgValueNumberTreeConst(tree);
             Assert.That(tree._vnPair.BothEqual(), Is.True);
@@ -53,7 +53,7 @@ internal static class Arm64ScalableMaskValueNumTests
 
             Assert.That(vn, Is.EqualTo(zero));
             Assert.That(vn, Is.Not.EqualTo(store.VNZeroForType(TYP_MASK)));
-            Assert.That(store.GetConstantSimdMaskValue(vn).IsScalable, Is.True);
+            Assert.That(store.IsSimdMaskScalable(vn), Is.True);
             Assert.That(store.GetConstantSimdMaskScalable(vn).BaseType, Is.EqualTo(type));
             Assert.That(store.GetConstantSimdMaskScalable(vn).Index, Is.Zero);
         });
@@ -122,17 +122,17 @@ internal static class Arm64ScalableMaskValueNumTests
             var operand = store.VNForExpr(null, TYP_MASK);
             var complement = store.VNForFunc(TYP_MASK, VNF_NOT, operand);
             var allBits = store.VNForFunc(TYP_MASK, VNF_OR, operand, complement);
-            var storage = store.GetConstantSimdMaskValue(allBits);
+            var isScalable = store.IsSimdMaskScalable(allBits);
 
-            Assert.That(storage.IsScalable, Is.EqualTo(scalable));
-            Assert.That(store.GetConstantSimdMaskValue(store.VNZeroForType(TYP_MASK)).IsScalable, Is.False);
+            Assert.That(isScalable, Is.EqualTo(scalable));
+            Assert.That(store.IsSimdMaskScalable(store.VNZeroForType(TYP_MASK)), Is.False);
             if (scalable)
             {
-                Assert.That(storage.Scalable, Is.EqualTo(simdmaskscalable_t.AllBitsSet));
+                Assert.That(store.GetConstantSimdMaskScalable(allBits), Is.EqualTo(simdmaskscalable_t.AllBitsSet));
             }
             else
             {
-                Assert.That(storage.Fixed, Is.EqualTo(simdmask_t.AllBitsSet(1)));
+                Assert.That(store.GetConstantSimdMask(allBits), Is.EqualTo(simdmask_t.AllBitsSet(1)));
             }
         });
     }

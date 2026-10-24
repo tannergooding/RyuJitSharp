@@ -59,7 +59,7 @@ public sealed partial class ValueNumStore
     private Dictionary<simd16_t, ValueNum>? _simd16CnsMap;
     private Dictionary<simd32_t, ValueNum>? _simd32CnsMap;
     private Dictionary<simd64_t, ValueNum>? _simd64CnsMap;
-    private Dictionary<simdmaskvalue_t, ValueNum>? _simdMaskCnsMap;
+    private Dictionary<simdmask_t, ValueNum>? _simdMaskCnsMap;
 
     private static void EnsureSimdSupported()
     {
@@ -140,9 +140,12 @@ public sealed partial class ValueNumStore
             JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
         }
 
-        var storage = simdmaskvalue_t.FromFixed(value);
+        if (Configuration.TARGET_ARM64)
+        {
+            return Arm64Data.VNForSimdMaskCon(this, simdmaskvalue_t.FromFixed(value));
+        }
 
-        return VnForConst(storage, storage, _simdMaskCnsMap ??= [], TYP_MASK);
+        return VnForConst(value, value, _simdMaskCnsMap ??= [], TYP_MASK);
     }
 
     public ValueNum VNForSimdMaskScalableCon(in simdmaskscalable_t value)
@@ -150,9 +153,8 @@ public sealed partial class ValueNumStore
         if (Configuration.TARGET_ARM64)
         {
             EnsureArm64SimdSupported();
-            var storage = simdmaskvalue_t.FromScalable(value);
-
-            return VnForConst(storage, storage, _simdMaskCnsMap ??= [], TYP_MASK);
+            EnsureMaskedHardwareIntrinsicsAvailable();
+            return Arm64Data.VNForSimdMaskCon(this, simdmaskvalue_t.FromScalable(value));
         }
 
         EnsureArm64SimdSupported();
@@ -198,26 +200,22 @@ public sealed partial class ValueNumStore
         return default;
     }
 
-    public simdmaskvalue_t GetConstantSimdMaskValue(ValueNum vn)
+    internal bool IsSimdMaskScalable(ValueNum vn)
     {
-        EnsureSimdSupported();
-        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
-        {
-            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
-        }
-
-        return GetVectorConstant<simdmaskvalue_t>(vn, TYP_MASK);
+        return Configuration.TARGET_ARM64 && Arm64Data.IsScalableSimdMask(this, vn);
     }
 
     public simdmask_t GetConstantSimdMask(ValueNum vn)
     {
-        var storage = GetConstantSimdMaskValue(vn);
+        EnsureSimdSupported();
+        EnsureMaskedHardwareIntrinsicsAvailable();
+
         if (Configuration.TARGET_ARM64)
         {
-            noway_assert(!storage.IsScalable);
+            return Arm64Data.GetFixedSimdMask(this, vn);
         }
 
-        return storage.Fixed;
+        return GetVectorConstant<simdmask_t>(vn, TYP_MASK);
     }
 
     public simdmaskscalable_t GetConstantSimdMaskScalable(ValueNum vn)
@@ -227,10 +225,9 @@ public sealed partial class ValueNumStore
             JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ScalableMaskConstantsAreOnlySupportedOnARM64);
         }
 
-        var storage = GetConstantSimdMaskValue(vn);
-        noway_assert(storage.IsScalable);
-
-        return storage.Scalable;
+        EnsureArm64SimdSupported();
+        EnsureMaskedHardwareIntrinsicsAvailable();
+        return Arm64Data.GetScalableSimdMask(this, vn);
     }
 
     public simd_t GetConstantSimd(ValueNum vn)

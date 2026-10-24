@@ -121,7 +121,9 @@ public sealed partial class ValueNumStore
                             break;
                         }
                         case TYP_MASK:
-                            Defs = new simdmaskvalue_t[ChunkSize];
+                            Defs = Configuration.TARGET_ARM64
+                                ? new simdmaskvalue_t[ChunkSize]
+                                : new simdmask_t[ChunkSize];
                             break;
                         default:
                             JitExceptionHelpers.ThrowUnreachableException();

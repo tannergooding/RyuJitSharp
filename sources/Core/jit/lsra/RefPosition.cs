@@ -53,6 +53,7 @@ public sealed partial class RefPosition
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RefPositionDebugDataIsOnlyAvailableInDebugBuilds);
+            return default!;
         }
 
         return Compiler.DebugData.Get(this);

@@ -460,7 +460,7 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
             var result = MaskToVector(store, TYP_SIMD_ARM64, baseType, mask);
 
             Assert.That(result, Is.EqualTo(vector));
-            Assert.That(store.GetConstantSimdMaskValue(mask).IsScalable, Is.True);
+            Assert.That(store.IsSimdMaskScalable(mask), Is.True);
         });
     }
 

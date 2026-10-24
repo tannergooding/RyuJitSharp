@@ -371,6 +371,7 @@ public sealed class ScevAddRec : Scev
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalarEvolutionDebugDataIsOnlyAvailableInDebugBuilds);
+            return default!;
         }
 
         return Compiler.DebugData.Get(this);

@@ -903,7 +903,7 @@ internal static class FeatureConfigurationTests
             Assert.That(store.TypeOfVN(vn), Is.EqualTo(var_types.TYP_MASK));
             Assert.That(store.GetConstantSimdMask(vn), Is.EqualTo(value));
             Assert.That(store.VNForSimdMaskCon(value), Is.EqualTo(vn));
-            Assert.That(store.GetConstantSimdMaskValue(vn).IsScalable, Is.False);
+            Assert.That(store.IsSimdMaskScalable(vn), Is.False);
 
             simdmask_t result = default;
             var allBits = simdmask_t.AllBitsSet(64);

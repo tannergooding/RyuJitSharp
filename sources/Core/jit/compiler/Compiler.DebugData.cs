@@ -624,24 +624,52 @@ public partial class Compiler
 
         internal static InlineCandidateInfoDebugData Get(InlineCandidateInfo candidateInfo)
         {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    FatalJitErrorCode.AsyncInliningStressIsOnlyAvailableInDebugBuilds);
+                return default!;
+            }
+
             var instances = LazyStatic.GetOrCreate(ref s_inlineCandidates);
             return instances.GetValue(candidateInfo, static _ => new InlineCandidateInfoDebugData());
         }
 
         internal static InlineContextDebugData Get(InlineContext inlineContext)
         {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    FatalJitErrorCode.InlineContextDiagnosticStateIsOnlyAvailableInDebugBuilds);
+                return default!;
+            }
+
             var instances = LazyStatic.GetOrCreate(ref s_inlineContexts);
             return instances.GetValue(inlineContext, static _ => new InlineContextDebugData());
         }
 
         internal static AsyncStressPolicyDebugData Get(AsyncStressPolicy policy)
         {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    FatalJitErrorCode.AsyncInliningStressIsOnlyAvailableInDebugBuilds);
+                return default!;
+            }
+
             var instances = LazyStatic.GetOrCreate(ref s_asyncStressPolicies);
             return instances.GetValue(policy, static _ => new AsyncStressPolicyDebugData());
         }
 
         internal static ReplayPolicyDebugData Get(ReplayPolicy policy)
         {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    FatalJitErrorCode.ReplayInlinePolicyIsOnlyAvailableInDebugBuilds);
+                return default!;
+            }
+
             var instances = LazyStatic.GetOrCreate(ref s_replayPolicies);
             return instances.GetValue(policy, static _ => new ReplayPolicyDebugData());
         }
@@ -660,12 +688,26 @@ public partial class Compiler
 
         internal static ScevAddRecDebugData Get(ScevAddRec addRec)
         {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    FatalJitErrorCode.ScalarEvolutionDebugDataIsOnlyAvailableInDebugBuilds);
+                return default!;
+            }
+
             var instances = LazyStatic.GetOrCreate(ref s_scevAddRecs);
             return instances.GetValue(addRec, static _ => new ScevAddRecDebugData());
         }
 
         internal static RefPositionDebugData Get(RefPosition refPosition)
         {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    FatalJitErrorCode.RefPositionDebugDataIsOnlyAvailableInDebugBuilds);
+                return default!;
+            }
+
             var instances = LazyStatic.GetOrCreate(ref s_refPositions);
             return instances.GetValue(refPosition, static _ => new RefPositionDebugData());
         }
@@ -819,6 +861,12 @@ public partial class Compiler
 
         internal static JitTlsDebugData Get(JitTls jitTls)
         {
+            if (!Configuration.DEBUG)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitTlsScopesAreOnlyAvailableInDebugBuilds);
+                return default!;
+            }
+
             var instances = LazyStatic.GetOrCreate(ref s_jitTlsInstances);
             return instances.GetValue(jitTls, static _ => new JitTlsDebugData());
         }
@@ -1678,6 +1726,7 @@ public partial class Compiler
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDebugDataIsOnlyAvailableInDebugBuilds);
+            return default!;
         }
 
         return DebugData.Get(this);

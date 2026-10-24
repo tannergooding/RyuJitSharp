@@ -106,6 +106,7 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
         {
             JitExceptionHelpers.ThrowInvalidOperationException(
                 FatalJitErrorCode.ReplayInlinePolicyIsOnlyAvailableInDebugBuilds);
+            return default!;
         }
 
         return global::RyuJitSharp.Compiler.DebugData.Get(this);

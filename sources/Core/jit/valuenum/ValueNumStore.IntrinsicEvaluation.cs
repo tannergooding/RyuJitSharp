@@ -685,14 +685,13 @@ public sealed partial class ValueNumStore
                         JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
                     }
 
-                    var argument = GetConstantSimdMaskValue(arg0VN);
-                    if (Configuration.TARGET_ARM64 && argument.IsScalable)
+                    if (Configuration.TARGET_ARM64 && Arm64Data.IsScalableSimdMask(this, arg0VN))
                     {
                         return VNForFunc(type, func, arg0VN, resultTypeVN);
                     }
 
                     var result = default(simdmask_t);
-                    EvaluateUnaryMask(oper, scalar, baseType, simdSize, ref result, argument.Fixed);
+                    EvaluateUnaryMask(oper, scalar, baseType, simdSize, ref result, GetConstantSimdMask(arg0VN));
                     return VNForSimdMaskCon(result);
                 }
                 return EvaluateUnarySimdVN(oper, scalar, type, baseType, arg0VN);
@@ -932,16 +931,16 @@ public sealed partial class ValueNumStore
 
                     if (TypeOfVN(arg0VN) is TYP_MASK)
                     {
-                        var left = GetConstantSimdMaskValue(arg0VN);
-                        var right = GetConstantSimdMaskValue(arg1VN);
-                        if (Configuration.TARGET_ARM64 && (left.IsScalable || right.IsScalable))
+                        if (Configuration.TARGET_ARM64 &&
+                            (Arm64Data.IsScalableSimdMask(this, arg0VN) ||
+                                Arm64Data.IsScalableSimdMask(this, arg1VN)))
                         {
                             return VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
                         }
 
                         var result = default(simdmask_t);
                         EvaluateBinaryMask(operation, scalar, baseType, simdSize, ref result,
-                            left.Fixed, right.Fixed);
+                            GetConstantSimdMask(arg0VN), GetConstantSimdMask(arg1VN));
                         return VNForSimdMaskCon(result);
                     }
                     var vectorType = Compiler.GetSimdTypeForSize(simdSize);

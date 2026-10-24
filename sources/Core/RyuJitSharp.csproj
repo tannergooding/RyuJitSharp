@@ -15,9 +15,9 @@
     <RyuJitVerifyGcTables Condition="'$(RyuJitVerifyGcTables)' == ''">false</RyuJitVerifyGcTables>
   </PropertyGroup>
 
-  <!-- Release keeps debugger support but defaults to omitting fatal error details and stack-trace data. -->
+  <!-- Release omits debugger-only metadata and defaults to omitting fatal error details and stack-trace data. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebuggerSupport>true</DebuggerSupport>
+    <DebuggerSupport>false</DebuggerSupport>
     <InvariantGlobalization>true</InvariantGlobalization>
     <OptimizationPreference>Size</OptimizationPreference>
     <StackTraceSupport>false</StackTraceSupport>

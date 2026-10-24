@@ -71,6 +71,7 @@ public sealed class InlineCandidateInfo : HandleHistogramProfileCandidateInfo
         {
             JitExceptionHelpers.ThrowInvalidOperationException(
                 FatalJitErrorCode.AsyncInliningStressIsOnlyAvailableInDebugBuilds);
+            return default!;
         }
 
         return global::RyuJitSharp.Compiler.DebugData.Get(this);

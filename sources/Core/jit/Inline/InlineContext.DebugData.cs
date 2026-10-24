@@ -12,6 +12,7 @@ public sealed partial class InlineContext
         if (!Configuration.DEBUG)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineContextDiagnosticStateIsOnlyAvailableInDebugBuilds);
+            return default!;
         }
 
         return Compiler.DebugData.Get(this);

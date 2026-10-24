@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;
 
-public readonly struct simdmaskvalue_t : IEquatable<simdmaskvalue_t>
+internal readonly struct simdmaskvalue_t : IEquatable<simdmaskvalue_t>
 {
     public bool IsScalable { get; private init; }
 
