@@ -110,7 +110,9 @@ public sealed class MergedReturns
         }
         else if (_compiler.compMethodHasRetVal)
         {
-            var retLclNum = _compiler.lvaGrabTemp(shortLifetime: true, "Single return block return value");
+            var retLclNum = _compiler.lvaGrabTemp(
+                shortLifetime: true,
+                Configuration.DEBUG ? "Single return block return value" : string.Empty);
             _compiler.genReturnLocal = retLclNum;
             ref var retVarDsc = ref _compiler.lvaGetDesc(retLclNum);
             var retLclType = _compiler.compMethodReturnsRetBufAddr ? TYP_BYREF : _compiler.info.compRetType.ActualType;
