@@ -8175,9 +8175,15 @@ public partial class Globals
             return nativeOrdinal;
         }
 
+        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+        {
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(
+                FatalJitErrorCode.InstructionSetIsUnavailableForThisTarget,
+                InstructionSetToString(instructionSet));
+        }
+
         JitExceptionHelpers.ThrowPlatformNotSupportedException(
-            FatalJitErrorCode.InstructionSetIsUnavailableForThisTarget,
-            Configuration.DETAILED_FATAL_ERROR_MESSAGES ? InstructionSetToString(instructionSet) : default);
+            FatalJitErrorCode.InstructionSetIsUnavailableForThisTarget);
         return default;
     }
 
