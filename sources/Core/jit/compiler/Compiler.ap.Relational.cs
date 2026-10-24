@@ -133,22 +133,20 @@ public partial class Compiler
 
         ArgumentNullException.ThrowIfNull(assertions);
         assert(apTraits is not null);
-        var preferredBoundVN = ValueNumStore.NoVN;
-        _ = BitVecOps.VisitBits(apTraits, assertions, bitIndex =>
+        var iterator = new BitVecOps.Iter(apTraits, assertions);
+        uint bitIndex = 0;
+        while (iterator.NextElem(ref bitIndex))
         {
             var assertion = optGetAssertion(GetAssertionIndex((ushort)bitIndex));
             if (assertion.IsRelop && (assertion.Op1.VN == vn) &&
                 assertion.Op2.KindIs(O2K_VN_ADD_CNS) &&
                 optIsNeverNegativeCheckedBound(assertion.Op2.VN, assertions))
             {
-                preferredBoundVN = assertion.Op2.VN;
-                return false;
+                return assertion.Op2.VN;
             }
+        }
 
-            return true;
-        });
-
-        return preferredBoundVN;
+        return ValueNumStore.NoVN;
     }
 
     private static Range GetBoundMinusXRange(Compiler compiler, GenTree tree, BasicBlock block, ValueNum boundVN)
