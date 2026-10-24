@@ -14,7 +14,13 @@ public partial class Compiler
 
     private static CopyPropKeyOrder GetCopyPropKeyOrder(LclNumToLiveDefsMap names)
     {
-        var keyOrders = LazyStatic.GetOrCreate(ref s_copyPropKeyOrders);
+        // Keep construction concrete; LazyStatic.GetOrCreate<T> retains unnecessary CWT metadata in NativeAOT.
+        var keyOrders = System.Threading.Volatile.Read(ref s_copyPropKeyOrders);
+        if (keyOrders is null)
+        {
+            keyOrders = [];
+            keyOrders = System.Threading.Interlocked.CompareExchange(ref s_copyPropKeyOrders, keyOrders, null) ?? keyOrders;
+        }
         return keyOrders.GetValue(names, static _ => new CopyPropKeyOrder());
     }
 
