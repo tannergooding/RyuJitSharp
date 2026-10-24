@@ -1220,8 +1220,7 @@ pointer state with live-register protection and native diagnostics.
 `WasmInterval` now has a managed `TARGET_WASM` implementation for its bounds,
 kind, chains, factories, and debug helpers; its native class definition is
 retired, with only a forward declaration retained for residual pointer uses.
-Full-analysis Linux-Wasm target suites pass 177 Debug and 178 Release cases,
-with zero failures or skips. This does not establish Wasm execution parity.
+This does not establish Wasm execution parity.
 Non-fixed-register GC register clearing and non-xarch emitter register names
 also explicitly reject. These support routines do not
 activate machine-code generation or complete instruction-group storage, frame
@@ -1832,9 +1831,8 @@ has zero metadata on targets where native includes it; it is not a name-table
 entry. ARM32 return is intentionally epilog-folded rather than an unsupported
 no-op. ARM64's unused return path and other-target NYIs explicitly terminate.
 Independent recording helpers remain unsupported where already tracked.
-Forty-eight AMD64 cases pass in each Windows/Linux configuration, but the
-fourteen earlier x86 declaration errors and source-only ARM32/ARM64/Wasm
-controls do not establish other-target compilation, execution or code parity.
+The AMD64 cases do not establish other-target compilation, execution or code
+parity; ARM32/ARM64/Wasm controls are source-only.
 
 ARM32 immediate/displacement validators and Thumb modified-immediate predicates
 retain target-width numeric semantics. Register-immediate materialization tests
@@ -2271,8 +2269,7 @@ the same blank-row behavior. Per-instance state avoids carrying a dangling
 native address into a later compilation, where allocator address reuse could
 suppress that compilation's first row. The difference is limited to DEBUG
 diagnostics across allocator lifetimes; no generated-code or runtime behavior
-is involved. Focused allocation/interval diagnostic fixtures pass 117 Debug
-and 17 Release cases with zero skips.
+is involved. Focused allocation/interval diagnostic fixtures cover this output.
 
 ## Implementation notes and parity findings
 
@@ -2282,30 +2279,18 @@ and 17 Release cases with zero skips.
 execution. `CILJit.compileMethod` now follows the native entry without a global
 compilation lock; this was a debugging aid, not a required execution policy.
 
-B442 synchronizes the shared diagnostic writer's character buffers, raw
-inline-name bytes and LSRA CSV operations while preserving native text-mode
-semantics. B443 removes the Debug TLS finalizer, which incorrectly restored a
-terminated worker's outer compiler on the finalizer thread. Deterministic scope
-disposal preserves native stack lifetime; normal and exceptional nested scopes
-are covered on four threads.
+The shared diagnostic writer synchronizes character buffers, raw inline-name
+bytes and LSRA CSV operations while preserving native text-mode semantics. The
+Debug TLS finalizer was removed because it could restore a terminated worker's
+outer compiler on the finalizer thread. Deterministic scope disposal preserves
+native stack lifetime.
 
 Timing CSV, timing summaries, inline XML and replay reads retain their existing
 locks. Lazy configuration lists, component-test initialization and optional
 diagnostic counters retain the pinned native policies; their unsynchronized
-initialization patterns are not silently redesigned in the port. This review
-and the bounded executions below do not establish race freedom for every optional
+initialization patterns are not silently redesigned in the port. The available
+concurrency coverage does not establish race freedom for every optional
 configuration or diagnostic mode.
-
-Pinned native and unlocked managed primary JITs each prepare 32 cold methods on
-eight threads, execute 512 independently calculated results and show eight
-simultaneously active compilations in their function traces. The same-source
-serialized control shows one. A separate deferred-assembly probe JIT-compiles its
-resolver while importing the outer method on the same thread; native, locked and
-unlocked compilers all preserve the nested trace and result 120.
-
-`artifacts/compilation-concurrency/compiler-evidence.json` records the inputs,
-capture commands and limits. These are execution and overlap results, not
-whole-dump, machine-byte or exhaustive runtime parity.
 
 ### R002: Windows dump line endings
 
@@ -2324,11 +2309,9 @@ generated instructions.
 
 The shared writer now applies the native host's text-mode encoding below
 `StreamWriter`, including embedded newlines and fragmented writes. Dump output,
-function-info logging, and timing CSV writers use it. Sixteen focused cases pass
-in Debug and Release on Windows, including explicit CR/LF, write overloads,
-append behavior, and stream ownership. The initial six-method native/managed
-corpus confirms that this change affects only newline encoding in the captured
-managed dump. The Unix branch preserves LF; execution on Unix is not yet verified.
+function-info logging, and timing CSV writers use it. Coverage includes explicit
+CR/LF, write overloads, append behavior, and stream ownership. The Unix branch
+preserves LF; execution on Unix is not yet verified.
 
 **Remaining action:** compare message layout as more functions become reachable;
 the writer cannot restore newlines omitted at individual ported call sites.
@@ -2377,7 +2360,7 @@ Finite factors outside `[0, 1]`, infinities and NaNs still retain the native
 default exception weight; they are not configuration syntax errors. No caller
 other than profile synthesis has been wired to this new helper.
 
-Twenty-eight Debug cases cover conversion, range boundaries, special values,
+Regression coverage includes conversion, range boundaries, special values,
 separators, invariant culture, explicit failure and ordinary dump layout.
 Complete synthesis dump parity remains unestablished. Do not normalize
 malformed-configuration or special-NaN output differences in parity reports.
@@ -2395,9 +2378,9 @@ indexes beyond the array. `Compiler.FlowGraphDump.cs` preserves the defined
 labels and throws `FatalJitException` for the missing entry. It does not emulate
 an undefined pointer read or silently substitute a corrected label.
 
-Four complete XML graphs and 38 DOT graphs match the current-pin native files
-byte for byte. DOT supports switches independently of this XML limitation.
-See B350 and `artifacts\flowgraph-dumps\comparison-3.json`.
+DOT output supports switches independently of this XML limitation. The managed
+XML path preserves defined labels and terminates explicitly for the undefined
+native table access.
 
 ### R005: Timing counter representation
 
@@ -2435,8 +2418,7 @@ terminator. This produces a defined `<= 0` bucket and subsequent ranges without
 changing non-zero-first tables.
 
 `tests/Core/HistogramTests.cs::LeadingZeroIsAValidUpperBoundWhenFollowedByOtherBounds`
-validates the resulting output. The focused statistics suites pass 27 Debug and
-26 Release cases in `artifacts\emit-stat-report\stats-enabled-focused-*`.
+validates the resulting output.
 This does not establish parity with the undefined native read; native behavior
 must be corrected or explicitly accepted before claiming parity for these rows.
 The native reporter and its report-only histogram tables are retired from the
@@ -2582,5 +2564,4 @@ managed `V00, V01, V02, V03`. Each range is stored in its own variable
 descriptor, and final scope records are emitted by variable number. The
 captured method's generated code and final scope records match; only verbose
 range-registration lines differ. This difference is not normalized by the
-comparator. Evidence: `artifacts\corelib-eventsource-pinned-e23d559-full-dumps`
-with `DOTNET_JitDisasmDiffable=1`.
+comparator.

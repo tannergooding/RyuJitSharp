@@ -59,7 +59,7 @@ node->OperIs(GT_LCL_ADDR) &&
 lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress()
 ```
 
-The retained post-allocation dump contains this retbuf argument for the call to
+The post-allocation dump contains this retbuf argument for the call to
 `Runtime_133521.NegatedScalarFma(Vector128<float>, ...)`:
 
 ```text
@@ -83,16 +83,15 @@ evidence, not a validated fix.
 
 #### Reproduction
 
-The verified input is the retained `UpstreamRegressionProbe.dll`, built from
-the pinned upstream regression sources, including
+Build the regression application from the pinned upstream source, including
 [`src/tests/JIT/Regression_ro_2/Runtime_133521.cs`](https://github.com/dotnet/runtime/blob/33baf8ee337b20dd0f184b69a6f09be92850bf9e/src/tests/JIT/Regression_ro_2/Runtime_133521.cs).
-Its driver invokes `ScalarFmaNegation` with the upstream cases
+Invoke `ScalarFmaNegation` with the upstream cases
 `(0, -11)`, `(1, -13)`, `(2, 13)` and `(3, 11)`, along with other regression
-entry points. It requires AVX and FMA; the verified host also supports AVX512F.
-The reproducer has not been minimized.
+entry points. It requires AVX and FMA. The reproducer has not been minimized.
 
 In a fresh shell, with `$CoreRoot` pointing to the matching Checked build and
-`$Corpus` to that DLL:
+`$Corpus` to the built regression application, first determine the method hash
+for this build and set `$MethodHashRange` to the corresponding stress range:
 
 ```powershell
 $env:DOTNET_ReadyToRun = '0'
@@ -101,7 +100,7 @@ $env:DOTNET_JitName = 'clrjit.dll'
 $env:DOTNET_JitPath = Join-Path $CoreRoot 'clrjit.dll'
 $env:DOTNET_GCStress = '4'
 $env:DOTNET_JitStressRegs = 'c03'
-$env:DOTNET_JitStressRegsRange = '4f3e2341 8075f3c3 36970323 5eb69743 f18764f8 076e31f8'
+$env:DOTNET_JitStressRegsRange = $MethodHashRange
 $env:DOTNET_JitDump = 'Runtime_133521:*'
 $env:DOTNET_JitDumpASCII = '1'
 $env:DOTNET_JitDisasmDiffable = '1'
@@ -109,56 +108,19 @@ $env:DOTNET_JitStdOutFile = Join-Path $PWD 'spill-jitdump.txt'
 & (Join-Path $CoreRoot 'corerun.exe') $Corpus
 ```
 
-The hashes above belong to the retained binary, not a portable method selector.
-If rebuilding or changing the harness, first capture its method hashes without
-register stress and update the range. Unrestricted `JitStressRegs=0xC03` also
-asserted in `EventSource.Initialize` before the selected regression compiled;
-the scoped range avoids that earlier failure.
-
 Observed failure:
 
 ```text
 Runtime_133521:ScalarFmaNegation(int,int)
 phase: Linear scan register alloc
-IL size: 341
-method hash: 0x8075f3c3
 optimization: FullOpts
 source: gentree.cpp:22046
 process exit: 0xC0000602
 ```
 
-With `DOTNET_JitStressRegs` and `DOTNET_JitStressRegsRange` removed, the fresh
-control exits zero, verifies the regression results, and reports 3,404 GC-stress
-collections. That collection count is observational, not a stable expectation.
-Both runs use native `clrjit.dll` and neither times out.
-
-#### Retained evidence
-
-Fresh captures, input hashes, stdout, stderr and dumps:
-
-- `artifacts/upstream-reports/spill-native-1/`
-- `artifacts/upstream-reports/spill-native-control-1/`
-
-The tree above is recorded in `spill-native-1/jitdump.txt` around lines
-112186-112202. Original source/dependency hashes and the original scoped failure
-remain under `artifacts/upstream-regressions/spill-selected-native-1/`.
-The exact driver and project are retained in
-`artifacts/upstream-regressions/corpus-built-3/source/`.
-
-Repeat with fresh output directories:
-
-```powershell
-python artifacts\upstream-reports\capture-native.py `
-  artifacts\upstream-regressions\spill-selected-native-1\Runtime_133521\manifest.json `
-  artifacts\upstream-reports\spill-native-2
-python artifacts\upstream-reports\capture-native.py `
-  artifacts\upstream-regressions\gcstress-native-1\Runtime_133521\manifest.json `
-  artifacts\upstream-reports\spill-native-control-2
-```
-
-The local runner verifies the recorded inputs, clears inherited runtime settings,
-and explicitly selects native `clrjit.dll`. The port retains pinned behavior;
-this report does not propose changing only RyuJitSharp to hide the assertion.
+With register stress disabled, the regression application completes. The port
+retains pinned behavior; this report does not propose changing only RyuJitSharp
+to hide the assertion.
 
 ### B394: VN component test asserts against the current commutative operand order
 
@@ -202,33 +164,14 @@ $env:DOTNET_JitComponentUnitTests = '1'
 & (Join-Path $CoreRoot 'corerun.exe') $Application
 ```
 
-The verified application was the retained `ParameterCycles.dll` corpus. With
-component tests enabled, stderr contains the assertion above and the process
-exits `0xC0000602`, without timing out. With the setting changed to `0`, it exits
-zero and reports `ParameterCycles: 2048 floating permutations verified`.
+With component tests enabled, the native process asserts at the location above;
+with the setting disabled, initialization continues.
 [`Compiler::compDoComponentUnitTestsOnce`](https://github.com/dotnet/runtime/blob/33baf8ee337b20dd0f184b69a6f09be92850bf9e/src/coreclr/jit/compiler.cpp#L1731-L1747)
 runs this test once during JIT initialization when the option is enabled;
 the corpus does not need to construct a particular expression.
 
-Exact local captures and verified input hashes are retained under:
-
-- `artifacts/upstream-reports/component-native-enabled-1/`
-- `artifacts/upstream-reports/component-native-control-1/`
-
-To repeat those captures from this repository, select fresh output directories:
-
-```powershell
-python artifacts\upstream-reports\capture-native.py `
-  artifacts\primary-parameter-cycles\reference-after\manifest.json `
-  artifacts\upstream-reports\component-native-enabled-2 --component-tests 1
-python artifacts\upstream-reports\capture-native.py `
-  artifacts\primary-parameter-cycles\reference-after\manifest.json `
-  artifacts\upstream-reports\component-native-control-2 --component-tests 0
-```
-
-The runner verifies the reference input hashes and explicitly selects native
-`clrjit.dll`; RyuJitSharp is not executing these tests. The C# port retains the
-pinned assertion and canonicalization pending an upstream correction.
+The native component test runs during JIT initialization; the C# port retains
+the pinned assertion and canonicalization pending an upstream correction.
 
 ### B524: `jitstd::list::merge` leaves source tail nodes in both lists
 
@@ -285,10 +228,8 @@ The failure also reproduces at reconciled revision
 captures of `System.Double:Hypot(double,double):double` produced one method
 header and exited with `0xC0000602` in native, native-repeat, and managed runs.
 The native assertion is at `scopeinfo.cpp:722`; the managed assertion is at
-`CodeGen.VariableLiveKeeper.Diagnostics.cs:143`. All captures report IL size
-625 and method hash `0x2c99e8f9`. These targeted captures confirm the failure
-at the current pin but do not establish full-CoreLib dump coverage; manifests
-and raw output are under `artifacts\corelib-full-dump-b526-5a518-check`.
+`CodeGen.VariableLiveKeeper.Diagnostics.cs:143`. The targeted capture confirms
+the failure at the current pin but does not establish full-CoreLib dump coverage.
 
 `siVarLoc::storeVariableInRegisters` intentionally sets `VLT_INVALID` for
 locations such as XMM16 that cannot be encoded in debugger scope information.
@@ -299,10 +240,9 @@ live as V17 and ends with `V17 loc15:` immediately before the assertion.
 `genEmitBlock` invokes the Debug variable-live-range history dump after emitting
 the block, which passes the invalid location to the printer.
 
-The manifests, assertion text, dumps, and native repeat comparison are under
-`artifacts\corelib-full-parity-7462`. None of the captures establishes
-full-CoreLib parity. Keep the managed diagnostic behavior aligned with the
-pinned source until an upstream correction is accepted.
+None of the captures establishes full-CoreLib parity. Keep the managed
+diagnostic behavior aligned with the pinned source until an upstream correction
+is accepted.
 
 ### B527: FullDump asserts while printing an incomplete VN pair
 
@@ -323,9 +263,6 @@ that the conservative VN is also present before printing it. The raw dumps end
 while visiting `BB06`, `STMT00031`; the cause of the missing conservative VN is
 not established. This is a diagnostic failure during a compiler phase, not
 evidence of a generated-code or runtime mismatch. The native/managed raw dump
-comparison first differs at the D015 profile diagnostic on line 590; no
-canonicalization was applied. Preserve the raw captures and keep FullDump
-coverage blocked until the VN-pair lifecycle or printer behavior is resolved.
-
-The native, native-repeat, and managed manifests, raw dumps, and comparisons
-are under `artifacts\corelib-disasm-5a518\system-collections-full-dump`.
+comparison first differs at the D015 profile diagnostic; no canonicalization
+was applied. Keep FullDump coverage blocked until the VN-pair lifecycle or
+printer behavior is resolved.

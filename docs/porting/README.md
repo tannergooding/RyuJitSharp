@@ -12,12 +12,8 @@ The [continuation plan](PLAN.md) records current priorities and parity gates; th
 limitations. Confirmed native defects are listed in
 [UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md). The source-port backlog has been
 retired after its tracked items were resolved or explicitly accepted as
-limitations. The dynamic TLS evidence boundary is kept in
-[state.json](state.json). A matched 144-method `FromAsyncImpl` cohort
-reproduced no allocation, index, or numeric-offset divergence, but observed
-one additional managed `Task.t_currentTask` and block-info request per method;
-its immediate cause remains unresolved. This scoped result is not full parity
-evidence and does not justify changing compiler constants.
+limitations. The dynamic TLS input-ownership boundary and its next action are in
+`checkpoint.dynamicTlsInputBoundary` in [state.json](state.json).
 Keep completion evidence with tests, artifacts, and commits, and record accepted
 observable differences only in the deviation register. The managed implementation
 and tests live in this repository; its upstream source reference is pinned in
@@ -235,19 +231,13 @@ a later catch-all commit. Keep incomplete work uncommitted. Recovery snapshots
 remain useful for artifacts and saved WIP, but supplement rather than replace
 regular commits. Local commits do not authorize pushing or opening a PR.
 
-Keep artifact retention bounded as well. Retain active comparison inputs,
-saved-WIP recovery material and reproducers for unresolved defects. Remove
-completed temporary build exports after their code and validation checkpoint are
-committed; do not touch another worker's active snapshot or shared build outputs.
-
-Superseded session sources, patches, manifests and diagnostic evidence may be
-compacted into `port-history.zip` in the session's artifact directory. Verify
-the archived bytes before removing loose originals. Discard obsolete rebuildable
-binaries rather than archiving every build. Historical build paths in older
-records are not guaranteed to remain live; preserve their source/revision and
-build instructions, while keeping current checkpoint inputs directly available.
-The milestone summary records capabilities and open limits, not an artifact
-inventory.
+Keep artifact retention bounded. Retain active comparison inputs, saved-WIP
+recovery material and reproducers for unresolved defects. Remove completed
+temporary build exports after committing the related code and validation
+checkpoint. Do not remove another worker's active snapshot or shared build
+outputs. Maintained documentation should contain reproducible commands and
+source revisions, not paths to disposable capture outputs. The milestone
+summary records capabilities and open limits, not an artifact inventory.
 
 For upstream synchronization, compare immutable old and new oracle revisions,
 then apply relevant deltas to the managed implementation. Review changed tables,

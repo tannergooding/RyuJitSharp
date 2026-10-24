@@ -12,16 +12,12 @@ line. It checks `Avx512F.IsSupported` before invoking any intrinsics, and
 reports AVX-512F and AVX10v1 support.
 An unsupported host executes no intrinsic body, so it is not positive evidence.
 
-Build and capture on the pinned Windows x64 Checked CoreRoot. The native
-reference is commit `33baf8ee337b20dd0f184b69a6f09be92850bf9e`, with
-`clrjit.dll` SHA-256
-`0623912071874F1A12CC35008D60BE4D9F8AF663ED386DC1D005E988994EC392`.
-Use a fresh output directory for each run. Set `$managedJit` and
+Build and capture on the pinned Windows x64 Checked CoreRoot at native commit
+`33baf8ee337b20dd0f184b69a6f09be92850bf9e`. Use a fresh output directory for
+each run. Set `$managedJit` and
 `$managedSource` to a published DLL and its immutable 40-hex source commit
 to run managed instead; leave both empty for native. The example published
-managed DLL from snapshot `2bca28d58aa3b71d7e857b43195f0e849d683599`
-has SHA-256
-`B7CF7385C570DE2FF2B94C5B2AE978364C51739A40F401CFF9EAD179F1E65B8F`.
+managed DLL must match the source commit supplied in `$managedSource`.
 
 ```powershell
 dotnet build sources\PortingMaskConversionCorpus\PortingMaskConversionCorpus.csproj `
@@ -34,18 +30,9 @@ $managedSource = ''
 $output = 'artifacts\mask-conversion\native-next'
 $corpus = (Resolve-Path 'artifacts\mask-conversion\corpus\PortingMaskConversionCorpus.dll').Path
 $coreRun = (Resolve-Path (Join-Path $coreRoot 'corerun.exe')).Path
-if ((Get-FileHash (Join-Path $coreRoot 'clrjit.dll') -Algorithm SHA256).Hash -ne
-    '0623912071874F1A12CC35008D60BE4D9F8AF663ED386DC1D005E988994EC392') {
-    throw 'CoreRoot is not the recorded pinned native build'
-}
 if ([bool]$managedJit -ne [bool]$managedSource -or
     ($managedSource -and $managedSource -notmatch '^[0-9a-fA-F]{40}$')) {
     throw 'A managed JIT requires an immutable 40-hex source commit'
-}
-if ($managedSource -eq '2bca28d58aa3b71d7e857b43195f0e849d683599' -and
-    (Get-FileHash $managedJit -Algorithm SHA256).Hash -ne
-    'B7CF7385C570DE2FF2B94C5B2AE978364C51739A40F401CFF9EAD179F1E65B8F') {
-    throw 'Managed JIT does not match the recorded source snapshot'
 }
 if (Test-Path $output) { throw 'Use a fresh output directory' }
 $output = (New-Item -ItemType Directory -Path $output).FullName
@@ -164,13 +151,7 @@ finally {
 }
 ```
 
-Inspect `positive-phase.txt` for the weighted costs (V01: 300.00 versus
-0.00), the three rewrites, and the post-phase tree without conversions.
-The pinned native positive body is 52 bytes; the vector-use and vector-input
-controls are 67 and 49 bytes. Retain the raw native and managed captures,
-including their line endings. The observed phase slices differ in the profile-check diagnostic;
-the positive disassembly differs only in tab spacing before the `RWD04`
-comment. All 10 positive, 14 vector-use, and 11 vector-input emitted
-instruction lines match. The artifact-only
-`artifacts\mask-conversion\capture.ps1` and its raw captures preserve the
-historical runs, but are not needed to reproduce these checks.
+The script checks the weighted costs, three rewrites, post-phase tree, and
+positive FullOpts disassembly. The native checked full-dump path has a known
+diagnostic assertion; use the disassembly-only execution check for the positive
+body, and do not treat a managed MinOpts retry as positive evidence.
