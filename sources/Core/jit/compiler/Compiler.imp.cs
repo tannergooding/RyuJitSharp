@@ -10316,12 +10316,14 @@ public partial class Compiler
                         // ((*clone == typeToken) ? nop : helper(clone, typeToken));
                         // push(clone + Configuration.TARGET_POINTER_SIZE)
 
-                        op1 = impCloneExpr(op1, out cloneOperand, CHECK_SPILL_ALL, "inline UNBOX clone1");
+                        op1 = impCloneExpr(op1, out cloneOperand, CHECK_SPILL_ALL,
+                            Configuration.DEBUG ? "inline UNBOX clone1" : string.Empty);
 
                         op1 = gtNewMethodTableLookup(op1);
                         var condBox = gtNewBinaryNode(GT_EQ, TYP_INT, op1, op2);
 
-                        op1 = impCloneExpr(cloneOperand, out cloneOperand, CHECK_SPILL_ALL, "inline UNBOX clone2");
+                        op1 = impCloneExpr(cloneOperand, out cloneOperand, CHECK_SPILL_ALL,
+                            Configuration.DEBUG ? "inline UNBOX clone2" : string.Empty);
                         op2 = impTokenToHandle(resolvedToken);
 
                         if (op2 is null)
