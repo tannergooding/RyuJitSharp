@@ -26,6 +26,8 @@ internal static unsafe class HWIntrinsicLookupRangeTests
         sig.numArgs = 2;
 
         Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_Vector, "op_Addition"u8), Is.EqualTo(NI_Vector_op_Addition));
+        Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_Vector, "op_AdditionSuffix"u8), Is.EqualTo(NI_Illegal));
+        Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_Vector, "op_addition"u8), Is.EqualTo(NI_Illegal));
         Assert.That(HWIntrinsicInfo.lookupName(NI_Vector_op_Addition), Is.EqualTo("op_Addition"));
 
         if (Configuration.TARGET_XARCH)

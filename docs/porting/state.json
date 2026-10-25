@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Begin Batch 3 for B03/G01: inspect the pinned generator input closure and output consumers, establish a reproducible clean baseline, then update the HWI-name producer and generated consumer together. Evaluate D12/G05 aliases and G02 lookup hoists only within this closure; preserve the pinned oracle and unresolved dynamic-TLS and genAsyncResumeInfo boundaries.",
+    "nextAction": "Start Batch 4 with B07/B08: inspect the saved diagnostic span/search and comparer findings and use LSP to close their production callsites. Implement one bounded family at a time, preserving diagnostic order, sort/tie behavior, and SortNative.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
-      "scope": "First-pass Batch 3: change the hardware-intrinsic name representation from UTF-16 generated data to UTF-8 byte data, and replace the manual byte-to-character binary-search comparison with ordinal span comparison. Evaluate D12/G05 alias pruning and G02 local lookup hoists only when they are directly in this producer/consumer closure.",
-      "doneWhen": "The generator and managed consumer agree; two isolated generations from identical inputs produce identical complete file sets and bytes; every copied output has a mapped consumer and explained baseline delta; focused Debug/Release HWI tests and full-analysis Core builds pass.",
-      "validation": "Use generatorInputMapping at the pinned native commit and current managed input adaptations. Establish a clean baseline before editing inputs/templates, build GenerateTables through its project, stage the complete executable tree under artifacts, verify resolved destructive output paths, regenerate twice from identical inputs, compare complete output sets/bytes, and validate all affected consumers.",
-      "deferred": "Do not update upstream pins or change instruction/ISA identities, ranges, row ordering, target selectors, numeric layouts, or JIT/EE contracts. Keep unrelated generated drift, broad table redesign, and unproven D12/G05 candidates outside the batch."
+      "scope": "First-pass Batch 4: apply B07/B08 local diagnostic span/search and comparer simplifications; specialize admitted live managed callback families F01-F13/F15/F16, remove R01 traversal scaffolding where truly unused, and close R11 exception-safe pool/callback-context work through all callers. Include only F14 managed printers, not unmanaged error-trap/rooting redesign.",
+      "doneWhen": "Each selected callback/API family is complete through callers and adapters or has a concrete deferral; traversal order, phase lifecycle, abort state, diagnostics, ownership, and output remain unchanged; focused Debug/Release Core tests, relevant Target tests, and full-analysis Core builds pass.",
+      "validation": "Use the saved inventory and LSP to establish caller closures and existing constrained-strategy prior art. Preserve a baseline before output-sensitive changes, then run combined focused Debug/Release tests and target fixtures. No pinned native binary/capture is available, so report that frontier as unavailable and do not claim codegen parity.",
+      "deferred": "Do not redesign phase-state ownership, IR/arena/CFG/collection representations, unmanaged callback rooting or timing proxies, or the dynamic-TLS/async-resume boundaries. Keep F01 driver allocation and F14 native error-trap work explicitly deferred."
     },
     "dynamicTlsInputBoundary": {
       "status": "Unresolved; existing captures do not establish a stable native TLS index or reproducible EE allocation sequence.",

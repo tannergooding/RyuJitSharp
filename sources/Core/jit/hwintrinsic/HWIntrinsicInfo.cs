@@ -4,19 +4,20 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Text;
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
 
 public readonly partial struct HWIntrinsicInfo
 {
-    private static ReadOnlySpan<char> GetName(int tableIndex)
+    private static ReadOnlySpan<byte> GetName(int tableIndex)
     {
         var rangeIndex = tableIndex * 2;
-        var characterIndex = GetRvaSpanEntry(s_nameRanges, rangeIndex);
-        var nameLength = GetRvaSpanEntry(s_nameRanges, rangeIndex + 1);
-        var name = GetRvaSpanSlice(s_nameData, characterIndex, nameLength);
-        assert(GetRvaSpanEntry(s_nameData, characterIndex + nameLength) is '\0');
+        var byteIndex = GetRvaSpanEntry(s_nameRanges, rangeIndex);
+        var byteLength = GetRvaSpanEntry(s_nameRanges, rangeIndex + 1);
+        var name = GetRvaSpanSlice(s_nameData, byteIndex, byteLength);
+        assert(GetRvaSpanEntry(s_nameData, byteIndex + byteLength) is 0);
         return name;
     }
 
@@ -107,7 +108,7 @@ public readonly partial struct HWIntrinsicInfo
         while (rangeLower <= rangeUpper)
         {
             var rangeIndex = (rangeUpper + rangeLower) / 2;
-            var sortOrder = CompareUtf8Name(methodName, GetName(rangeIndex));
+            var sortOrder = methodName.SequenceCompareTo(GetName(rangeIndex));
 
             if (sortOrder < 0)
             {
@@ -128,38 +129,19 @@ public readonly partial struct HWIntrinsicInfo
         return NI_Illegal;
     }
 
-    private static int CompareUtf8Name(ReadOnlySpan<byte> utf8Name, ReadOnlySpan<char> intrinsicName)
-    {
-        var compareLength = int.Min(utf8Name.Length, intrinsicName.Length);
-
-        for (var index = 0; index < compareLength; index++)
-        {
-            var character = intrinsicName[index];
-            assert(character <= byte.MaxValue);
-
-            var comparison = utf8Name[index].CompareTo((byte)character);
-
-            if (comparison is not 0)
-            {
-                return comparison;
-            }
-        }
-
-        return utf8Name.Length.CompareTo(intrinsicName.Length);
-    }
-
     private static int GetTableIndex(NamedIntrinsic id)
     {
         EnsureHardwareIntrinsicSupport();
 
         var unionIndex = (int)id - (int)NI_HW_INTRINSIC_START - 1;
+        var tableIndices = GetTableIndexByUnionIndex();
 
-        if ((uint)unionIndex >= (uint)GetTableIndexByUnionIndex().Length)
+        if ((uint)unionIndex >= (uint)tableIndices.Length)
         {
             JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitErrorCode.ValueIsNotAHardwareIntrinsicIdentity, FatalJitArgument.Id);
         }
 
-        var tableIndex = GetRvaSpanEntry(GetTableIndexByUnionIndex(), unionIndex);
+        var tableIndex = GetRvaSpanEntry(tableIndices, unionIndex);
 
         if (tableIndex is ushort.MaxValue)
         {
@@ -482,7 +464,7 @@ public readonly partial struct HWIntrinsicInfo
 
     public static string lookupName(NamedIntrinsic id)
     {
-        return GetName(GetTableIndex(id)).ToString();
+        return Encoding.UTF8.GetString(GetName(GetTableIndex(id)));
     }
 
     public static bool MaybeMemoryLoad(NamedIntrinsic id)

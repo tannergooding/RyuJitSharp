@@ -1049,7 +1049,7 @@ public enum HandleKindIndex
         AppendHWIntrinsicArray(arraysBuilder, "ushort", "s_X64Instructions", xarchData.Instructions);
         AppendHWIntrinsicArray(arraysBuilder, "ManagedInstructionSet", "s_XarchInstructionSets", xarchData.InstructionSets);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_XarchIntCosts", xarchData.IntegerCosts);
-        AppendHWIntrinsicArray(arraysBuilder, "char", "s_XarchNameData", xarchData.NameData);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_XarchNameData", xarchData.NameData);
         AppendHWIntrinsicArray(arraysBuilder, "int", "s_XarchNameRanges", xarchData.NameRanges);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_XarchNumArgs", xarchData.ArgumentCounts);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_XarchSimdSizes", xarchData.SimdSizes);
@@ -1060,7 +1060,7 @@ public enum HandleKindIndex
         AppendHWIntrinsicArray(arraysBuilder, "ushort", "s_Arm64Instructions", arm64Data.Instructions);
         AppendHWIntrinsicArray(arraysBuilder, "ManagedInstructionSet", "s_Arm64InstructionSets", arm64Data.InstructionSets);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_Arm64IntCosts", arm64Data.IntegerCosts);
-        AppendHWIntrinsicArray(arraysBuilder, "char", "s_Arm64NameData", arm64Data.NameData);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_Arm64NameData", arm64Data.NameData);
         AppendHWIntrinsicArray(arraysBuilder, "int", "s_Arm64NameRanges", arm64Data.NameRanges);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_Arm64NumArgs", arm64Data.ArgumentCounts);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_Arm64SimdSizes", arm64Data.SimdSizes);
@@ -1071,7 +1071,7 @@ public enum HandleKindIndex
         AppendHWIntrinsicArray(arraysBuilder, "ushort", "s_WasmInstructions", wasmData.Instructions);
         AppendHWIntrinsicArray(arraysBuilder, "ManagedInstructionSet", "s_WasmInstructionSets", wasmData.InstructionSets);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_WasmIntCosts", wasmData.IntegerCosts);
-        AppendHWIntrinsicArray(arraysBuilder, "char", "s_WasmNameData", wasmData.NameData);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_WasmNameData", wasmData.NameData);
         AppendHWIntrinsicArray(arraysBuilder, "int", "s_WasmNameRanges", wasmData.NameRanges);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_WasmNumArgs", wasmData.ArgumentCounts);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_WasmSimdSizes", wasmData.SimdSizes);
@@ -1089,7 +1089,7 @@ public enum HandleKindIndex
             "s_XarchInstructionSets", "s_Arm64InstructionSets", "s_WasmInstructionSets");
         AppendTargetHWIntrinsicProperty(propertiesBuilder, "byte", "s_intCosts",
             "s_XarchIntCosts", "s_Arm64IntCosts", "s_WasmIntCosts");
-        AppendTargetHWIntrinsicProperty(propertiesBuilder, "char", "s_nameData",
+        AppendTargetHWIntrinsicProperty(propertiesBuilder, "byte", "s_nameData",
             "s_XarchNameData", "s_Arm64NameData", "s_WasmNameData");
         AppendTargetHWIntrinsicProperty(propertiesBuilder, "int", "s_nameRanges",
             "s_XarchNameRanges", "s_Arm64NameRanges", "s_WasmNameRanges");
@@ -1204,25 +1204,26 @@ public partial struct HWIntrinsicInfo
             var isa = parts[0].AsSpan().Trim();
             var intrinsicName = parts[1].AsSpan().Trim();
             var nameValue = intrinsicName.ToString();
+            var nameByteLength = Encoding.UTF8.GetByteCount(nameValue);
 
-            if (!nameOffsets.TryGetValue(nameValue, out var characterIndex))
+            if (!nameOffsets.TryGetValue(nameValue, out var byteIndex))
             {
-                characterIndex = nameDataLength;
-                nameOffsets.Add(nameValue, characterIndex);
+                byteIndex = nameDataLength;
+                nameOffsets.Add(nameValue, byteIndex);
+                var nameBytes = Encoding.UTF8.GetBytes(nameValue);
 
-                foreach (var character in intrinsicName)
+                foreach (var value in nameBytes)
                 {
-                    AppendCharacterLiteral(nameData, character);
-                    _ = nameData.Append(", ");
+                    _ = nameData.Append(CultureInfo.InvariantCulture, $"{value}, ");
                 }
 
-                _ = nameData.Append("'\\0',");
+                _ = nameData.Append("0,");
                 _ = nameData.AppendLine(CultureInfo.InvariantCulture, $" // NI_{isa}_{intrinsicName}");
-                nameDataLength += intrinsicName.Length + 1;
+                nameDataLength += nameByteLength + 1;
             }
 
             _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                $"        {characterIndex}, {intrinsicName.Length}, // NI_{isa}_{intrinsicName}");
+                $"        {byteIndex}, {nameByteLength}, // NI_{isa}_{intrinsicName}");
         });
 
         var argumentCounts = ProcessUniqueTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
