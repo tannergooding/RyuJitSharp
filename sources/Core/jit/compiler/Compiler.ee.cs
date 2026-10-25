@@ -5,6 +5,7 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -18,6 +19,40 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private enum ElementTypeClassQueryKind
+    {
+        DefaultComparer,
+        DefaultEqualityComparer,
+        ArrayHelperEnumerator,
+    }
+
+    private readonly record struct ElementTypeClassCacheKey(nint ElementType, ElementTypeClassQueryKind QueryKind);
+
+    private enum ClassLayoutQueryKind
+    {
+        ClassSize,
+        HeapClassSize,
+        AlignmentRequirement,
+    }
+
+    private readonly record struct ClassLayoutQueryKey(
+        nint ClassHandle, ClassLayoutQueryKind QueryKind, bool DoubleAlignHint);
+
+    private const int BuiltinClassCacheLength = (int)CorInfoClassId.CLASSID_NUMERICS_VECTORT + 1;
+
+    [InlineArray(BuiltinClassCacheLength)]
+    private struct BuiltinClassHandleCache
+    {
+        private nint _element0;
+    }
+
+    private BuiltinClassHandleCache _builtinClassHandles;
+    private uint _builtinClassCacheValidMask;
+    private Dictionary<ElementTypeClassCacheKey, nint>? _elementTypeClassCache;
+    private Dictionary<ClassLayoutQueryKey, int>? _classLayoutQueryCache;
+    private Dictionary<nint, CorInfoFlag>? _classAttribsCache;
+    private Dictionary<nint, bool>? _valueClassCache;
+
     private interface IEEPrintVisitor<TSelf>
         where TSelf : struct, IEEPrintVisitor<TSelf>
     {
@@ -208,6 +243,92 @@ public partial class Compiler
 
     public unsafe CORINFO_CLASS_HANDLE eeGetArgClass(CORINFO_SIG_INFO* sigInfo, CORINFO_ARG_LIST_HANDLE argListHandle)
         => info.compCompHnd->getArgClass(sigInfo, argListHandle);
+
+    public unsafe CORINFO_CLASS_HANDLE eeGetBuiltinClass(CorInfoClassId classId)
+    {
+        var index = (int)classId;
+        if ((uint)index >= BuiltinClassCacheLength)
+        {
+            return info.compCompHnd->getBuiltinClass(classId);
+        }
+
+        var cacheBit = 1u << index;
+        if ((_builtinClassCacheValidMask & cacheBit) != 0)
+        {
+            return (CORINFO_CLASS_HANDLE)_builtinClassHandles[index];
+        }
+
+        var classHandle = info.compCompHnd->getBuiltinClass(classId);
+        _builtinClassHandles[index] = (nint)classHandle;
+        _builtinClassCacheValidMask |= cacheBit;
+        return classHandle;
+    }
+
+    public unsafe CORINFO_CLASS_HANDLE eeGetDefaultComparerClass(CORINFO_CLASS_HANDLE elementType)
+        => eeGetElementTypeClass(elementType, ElementTypeClassQueryKind.DefaultComparer);
+
+    public unsafe CORINFO_CLASS_HANDLE eeGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elementType)
+        => eeGetElementTypeClass(elementType, ElementTypeClassQueryKind.DefaultEqualityComparer);
+
+    public unsafe CORINFO_CLASS_HANDLE eeGetArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE elementType)
+        => eeGetElementTypeClass(elementType, ElementTypeClassQueryKind.ArrayHelperEnumerator);
+
+    private unsafe CORINFO_CLASS_HANDLE eeGetElementTypeClass(CORINFO_CLASS_HANDLE elementType,
+        ElementTypeClassQueryKind queryKind)
+    {
+        var key = new ElementTypeClassCacheKey((nint)elementType, queryKind);
+        var cache = _elementTypeClassCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedClass))
+        {
+            return (CORINFO_CLASS_HANDLE)cachedClass;
+        }
+
+        var classHandle = queryKind switch {
+            ElementTypeClassQueryKind.DefaultComparer => info.compCompHnd->getDefaultComparerClass(elementType),
+            ElementTypeClassQueryKind.DefaultEqualityComparer => info.compCompHnd->getDefaultEqualityComparerClass(elementType),
+            ElementTypeClassQueryKind.ArrayHelperEnumerator => info.compCompHnd->getSZArrayHelperEnumeratorClass(elementType),
+            _ => throw new InvalidOperationException("Unexpected element-type class query."),
+        };
+
+        cache ??= [];
+        cache.Add(key, (nint)classHandle);
+        _elementTypeClassCache = cache;
+        return classHandle;
+    }
+
+    public unsafe int eeGetClassSize(CORINFO_CLASS_HANDLE classHandle) =>
+        eeGetClassLayoutQuery(classHandle, ClassLayoutQueryKind.ClassSize);
+
+    public unsafe int eeGetHeapClassSize(CORINFO_CLASS_HANDLE classHandle) =>
+        eeGetClassLayoutQuery(classHandle, ClassLayoutQueryKind.HeapClassSize);
+
+    public unsafe int eeGetClassAlignmentRequirement(
+        CORINFO_CLASS_HANDLE classHandle, bool fDoubleAlignHint = false) =>
+        eeGetClassLayoutQuery(classHandle, ClassLayoutQueryKind.AlignmentRequirement, fDoubleAlignHint);
+
+    private unsafe int eeGetClassLayoutQuery(CORINFO_CLASS_HANDLE classHandle, ClassLayoutQueryKind queryKind,
+        bool doubleAlignHint = false)
+    {
+        var key = new ClassLayoutQueryKey((nint)classHandle, queryKind, doubleAlignHint);
+        var cache = _classLayoutQueryCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        var value = queryKind switch {
+            ClassLayoutQueryKind.ClassSize => info.compCompHnd->getClassSize(classHandle),
+            ClassLayoutQueryKind.HeapClassSize => info.compCompHnd->getHeapClassSize(classHandle),
+            ClassLayoutQueryKind.AlignmentRequirement =>
+                info.compCompHnd->getClassAlignmentRequirement(classHandle, doubleAlignHint),
+            _ => throw new InvalidOperationException("Unexpected class-layout query."),
+        };
+
+        cache ??= [];
+        cache.Add(key, value);
+        _classLayoutQueryCache = cache;
+        return value;
+    }
 
     public unsafe var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, in CORINFO_SIG_INFO sigInfo)
     {
@@ -718,8 +839,25 @@ public partial class Compiler
         }
     }
 
+    public unsafe CorInfoFlag eeGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
+    {
+        var key = (nint)classHandle;
+        var cache = _classAttribsCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        var attributes = info.compCompHnd->getClassAttribs(classHandle);
+
+        cache ??= [];
+        cache.Add(key, attributes);
+        _classAttribsCache = cache;
+        return attributes;
+    }
+
     public unsafe bool eeIsByrefLike(CORINFO_CLASS_HANDLE classHandle)
-        => (info.compCompHnd->getClassAttribs(classHandle) & CORINFO_FLG_BYREF_LIKE) != 0;
+        => (eeGetClassAttribs(classHandle) & CORINFO_FLG_BYREF_LIKE) != 0;
 
     public unsafe bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
         => info.compCompHnd->isIntrinsic(ftn);
@@ -728,10 +866,24 @@ public partial class Compiler
         => info.compCompHnd->isFieldStatic(fieldHandle);
 
     public unsafe bool eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd)
-        => (info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_SHAREDINST) != 0;
+        => (eeGetClassAttribs(clsHnd) & CORINFO_FLG_SHAREDINST) != 0;
 
     public unsafe bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
-        => info.compCompHnd->isValueClass(clsHnd);
+    {
+        var key = (nint)clsHnd;
+        var cache = _valueClassCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        var isValueClass = info.compCompHnd->isValueClass(clsHnd);
+
+        cache ??= [];
+        cache.Add(key, isValueClass);
+        _valueClassCache = cache;
+        return isValueClass;
+    }
 
     /// <summary>Print a JIT type.</summary>
     /// <param name="corInfoType">the CorInfoType type</param>

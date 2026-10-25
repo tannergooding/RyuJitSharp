@@ -93,7 +93,7 @@ public sealed partial class ObjectAllocator : Phase
         {
             var clsHnd = tree.AsAllocObj().ClsHnd;
             assert(clsHnd != NO_CLASS_HANDLE);
-            var isValueClass = compiler.info.compCompHnd->isValueClass(clsHnd);
+            var isValueClass = compiler.eeIsValueClass(clsHnd);
             var canBeOnStack = isValueClass || compiler.info.compCompHnd->canAllocateOnStack(clsHnd);
             allocType = canBeOnStack ? ObjectAllocationType.OAT_NEWOBJ : ObjectAllocationType.OAT_NEWOBJ_HEAP;
         }

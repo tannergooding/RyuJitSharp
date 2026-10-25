@@ -16,7 +16,7 @@ public sealed partial class ValueNumStore
 
         if (fieldType is TYP_STRUCT)
         {
-            structSize = _compiler.info.compCompHnd->getClassSize(structHnd);
+            structSize = _compiler.eeGetClassSize(structHnd);
             fieldType = _compiler.impNormStructType(structHnd);
         }
 

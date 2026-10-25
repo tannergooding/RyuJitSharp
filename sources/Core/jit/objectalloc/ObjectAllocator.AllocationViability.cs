@@ -58,7 +58,7 @@ public sealed partial class ObjectAllocator
         }
         else if (allocType is ObjectAllocationType.OAT_NEWOBJ)
         {
-            if (compiler.info.compCompHnd->isValueClass(clsHnd))
+            if (compiler.eeIsValueClass(clsHnd))
             {
                 if (!enableBoxedValueClasses)
                 {
@@ -66,7 +66,7 @@ public sealed partial class ObjectAllocator
                     return false;
                 }
 
-                classSize = unchecked((uint)compiler.info.compCompHnd->getClassSize(clsHnd));
+                classSize = unchecked((uint)compiler.eeGetClassSize(clsHnd));
             }
             else
             {
@@ -77,7 +77,7 @@ public sealed partial class ObjectAllocator
                 }
 
                 assert(compiler.info.compCompHnd->canAllocateOnStack(clsHnd));
-                classSize = unchecked((uint)compiler.info.compCompHnd->getHeapClassSize(clsHnd));
+                classSize = unchecked((uint)compiler.eeGetHeapClassSize(clsHnd));
             }
         }
         else

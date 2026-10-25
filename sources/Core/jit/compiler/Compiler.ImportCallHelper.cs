@@ -1297,7 +1297,7 @@ public partial class Compiler
                                 case CORINFO_TYPE_NATIVEUINT:
                                 {
                                     var simdBaseType = simdBaseJitType.PreciseVarType;
-                                    var simdSize = compiler.info.compCompHnd->getClassSize(clsHnd);
+                                    var simdSize = compiler.eeGetClassSize(clsHnd);
                                     var elementSize = simdBaseType.Size;
                                     var countNode = compiler.gtNewIconNode(TYP_INT, simdSize / elementSize);
 
@@ -1972,7 +1972,7 @@ public partial class Compiler
                         assert(sigInfo.numArgs is 1);
 
                         var spanElemHnd = sigInfo.sigInst.classInst[0];
-                        var elemSize = compiler.info.compCompHnd->getClassSize(spanElemHnd);
+                        var elemSize = compiler.eeGetClassSize(spanElemHnd);
                         assert(elemSize > 0);
 
                         var isReadOnly = ni is NI_System_ReadOnlySpan_get_Item;
@@ -2058,7 +2058,7 @@ public partial class Compiler
                         assert(sigInfo.numArgs is 0);
 
                         var spanElemHnd = sigInfo.sigInst.classInst[0];
-                        var elemSize = compiler.info.compCompHnd->getClassSize(spanElemHnd);
+                        var elemSize = compiler.eeGetClassSize(spanElemHnd);
                         assert(elemSize > 0);
 
                         var isReadOnly = (ni is NI_System_ReadOnlySpan_get_Length);

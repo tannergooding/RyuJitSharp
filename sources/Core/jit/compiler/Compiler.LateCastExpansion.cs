@@ -230,7 +230,7 @@ public partial class Compiler
             candidates[0] = likelyClasses[0];
 
             if ((likelyClasses[0] == 0) ||
-                ((info.compCompHnd->getClassAttribs((CORINFO_CLASS_HANDLE)likelyClasses[0]) & isAbstractFlags) != 0))
+                ((eeGetClassAttribs((CORINFO_CLASS_HANDLE)likelyClasses[0]) & isAbstractFlags) != 0))
             {
                 return 0;
             }
@@ -272,7 +272,7 @@ public partial class Compiler
             case CORINFO_HELP_CHKCASTCLASS:
             case CORINFO_HELP_CHKCASTANY:
             {
-                if ((info.compCompHnd->getClassAttribs(castToCls) & isAbstractFlags) != 0)
+                if ((eeGetClassAttribs(castToCls) & isAbstractFlags) != 0)
                 {
                     return 0;
                 }

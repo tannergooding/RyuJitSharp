@@ -916,7 +916,7 @@ public partial class Compiler
         else
         {
             impTokenLookupContextHandle = METHOD_BEING_COMPILED_CONTEXT();
-            info.compClassAttr = info.compCompHnd->getClassAttribs(info.compClassHnd);
+            info.compClassAttr = eeGetClassAttribs(info.compClassHnd);
         }
 
         if (Configuration.DEBUG && (JitConfig.EnableExtraSuperPmiQueries != 0))

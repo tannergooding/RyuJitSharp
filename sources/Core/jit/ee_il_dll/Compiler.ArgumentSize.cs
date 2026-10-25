@@ -15,7 +15,7 @@ public partial class Compiler
         {
             if (Configuration.UNIX_AMD64_ABI && varTypeIsStruct(argType))
             {
-                var structSize = unchecked((uint)info.compCompHnd->getClassSize(typeHnd));
+                var structSize = unchecked((uint)eeGetClassSize(typeHnd));
                 return roundUp(structSize, unchecked((uint)Configuration.TARGET_POINTER_SIZE));
             }
 
@@ -24,18 +24,17 @@ public partial class Compiler
 
         uint argSize;
         var hfaType = TYP_UNDEF;
-        var isHfa = false;
 
         if (varTypeIsStruct(argType))
         {
             hfaType = GetHfaType(typeHnd);
-            isHfa = hfaType != TYP_UNDEF;
-            var structSize = unchecked((uint)info.compCompHnd->getClassSize(typeHnd));
+            var structSize = unchecked((uint)eeGetClassSize(typeHnd));
 
             if (Configuration.FEATURE_MULTIREG_ARGS)
             {
                 if (Configuration.TARGET_ARM64)
                 {
+                    var isHfa = hfaType != TYP_UNDEF;
                     if (structSize > Configuration.MAX_PASS_MULTIREG_BYTES)
                     {
                         return unchecked((uint)Configuration.TARGET_POINTER_SIZE);

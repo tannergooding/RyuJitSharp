@@ -204,7 +204,7 @@ public partial class Compiler
 
         // There are some methods in corelib where we're storing to an array but the IL
         // doesn't reflect this (see SZArrayHelper). Avoid.
-        var attribs = info.compCompHnd->getClassAttribs(arrayHandle);
+        var attribs = eeGetClassAttribs(arrayHandle);
 
         if ((attribs & CORINFO_FLG_ARRAY) is 0)
         {
@@ -5596,7 +5596,7 @@ public partial class Compiler
         if (arrayClassHnd is not null)
         {
             // We know the class of the reference
-            var attribs = info.compCompHnd->getClassAttribs(arrayClassHnd);
+            var attribs = eeGetClassAttribs(arrayClassHnd);
 
             if ((attribs & CORINFO_FLG_ARRAY) != 0)
             {
@@ -5786,7 +5786,7 @@ public partial class Compiler
 
                 if (intrinsic.IntrinsicName == NI_System_Object_GetType)
                 {
-                    var runtimeType = info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
+                    var runtimeType = eeGetBuiltinClass(CLASSID_RUNTIME_TYPE);
                     assert(runtimeType != NO_CLASS_HANDLE);
 
                     objClass = runtimeType;
@@ -6112,7 +6112,7 @@ public partial class Compiler
                 // Note for some runtimes these helpers return exact types.
                 // But in those cases the types are also sealed, so there's no need to claim exactness here.
 
-                var runtimeType = info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
+                var runtimeType = eeGetBuiltinClass(CLASSID_RUNTIME_TYPE);
                 assert(runtimeType != NO_CLASS_HANDLE);
 
                 objClass = runtimeType;
@@ -6181,7 +6181,7 @@ public partial class Compiler
                 // expand the cast inline.
                 if (castHnd is not null)
                 {
-                    var attrs = info.compCompHnd->getClassAttribs(castHnd);
+                    var attrs = eeGetClassAttribs(castHnd);
 
                     if ((attrs & CORINFO_FLG_INTERFACE) != 0)
                     {
@@ -7667,7 +7667,7 @@ public partial class Compiler
         {
             var clsHnd = gtGetClassHandle(tree, out _, out _);
 
-            if ((clsHnd != NO_CLASS_HANDLE) && (clsHnd == info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE)))
+            if ((clsHnd != NO_CLASS_HANDLE) && (clsHnd == eeGetBuiltinClass(CLASSID_RUNTIME_TYPE)))
             {
                 return TPK_Other;
             }
@@ -8963,13 +8963,9 @@ public partial class Compiler
 
     public unsafe GenTreeIndexAddr gtNewIndexAddr(GenTree arrayOp, GenTree indexOp, var_types elemType, CORINFO_CLASS_HANDLE elemClassHandle, int firstElemOffset, int lengthOffset)
     {
-        var elemSize = (elemType is TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : elemType.Size;
+        var elemSize = (elemType is TYP_STRUCT) ? eeGetClassSize(elemClassHandle) : elemType.Size;
 
-        var boundsCheck = true;
-        if (Configuration.DEBUG)
-        {
-            boundsCheck = JitConfig.JitSkipArrayBoundCheck is not 1;
-        }
+        var boundsCheck = !Configuration.DEBUG || (JitConfig.JitSkipArrayBoundCheck is not 1);
 
         return new GenTreeIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, elemSize, lengthOffset, firstElemOffset, boundsCheck);
     }

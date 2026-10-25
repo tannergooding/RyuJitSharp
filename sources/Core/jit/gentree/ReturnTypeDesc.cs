@@ -181,7 +181,7 @@ public struct ReturnTypeDesc
         assert(!IsInitialized);
 
         assert(retClsHnd != NO_CLASS_HANDLE);
-        var structSize = compiler.info.compCompHnd->getClassSize(retClsHnd);
+        var structSize = compiler.eeGetClassSize(retClsHnd);
 
         var returnType = compiler.GetReturnTypeForStruct(retClsHnd, callConv, out var howToReturnStruct, structSize);
 

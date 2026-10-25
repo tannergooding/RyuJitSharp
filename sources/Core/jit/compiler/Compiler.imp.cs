@@ -707,7 +707,7 @@ public partial class Compiler
     {
         get
         {
-            var objectClass = info.compCompHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);
+            var objectClass = eeGetBuiltinClass(CLASSID_SYSTEM_OBJECT);
             assert(objectClass is not null);
             return objectClass;
         }
@@ -717,7 +717,7 @@ public partial class Compiler
     {
         get
         {
-            var refAnyClass = info.compCompHnd->getBuiltinClass(CLASSID_TYPED_BYREF);
+            var refAnyClass = eeGetBuiltinClass(CLASSID_TYPED_BYREF);
             assert(refAnyClass is not null);
             return refAnyClass;
         }
@@ -727,7 +727,7 @@ public partial class Compiler
     {
         get
         {
-            var argIteratorClass = info.compCompHnd->getBuiltinClass(CLASSID_ARGUMENT_HANDLE);
+            var argIteratorClass = eeGetBuiltinClass(CLASSID_ARGUMENT_HANDLE);
             assert(argIteratorClass is not null);
             return argIteratorClass;
         }
@@ -739,7 +739,7 @@ public partial class Compiler
     {
         get
         {
-            var stringClass = info.compCompHnd->getBuiltinClass(CLASSID_STRING);
+            var stringClass = eeGetBuiltinClass(CLASSID_STRING);
             assert(stringClass is not null);
             return stringClass;
         }
@@ -749,7 +749,7 @@ public partial class Compiler
     {
         get
         {
-            var typeHandleClass = info.compCompHnd->getBuiltinClass(CLASSID_TYPE_HANDLE);
+            var typeHandleClass = eeGetBuiltinClass(CLASSID_TYPE_HANDLE);
             assert(typeHandleClass is not null);
             return typeHandleClass;
         }
@@ -1022,7 +1022,7 @@ public partial class Compiler
                     var exactCls = unchecked((CORINFO_CLASS_HANDLE)(exactClasses[exactClsIdx]));
                     assert(exactCls != NO_CLASS_HANDLE);
 
-                    var clsAttrs = info.compCompHnd->getClassAttribs(exactCls);
+                    var clsAttrs = eeGetClassAttribs(exactCls);
 
                     // The getExactClasses method is expected to return precise data, thus eliminating the need
                     // to check if it is stale.
@@ -1116,7 +1116,7 @@ public partial class Compiler
 
             if (likelyClass != NO_CLASS_HANDLE)
             {
-                likelyClassAttribs = info.compCompHnd->getClassAttribs(likelyClass);
+                likelyClassAttribs = eeGetClassAttribs(likelyClass);
 
                 if ((likelyClassAttribs & CORINFO_FLG_ABSTRACT) is not 0)
                 {
@@ -1174,7 +1174,7 @@ public partial class Compiler
                 }
 
                 var definingClass = info.compCompHnd->getMethodClass(likelyMethod);
-                likelyClassAttribs = info.compCompHnd->getClassAttribs(definingClass);
+                likelyClassAttribs = eeGetClassAttribs(definingClass);
 
                 // For instance methods on value classes we need an extended check to
                 // check for the unboxing stub. This is NYI.
@@ -2468,7 +2468,7 @@ public partial class Compiler
 
             // Get the method's class properties
             var clsHandle = compCompHnd->getMethodClass(fncHandle);
-            var clsAttr = compCompHnd->getClassAttribs(clsHandle);
+            var clsAttr = eeGetClassAttribs(clsHandle);
 
             if (Configuration.DEBUG)
             {
@@ -3064,7 +3064,7 @@ public partial class Compiler
 
         if (fieldElementType is var_types.TYP_STRUCT)
         {
-            totalFieldSize = info.compCompHnd->getClassSize(fieldClsHnd);
+            totalFieldSize = eeGetClassSize(fieldClsHnd);
         }
         else
         {
@@ -3079,7 +3079,7 @@ public partial class Compiler
             return null;
         }
 
-        var targetElemSize = info.compCompHnd->getClassSize(targetElemHnd);
+        var targetElemSize = eeGetClassSize(targetElemHnd);
         assert(targetElemSize is not 0);
 
         var count = totalFieldSize / targetElemSize;
@@ -3253,7 +3253,7 @@ public partial class Compiler
 
         // Fetch information about the class that introduced the virtual method.
         var baseClass = info.compCompHnd->getMethodClass(baseMethod);
-        var baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
+        var baseClassAttribs = eeGetClassAttribs(baseClass);
 
         // Is the call an interface call?
         var isInterface = (baseClassAttribs & CORINFO_FLG_INTERFACE) is not 0;
@@ -3284,7 +3284,7 @@ public partial class Compiler
         }
 
         // If the objClass is sealed (final), then we may be able to devirtualize.
-        var objClassAttribs = info.compCompHnd->getClassAttribs(objClass);
+        var objClassAttribs = eeGetClassAttribs(objClass);
         var objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) is not 0;
 
         if (Configuration.DEBUG)
@@ -4983,16 +4983,16 @@ public partial class Compiler
 
                 if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
                 {
-                    result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
+                    result = eeGetDefaultEqualityComparerClass(typeHnd);
                 }
                 else if (ni == NI_System_Collections_Generic_Comparer_get_Default)
                 {
-                    result = info.compCompHnd->getDefaultComparerClass(typeHnd);
+                    result = eeGetDefaultComparerClass(typeHnd);
                 }
                 else
                 {
                     assert(ni == NI_System_Array_T_GetEnumerator);
-                    result = info.compCompHnd->getSZArrayHelperEnumeratorClass(typeHnd);
+                    result = eeGetArrayHelperEnumeratorClass(typeHnd);
                 }
 
                 if (result != NO_CLASS_HANDLE)
@@ -5033,7 +5033,7 @@ public partial class Compiler
                     }
                 }
 
-                result = info.compCompHnd->getSZArrayHelperEnumeratorClass(typeHnd);
+                result = eeGetArrayHelperEnumeratorClass(typeHnd);
 
                 if (result != NO_CLASS_HANDLE)
                 {
@@ -8649,7 +8649,7 @@ public partial class Compiler
                             {
                                 // If value class has GC fields, inform the inliner.
                                 // It may choose to bail out on the inline.
-                                var typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
+                                var typeFlags = eeGetClassAttribs(resolvedToken.hClass);
 
                                 if ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) is not 0)
                                 {
@@ -9098,7 +9098,7 @@ public partial class Compiler
                             {
                                 op1.AsFieldAddr().FieldLookup = fieldInfo.fieldLookup;
                             }
-                            if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
+                            if (StructHasOverlappingFields(eeGetClassAttribs(resolvedToken.hClass)))
                             {
                                 op1.AsFieldAddr().MayOverlap = true;
                             }
@@ -9325,7 +9325,7 @@ public partial class Compiler
 
                         if (helperNode is not null)
                         {
-                            var isHoistable = (info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT) is not 0;
+                            var isHoistable = (eeGetClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT) is not 0;
                             var checkSpill = isHoistable ? CHECK_SPILL_NONE : CHECK_SPILL_ALL;
                             _ = impAppendTree(helperNode, checkSpill, impCurStmtDI);
                         }
@@ -9469,7 +9469,7 @@ public partial class Compiler
                                 }
                             }
 
-                            var mayOverlap = StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass));
+                            var mayOverlap = StructHasOverlappingFields(eeGetClassAttribs(resolvedToken.hClass));
 
                             if (expandAddrInline)
                             {
@@ -10496,7 +10496,7 @@ public partial class Compiler
                     impResolveToken(codeAddr, out var resolvedToken, CORINFO_TOKENKIND_Class);
                     JITDUMP($" {resolvedToken.token:X8}");
 
-                    var op1 = gtNewIconNode(TYP_INT, info.compCompHnd->getClassSize(resolvedToken.hClass));
+                    var op1 = gtNewIconNode(TYP_INT, eeGetClassSize(resolvedToken.hClass));
                     impPushOnStack(op1, new typeInfo());
                     break;
                 }
@@ -12810,7 +12810,7 @@ public partial class Compiler
                     }
                 }
 
-                isHoistable = !fieldInfo.helper.MayRunCctor || ((info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT) is not 0);
+                isHoistable = !fieldInfo.helper.MayRunCctor || ((eeGetClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT) is not 0);
                 op1 = gtNewHelperCallNode(type, fieldInfo.helper, op1);
 
                 if (IsStaticHelperEligibleForExpansion(op1))
@@ -12848,7 +12848,7 @@ public partial class Compiler
                 {
                     var callFlags = GTF_EMPTY;
 
-                    if (!fieldInfo.helper.MayRunCctor || ((info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT) is not 0))
+                    if (!fieldInfo.helper.MayRunCctor || ((eeGetClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT) is not 0))
                     {
                         isHoistable = true;
                         callFlags |= GTF_CALL_HOISTABLE;
@@ -12959,7 +12959,7 @@ public partial class Compiler
                 var helper = CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
                 var callFlags = GTF_EMPTY;
 
-                if (!helper.MayRunCctor || ((info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT) is not 0))
+                if (!helper.MayRunCctor || ((eeGetClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT) is not 0))
                 {
                     isHoistable = true;
                     callFlags |= GTF_CALL_HOISTABLE;
@@ -13088,7 +13088,7 @@ public partial class Compiler
         }
         else if (fieldType is TYP_STRUCT)
         {
-            var totalSize = info.compCompHnd->getClassSize(fieldClsHnd);
+            var totalSize = eeGetClassSize(fieldClsHnd);
             var fieldsCnt = info.compCompHnd->getClassNumInstanceFields(fieldClsHnd);
 
             // For large structs we only want to handle "initialized with zero" case
@@ -14242,7 +14242,7 @@ public partial class Compiler
         {
             // The underlying type of the nullable:
             unboxType = info.compCompHnd->getTypeForBox(nullableCls);
-            shouldExpandInline = info.compCompHnd->getClassSize(unboxType) <= GetUnrollThreshold(Memcpy);
+            shouldExpandInline = eeGetClassSize(unboxType) <= GetUnrollThreshold(Memcpy);
         }
 
         if (!shouldExpandInline)
@@ -18726,7 +18726,7 @@ public partial class Compiler
 
                 op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
 
-                var classSize = info.compCompHnd->getClassSize(sig.sigInst.methInst[0]);
+                var classSize = eeGetClassSize(sig.sigInst.methInst[0]);
 
                 if (classSize is not 1)
                 {
@@ -18985,7 +18985,7 @@ public partial class Compiler
                     }
                 }
 
-                if (info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) < info.compCompHnd->getClassAlignmentRequirement(toTypeHnd))
+                if (eeGetClassAlignmentRequirement(fromTypeHnd) < eeGetClassAlignmentRequirement(toTypeHnd))
                 {
                     indirFlags |= GTF_IND_UNALIGNED;
                 }
@@ -19211,7 +19211,7 @@ public partial class Compiler
                 // sizeof !!T
                 // ret
 
-                var classSize = info.compCompHnd->getClassSize(sig.sigInst.methInst[0]);
+                var classSize = eeGetClassSize(sig.sigInst.methInst[0]);
                 return gtNewIconNode(TYP_INT, classSize);
             }
 
@@ -19253,7 +19253,7 @@ public partial class Compiler
 
                 op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
 
-                var classSize = info.compCompHnd->getClassSize(sig.sigInst.methInst[0]);
+                var classSize = eeGetClassSize(sig.sigInst.methInst[0]);
 
                 if (classSize is not 1)
                 {
@@ -19967,7 +19967,7 @@ public partial class Compiler
         if (doPrint)
         {
             var baseClass = info.compCompHnd->getMethodClass(baseMethod);
-            var baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
+            var baseClassAttribs = eeGetClassAttribs(baseClass);
             var derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) is not 0);
             var callKind = ((baseClassAttribs & CORINFO_FLG_INTERFACE) is not 0) ? "interface" : "virtual";
             var note = dcInfo.objClassIsExact ? "exact" : dcInfo.objClassIsFinal ? "final class" : derivedMethodIsFinal ? "final method" : "inexact or not final";
@@ -20082,7 +20082,7 @@ public partial class Compiler
         //
         // Note we may not have a derived class in some cases (eg interface call on an array)
 
-        if (info.compCompHnd->isValueClass(derivedClass))
+        if (eeIsValueClass(derivedClass))
         {
             if (dcInfo.isExplicitTailCall)
             {

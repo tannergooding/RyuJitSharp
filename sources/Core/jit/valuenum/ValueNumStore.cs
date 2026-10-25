@@ -62,7 +62,7 @@ public sealed partial class ValueNumStore
         {
             isNonNull = true;
             // RuntimeType need not be exact, for example under NativeAOT.
-            return _compiler.info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
+            return _compiler.eeGetBuiltinClass(CLASSID_RUNTIME_TYPE);
         }
 
         return null;

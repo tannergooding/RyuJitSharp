@@ -269,7 +269,7 @@ public sealed partial class ObjectAllocator
         assert(candidate.Block.HasFlag(BBF_HAS_NEWOBJ));
         var alloc = candidate.Tree.AsLclVar().Data.AsAllocObj();
         var clsHnd = alloc.ClsHnd;
-        var isValueClass = compiler.info.compCompHnd->isValueClass(clsHnd);
+        var isValueClass = compiler.eeIsValueClass(clsHnd);
         if (isValueClass)
         {
             compiler.Metrics.NewBoxedValueClassHelperCalls++;

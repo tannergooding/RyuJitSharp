@@ -11,7 +11,7 @@ public partial class Compiler
     {
         if (_refAnyClass is null)
         {
-            _refAnyClass = info.compCompHnd->getBuiltinClass(CLASSID_TYPED_BYREF);
+            _refAnyClass = eeGetBuiltinClass(CLASSID_TYPED_BYREF);
         }
         return info.compCompHnd->getFieldInClass(_refAnyClass, 0);
     }
@@ -20,7 +20,7 @@ public partial class Compiler
     {
         if (_refAnyClass is null)
         {
-            _refAnyClass = info.compCompHnd->getBuiltinClass(CLASSID_TYPED_BYREF);
+            _refAnyClass = eeGetBuiltinClass(CLASSID_TYPED_BYREF);
         }
         return info.compCompHnd->getFieldInClass(_refAnyClass, 1);
     }

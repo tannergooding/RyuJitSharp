@@ -241,7 +241,7 @@ public partial class DiscretionaryPolicy : DefaultPolicy
             if (type is CORINFO_TYPE_VALUECLASS)
             {
                 assert(classHandle != null);
-                _argSize[i] = unchecked((nuint)roundUp(comp->getClassSize(classHandle), pointerSize));
+                _argSize[i] = unchecked((nuint)roundUp(_rootCompiler.eeGetClassSize(classHandle), pointerSize));
             }
             else
             {
@@ -263,7 +263,7 @@ public partial class DiscretionaryPolicy : DefaultPolicy
         if (_returnType is CORINFO_TYPE_VALUECLASS)
         {
             assert(args.retTypeClass != null);
-            _returnSize = unchecked((nuint)roundUp(comp->getClassSize(args.retTypeClass), pointerSize));
+            _returnSize = unchecked((nuint)roundUp(_rootCompiler.eeGetClassSize(args.retTypeClass), pointerSize));
         }
         else if (_returnType is CORINFO_TYPE_VOID)
         {

@@ -1133,7 +1133,7 @@ public partial class Compiler
             eeGetMethodSig(methodHnd, out sig, methodClassHnd);
 
             // opcode specific check
-            methodClassFlgs = info.compCompHnd->getClassAttribs(methodClassHnd);
+            methodClassFlgs = eeGetClassAttribs(methodClassHnd);
         }
 
         if ((sig.callConv & CORINFO_CALLCONV_MASK) is CORINFO_CALLCONV_VARARG)
@@ -1350,11 +1350,11 @@ public partial class Compiler
         assert(IsHfa(hClass));
         if (Configuration.TARGET_ARM)
         {
-            return unchecked((uint)info.compCompHnd->getClassSize(hClass)) / (uint)Configuration.REGSIZE_BYTES;
+            return unchecked((uint)eeGetClassSize(hClass)) / (uint)Configuration.REGSIZE_BYTES;
         }
 
         var hfaType = GetHfaType(hClass);
-        var classSize = unchecked((uint)info.compCompHnd->getClassSize(hClass));
+        var classSize = unchecked((uint)eeGetClassSize(hClass));
 
         // Native retains this lower bound to avoid a retail division-by-zero warning.
         var elemSize = Math.Max(1u, EA_SIZE_IN_BYTES(hfaType.EmitActualSize));
@@ -1643,7 +1643,7 @@ public partial class Compiler
 
         if (structSize is 0)
         {
-            structSize = info.compCompHnd->getClassSize(clsHnd);
+            structSize = eeGetClassSize(clsHnd);
         }
         assert(structSize > 0);
 
@@ -2854,7 +2854,7 @@ public partial class Compiler
                             }
 
                             // Cross-targeting can disagree with the VM's Vector<T> size.
-                            if (!info.compMatchedVM && (size != info.compCompHnd->getClassSize(typeHnd)))
+                            if (!info.compMatchedVM && (size != eeGetClassSize(typeHnd)))
                             {
                                 return TYP_UNDEF;
                             }
@@ -2879,7 +2879,7 @@ public partial class Compiler
         }
         else if (Configuration.FEATURE_HW_INTRINSICS)
         {
-            size = info.compCompHnd->getClassSize(typeHnd);
+            size = eeGetClassSize(typeHnd);
 
             switch (size)
             {
@@ -3215,14 +3215,14 @@ public partial class Compiler
         assert(Configuration.TARGET_64BIT);
 
         var result = false;
-        var size = 0;
+        int size;
 
         if (varTypeIsStruct(type))
         {
             assert(typeClass is not null);
-            size = info.compCompHnd->getClassSize(typeClass);
+            size = eeGetClassSize(typeClass);
 
-            type = GetReturnTypeForStruct(typeClass, callConv, out var howToReturnStruct, size);
+            type = GetReturnTypeForStruct(typeClass, callConv, out _, size);
 
             if (type is not TYP_UNKNOWN)
             {

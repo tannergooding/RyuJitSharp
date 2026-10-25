@@ -143,7 +143,7 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
             var handle = compiler.lvaGetDesc(tree.AsLclVar().LclNum).lvClassHnd;
             if (handle != NO_CLASS_HANDLE)
             {
-                var attributes = compiler.info.compCompHnd->getClassAttribs(handle);
+                var attributes = compiler.eeGetClassAttribs(handle);
                 treeIsArrayRef = (attributes & CORINFO_FLG_ARRAY) != 0;
                 if (treeIsArrayRef)
                 {

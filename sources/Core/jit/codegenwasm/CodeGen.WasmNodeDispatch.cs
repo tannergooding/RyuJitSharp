@@ -1325,7 +1325,7 @@ public sealed partial class CodeGen
                     (sigInfoLocal.callConv is CORINFO_CALLCONV_HASTHIS))
                 {
                     var methodFlags = _compiler.info.compCompHnd->getMethodAttribs(parameters.methHnd);
-                    var stringClass = _compiler.info.compCompHnd->getBuiltinClass(CLASSID_STRING);
+                    var stringClass = _compiler.eeGetBuiltinClass(CLASSID_STRING);
 
                     if (((methodFlags & CORINFO_FLG_CONSTRUCTOR) != 0) &&
                         (stringClass != NO_CLASS_HANDLE) &&

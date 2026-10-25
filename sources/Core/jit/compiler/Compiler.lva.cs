@@ -2629,7 +2629,7 @@ public partial class Compiler
         if (!layout.IsCustomLayout)
         {
             if (!Configuration.TARGET_64BIT &&
-                (info.compCompHnd->getClassAlignmentRequirement(layout.ClassHandle, Configuration.TARGET_X86) == 8))
+                (eeGetClassAlignmentRequirement(layout.ClassHandle, Configuration.TARGET_X86) == 8))
             {
                 if (Configuration.DEBUG && verbose)
                 {
@@ -2643,7 +2643,7 @@ public partial class Compiler
             // Check whether this local is an unsafe value type and requires GS cookie protection.
             if (unsafeValueClsCheck)
             {
-                var classAttribs = info.compCompHnd->getClassAttribs(layout.ClassHandle);
+                var classAttribs = eeGetClassAttribs(layout.ClassHandle);
 
                 if ((classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) != 0)
                 {
@@ -2666,7 +2666,7 @@ public partial class Compiler
 
     public unsafe bool structMightRepresentSimdType(CORINFO_CLASS_HANDLE clsHnd)
     {
-        var classFlags = info.compCompHnd->getClassAttribs(clsHnd);
+        var classFlags = eeGetClassAttribs(clsHnd);
         var filteredFlags = classFlags & (CORINFO_FLG_VALUECLASS | CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE | CORINFO_FLG_INTRINSIC_TYPE);
 
         if (filteredFlags != (CORINFO_FLG_VALUECLASS | CORINFO_FLG_INTRINSIC_TYPE))
@@ -2674,7 +2674,7 @@ public partial class Compiler
             return false;
         }
 
-        var structSize = info.compCompHnd->getClassSize(clsHnd);
+        var structSize = eeGetClassSize(clsHnd);
 
         if (!Configuration.FEATURE_SIMD)
         {
@@ -3113,7 +3113,7 @@ public partial class Compiler
         assert(structHandle != NO_CLASS_HANDLE);
         _ = typGetObjLayout(structHandle);
 
-        var typeFlags = info.compCompHnd->getClassAttribs(structHandle);
+        var typeFlags = eeGetClassAttribs(structHandle);
 
         var fieldCnt = info.compCompHnd->getClassNumInstanceFields(structHandle);
         _ = impNormStructType(structHandle);

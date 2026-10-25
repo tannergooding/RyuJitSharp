@@ -152,7 +152,7 @@ public sealed class ClassLayout
         }
         else
         {
-            return compiler.info.compCompHnd->getClassAlignmentRequirement(ClassHandle);
+            return compiler.eeGetClassAlignmentRequirement(ClassHandle);
         }
     }
 
@@ -247,8 +247,8 @@ public sealed class ClassLayout
     {
         var isValueClass = compiler.eeIsValueClass(classHandle);
         var size = isValueClass
-                 ? compiler.info.compCompHnd->getClassSize(classHandle)
-                 : compiler.info.compCompHnd->getHeapClassSize(classHandle);
+                 ? compiler.eeGetClassSize(classHandle)
+                 : compiler.eeGetHeapClassSize(classHandle);
 
         var type = compiler.impNormStructType(classHandle);
 

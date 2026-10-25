@@ -1041,7 +1041,7 @@ public partial class DefaultPolicy : LegacyPolicy
                 // "lea     EAX, bword ptr [EBP-14H]"
                 callsiteSize += 10;
 
-                var opsz = roundUp(comp->getClassSize(sigClass), Configuration.TARGET_POINTER_SIZE);
+                var opsz = roundUp(_rootCompiler.eeGetClassSize(sigClass), Configuration.TARGET_POINTER_SIZE);
                 var slots = opsz / Configuration.TARGET_POINTER_SIZE;
 
                 // "push    gword ptr [EAX+offs]  "

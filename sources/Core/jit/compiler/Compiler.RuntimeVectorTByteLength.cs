@@ -41,9 +41,9 @@ public partial class Compiler
         if (compileTimeLength == SIZE_UNKNOWN)
         {
             assert(!IsAot);
-            var vectorT = info.compCompHnd->getBuiltinClass(CLASSID_NUMERICS_VECTORT);
+            var vectorT = eeGetBuiltinClass(CLASSID_NUMERICS_VECTORT);
             assert(vectorT != null);
-            var size = unchecked((uint)info.compCompHnd->getClassSize(vectorT));
+            var size = unchecked((uint)eeGetClassSize(vectorT));
             assert(size > 0);
             return size;
         }

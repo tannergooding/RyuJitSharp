@@ -167,7 +167,7 @@ public partial class Compiler
         {
             JITDUMP($"  GcHeap[elemTypeEq][array][index: ${inxVN:x}] is ${wholeElem:x}\n");
         }
-        var elemSize = elemType is TYP_STRUCT ? new ValueSize(info.compCompHnd->getClassSize(elemTypeEq))
+        var elemSize = elemType is TYP_STRUCT ? new ValueSize(eeGetClassSize(elemTypeEq))
             : ValueSize.FromJitType(elemType);
         var loadType = loadTree.Type;
         var loadSize = loadTree.AsIndir().ValueSize;
@@ -205,7 +205,7 @@ public partial class Compiler
         {
             JITDUMP($"  GcHeap[elemTypeEq][array: ${arrVN:x}] is ${atArray:x}\n");
         }
-        var elemSize = elemType is TYP_STRUCT ? new ValueSize(info.compCompHnd->getClassSize(elemTypeEq))
+        var elemSize = elemType is TYP_STRUCT ? new ValueSize(eeGetClassSize(elemTypeEq))
             : ValueSize.FromJitType(elemType);
 
         ValueNum newWholeElem;

@@ -21,7 +21,7 @@ public partial class Compiler
         }
 
         assert(info.compCompHnd->isValueClass(clsHnd));
-        if (info.compCompHnd->getClassSize(clsHnd) != Configuration.TARGET_POINTER_SIZE)
+        if (eeGetClassSize(clsHnd) != Configuration.TARGET_POINTER_SIZE)
         {
             return false;
         }
@@ -29,7 +29,7 @@ public partial class Compiler
         for (; ; )
         {
             // Every nested value class in the chain must also have exactly one field.
-            if (!info.compCompHnd->isValueClass(clsHnd) || info.compCompHnd->getClassNumInstanceFields(clsHnd) is not 1)
+            if (!eeIsValueClass(clsHnd) || info.compCompHnd->getClassNumInstanceFields(clsHnd) is not 1)
             {
                 return false;
             }
@@ -82,7 +82,7 @@ public partial class Compiler
             if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"**** getFpStructInRegistersInfo({FMT_PTR((void*)dspPtr(structHandle))} " +
-                    $"({eeGetClassName(structHandle)}, {info.compCompHnd->getClassSize(structHandle)} bytes)) =>\n");
+                    $"({eeGetClassName(structHandle)}, {eeGetClassSize(structHandle)} bytes)) =>\n");
 
                 if (lowering.Value.byIntegerCallConv)
                 {

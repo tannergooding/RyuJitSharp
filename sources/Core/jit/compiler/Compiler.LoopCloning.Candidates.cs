@@ -392,7 +392,7 @@ public partial class Compiler
                 JITDUMP("... but no class handle available for local\n");
                 return WALK_CONTINUE;
             }
-            if ((info.compCompHnd->getClassAttribs(descriptor.lvClassHnd) & CORINFO_FLG_DELEGATE) == 0)
+            if ((eeGetClassAttribs(descriptor.lvClassHnd) & CORINFO_FLG_DELEGATE) == 0)
             {
                 JITDUMP("... but not a delegate instance\n");
                 return WALK_CONTINUE;

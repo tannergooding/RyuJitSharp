@@ -60,14 +60,14 @@ public partial class Compiler
             assert((byte)(maxSize - 1) == (maxSize - 1));
 
             var compHandle = _compiler.info.compCompHnd;
-            var structSize = compHandle->getClassSize(typeHnd);
+            var structSize = _compiler.eeGetClassSize(typeHnd);
 
             if (structSize > maxSize)
             {
                 return false; // struct is too large
             }
 
-            var typeFlags = compHandle->getClassAttribs(typeHnd);
+            var typeFlags = _compiler.eeGetClassAttribs(typeHnd);
 
             if (StructHasOverlappingFields(typeFlags))
             {
@@ -81,7 +81,7 @@ public partial class Compiler
 
             // On ARM, we have a requirement on the struct alignment; see below.
             var structAlignment = Configuration.TARGET_ARM
-                ? roundUp(compHandle->getClassAlignmentRequirement(typeHnd), Configuration.TARGET_POINTER_SIZE) : 0;
+                ? roundUp(_compiler.eeGetClassAlignmentRequirement(typeHnd), Configuration.TARGET_POINTER_SIZE) : 0;
 
             // At most 1 (root node) + (4 promoted fields) + (each could be a wrapped primitive)
             const int NumTreeNodes = 1 + (MAX_NumOfFieldsInPromotableStruct * 2);

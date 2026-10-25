@@ -75,7 +75,7 @@ public ref struct Arm32Classifier
                 }
 
                 __jitExceptionCondition2 =
-                    comp.info.compCompHnd->getClassAlignmentRequirement(layout.ClassHandle) == 8;
+                    comp.eeGetClassAlignmentRequirement(layout.ClassHandle) == 8;
             }
             else
             {

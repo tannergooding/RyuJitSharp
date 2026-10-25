@@ -6108,7 +6108,7 @@ public partial class Compiler
 
                                         if (retClass != NO_CLASS_HANDLE)
                                         {
-                                            var retClassAttribs = info.compCompHnd->getClassAttribs(retClass);
+                                            var retClassAttribs = eeGetClassAttribs(retClass);
                                             returnsArray = (retClassAttribs & CORINFO_FLG_ARRAY) != 0;
                                         }
                                     }
@@ -7376,7 +7376,7 @@ public partial class Compiler
 
         if ((callFlags & GTF_CALL_HOISTABLE) is 0)
         {
-            if ((info.compCompHnd->getClassAttribs(cls) & CORINFO_FLG_BEFOREFIELDINIT) is not 0)
+            if ((eeGetClassAttribs(cls) & CORINFO_FLG_BEFOREFIELDINIT) is not 0)
             {
                 callFlags |= GTF_CALL_HOISTABLE;
             }
