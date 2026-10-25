@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Collections.Generic;
 using static RyuJitSharp.FuncKind;
 using static RyuJitSharp.regNumber;
 
@@ -11,6 +12,18 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private readonly struct FuncletClauseOrderComparer(Compiler compiler) : IComparer<ushort>
+    {
+        public int Compare(ushort left, ushort right)
+        {
+            var leftTryIndex = compiler.ehGetDsc(left).ebdTryBeg.bbTryIndex;
+            var rightTryIndex = compiler.ehGetDsc(right).ebdTryBeg.bbTryIndex;
+            return leftTryIndex == rightTryIndex
+                ? left.CompareTo(right)
+                : leftTryIndex.CompareTo(rightTryIndex);
+        }
+    }
+
     public FuncInfoRange Funclets()
     {
         assert(fgFuncletsCreated);
@@ -70,14 +83,7 @@ public partial class Compiler
             }
 
             // Keep same-try clauses contiguous for the VM without reordering the JIT's inside-out EH table.
-            vmClauseOrderToEHTabOrder.AsSpan().Sort((left, right) =>
-            {
-                var leftTryIndex = ehGetDsc(left).ebdTryBeg.bbTryIndex;
-                var rightTryIndex = ehGetDsc(right).ebdTryBeg.bbTryIndex;
-                return leftTryIndex == rightTryIndex
-                    ? left.CompareTo(right)
-                    : leftTryIndex.CompareTo(rightTryIndex);
-            });
+            vmClauseOrderToEHTabOrder.AsSpan().Sort(new FuncletClauseOrderComparer(this));
 
             foreach (var index in vmClauseOrderToEHTabOrder)
             {

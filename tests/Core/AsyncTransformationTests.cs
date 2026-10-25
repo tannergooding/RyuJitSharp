@@ -426,6 +426,40 @@ internal static unsafe class AsyncTransformationTests
     }
 
     [Test]
+    public static void ContinuationLocalsSortByReferenceThenHeapAlignment()
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.getContinuationType = &GetContinuationType;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            compiler.lvaCount = 6;
+            compiler.lvaTable = new LclVarDsc[6];
+            compiler.lvaTable[1].Type = TYP_INT;
+            compiler.lvaTable[2].Type = TYP_LONG;
+            compiler.lvaTable[3].Type = TYP_REF;
+            compiler.lvaTable[4].Type = TYP_SHORT;
+            compiler.lvaTable[5].Type = TYP_INT;
+
+            var builder = new AsyncContinuationLayoutBuilder(compiler);
+            builder.AddLocal(1);
+            builder.AddLocal(2);
+            builder.AddLocal(3);
+            builder.AddLocal(4);
+            builder.AddLocal(5);
+            var layout = builder.Create([]);
+
+            Assert.Multiple(() => {
+                Assert.That(layout.Locals[0].LclNum, Is.EqualTo(3));
+                Assert.That(layout.Locals[1].LclNum, Is.EqualTo(2));
+                Assert.That(layout.Locals[2].LclNum, Is.EqualTo(1));
+                Assert.That(layout.Locals[3].LclNum, Is.EqualTo(5));
+                Assert.That(layout.Locals[4].LclNum, Is.EqualTo(4));
+            });
+        });
+    }
+
+    [Test]
     public static void SharedLayoutUnionsLocalsInNumberOrderAndDeduplicatesReturnTypes()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

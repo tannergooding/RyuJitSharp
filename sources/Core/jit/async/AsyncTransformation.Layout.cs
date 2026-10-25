@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -161,6 +162,24 @@ internal sealed class AsyncContinuationLayout
 
 internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
 {
+    private readonly struct AsyncLiveLocalInfoComparer(Compiler compiler) : IComparer<AsyncLiveLocalInfo>
+    {
+        public int Compare(AsyncLiveLocalInfo? lhs, AsyncLiveLocalInfo? rhs)
+        {
+            var left = lhs!;
+            var right = rhs!;
+            var lhsIsRef = compiler.lvaGetDesc(left.LclNum).Type is TYP_REF;
+            var rhsIsRef = compiler.lvaGetDesc(right.LclNum).Type is TYP_REF;
+            if (lhsIsRef != rhsIsRef)
+            {
+                return lhsIsRef ? -1 : 1;
+            }
+
+            var alignment = right.HeapAlignment.CompareTo(left.HeapAlignment);
+            return alignment != 0 ? alignment : left.LclNum.CompareTo(right.LclNum);
+        }
+    }
+
     private readonly Compiler _compiler = compiler;
     private readonly List<AsyncReturnTypeInfo> _returns = [];
     private readonly List<int> _locals = [];
@@ -316,17 +335,7 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
             layout.Locals.Add(info);
         }
 
-        layout.Locals.Sort((lhs, rhs) => {
-            var lhsIsRef = _compiler.lvaGetDesc(lhs.LclNum).Type is TYP_REF;
-            var rhsIsRef = _compiler.lvaGetDesc(rhs.LclNum).Type is TYP_REF;
-            if (lhsIsRef != rhsIsRef)
-            {
-                return lhsIsRef ? -1 : 1;
-            }
-
-            var alignment = rhs.HeapAlignment.CompareTo(lhs.HeapAlignment);
-            return alignment != 0 ? alignment : lhs.LclNum.CompareTo(rhs.LclNum);
-        });
+        CollectionsMarshal.AsSpan(layout.Locals).Sort(new AsyncLiveLocalInfoComparer(_compiler));
 
         foreach (var ret in _returns)
         {
