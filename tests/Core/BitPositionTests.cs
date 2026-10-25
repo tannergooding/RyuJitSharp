@@ -101,17 +101,19 @@ internal static unsafe class BitPositionTests
     {
         Assume.That(TestConfiguration.IsDebug);
 
+        uint result = 0;
         var (_, assertions) = TestConfiguration.CaptureDebugAssertions(() => {
             if (wide)
             {
-                _ = BitScanForward(0UL);
+                result = BitScanForward(0UL);
             }
             else
             {
-                _ = BitScanForward(0U);
+                result = BitScanForward(0U);
             }
         });
 
+        Assert.That(result, Is.EqualTo(wide ? 64U : 32U));
         var expectedCount = wide && OperatingSystem.IsWindows() && !Environment.Is64BitProcess ? 2 : 1;
         Assert.That(assertions, Has.Length.EqualTo(expectedCount));
         Assert.That(assertions, Is.All.EqualTo("value != 0"));

@@ -18,6 +18,25 @@ internal static unsafe class CompilerShutdownTests
 {
     private static readonly string[] s_csvConfigurations = ["", "first.csv", "second.csv"];
 
+    [Test]
+    public static void AssemblyNameMembershipPreservesOrdinalIgnoreCaseSemantics()
+    {
+        fixed (byte* names = "First;Second;FIRST\0"u8)
+        {
+            var assemblyNames = new AssemblyNamesList2(names);
+
+            Assert.That(assemblyNames.IsEmpty, Is.False);
+            Assert.That(assemblyNames.IsInList("first"), Is.True);
+            Assert.That(assemblyNames.IsInList("SECOND"), Is.True);
+            Assert.That(assemblyNames.IsInList("FirstSuffix"), Is.False);
+        }
+
+        fixed (byte* emptyNames = ";;\0"u8)
+        {
+            Assert.That(new AssemblyNamesList2(emptyNames).IsEmpty, Is.True);
+        }
+    }
+
     [TestCase(100UL, 200UL, 280UL, 200U, 280U, 80U, 40U)]
     [TestCase(0x100000064UL, 0x1000000C8UL, 0x100000118UL, 100U, 100U, 0U, 0U)]
     [TestCase(1UL, 0x8000000000000000UL, 0x8000000000000000UL, 0U, 0U, 0U, 0U)]

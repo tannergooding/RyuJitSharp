@@ -10,9 +10,14 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Continue the approved production compiler improvement first pass with batch 2: apply output-preserving B01/B02 scalar API substitutions, B04/B05 collection simplifications, and R13 mechanical cleanup; evaluate B06 only as a local byte-identical BitStreamWriter storage substitution. Review concrete numeric/parser/ordering/exception risks before editing, keep B03/G01 in the separate generator batch, and preserve the pinned oracle plus unresolved dynamic-TLS and genAsyncResumeInfo boundaries.",
+    "nextAction": "Begin Batch 3 for B03/G01: inspect the pinned generator input closure and output consumers, establish a reproducible clean baseline, then update the HWI-name producer and generated consumer together. Evaluate D12/G05 aliases and G02 lookup hoists only within this closure; preserve the pinned oracle and unresolved dynamic-TLS and genAsyncResumeInfo boundaries.",
     "unresolvedConditionalCleanup": [],
-    "activeBatch": null,
+    "activeBatch": {
+      "scope": "First-pass Batch 3: change the hardware-intrinsic name representation from UTF-16 generated data to UTF-8 byte data, and replace the manual byte-to-character binary-search comparison with ordinal span comparison. Evaluate D12/G05 alias pruning and G02 local lookup hoists only when they are directly in this producer/consumer closure.",
+      "doneWhen": "The generator and managed consumer agree; two isolated generations from identical inputs produce identical complete file sets and bytes; every copied output has a mapped consumer and explained baseline delta; focused Debug/Release HWI tests and full-analysis Core builds pass.",
+      "validation": "Use generatorInputMapping at the pinned native commit and current managed input adaptations. Establish a clean baseline before editing inputs/templates, build GenerateTables through its project, stage the complete executable tree under artifacts, verify resolved destructive output paths, regenerate twice from identical inputs, compare complete output sets/bytes, and validate all affected consumers.",
+      "deferred": "Do not update upstream pins or change instruction/ISA identities, ranges, row ordering, target selectors, numeric layouts, or JIT/EE contracts. Keep unrelated generated drift, broad table redesign, and unproven D12/G05 candidates outside the batch."
+    },
     "dynamicTlsInputBoundary": {
       "status": "Unresolved; existing captures do not establish a stable native TLS index or reproducible EE allocation sequence.",
       "nextAction": "Preserve process-order-sensitive differences without normalization or changing compiler constants. Revisit only after a new oracle capture or upstream correction supplies a reproducible EE allocation sequence."

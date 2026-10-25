@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace RyuJitSharp;
@@ -11,8 +12,7 @@ namespace RyuJitSharp;
 /// <summary>Parses and stores a list of Assembly names, and provides a function for determining whether a given assembly name is part of the list.</summary>
 public sealed class AssemblyNamesList2
 {
-    /// <summary>List of names</summary>
-    private AssemblyName? _names;
+    private readonly HashSet<string> _names = new([], StringComparer.OrdinalIgnoreCase);
 
     // Take a UTF8 string list of assembly names, parse it, and store it.
     public unsafe AssemblyNamesList2(byte* list)
@@ -22,8 +22,6 @@ public sealed class AssemblyNamesList2
 
         // start of the name currently being processed. null if no current name
         var nameStart = (byte*)(null);
-
-        ref var nextName = ref _names;
 
         for (var listWalk = list; prevChar != '\0'; prevChar = (char)(listWalk[0]), listWalk++)
         {
@@ -39,10 +37,7 @@ public sealed class AssemblyNamesList2
                     var nameUtf8 = new ReadOnlySpan<byte>(nameStart, nameLenUtf8);
 
                     var name = Encoding.UTF8.GetString(nameUtf8);
-                    var newName = new AssemblyName(name);
-
-                    nextName = newName;
-                    nextName = ref newName.Next;
+                    _ = _names.Add(name);
 
                     nameStart = null;
                 }
@@ -57,37 +52,16 @@ public sealed class AssemblyNamesList2
         // cannot be in the middle of a name
         assert(nameStart is null);
 
-        // Terminate the last element of the list.
-        nextName = null;
     }
 
     /// <summary>Return 'true' if the assembly name list is empty.</summary>
-    public bool IsEmpty => _names is null;
+    public bool IsEmpty => _names.Count == 0;
 
     /// <summary>Return 'true' if 'assemblyName' is in the stored list of assembly names.</summary>
     /// <param name="assemblyName"></param>
     /// <returns></returns>
     public bool IsInList(string assemblyName)
     {
-        for (var name = _names; name is not null; name = name.Next)
-        {
-            if (name.Name.Equals(assemblyName, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private sealed class AssemblyName
-    {
-        public string Name;
-
-        public AssemblyName? Next;
-
-        public AssemblyName(string name)
-        {
-            Name = name;
-        }
+        return _names.Contains(assemblyName);
     }
 }

@@ -14,7 +14,7 @@ public partial class Compiler
         assert(lvaGetDesc(lclNum).lvInSsa);
 
         return (_insertedSsaLocalsLiveIn is not null) &&
-            _insertedSsaLocalsLiveIn.ContainsKey(new BasicBlockLocalPair(block, lclNum));
+            _insertedSsaLocalsLiveIn.Contains(new BasicBlockLocalPair(block, lclNum));
     }
 
     public bool AddInsertedSsaLiveIn(BasicBlock block, int lclNum)
@@ -22,7 +22,7 @@ public partial class Compiler
         assert(block != fgFirstBB);
 
         _insertedSsaLocalsLiveIn ??= [];
-        if (!_insertedSsaLocalsLiveIn.TryAdd(new BasicBlockLocalPair(block, lclNum), true))
+        if (!_insertedSsaLocalsLiveIn.Add(new BasicBlockLocalPair(block, lclNum)))
         {
             return false;
         }

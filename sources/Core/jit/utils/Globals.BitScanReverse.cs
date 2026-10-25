@@ -13,46 +13,18 @@ public static partial class Globals
     {
         assert(value != 0);
 
-        if (Configuration.HOST_WINDOWS)
-        {
-            return (uint)BitOperations.Log2(value);
-        }
-
-        // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
-        // 31 ^ BSR here is equivalent to 31 - BSR since the BSR result is always between 0 and 31.
-        // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
-
-        var result = BitOperations.LeadingZeroCount(value);
-        return (uint)(31 ^ result);
+        return (uint)BitOperations.Log2(value);
     }
 
     public static uint BitScanReverse(ulong value)
     {
         assert(value != 0);
 
-        if (Configuration.HOST_WINDOWS)
+        if (Configuration.HOST_WINDOWS && !Configuration.HOST_64BIT && (value == 0))
         {
-            if (Configuration.HOST_64BIT)
-            {
-                return (uint)BitOperations.Log2(value);
-            }
-
-            var upper = (uint)(value >> 32);
-
-            if (upper == 0)
-            {
-                var lower = unchecked((uint)value);
-                return BitScanReverse(lower);
-            }
-
-            return 32 + BitScanReverse(upper);
+            return BitScanReverse(0U);
         }
 
-        // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
-        // 63 ^ BSR here is equivalent to 63 - BSR since the BSR result is always between 0 and 63.
-        // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
-
-        var result = BitOperations.LeadingZeroCount(value);
-        return (uint)(63 ^ result);
+        return (uint)BitOperations.Log2(value);
     }
 }

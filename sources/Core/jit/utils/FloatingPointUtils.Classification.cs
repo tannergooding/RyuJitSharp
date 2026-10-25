@@ -8,58 +8,22 @@ namespace RyuJitSharp;
 public static partial class FloatingPointUtils
 {
     public static bool isNormal(double x)
-    {
-        var bits = unchecked((long)DoubleToUInt64Bits(x));
-        bits &= 0x7FFFFFFFFFFFFFFF;
-
-        return (bits < 0x7FF0000000000000) && (bits != 0) && ((bits & 0x7FF0000000000000) != 0);
-    }
+        => double.IsNormal(x);
 
     public static bool isNormal(float x)
-    {
-        var bits = unchecked((int)SingleToUInt32Bits(x));
-        bits &= 0x7FFFFFFF;
+        => float.IsNormal(x);
 
-        return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) != 0);
-    }
+    public static bool isFinite(float val) => float.IsFinite(val);
 
-    public static bool isFinite(float val)
-    {
-        var bits = SingleToUInt32Bits(val);
+    public static bool isFinite(double val) => double.IsFinite(val);
 
-        return (~bits & 0x7F800000U) != 0;
-    }
+    public static bool isNegative(float val) => float.IsNegative(val);
 
-    public static bool isFinite(double val)
-    {
-        var bits = DoubleToUInt64Bits(val);
+    public static bool isNegative(double val) => double.IsNegative(val);
 
-        return (~bits & 0x7FF0000000000000UL) != 0;
-    }
+    public static bool isNaN(float val) => float.IsNaN(val);
 
-    public static bool isNegative(float val)
-    {
-        return unchecked((int)SingleToUInt32Bits(val)) < 0;
-    }
-
-    public static bool isNegative(double val)
-    {
-        return unchecked((long)DoubleToUInt64Bits(val)) < 0;
-    }
-
-    public static bool isNaN(float val)
-    {
-        var bits = SingleToUInt32Bits(val);
-
-        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
-    }
-
-    public static bool isNaN(double val)
-    {
-        var bits = DoubleToUInt64Bits(val);
-
-        return (bits & 0x7FFFFFFFFFFFFFFFUL) > 0x7FF0000000000000UL;
-    }
+    public static bool isNaN(double val) => double.IsNaN(val);
 
     public static bool isNegativeZero(double val)
     {

@@ -68,24 +68,14 @@ public ref struct Arm32Classifier
             __jitExceptionShortCircuitLeft4 = type is TYP_STRUCT;
             if (__jitExceptionShortCircuitLeft4)
             {
-                int __jitExceptionOperand5;
-                var __jitExceptionReceiver6 = comp.info.compCompHnd;
-                global::RyuJitSharp.CORINFO_CLASS_STRUCT_* __jitExceptionArgument7;
-                global::RyuJitSharp.ClassLayout __jitExceptionOperand8;
-                var __jitExceptionCoalesceLeft9 = structLayout;
-                if (__jitExceptionCoalesceLeft9 != null)
-                {
-                    __jitExceptionOperand8 = __jitExceptionCoalesceLeft9;
-                }
-                else
+                var layout = structLayout;
+                if (layout is null)
                 {
                     JitExceptionHelpers.ThrowArgumentNullException(FatalJitArgument.StructLayout);
-                    __jitExceptionOperand8 = default;
                 }
 
-                __jitExceptionArgument7 = __jitExceptionOperand8.ClassHandle;
-                __jitExceptionOperand5 = __jitExceptionReceiver6->getClassAlignmentRequirement(__jitExceptionArgument7);
-                __jitExceptionCondition2 = __jitExceptionOperand5 == 8;
+                __jitExceptionCondition2 =
+                    comp.info.compCompHnd->getClassAlignmentRequirement(layout.ClassHandle) == 8;
             }
             else
             {
@@ -98,30 +88,21 @@ public ref struct Arm32Classifier
             _nextIntReg = roundUp(_nextIntReg, 2);
         }
 
-        uint __jitExceptionResult10;
-        bool __jitExceptionCondition11;
-        __jitExceptionCondition11 = type is TYP_STRUCT;
-        if (__jitExceptionCondition11)
+        uint size;
+        if (type is TYP_STRUCT)
         {
-            global::RyuJitSharp.ClassLayout __jitExceptionOperand12;
-            var __jitExceptionCoalesceLeft13 = structLayout;
-            if (__jitExceptionCoalesceLeft13 != null)
-            {
-                __jitExceptionOperand12 = __jitExceptionCoalesceLeft13;
-            }
-            else
+            var layout = structLayout;
+            if (layout is null)
             {
                 JitExceptionHelpers.ThrowArgumentNullException(FatalJitArgument.StructLayout);
-                __jitExceptionOperand12 = default;
             }
-
-            __jitExceptionResult10 = __jitExceptionOperand12.Size;
+            size = layout.Size;
         }
         else
         {
-            __jitExceptionResult10 = (uint)type.Size;
+            size = (uint)type.Size;
         }
-        var size = __jitExceptionResult10;
+
         var numSlots = (size + 3) / 4;
         var numInRegs = Math.Min(numSlots, 4 - _nextIntReg);
         var anyOnStack = numInRegs < numSlots;

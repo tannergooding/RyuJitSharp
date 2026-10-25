@@ -12,7 +12,7 @@ global using FieldHandleSet = System.Collections.Generic.Dictionary<RyuJitSharp.
 
 global using BlockToFlowEdgeMap = System.Collections.Generic.Dictionary<RyuJitSharp.BasicBlock, RyuJitSharp.FlowEdge?>;
 
-global using BasicBlockLocalPairSet = System.Collections.Generic.Dictionary<RyuJitSharp.Compiler.BasicBlockLocalPair, bool>;
+global using BasicBlockLocalPairSet = System.Collections.Generic.HashSet<RyuJitSharp.Compiler.BasicBlockLocalPair>;
 
 global using GenTreeStack = System.Collections.Generic.Stack<RyuJitSharp.GenTree>;
 

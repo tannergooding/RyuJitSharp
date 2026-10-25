@@ -45,18 +45,12 @@ public ref struct Arm64Classifier
         // HFA/HVAs can use more registers than other structures.
         if (varTypeIsStruct(type) && !_info.IsVarArgs)
         {
-            global::RyuJitSharp.ClassLayout __jitExceptionResult14;
-            var __jitExceptionCoalesceLeft15 = structLayout;
-            if (__jitExceptionCoalesceLeft15 != null)
-            {
-                __jitExceptionResult14 = __jitExceptionCoalesceLeft15;
-            }
-            else
+            var layout = structLayout;
+            if (layout is null)
             {
                 JitExceptionHelpers.ThrowArgumentNullException(FatalJitArgument.StructLayout);
-                __jitExceptionResult14 = default;
             }
-            var layout = __jitExceptionResult14;
+
             var hfaType = comp.GetHfaType(layout.ClassHandle);
 
             if (hfaType is not TYP_UNDEF)
@@ -103,16 +97,12 @@ public ref struct Arm64Classifier
 
         if (varTypeIsStruct(type))
         {
-            var __jitExceptionCoalesceLeft16 = structLayout?.Size;
-            if (__jitExceptionCoalesceLeft16 != null)
-            {
-                structSize = __jitExceptionCoalesceLeft16.Value;
-            }
-            else
+            var layout = structLayout;
+            if (layout is null)
             {
                 JitExceptionHelpers.ThrowArgumentNullException(FatalJitArgument.StructLayout);
-                structSize = default;
             }
+            structSize = layout.Size;
 
             // TODO-SVE: We should be able to pass in a Z register.
             if ((structSize > 16) || (type is TYP_SIMD_ARM64))
