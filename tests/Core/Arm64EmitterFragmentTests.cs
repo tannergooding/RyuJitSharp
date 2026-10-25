@@ -65,8 +65,7 @@ internal static unsafe class Arm64EmitterFragmentTests
         JitTls.Compiler = compiler;
         try
         {
-            emitter.emitSplit(null, null, 60, null,
-                (_, location) => reported.Add(location.GetIG() ?? throw new AssertionException("Missing split group.")));
+            emitter.emitSplit(null, null, 60, new SplitRecorder(reported));
 
             insGroup[] expected = [groups[2], groups[3]];
             Assert.That(reported, Is.EqualTo(expected));
@@ -93,8 +92,7 @@ internal static unsafe class Arm64EmitterFragmentTests
         JitTls.Compiler = compiler;
         try
         {
-            emitter.emitSplit(new emitLocation(groups[1]), new emitLocation(groups[3]), 40, null,
-                (_, location) => reported.Add(location.GetIG() ?? throw new AssertionException("Missing split group.")));
+            emitter.emitSplit(new emitLocation(groups[1]), new emitLocation(groups[3]), 40, new SplitRecorder(reported));
 
             insGroup[] expected = [groups[2]];
             Assert.That(reported, Is.EqualTo(expected));
@@ -138,6 +136,21 @@ internal static unsafe class Arm64EmitterFragmentTests
         for (var index = 0; index < groups.Length - 1; index++)
         {
             groups[index].igNext = groups[index + 1];
+        }
+    }
+
+    private readonly struct SplitRecorder : IEmitSplitCallback
+    {
+        private readonly List<insGroup> _reported;
+
+        public SplitRecorder(List<insGroup> reported)
+        {
+            _reported = reported;
+        }
+
+        public void Invoke(emitLocation location)
+        {
+            _reported.Add(location.GetIG() ?? throw new AssertionException("Missing split group."));
         }
     }
 

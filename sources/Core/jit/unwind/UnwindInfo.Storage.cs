@@ -6,7 +6,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -131,7 +130,7 @@ public sealed partial class UnwindInfo
         first.SplitEpilogCodes(first.ufiEmitLoc!.Value, hotFirst);
     }
 
-    public unsafe void Split()
+    public void Split()
     {
         var compiler = GetCompiler();
         var first = uwiFragmentFirst!;
@@ -168,16 +167,7 @@ public sealed partial class UnwindInfo
             return;
         }
 
-        var handle = GCHandle.Alloc(this);
-        try
-        {
-            emitter.emitSplit(first.ufiEmitLoc, uwiEndLoc, maxFragmentSize,
-                GCHandle.ToIntPtr(handle).ToPointer(), EmitSplitCallback);
-        }
-        finally
-        {
-            handle.Free();
-        }
+        emitter.emitSplit(first.ufiEmitLoc, uwiEndLoc, maxFragmentSize, new EmitSplitCallback(this));
 
         if (Configuration.DEBUG)
         {
@@ -351,22 +341,16 @@ public sealed partial class UnwindInfo
         assert(opcodeSize == instructionSize);
     }
 
-    private static unsafe void EmitSplitCallback(void* context, emitLocation location)
+    private readonly struct EmitSplitCallback : IEmitSplitCallback
     {
-        var handle = GCHandle.FromIntPtr((nint)context);
-        global::RyuJitSharp.UnwindInfo __jitExceptionResult713;
-        var __jitExceptionCoalesceLeft714 = (UnwindInfo? )handle.Target;
-        if (__jitExceptionCoalesceLeft714 != null)
+        private readonly UnwindInfo _owner;
+
+        public EmitSplitCallback(UnwindInfo owner)
         {
-            __jitExceptionResult713 = __jitExceptionCoalesceLeft714;
+            _owner = owner;
         }
-        else
-        {
-            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindSplitCallbackLostItsOwner);
-            __jitExceptionResult713 = default;
-        }
-        var unwindInfo = __jitExceptionResult713;
-        unwindInfo.AddFragment(location);
+
+        public void Invoke(emitLocation location) => _owner.AddFragment(location);
     }
 
     private void AddFragment(emitLocation emitLoc)

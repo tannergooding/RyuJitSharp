@@ -5261,8 +5261,6 @@ public enum FatalJitErrorCode
     UnwindInstructionSizeQueriesRequireARM32 = 2703,
     /// <summary>Fragmented unwind storage for this target is not ported.</summary>
     FragmentedUnwindStorageForThisTargetIsNotPorted = 2704,
-    /// <summary>The unwind split callback lost its owner.</summary>
-    UnwindSplitCallbackLostItsOwner = 2705,
     /// <summary>Unwind prolog diagnostics for this target are not ported.</summary>
     UnwindPrologDiagnosticsForThisTargetAreNotPorted = 2706,
     /// <summary>Unwind epilog diagnostics for this target are not ported.</summary>
@@ -8304,7 +8302,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.UnwindStorageDiagnosticsForThisTargetAreNotPorted => "Unwind storage diagnostics for this target are not ported.",
             FatalJitErrorCode.UnwindInstructionSizeQueriesRequireARM32 => "Unwind instruction-size queries require ARM32.",
             FatalJitErrorCode.FragmentedUnwindStorageForThisTargetIsNotPorted => "Fragmented unwind storage for this target is not ported.",
-            FatalJitErrorCode.UnwindSplitCallbackLostItsOwner => "The unwind split callback lost its owner.",
             FatalJitErrorCode.UnwindPrologDiagnosticsForThisTargetAreNotPorted => "Unwind prolog diagnostics for this target are not ported.",
             FatalJitErrorCode.UnwindEpilogDiagnosticsForThisTargetAreNotPorted => "Unwind epilog diagnostics for this target are not ported.",
             FatalJitErrorCode.CompilerFreeUnwindEpilogDiagnosticsRequireLoongArch64 => "Compiler-free unwind epilog diagnostics require LoongArch64.",

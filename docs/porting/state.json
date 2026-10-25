@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Proceed with F12: use LSP to close Emitter.emitSplit and UnwindInfo.Storage callers, then replace only the managed GCHandle callback bridge with typed state while preserving fragment size/order, location lifetime, and exception behavior.",
+    "nextAction": "Proceed with F13 no-GC range enumeration: inspect its callback callers and existing GC/emitter fixtures, then replace or inline the managed-only Func path without changing range order, count arithmetic, or serialized information. Handle epilog and descriptor callbacks as separate complete families afterward.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
       "scope": "First-pass Batch 4: apply B07/B08 local diagnostic span/search and comparer simplifications; specialize admitted live managed callback families F01-F13/F15/F16, remove R01 traversal scaffolding where truly unused, and close R11 exception-safe pool/callback-context work through all callers. Include only F14 managed printers, not unmanaged error-trap/rooting redesign.",

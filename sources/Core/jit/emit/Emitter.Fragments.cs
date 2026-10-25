@@ -5,10 +5,13 @@
 
 namespace RyuJitSharp;
 
+internal interface IEmitSplitCallback
+{
+    void Invoke(emitLocation location);
+}
+
 public partial class Emitter
 {
-    public unsafe delegate void emitSplitCallbackType(void* context, emitLocation location);
-
     // unwind.h's FunctionLength encoding limits: ARM/RISC-V use 19 bits, ARM64/LoongArch use 20.
     private static uint UW_MAX_FRAGMENT_SIZE_BYTES =>
         Configuration.TARGET_ARM || Configuration.TARGET_RISCV64 ? 1u << 19 : 1u << 20;
@@ -52,8 +55,8 @@ public partial class Emitter
     // Report fragment starts, but not the initial start or the final end. Locations must be
     // group starts; null denotes the start/end of the code. Never split adjacent prolog/epilog
     // groups, even if doing so requires a fragment larger than maxSplitSize.
-    public unsafe void emitSplit(emitLocation? startLoc, emitLocation? endLoc, uint maxSplitSize,
-        void* context, emitSplitCallbackType callbackFunc)
+    internal void emitSplit<TCallback>(emitLocation? startLoc, emitLocation? endLoc, uint maxSplitSize,
+        TCallback callbackFunc) where TCallback : struct, IEmitSplitCallback
     {
         RequireUnwindFragmentTarget();
 
@@ -127,7 +130,7 @@ public partial class Emitter
 
             // The value handed to the callback remains valid independently of this invocation.
             var location = new emitLocation(igLastCandidate);
-            callbackFunc(context, location);
+            callbackFunc.Invoke(location);
             igLastReported = igLastCandidate;
             igLastCandidate = null;
             curSize = unchecked(curSize - candidateSize);
