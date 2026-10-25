@@ -60,25 +60,27 @@ internal sealed class LoopDefinitions
         return map;
     }
 
-    private bool VisitLoopNestMaps(FlowGraphNaturalLoop loop, Func<LocalDefinitionsMap, bool> func)
+    private void VisitLoopNestMaps<TVisitor>(FlowGraphNaturalLoop loop, ref TVisitor visitor)
+        where TVisitor : struct, IIntActionVisitor<TVisitor>
     {
         for (var child = loop.Child; child is not null; child = child.Sibling)
         {
-            if (!VisitLoopNestMaps(child, func))
-            {
-                return false;
-            }
+            VisitLoopNestMaps(child, ref visitor);
         }
 
-        return func(GetOrCreateMap(loop));
+        GetOrCreateMap(loop).VisitKeys(ref visitor);
     }
 
     internal void VisitDefinedLocalNums(FlowGraphNaturalLoop loop, Action<int> func)
     {
-        _ = VisitLoopNestMaps(loop, map => {
-            map.VisitKeys(func);
-            return true;
-        });
+        var visitor = new IntActionDelegateVisitor(func);
+        VisitDefinedLocalNums(loop, ref visitor);
+    }
+
+    internal void VisitDefinedLocalNums<TVisitor>(FlowGraphNaturalLoop loop, ref TVisitor visitor)
+        where TVisitor : struct, IIntActionVisitor<TVisitor>
+    {
+        VisitLoopNestMaps(loop, ref visitor);
     }
 
     private struct LocalsVisitor : IGenTreeVisitor<LocalsVisitor>
@@ -232,11 +234,18 @@ internal sealed class LoopDefinitions
 
         internal void VisitKeys(Action<int> func)
         {
+            var visitor = new IntActionDelegateVisitor(func);
+            VisitKeys(ref visitor);
+        }
+
+        internal void VisitKeys<TVisitor>(ref TVisitor visitor)
+            where TVisitor : struct, IIntActionVisitor<TVisitor>
+        {
             foreach (var bucket in _buckets)
             {
                 for (var node = bucket; node is not null; node = node.Next)
                 {
-                    func(node.Key);
+                    visitor.Visit(node.Key);
                 }
             }
         }

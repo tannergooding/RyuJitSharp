@@ -122,29 +122,48 @@ public sealed partial class FlowGraphNaturalLoop
 
     public BasicBlockVisit VisitLoopBlocksReversePostOrder(Func<BasicBlock, BasicBlockVisit> func)
     {
-        var result = BitVecOps.VisitBits(LoopBlockTraits(), _blocks, index => {
-            var poIndex = _header.bbPostorderNum - index;
-            assert((uint)poIndex < (uint)_dfsTree.PostOrderCount);
-            return func(_dfsTree.GetPostOrder(poIndex)) is BasicBlockVisit.Continue;
-        });
+        var visitor = new BasicBlockDelegateVisitor(func);
+        return VisitLoopBlocksReversePostOrder(ref visitor);
+    }
+
+    public BasicBlockVisit VisitLoopBlocksReversePostOrder<TVisitor>(ref TVisitor visitor)
+        where TVisitor : struct, IBasicBlockVisitor<TVisitor>
+    {
+        var adapter = new LoopBlockVisitorAdapter<TVisitor>(ref visitor, _dfsTree, _header.bbPostorderNum);
+        var result = BitVecOps.VisitBits(LoopBlockTraits(), _blocks, ref adapter);
 
         return result ? BasicBlockVisit.Continue : BasicBlockVisit.Abort;
     }
 
     public BasicBlockVisit VisitLoopBlocksPostOrder(Func<BasicBlock, BasicBlockVisit> func)
     {
-        var result = BitVecOps.VisitBitsReverse(LoopBlockTraits(), _blocks, index => {
-            var poIndex = _header.bbPostorderNum - index;
-            assert((uint)poIndex < (uint)_dfsTree.PostOrderCount);
-            return func(_dfsTree.GetPostOrder(poIndex)) is BasicBlockVisit.Continue;
-        });
+        var visitor = new BasicBlockDelegateVisitor(func);
+        return VisitLoopBlocksPostOrder(ref visitor);
+    }
+
+    public BasicBlockVisit VisitLoopBlocksPostOrder<TVisitor>(ref TVisitor visitor)
+        where TVisitor : struct, IBasicBlockVisitor<TVisitor>
+    {
+        var adapter = new LoopBlockVisitorAdapter<TVisitor>(ref visitor, _dfsTree, _header.bbPostorderNum);
+        var result = BitVecOps.VisitBitsReverse(LoopBlockTraits(), _blocks, ref adapter);
 
         return result ? BasicBlockVisit.Continue : BasicBlockVisit.Abort;
     }
 
     public BasicBlockVisit VisitLoopBlocks(Func<BasicBlock, BasicBlockVisit> func) => VisitLoopBlocksReversePostOrder(func);
 
+    public BasicBlockVisit VisitLoopBlocks<TVisitor>(ref TVisitor visitor)
+        where TVisitor : struct, IBasicBlockVisitor<TVisitor>
+        => VisitLoopBlocksReversePostOrder(ref visitor);
+
     public BasicBlockVisit VisitRegularExitBlocks(Func<BasicBlock, BasicBlockVisit> func)
+    {
+        var visitor = new BasicBlockDelegateVisitor(func);
+        return VisitRegularExitBlocks(ref visitor);
+    }
+
+    public BasicBlockVisit VisitRegularExitBlocks<TVisitor>(ref TVisitor visitor)
+        where TVisitor : struct, IBasicBlockVisitor<TVisitor>
     {
         var comp = _dfsTree.GetCompiler();
         var traits = _dfsTree.PostOrderTraits();
@@ -156,13 +175,35 @@ public sealed partial class FlowGraphNaturalLoop
             assert(_dfsTree.Contains(exit) && !ContainsBlock(exit));
 
             if (!comp.bbIsHandlerBeg(exit) && BitVecOps.TryAddElemD(traits, visited, exit.bbPostorderNum) &&
-                (func(exit) is BasicBlockVisit.Abort))
+                (visitor.Visit(exit) is BasicBlockVisit.Abort))
             {
                 return BasicBlockVisit.Abort;
             }
         }
 
         return BasicBlockVisit.Continue;
+    }
+
+    private ref struct LoopBlockVisitorAdapter<TVisitor> : IBitSetVisitor<LoopBlockVisitorAdapter<TVisitor>>
+        where TVisitor : struct, IBasicBlockVisitor<TVisitor>
+    {
+        private ref TVisitor _visitor;
+        private readonly FlowGraphDfsTree _dfsTree;
+        private readonly int _headerPostOrderNumber;
+
+        public LoopBlockVisitorAdapter(ref TVisitor visitor, FlowGraphDfsTree dfsTree, int headerPostOrderNumber)
+        {
+            _visitor = ref visitor;
+            _dfsTree = dfsTree;
+            _headerPostOrderNumber = headerPostOrderNumber;
+        }
+
+        public bool Visit(int index)
+        {
+            var postOrderIndex = _headerPostOrderNumber - index;
+            assert((uint)postOrderIndex < (uint)_dfsTree.PostOrderCount);
+            return _visitor.Visit(_dfsTree.GetPostOrder(postOrderIndex)) is BasicBlockVisit.Continue;
+        }
     }
 
     public BasicBlock GetLexicallyTopMostBlock()

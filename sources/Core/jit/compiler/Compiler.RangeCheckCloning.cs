@@ -143,17 +143,14 @@ public partial class Compiler
         var current = first;
         while (current != last)
         {
-            uint actual = 0;
-            if (gtComplexityExceeds(current.RootNode, budget, _ => {
-                actual++;
-                return 1;
-            }))
+            var complexity = new CountingNodeComplexity();
+            if (gtComplexityExceeds(current.RootNode, budget, ref complexity))
             {
                 JITDUMP("\tExceeded budget!");
                 return true;
             }
 
-            JITDUMP($"\t\tSubtracting {actual} from budget in {FMT_STMT(current.Id)} statement\n");
+            JITDUMP($"\t\tSubtracting {complexity.Count} from budget in {FMT_STMT(current.Id)} statement\n");
             var next = current.NextStmt;
             if (next is null)
             {
@@ -165,11 +162,22 @@ public partial class Compiler
             }
 
             current = next;
-            budget -= actual;
+            budget -= complexity.Count;
         }
 
         JITDUMP($"Complexity is within budget: {budget}\n");
         return false;
+    }
+
+    private struct CountingNodeComplexity : IGenTreeComplexity<CountingNodeComplexity>
+    {
+        public uint Count;
+
+        public uint GetComplexity(GenTree node)
+        {
+            Count = unchecked(Count + 1);
+            return 1;
+        }
     }
 
     private static int RangeCheckCloningBucket((ValueNum Index, ValueNum Length) key, int count)

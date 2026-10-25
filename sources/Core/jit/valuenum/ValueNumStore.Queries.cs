@@ -125,17 +125,43 @@ public sealed partial class ValueNumStore
         return null;
     }
 
+    private readonly struct DelegateReachingVNVisitor(Func<ValueNum, VNVisit> visitor)
+        : IValueNumVisitor<DelegateReachingVNVisitor>
+    {
+        public VNVisit Visit(ValueNum valueNum) => visitor(valueNum);
+    }
+
+    private readonly struct KnownNonNullVisitor(ValueNumStore store)
+        : IValueNumVisitor<KnownNonNullVisitor>
+    {
+        public VNVisit Visit(ValueNum valueNum) => store.VisitKnownNonNull(valueNum);
+    }
+
+    private readonly struct NeverNegativeVisitor(ValueNumStore store)
+        : IValueNumVisitor<NeverNegativeVisitor>
+    {
+        public VNVisit Visit(ValueNum valueNum) => store.VisitNeverNegative(valueNum);
+    }
+
     public VNVisit VNVisitReachingVNs(ValueNum vn, Func<ValueNum, VNVisit> argVisitor)
+    {
+        var visitor = new DelegateReachingVNVisitor(argVisitor);
+        return VNVisitReachingVNs(vn, ref visitor);
+    }
+
+    internal VNVisit VNVisitReachingVNs<TVisitor>(ValueNum vn, ref TVisitor visitor)
+        where TVisitor : struct, IValueNumVisitor<TVisitor>
     {
         if (!IsPhiDef(vn))
         {
-            return argVisitor(vn);
+            return visitor.Visit(vn);
         }
 
-        return VNVisitReachingVNsWorker(vn, argVisitor);
+        return VNVisitReachingVNsWorker(vn, ref visitor);
     }
 
-    private VNVisit VNVisitReachingVNsWorker(ValueNum vn, Func<ValueNum, VNVisit> argVisitor)
+    private VNVisit VNVisitReachingVNsWorker<TVisitor>(ValueNum vn, ref TVisitor visitor)
+        where TVisitor : struct, IValueNumVisitor<TVisitor>
     {
         var toVisit = new Stack<ValueNum>();
         toVisit.Push(vn);
@@ -155,7 +181,7 @@ public sealed partial class ValueNumStore
                     }
                 }
             }
-            else if (argVisitor(current) == VNVisit.Abort)
+            else if (visitor.Visit(current) == VNVisit.Abort)
             {
                 return VNVisit.Abort;
             }
@@ -274,7 +300,8 @@ public sealed partial class ValueNumStore
             return false;
         }
 
-        return VNVisitReachingVNs(vn, VisitKnownNonNull) is VNVisit.Continue;
+        var visitor = new KnownNonNullVisitor(this);
+        return VNVisitReachingVNs(vn, ref visitor) is VNVisit.Continue;
     }
 
     private VNVisit VisitKnownNonNull(ValueNum vn)
@@ -475,7 +502,10 @@ public sealed partial class ValueNumStore
 
     // Signed non-negativity visits conservative reaching values, not the phi itself.
     public bool IsVNNeverNegative(ValueNum vn)
-        => VNVisitReachingVNs(vn, VisitNeverNegative) == VNVisit.Continue;
+    {
+        var visitor = new NeverNegativeVisitor(this);
+        return VNVisitReachingVNs(vn, ref visitor) == VNVisit.Continue;
+    }
 
     private VNVisit VisitNeverNegative(ValueNum vn)
     {

@@ -72,11 +72,19 @@ public sealed class hashBvNode
     public void dump()
     {
         jitprintf($"base: {baseIndex} {{ ");
-        foreachBit(index => jitprintf($"{unchecked((int)index)} "));
+        var visitor = new DumpBitVisitor();
+        foreachBit(ref visitor);
         jitprintf("}\n");
     }
 
     public void foreachBit(Action<indexType> action)
+    {
+        var visitor = new DelegateNodeBitVisitor(action);
+        foreachBit(ref visitor);
+    }
+
+    public void foreachBit<TVisitor>(ref TVisitor visitor)
+        where TVisitor : struct, IHbvNodeBitVisitor<TVisitor>, allows ref struct
     {
         indexType baseIndex;
 
@@ -89,13 +97,24 @@ public sealed class hashBvNode
             {
                 if ((bits & 1) != 0)
                 {
-                    action(baseIndex);
+                    visitor.Visit(baseIndex);
                 }
 
                 bits >>= 1;
                 baseIndex = Globals.AddIndex(baseIndex, 1);
             }
         }
+    }
+
+    private readonly struct DelegateNodeBitVisitor(Action<indexType> action)
+        : IHbvNodeBitVisitor<DelegateNodeBitVisitor>
+    {
+        public void Visit(ulong index) => action(index);
+    }
+
+    private readonly struct DumpBitVisitor : IHbvNodeBitVisitor<DumpBitVisitor>
+    {
+        public void Visit(ulong index) => jitprintf($"{unchecked((int)index)} ");
     }
 
     public void setBit(indexType index)

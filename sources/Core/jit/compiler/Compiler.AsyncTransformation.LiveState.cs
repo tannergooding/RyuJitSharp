@@ -47,8 +47,8 @@ public partial class Compiler
                 _ = excludedLocals.Add(_compiler.lvaWasmSpArg);
             }
 
-            analyses.GetLiveLocals(builder, local =>
-                !_compiler.lvaGetDesc(local).lvOnlyUsedOnSynchronousPath && !excludedLocals.Contains(local));
+            var liveLocalPredicate = new AsyncLiveLocalPredicate(_compiler, excludedLocals);
+            analyses.GetLiveLocals(builder, ref liveLocalPredicate);
             LiftLIREdges(block, defs, builder);
 
             if (Configuration.DEBUG && _compiler.verbose)

@@ -193,8 +193,16 @@ public static class BitSetOpsWithCounter<TEnv, TBitSetTraits>
     public static bool VisitBits(TEnv env, ReadOnlySpan<nint> bitSet, Func<int, bool> func)
         => BitSetOps<TEnv, TBitSetTraits>.VisitBits(env, bitSet, func);
 
+    public static bool VisitBits<TVisitor>(TEnv env, ReadOnlySpan<nint> bitSet, ref TVisitor visitor)
+        where TVisitor : struct, IBitSetVisitor<TVisitor>, allows ref struct
+        => BitSetOps<TEnv, TBitSetTraits>.VisitBits(env, bitSet, ref visitor);
+
     public static bool VisitBitsReverse(TEnv env, ReadOnlySpan<nint> bitSet, Func<int, bool> func)
         => BitSetOps<TEnv, TBitSetTraits>.VisitBitsReverse(env, bitSet, func);
+
+    public static bool VisitBitsReverse<TVisitor>(TEnv env, ReadOnlySpan<nint> bitSet, ref TVisitor visitor)
+        where TVisitor : struct, IBitSetVisitor<TVisitor>, allows ref struct
+        => BitSetOps<TEnv, TBitSetTraits>.VisitBitsReverse(env, bitSet, ref visitor);
 
     public ref struct Iter
     {

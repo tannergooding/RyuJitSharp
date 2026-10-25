@@ -118,8 +118,34 @@ internal static class HashBitVectorTests
         vector.setBit(128);
         vector.setBit(256);
         var visited = new List<indexType>();
+        var visitor = new ClearAndAbortVisitor(vector, visited);
 
-        var result = Globals.ForEachHbvBitSet(vector, index => {
+        var result = Globals.ForEachHbvBitSet(vector, ref visitor);
+
+        Assert.That(result, Is.EqualTo(HbvWalk.Abort));
+        Assert.That(visited, Is.EqualTo(new indexType[] { 0, 128 }));
+        Assert.That(Read(vector), Is.EqualTo(new indexType[] { 0, 256 }));
+    }
+
+    [Test]
+    public static void NodeVisitorEnumeratesSetBitsInAscendingOrder()
+    {
+        var node = new hashBvNode(128);
+        node.setBit(130);
+        node.setBit(255);
+        var visited = new List<indexType>();
+        var visitor = new RecordNodeBitVisitor(visited);
+
+        node.foreachBit(ref visitor);
+
+        Assert.That(visited, Is.EqualTo(new indexType[] { 130, 255 }));
+    }
+
+    private struct ClearAndAbortVisitor(hashBv vector, List<indexType> visited)
+        : IHbvBitVisitor<ClearAndAbortVisitor>
+    {
+        public readonly HbvWalk Visit(ulong index)
+        {
             visited.Add(index);
 
             if (index == 128)
@@ -129,11 +155,13 @@ internal static class HashBitVectorTests
             }
 
             return HbvWalk.Continue;
-        });
+        }
+    }
 
-        Assert.That(result, Is.EqualTo(HbvWalk.Abort));
-        Assert.That(visited, Is.EqualTo(new indexType[] { 0, 128 }));
-        Assert.That(Read(vector), Is.EqualTo(new indexType[] { 0, 256 }));
+    private readonly struct RecordNodeBitVisitor(List<indexType> visited)
+        : IHbvNodeBitVisitor<RecordNodeBitVisitor>
+    {
+        public void Visit(ulong index) => visited.Add(index);
     }
 
     [Test]

@@ -12,6 +12,36 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private readonly struct WriteBarrierReachingVNVisitor(ValueNumStore store)
+        : IValueNumVisitor<WriteBarrierReachingVNVisitor>
+    {
+        public ValueNumStore.VNVisit Visit(ValueNum valueNum)
+            => (valueNum == ValueNumStore.VNForNull()) || store.IsVNObjHandle(valueNum)
+                ? ValueNumStore.VNVisit.Continue : ValueNumStore.VNVisit.Abort;
+    }
+
+    private readonly struct VectorElementMaskVisitor(ValueNumStore store, var_types simdBaseType, byte simdSize)
+        : IValueNumVisitor<VectorElementMaskVisitor>
+    {
+        public ValueNumStore.VNVisit Visit(ValueNum valueNum)
+        {
+            if (valueNum == ValueNumStore.NoVN)
+            {
+                return ValueNumStore.VNVisit.Abort;
+            }
+
+            valueNum = store.VNNormalValue(valueNum);
+            var type = store.TypeOfVN(valueNum);
+            if (!varTypeIsSimd(type) || (type.Size != simdSize))
+            {
+                return ValueNumStore.VNVisit.Abort;
+            }
+
+            return store.IsVectorPerElementMask(valueNum, simdBaseType, simdSize)
+                ? ValueNumStore.VNVisit.Continue : ValueNumStore.VNVisit.Abort;
+        }
+    }
+
     public GenTree optAssertionProp_Update(GenTree newTree, GenTree tree, Statement? statement)
     {
         if (statement is null)
@@ -241,9 +271,8 @@ public partial class Compiler
 
         assert(vnStore is not null);
         var form = WBF_BarrierUnknown;
-        var result = vnStore.VNVisitReachingVNs(optConservativeNormalVN(value), vn =>
-            ((vn == ValueNumStore.VNForNull()) || vnStore.IsVNObjHandle(vn))
-                ? ValueNumStore.VNVisit.Continue : ValueNumStore.VNVisit.Abort);
+        var visitor = new WriteBarrierReachingVNVisitor(vnStore);
+        var result = vnStore.VNVisitReachingVNs(optConservativeNormalVN(value), ref visitor);
         if (result is ValueNumStore.VNVisit.Continue)
         {
             form = WBF_NoBarrier;
@@ -330,23 +359,8 @@ public partial class Compiler
         }
 
         var vn = vnStore.VNNormalValue(operand._vnPair.Conservative);
-        var result = vnStore.VNVisitReachingVNs(vn, reachingVN => {
-            if (reachingVN == ValueNumStore.NoVN)
-            {
-                return ValueNumStore.VNVisit.Abort;
-            }
-
-            reachingVN = vnStore.VNNormalValue(reachingVN);
-            var type = vnStore.TypeOfVN(reachingVN);
-            var size = tree.SimdSize;
-            if (!varTypeIsSimd(type) || (type.Size != size))
-            {
-                return ValueNumStore.VNVisit.Abort;
-            }
-
-            return vnStore.IsVectorPerElementMask(reachingVN, tree.SimdBaseType, size)
-                ? ValueNumStore.VNVisit.Continue : ValueNumStore.VNVisit.Abort;
-        });
+        var visitor = new VectorElementMaskVisitor(vnStore, tree.SimdBaseType, tree.SimdSize);
+        var result = vnStore.VNVisitReachingVNs(vn, ref visitor);
         if (result is ValueNumStore.VNVisit.Continue)
         {
             lvaGetDesc(local).SetIsVectorPerElementMask(tree.SimdBaseType);

@@ -39,8 +39,14 @@ internal static unsafe class NodeSearchTests
                 visited.Add(node);
                 return node == target;
             }, required);
+            var constrainedVisited = new List<GenTree>();
+            var predicate = new RecordingPredicate(target, constrainedVisited);
+            var constrainedResult = compiler.gtFindNodeInTree(root, ref predicate, required);
 
             Assert.That(result, Is.SameAs(found ? target : null));
+            Assert.That(constrainedResult, Is.SameAs(found ? target : null));
+            Assert.That(constrainedVisited, Is.EqualTo(visited));
+            Assert.That(predicate.Count, Is.EqualTo(constrainedVisited.Count));
             foreach (var node in visited)
             {
                 Assert.That(node.Flags & required, Is.EqualTo(required));
@@ -54,6 +60,19 @@ internal static unsafe class NodeSearchTests
         finally
         {
             JitTls.Compiler = previous;
+        }
+    }
+
+    private struct RecordingPredicate(GenTree target, List<GenTree> visited)
+        : IGenTreePredicate<RecordingPredicate>
+    {
+        public int Count;
+
+        public bool IsMatch(GenTree node)
+        {
+            Count++;
+            visited.Add(node);
+            return node == target;
         }
     }
 }

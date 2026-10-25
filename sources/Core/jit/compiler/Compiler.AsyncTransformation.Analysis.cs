@@ -11,6 +11,13 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private readonly struct AsyncLiveLocalPredicate(Compiler compiler, HashSet<int> excludedLocals)
+        : IIntPredicateVisitor<AsyncLiveLocalPredicate>
+    {
+        public bool Visit(int local)
+            => !compiler.lvaGetDesc(local).lvOnlyUsedOnSynchronousPath && !excludedLocals.Contains(local);
+    }
+
     private sealed class AsyncMutationDataFlowCallback(
         Compiler compiler, VARSET_TP[] mutatedVars, VARSET_TP[] mutatedVarsIn) : DataFlow.ICallback
     {
@@ -448,9 +455,16 @@ public partial class Compiler
 
         public void GetLiveLocals(AsyncContinuationLayoutBuilder layoutBuilder, Func<int, bool> includeLocal)
         {
+            var visitor = new IntPredicateDelegateVisitor(includeLocal);
+            GetLiveLocals(layoutBuilder, ref visitor);
+        }
+
+        public void GetLiveLocals<TVisitor>(AsyncContinuationLayoutBuilder layoutBuilder, ref TVisitor visitor)
+            where TVisitor : struct, IIntPredicateVisitor<TVisitor>
+        {
             for (var lclNum = 0; lclNum < _numVars; lclNum++)
             {
-                if (includeLocal(lclNum) && IsLive(lclNum))
+                if (visitor.Visit(lclNum) && IsLive(lclNum))
                 {
                     layoutBuilder.AddLocal(lclNum);
                 }

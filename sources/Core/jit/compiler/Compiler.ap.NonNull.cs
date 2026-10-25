@@ -18,6 +18,25 @@ public partial class Compiler
         Abort,
     }
 
+    internal interface IAssertionVisitor<TSelf>
+        where TSelf : struct, IAssertionVisitor<TSelf>
+    {
+        AssertVisit Visit(ValueNum valueNum, ASSERT_TP? assertions);
+    }
+
+    private readonly struct DelegateAssertionVisitor(Func<ValueNum, ASSERT_TP?, AssertVisit> visitor)
+        : IAssertionVisitor<DelegateAssertionVisitor>
+    {
+        public AssertVisit Visit(ValueNum valueNum, ASSERT_TP? assertions) => visitor(valueNum, assertions);
+    }
+
+    private readonly struct NonNullAssertionVisitor(Compiler compiler, int budget)
+        : IAssertionVisitor<NonNullAssertionVisitor>
+    {
+        public AssertVisit Visit(ValueNum valueNum, ASSERT_TP? assertions)
+            => compiler.optAssertionVNIsNonNull(valueNum, assertions, budget) ? AssertVisit.Continue : AssertVisit.Abort;
+    }
+
     public bool optAssertionIsNonNull(GenTree op, ASSERT_TP? assertions)
     {
         if ((op.Oper is GT_ADD) && op.AsOp().Op2.Oper.IsCnsIntOrI &&
@@ -123,17 +142,14 @@ public partial class Compiler
             return false;
         }
 
-        AssertVisit Visit(ValueNum reachingVN, ASSERT_TP? reachingAssertions)
-        {
-            return optAssertionVNIsNonNull(reachingVN, reachingAssertions, budget - 1) ? AssertVisit.Continue : AssertVisit.Abort;
-        }
+        var visitor = new NonNullAssertionVisitor(this, budget - 1);
 
-        if (optVisitReachingAssertions(vn, Visit) is AssertVisit.Continue)
+        if (optVisitReachingAssertions(vn, ref visitor) is AssertVisit.Continue)
         {
             return true;
         }
 
-        return (baseVN != vn) && (optVisitReachingAssertions(baseVN, Visit) is AssertVisit.Continue);
+        return (baseVN != vn) && (optVisitReachingAssertions(baseVN, ref visitor) is AssertVisit.Continue);
     }
 
     public ASSERT_TP? optGetEdgeAssertions(BasicBlock block, BasicBlock predecessor)
@@ -164,6 +180,13 @@ public partial class Compiler
     }
 
     public AssertVisit optVisitReachingAssertions(ValueNum vn, Func<ValueNum, ASSERT_TP?, AssertVisit> visitor)
+    {
+        var adapter = new DelegateAssertionVisitor(visitor);
+        return optVisitReachingAssertions(vn, ref adapter);
+    }
+
+    internal AssertVisit optVisitReachingAssertions<TVisitor>(ValueNum vn, ref TVisitor visitor)
+        where TVisitor : struct, IAssertionVisitor<TVisitor>
     {
         assert(vnStore is not null);
         VNPhiDef phiDef = default;
@@ -208,7 +231,7 @@ public partial class Compiler
             // Read its SSA definition without back-patching the argument slot.
             var argDefinition = lvaGetDesc(arg.LclNum).GetPerSsaData(arg.SsaNum);
             var argVN = vnStore.VNNormalValue(argDefinition._vnPair.Conservative);
-            if (visitor(argVN, optGetEdgeAssertions(block, predecessor)) is AssertVisit.Abort)
+            if (visitor.Visit(argVN, optGetEdgeAssertions(block, predecessor)) is AssertVisit.Abort)
             {
                 return AssertVisit.Abort;
             }

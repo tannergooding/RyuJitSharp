@@ -7,6 +7,103 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    private struct LiveInRegisterSetVisitor : IBitSetVisitor<LiveInRegisterSetVisitor>
+    {
+        private readonly CodeGen _codeGen;
+        private readonly nint[]? _removedGCVars;
+        private readonly nint[]? _addedGCVars;
+
+        public regMaskTP NewLiveRegSet;
+        public regMaskTP NewRegGCrefSet;
+        public regMaskTP NewRegByrefSet;
+
+        public LiveInRegisterSetVisitor(CodeGen codeGen, nint[]? removedGCVars, nint[]? addedGCVars)
+        {
+            _codeGen = codeGen;
+            _removedGCVars = removedGCVars;
+            _addedGCVars = addedGCVars;
+            NewLiveRegSet = RBM_NONE;
+            NewRegGCrefSet = RBM_NONE;
+            NewRegByrefSet = RBM_NONE;
+        }
+
+        public bool Visit(int varIndex)
+        {
+            var compiler = _codeGen._compiler;
+            ref var varDsc = ref compiler.lvaGetDesc(compiler.lvaTrackedIndexToLclNum(varIndex));
+
+            if (varDsc.lvIsInReg)
+            {
+                var regMask = _codeGen.genGetRegMask(in varDsc);
+                NewLiveRegSet |= regMask;
+                if (varDsc.Type == TYP_REF)
+                {
+                    NewRegGCrefSet |= regMask;
+                }
+                else if (varDsc.Type == TYP_BYREF)
+                {
+                    NewRegByrefSet |= regMask;
+                }
+
+                if (!varDsc.IsAlwaysAliveInMemory)
+                {
+                    if (Configuration.DEBUG && _codeGen._verbose &&
+                        VarSetOps.IsMember(compiler, _codeGen._gcInfo.gcVarPtrSetCur, varIndex))
+                    {
+                        VarSetOps.AddElemD(compiler, _removedGCVars!, varIndex);
+                    }
+                    VarSetOps.RemoveElemD(compiler, _codeGen._gcInfo.gcVarPtrSetCur, varIndex);
+                }
+            }
+
+            if ((!varDsc.lvIsInReg || varDsc.IsAlwaysAliveInMemory) && compiler.lvaIsGCTracked(in varDsc))
+            {
+                if (Configuration.DEBUG && _codeGen._verbose &&
+                    !VarSetOps.IsMember(compiler, _codeGen._gcInfo.gcVarPtrSetCur, varIndex))
+                {
+                    VarSetOps.AddElemD(compiler, _addedGCVars!, varIndex);
+                }
+                VarSetOps.AddElemD(compiler, _codeGen._gcInfo.gcVarPtrSetCur, varIndex);
+            }
+
+            return true;
+        }
+    }
+
+    private struct MismatchedLiveRegVarsVisitor : IBitSetVisitor<MismatchedLiveRegVarsVisitor>
+    {
+        private readonly CodeGen _codeGen;
+        private readonly BasicBlock _block;
+
+        public bool Found;
+
+        public MismatchedLiveRegVarsVisitor(CodeGen codeGen, BasicBlock block, bool found)
+        {
+            _codeGen = codeGen;
+            _block = block;
+            Found = found;
+        }
+
+        public bool Visit(int varIndex)
+        {
+            var compiler = _codeGen._compiler;
+            var varNum = compiler.lvaTrackedIndexToLclNum(varIndex);
+            ref var varDsc = ref compiler.lvaGetDesc(varNum);
+
+            if (varDsc.lvIsRegCandidate)
+            {
+                if (!Found)
+                {
+                    JITDUMP($"Mismatched live reg vars after {FMT_BB(_block.bbNum)}:");
+                    Found = true;
+                }
+                JITDUMP($" V{varNum:D2}");
+            }
+
+            return true;
+        }
+    }
+
     public unsafe void genCodeForBBlist()
     {
         if (Configuration.DEBUG)
@@ -77,47 +174,13 @@ public sealed partial class CodeGen
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
             // Liveness transitions alone do not restore unchanged register roots after the reset.
-            var newRegGCrefSet = RBM_NONE;
-            var newRegByrefSet = RBM_NONE;
             var removedGCVars = Configuration.DEBUG ? VarSetOps.MakeEmpty(_compiler) : null;
             var addedGCVars = Configuration.DEBUG ? VarSetOps.MakeEmpty(_compiler) : null;
-            _ = VarSetOps.VisitBits(_compiler, block.bbLiveIn, varIndex =>
-            {
-                ref var varDsc = ref _compiler.lvaGetDesc(_compiler.lvaTrackedIndexToLclNum(varIndex));
-                if (varDsc.lvIsInReg)
-                {
-                    var regMask = genGetRegMask(in varDsc);
-                    newLiveRegSet |= regMask;
-                    if (varDsc.Type == TYP_REF)
-                    {
-                        newRegGCrefSet |= regMask;
-                    }
-                    else if (varDsc.Type == TYP_BYREF)
-                    {
-                        newRegByrefSet |= regMask;
-                    }
-
-                    if (!varDsc.IsAlwaysAliveInMemory)
-                    {
-                        if (Configuration.DEBUG && _verbose &&
-                            VarSetOps.IsMember(_compiler, _gcInfo.gcVarPtrSetCur, varIndex))
-                        {
-                            VarSetOps.AddElemD(_compiler, removedGCVars!, varIndex);
-                        }
-                        VarSetOps.RemoveElemD(_compiler, _gcInfo.gcVarPtrSetCur, varIndex);
-                    }
-                }
-                if ((!varDsc.lvIsInReg || varDsc.IsAlwaysAliveInMemory) && _compiler.lvaIsGCTracked(in varDsc))
-                {
-                    if (Configuration.DEBUG && _verbose &&
-                        !VarSetOps.IsMember(_compiler, _gcInfo.gcVarPtrSetCur, varIndex))
-                    {
-                        VarSetOps.AddElemD(_compiler, addedGCVars!, varIndex);
-                    }
-                    VarSetOps.AddElemD(_compiler, _gcInfo.gcVarPtrSetCur, varIndex);
-                }
-                return true;
-            });
+            var visitor = new LiveInRegisterSetVisitor(this, removedGCVars, addedGCVars);
+            _ = VarSetOps.VisitBits(_compiler, block.bbLiveIn, ref visitor);
+            newLiveRegSet = visitor.NewLiveRegSet;
+            var newRegGCrefSet = visitor.NewRegGCrefSet;
+            var newRegByrefSet = visitor.NewRegByrefSet;
             _regSet.SetMaskVars(newLiveRegSet);
             if (Configuration.DEBUG && _compiler.verbose)
             {
@@ -376,23 +439,9 @@ public sealed partial class CodeGen
     {
         var mismatchLiveVars = VarSetOps.Diff(_compiler, block.bbLiveOut, _compiler.compCurLife);
         VarSetOps.UnionD(_compiler, mismatchLiveVars, VarSetOps.Diff(_compiler, _compiler.compCurLife, block.bbLiveOut));
-        var found = foundMismatchedRegVar;
-        _ = VarSetOps.VisitBits(_compiler, mismatchLiveVars, varIndex =>
-        {
-            var varNum = _compiler.lvaTrackedIndexToLclNum(varIndex);
-            ref var varDsc = ref _compiler.lvaGetDesc(varNum);
-            if (varDsc.lvIsRegCandidate)
-            {
-                if (!found)
-                {
-                    JITDUMP($"Mismatched live reg vars after {FMT_BB(block.bbNum)}:");
-                    found = true;
-                }
-                JITDUMP($" V{varNum:D2}");
-            }
-            return true;
-        });
-        foundMismatchedRegVar = found;
+        var visitor = new MismatchedLiveRegVarsVisitor(this, block, foundMismatchedRegVar);
+        _ = VarSetOps.VisitBits(_compiler, mismatchLiveVars, ref visitor);
+        foundMismatchedRegVar = visitor.Found;
     }
 
     private void genEmitStartBlock(BasicBlock block)

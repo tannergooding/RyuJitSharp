@@ -9,6 +9,18 @@ namespace RyuJitSharp;
 
 public sealed partial class BasicBlock
 {
+    private struct ComplexityCounter(Func<GenTree, uint> getTreeComplexity) : IGenTreeComplexity<ComplexityCounter>
+    {
+        public uint TotalComplexity;
+
+        public uint GetComplexity(GenTree tree)
+        {
+            var complexity = getTreeComplexity(tree);
+            TotalComplexity = unchecked(TotalComplexity + complexity);
+            return complexity;
+        }
+    }
+
     public bool StatementCountExceeds(uint limit) => StatementCountExceeds(limit, out _);
 
     public bool StatementCountExceeds(uint limit, out uint count)
@@ -31,18 +43,12 @@ public sealed partial class BasicBlock
 
     public bool ComplexityExceeds(Compiler compiler, uint limit, Func<GenTree, uint> getTreeComplexity)
     {
-        var localCount = 0u;
-        uint GetComplexity(GenTree tree)
-        {
-            var complexity = getTreeComplexity(tree);
-            localCount = unchecked(localCount + complexity);
-            return complexity;
-        }
+        var complexity = new ComplexityCounter(getTreeComplexity);
 
         foreach (var statement in Statements)
         {
-            var slack = unchecked(limit - localCount);
-            if (compiler.gtComplexityExceeds(statement.RootNode, slack, GetComplexity))
+            var slack = unchecked(limit - complexity.TotalComplexity);
+            if (compiler.gtComplexityExceeds(statement.RootNode, slack, ref complexity))
             {
                 return true;
             }

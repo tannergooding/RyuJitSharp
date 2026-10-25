@@ -3,24 +3,23 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-
 namespace RyuJitSharp;
 
-public struct FindNodeVisitor : IGenTreeVisitor<FindNodeVisitor>
+public ref struct FindNodeVisitor<TPredicate> : IGenTreeVisitor<FindNodeVisitor<TPredicate>>
+    where TPredicate : struct, IGenTreePredicate<TPredicate>
 {
     public static bool DoPreOrder => true;
 
-    private readonly GenTreeStack _ancestors;
-    private readonly Func<GenTree, bool> _predicate;
+    private GenTreeStack _ancestors;
+    private ref TPredicate _predicate;
     private readonly GenTreeFlags _requiredFlagsToDescendIntoTree;
 
     private GenTree? _result;
 
-    public FindNodeVisitor(Func<GenTree, bool> predicate, GenTreeFlags requiredFlagsToDescendIntoTree)
+    public FindNodeVisitor(ref TPredicate predicate, GenTreeFlags requiredFlagsToDescendIntoTree)
     {
         _ancestors = [];
-        _predicate = predicate;
+        _predicate = ref predicate;
         _requiredFlagsToDescendIntoTree = requiredFlagsToDescendIntoTree;
     }
 
@@ -36,7 +35,7 @@ public struct FindNodeVisitor : IGenTreeVisitor<FindNodeVisitor>
             return Compiler.WALK_SKIP_SUBTREES;
         }
 
-        if (_predicate(use))
+        if (_predicate.IsMatch(use))
         {
             _result = use;
             return Compiler.WALK_ABORT;
@@ -46,5 +45,5 @@ public struct FindNodeVisitor : IGenTreeVisitor<FindNodeVisitor>
     }
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<FindNodeVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<FindNodeVisitor<TPredicate>>.WalkTree(ref this, ref use, user, _ancestors);
 }

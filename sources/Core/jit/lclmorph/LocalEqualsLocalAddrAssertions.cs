@@ -34,6 +34,16 @@ internal readonly record struct LocalEqualsLocalAddrAssertion(int DestLclNum, in
 
 internal sealed class LocalEqualsLocalAddrAssertions
 {
+    private readonly struct ClearDefinedLocalVisitor(LocalEqualsLocalAddrAssertions owner)
+        : IIntActionVisitor<ClearDefinedLocalVisitor>
+    {
+        public void Visit(int lclNum)
+        {
+            JITDUMP($"  V{lclNum:D2}");
+            owner.Clear(lclNum);
+        }
+    }
+
     private readonly Compiler _compiler;
     private readonly LoopDefinitions _loopDefs;
     private readonly List<LocalEqualsLocalAddrAssertion> _assertions = [];
@@ -135,10 +145,8 @@ internal sealed class LocalEqualsLocalAddrAssertions
         if ((loop is not null) && (CurrentAssertions is not 0))
         {
             JITDUMP($"Block {FMT_BB(block.bbNum)} is a loop header; clearing assertions about defined locals\n");
-            _loopDefs.VisitDefinedLocalNums(loop, lclNum => {
-                JITDUMP($"  V{lclNum:D2}");
-                Clear(lclNum);
-            });
+            var visitor = new ClearDefinedLocalVisitor(this);
+            _loopDefs.VisitDefinedLocalNums(loop, ref visitor);
             JITDUMP("\n");
         }
 

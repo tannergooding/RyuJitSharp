@@ -13,6 +13,37 @@ namespace RyuJitSharp;
 
 public sealed partial class RangeCheck
 {
+    private struct ReachingAssertionRangeVisitor : Compiler.IAssertionVisitor<ReachingAssertionRangeVisitor>
+    {
+        private readonly Compiler _compiler;
+        private readonly var_types _type;
+        private readonly HashSet<ValueNum> _visited;
+        private int _budget;
+
+        public Range PhiRange;
+
+        public ReachingAssertionRangeVisitor(
+            Compiler compiler, var_types type, int budget, HashSet<ValueNum> visited)
+        {
+            _compiler = compiler;
+            _type = type;
+            _budget = budget;
+            _visited = visited;
+            PhiRange = new Range(new Limit(LimitType.Undef));
+        }
+
+        public Compiler.AssertVisit Visit(ValueNum reachingVN, ASSERT_TP? reachingAssertions)
+        {
+            var edgeRange = reachingVN == ValueNumStore.NoVN
+                ? GetRangeFromType(_type)
+                : GetRangeFromAssertionsWorker(
+                    _compiler, reachingVN, reachingAssertions, --_budget, _visited);
+            PhiRange = PhiRange.IsUndef() ? edgeRange : RangeOps.Merge(PhiRange, edgeRange, false);
+            return edgeRange.IsConstantRange() && !edgeRange.IsFullRange()
+                ? Compiler.AssertVisit.Continue : Compiler.AssertVisit.Abort;
+        }
+    }
+
     public static Range GetRange(Compiler comp, GenTree tree, BasicBlock block,
         ASSERT_TP? assertions, bool fast = true, ValueNum preferredBoundVN = ValueNumStore.NoVN)
     {
@@ -332,22 +363,14 @@ public sealed partial class RangeCheck
             return result;
         }
 
-        var phiRange = new Range(new Limit(LimitType.Undef));
-        Compiler.AssertVisit Visit(ValueNum reachingVN, ASSERT_TP? reachingAssertions)
-        {
-            var edgeRange = reachingVN == ValueNumStore.NoVN
-                ? GetRangeFromType(type)
-                : GetRangeFromAssertionsWorker(comp, reachingVN, reachingAssertions, --budget, visited);
-            phiRange = phiRange.IsUndef() ? edgeRange : RangeOps.Merge(phiRange, edgeRange, false);
-            return edgeRange.IsConstantRange() && !edgeRange.IsFullRange()
-                ? Compiler.AssertVisit.Continue : Compiler.AssertVisit.Abort;
-        }
+        var visitor = new ReachingAssertionRangeVisitor(comp, type, budget, visited);
 
         if (store.IsPhiDef(vn) && visited.Add(vn) &&
-            (comp.optVisitReachingAssertions(vn, Visit) is Compiler.AssertVisit.Continue) && !phiRange.IsUndef())
+            (comp.optVisitReachingAssertions(vn, ref visitor) is Compiler.AssertVisit.Continue) &&
+            !visitor.PhiRange.IsUndef())
         {
-            assert(phiRange.IsConstantRange());
-            result = phiRange;
+            assert(visitor.PhiRange.IsConstantRange());
+            result = visitor.PhiRange;
         }
 
         MergeEdgeAssertionsWorker(comp, vn, ValueNumStore.NoVN, assertions, ref result,

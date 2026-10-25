@@ -9,6 +9,25 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private readonly struct MarkPointerVisitor(Compiler compiler, GenTree root) : IIntActionVisitor<MarkPointerVisitor>
+    {
+        public void Visit(int lclNum)
+        {
+            ref var descriptor = ref compiler.lvaGetDesc(lclNum);
+            if (Configuration.DEBUG && !descriptor.lvIsPtr)
+            {
+                JITDUMP($"Marking V{lclNum:D2} as a pointer because of [{root.TreeId:D6}]\n");
+            }
+            descriptor.lvIsPtr = true;
+        }
+    }
+
+    private readonly struct UnionAssignGroupVisitor(Compiler compiler, int groupLocal, GenTree assignment)
+        : IIntActionVisitor<UnionAssignGroupVisitor>
+    {
+        public void Visit(int lclNum) => compiler.gsUnionAssignGroups(groupLocal, lclNum, assignment);
+    }
+
     public PhaseStatus gsPhase()
     {
         if (NeedsGSSecurityCookie)
@@ -128,42 +147,44 @@ public partial class Compiler
 
     public void gsVisitDependentLocals(GenTree node, Action<int> visit)
     {
-        Visit(node, null);
+        var visitor = new IntActionDelegateVisitor(visit);
+        gsVisitDependentLocals(node, ref visitor);
+    }
 
-        void Visit(GenTree current, GenTree? user)
+    private void gsVisitDependentLocals<TVisitor>(GenTree node, ref TVisitor visitor)
+        where TVisitor : struct, IIntActionVisitor<TVisitor>
+    {
+        VisitDependentLocals(node, user: null, ref visitor);
+    }
+
+    private static void VisitDependentLocals<TVisitor>(GenTree current, GenTree? user, ref TVisitor visitor)
+        where TVisitor : struct, IIntActionVisitor<TVisitor>
+    {
+        if (current.Oper is GT_IND or GT_BLK or GT_MDARR_LENGTH or GT_MDARR_LOWER_BOUND or GT_CALL)
         {
-            if (current.Oper is GT_IND or GT_BLK or GT_MDARR_LENGTH or GT_MDARR_LOWER_BOUND or GT_CALL)
-            {
-                return;
-            }
+            return;
+        }
 
-            if ((user is not null) && (user.Oper is GT_SELECT) && (current == user.AsConditional().Cond))
-            {
-                return;
-            }
+        if ((user is not null) && (user.Oper is GT_SELECT) && (current == user.AsConditional().Cond))
+        {
+            return;
+        }
 
-            if (current.Oper is GT_LCL_VAR or GT_LCL_FLD)
-            {
-                visit(current.AsLclVarCommon().LclNum);
-            }
+        if (current.Oper is GT_LCL_VAR or GT_LCL_FLD)
+        {
+            visitor.Visit(current.AsLclVarCommon().LclNum);
+        }
 
-            foreach (var operand in current.Operands)
-            {
-                Visit(operand, current);
-            }
+        foreach (var operand in current.Operands)
+        {
+            VisitDependentLocals(operand, current, ref visitor);
         }
     }
 
     public void gsMarkPointers(GenTree tree)
     {
-        gsVisitDependentLocals(tree, lclNum => {
-            ref var descriptor = ref lvaGetDesc(lclNum);
-            if (Configuration.DEBUG && !descriptor.lvIsPtr)
-            {
-                JITDUMP($"Marking V{lclNum:D2} as a pointer because of [{tree.TreeId:D6}]\n");
-            }
-            descriptor.lvIsPtr = true;
-        });
+        var visitor = new MarkPointerVisitor(this, tree);
+        gsVisitDependentLocals(tree, ref visitor);
     }
 
     public bool gsFindVulnerableParams()
@@ -189,7 +210,8 @@ public partial class Compiler
                     case GT_STORE_LCL_FLD:
                     {
                         var local = node.AsLclVarCommon();
-                        gsVisitDependentLocals(local.Data, lclNum => gsUnionAssignGroups(local.LclNum, lclNum, local));
+                        var visitor = new UnionAssignGroupVisitor(this, local.LclNum, local);
+                        gsVisitDependentLocals(local.Data, ref visitor);
                         break;
                     }
 

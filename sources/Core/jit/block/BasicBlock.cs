@@ -614,22 +614,10 @@ public sealed partial class BasicBlock : LIR.Range
     public bool EndsWithTailCallOrJmp(Compiler comp, bool fastTailCallsOnly = false)
         => EndsWithJmpMethod(comp) || EndsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly: false, out _);
 
-    private readonly struct DelegateBlockVisitor : IBasicBlockVisitor<DelegateBlockVisitor>
-    {
-        private readonly Func<BasicBlock, BasicBlockVisit> _visitor;
-
-        public DelegateBlockVisitor(Func<BasicBlock, BasicBlockVisit> visitor)
-        {
-            _visitor = visitor;
-        }
-
-        public BasicBlockVisit Visit(BasicBlock block) => _visitor(block);
-    }
-
     /// <summary>Visit enclosed finally/fault handlers that can execute after this filter during second-pass EH.</summary>
     public BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler comp, Func<BasicBlock, BasicBlockVisit> func)
     {
-        var visitor = new DelegateBlockVisitor(func);
+        var visitor = new BasicBlockDelegateVisitor(func);
         return VisitEHEnclosedHandlerSecondPassSuccs(comp, ref visitor);
     }
 
@@ -689,7 +677,7 @@ public sealed partial class BasicBlock : LIR.Range
 
     public BasicBlockVisit VisitRegularSuccs(Compiler comp, Func<BasicBlock, BasicBlockVisit> func)
     {
-        var visitor = new DelegateBlockVisitor(func);
+        var visitor = new BasicBlockDelegateVisitor(func);
         return VisitRegularSuccs(comp, ref visitor);
     }
 

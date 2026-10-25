@@ -138,8 +138,26 @@ internal static unsafe class MorphTreeSupportTests
             }), Is.EqualTo(exceeds));
             GenTree[] order = [root, left, first, second, third];
             Assert.That(visits, Is.EqualTo(order[..visited]));
+
+            var constrainedVisits = new List<GenTree>();
+            var complexity = new RecordingComplexity(constrainedVisits);
+            Assert.That(compiler.gtComplexityExceeds(root, limit, ref complexity), Is.EqualTo(exceeds));
+            Assert.That(constrainedVisits, Is.EqualTo(order[..visited]));
+            Assert.That(complexity.Count, Is.EqualTo((uint)visited));
             Assert.That(root.Op1, Is.SameAs(left));
         });
+    }
+
+    private struct RecordingComplexity(List<GenTree> visited) : IGenTreeComplexity<RecordingComplexity>
+    {
+        public uint Count;
+
+        public uint GetComplexity(GenTree node)
+        {
+            visited.Add(node);
+            Count++;
+            return 1;
+        }
     }
 
     [TestCase(0, false)]

@@ -17,13 +17,13 @@ public partial class Compiler
 {
     private sealed partial class StrengthReductionContext
     {
-        private bool InitializeCursors(GenTreeLclVarCommon primaryLocal, ScevAddRec primaryIV)
+        private readonly struct InitializeCursorsVisitor(
+            StrengthReductionContext context, GenTreeLclVarCommon primaryLocal, ScevAddRec primaryIV)
+            : PerLoopInfo.IOccurrenceVisitor<InitializeCursorsVisitor>
         {
-            _cursors1.Clear();
-            _cursors2.Clear();
-            _intermediateIVStores.Clear();
-            var visited = _loopInfo.VisitOccurrences(_loop, primaryLocal.LclNum, (block, stmt, tree) => {
-                if (IsUseExpectedToBeRemoved(block, stmt, tree))
+            public bool Visit(BasicBlock block, Statement statement, GenTreeLclVarCommon tree)
+            {
+                if (context.IsUseExpectedToBeRemoved(block, statement, tree))
                 {
                     return true;
                 }
@@ -31,16 +31,62 @@ public partial class Compiler
                 {
                     return false;
                 }
-                var iv = _scevContext.Analyze(block, tree);
+
+                var iv = context._scevContext.Analyze(block, tree);
                 if (iv is null)
                 {
                     return false;
                 }
-                assert(Scev.Equals(_scevContext.Simplify(iv, _assumptions), primaryIV));
-                _cursors1.Add(new CursorInfo(block, stmt, tree, primaryIV));
-                _cursors2.Add(new CursorInfo(block, stmt, tree, primaryIV));
+
+                assert(Scev.Equals(context._scevContext.Simplify(iv, context._assumptions), primaryIV));
+                context._cursors1.Add(new CursorInfo(block, statement, tree, primaryIV));
+                context._cursors2.Add(new CursorInfo(block, statement, tree, primaryIV));
                 return true;
-            });
+            }
+        }
+
+        private struct ExpandStoredCursorVisitor(
+            StrengthReductionContext context,
+            GenTree parent,
+            GenTreeLclVarCommon storedLocal,
+            ScevAddRec cursorIV,
+            List<CursorInfo> cursors,
+            List<CursorInfo> otherCursors) : PerLoopInfo.IOccurrenceVisitor<ExpandStoredCursorVisitor>
+        {
+            public int NumCreated;
+
+            public bool Visit(BasicBlock block, Statement statement, GenTreeLclVarCommon use)
+            {
+                if (use == parent)
+                {
+                    return true;
+                }
+                if ((use.Oper is not GT_LCL_VAR) || (use.SsaNum != storedLocal.SsaNum))
+                {
+                    return false;
+                }
+
+                var iv = context._scevContext.Analyze(block, use);
+                if (iv is null ||
+                    !Scev.Equals(context._scevContext.Simplify(iv, context._assumptions), cursorIV))
+                {
+                    return false;
+                }
+
+                cursors.Add(new CursorInfo(block, statement, use, cursorIV));
+                otherCursors.Add(new CursorInfo(block, statement, use, cursorIV));
+                NumCreated++;
+                return true;
+            }
+        }
+
+        private bool InitializeCursors(GenTreeLclVarCommon primaryLocal, ScevAddRec primaryIV)
+        {
+            _cursors1.Clear();
+            _cursors2.Clear();
+            _intermediateIVStores.Clear();
+            var visitor = new InitializeCursorsVisitor(this, primaryLocal, primaryIV);
+            var visited = _loopInfo.VisitOccurrences(_loop, primaryLocal.LclNum, ref visitor);
             if (!visited || _cursors1.Count == 0)
             {
                 JITDUMP("  Could not create cursors for all loop uses of primary IV\n");
@@ -193,32 +239,13 @@ public partial class Compiler
                             storedLocal.HasSsaName &&
                             !_compiler.optLocalHasNonLoopUses(storedLocal.LclNum, _loop, _loopInfo))
                         {
-                            var numCreated = 0;
-                            var expanded = _loopInfo.VisitOccurrences(_loop, storedLocal.LclNum,
-                                (block, stmt, use) => {
-                                    if (use == parent)
-                                    {
-                                        return true;
-                                    }
-                                    if ((use.Oper is not GT_LCL_VAR) || (use.SsaNum != storedLocal.SsaNum))
-                                    {
-                                        return false;
-                                    }
-                                    var iv = _scevContext.Analyze(block, use);
-                                    if (iv is null ||
-                                        !Scev.Equals(_scevContext.Simplify(iv, _assumptions), cursorIV))
-                                    {
-                                        return false;
-                                    }
-                                    cursors.Add(new CursorInfo(block, stmt, use, cursorIV));
-                                    otherCursors.Add(new CursorInfo(block, stmt, use, cursorIV));
-                                    numCreated++;
-                                    return true;
-                                });
+                            var visitor = new ExpandStoredCursorVisitor(
+                                this, parent, storedLocal, cursorIV, cursors, otherCursors);
+                            var expanded = _loopInfo.VisitOccurrences(_loop, storedLocal.LclNum, ref visitor);
                             if (expanded)
                             {
                                 JITDUMP($"  [{current.TreeId:D6}] was the data of store " +
-                                    $"[{parent.TreeId:D6}]; expanded to {numCreated} new cursors, " +
+                                    $"[{parent.TreeId:D6}]; expanded to {visitor.NumCreated} new cursors, " +
                                     "and will replace with a store of 0\n");
                                 _intermediateIVStores.Add(new CursorInfo(cursor.Block, cursor.Stmt, parent, null));
                                 var last = cursors.Count - 1;
@@ -229,8 +256,8 @@ public partial class Compiler
                                 i--;
                                 break;
                             }
-                            cursors.RemoveRange(cursors.Count - numCreated, numCreated);
-                            otherCursors.RemoveRange(otherCursors.Count - numCreated, numCreated);
+                            cursors.RemoveRange(cursors.Count - visitor.NumCreated, visitor.NumCreated);
+                            otherCursors.RemoveRange(otherCursors.Count - visitor.NumCreated, visitor.NumCreated);
                         }
                         break;
                     }

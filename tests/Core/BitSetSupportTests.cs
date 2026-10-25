@@ -16,6 +16,8 @@ internal static class BitSetSupportTests
     private static readonly uint[] s_expectedBitIndexes = [0, 10, 63, 64, 129];
     private static readonly int[] s_expectedVisitedBits = [0, 1, 2, 3, 4, 5, 6, 7];
     private static readonly int[] s_expectedVisitedBitsReverse = [7, 6, 5, 4, 3, 2, 1, 0];
+    private static readonly int[] s_expectedVisitedBitsUntilAbort = [0, 1, 2, 3, 4, 5];
+    private static readonly int[] s_expectedVisitedBitsReverseUntilAbort = [7, 6, 5];
 
     [Test]
     public static void UninitializedValueIsDistinguishedFromNonemptyBitSet()
@@ -87,6 +89,74 @@ internal static class BitSetSupportTests
             {
                 File.Delete(path);
             }
+        }
+    }
+
+    [Test]
+    public static void ConstrainedBitVisitorsPreserveAscendingAndReverseOrder()
+    {
+        var environment = new TestEnvironment(size: 8);
+        var bitSet = BitSetOps<TestEnvironment, TestBitSetTraits>.MakeFull(environment);
+        var visitedBits = new List<int>();
+        var visitor = new RecordingBitVisitor(visitedBits, stopAt: 5);
+
+        Assert.That(
+            BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.VisitBits(environment, bitSet, ref visitor),
+            Is.False);
+        Assert.That(visitedBits, Is.EqualTo(s_expectedVisitedBitsUntilAbort));
+
+        visitedBits.Clear();
+        visitor = new RecordingBitVisitor(visitedBits, stopAt: 5);
+
+        Assert.That(
+            BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.VisitBitsReverse(
+                environment, bitSet, ref visitor),
+            Is.False);
+        Assert.That(visitedBits, Is.EqualTo(s_expectedVisitedBitsReverseUntilAbort));
+    }
+
+    [Test]
+    public static void ConstrainedBitVisitorDoesNotAllocateAfterWarmup()
+    {
+        var environment = new TestEnvironment(size: 8);
+        var bitSet = BitSetOps<TestEnvironment, TestBitSetTraits>.MakeFull(environment);
+        var visitor = new CountingBitVisitor();
+
+        for (var index = 0; index < 32; index++)
+        {
+            _ = BitSetOps<TestEnvironment, TestBitSetTraits>.VisitBits(environment, bitSet, ref visitor);
+        }
+
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+
+        for (var index = 0; index < 128; index++)
+        {
+            _ = BitSetOps<TestEnvironment, TestBitSetTraits>.VisitBits(environment, bitSet, ref visitor);
+        }
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+        Assert.That(visitor.Count, Is.EqualTo(8 * (32 + 128)));
+        Assert.That(allocated, Is.Zero);
+    }
+
+    private struct RecordingBitVisitor(List<int> visitedBits, int stopAt)
+        : IBitSetVisitor<RecordingBitVisitor>
+    {
+        public readonly bool Visit(int bitIndex)
+        {
+            visitedBits.Add(bitIndex);
+            return bitIndex != stopAt;
+        }
+    }
+
+    private struct CountingBitVisitor : IBitSetVisitor<CountingBitVisitor>
+    {
+        public int Count;
+
+        public bool Visit(int bitIndex)
+        {
+            Count++;
+            return true;
         }
     }
 

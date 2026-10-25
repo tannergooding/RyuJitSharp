@@ -15,6 +15,96 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private struct WideningCostVisitor : PerLoopInfo.IOccurrenceVisitor<WideningCostVisitor>
+    {
+        private readonly Compiler _compiler;
+        private readonly int _extensionSize;
+        private readonly double _extensionCost;
+
+        public int SavedSize;
+        public double SavedCost;
+
+        public WideningCostVisitor(Compiler compiler, int extensionSize, double extensionCost)
+        {
+            _compiler = compiler;
+            _extensionSize = extensionSize;
+            _extensionCost = extensionCost;
+            SavedSize = 0;
+            SavedCost = 0;
+        }
+
+        public bool Visit(BasicBlock block, Statement statement, GenTreeLclVarCommon local)
+        {
+            var parent = _compiler.optFindIVParent(statement, local);
+            if ((parent is null) || (parent.Oper is not GT_CAST))
+            {
+                return true;
+            }
+
+            var cast = parent.AsCast();
+            if ((cast.CastType is not TYP_LONG) || !cast.IsUnsigned || cast.HasOverflowCheck)
+            {
+                return true;
+            }
+
+            var grandparent = _compiler.optFindIVParent(statement, cast);
+            if ((grandparent is not null) && (grandparent.Oper is GT_STORE_LCL_VAR))
+            {
+                return true;
+            }
+
+            SavedSize += _extensionSize;
+            SavedCost += block.getBBWeight(_compiler) * _extensionCost;
+            return true;
+        }
+    }
+
+    private struct WideningExitVisitor : IBasicBlockVisitor<WideningExitVisitor>
+    {
+        private readonly Compiler _compiler;
+        private readonly int _lclNum;
+        private readonly int _extensionSize;
+        private readonly double _extensionCost;
+
+        public int SavedSize;
+        public double SavedCost;
+
+        public WideningExitVisitor(
+            Compiler compiler, int lclNum, int extensionSize, double extensionCost, int savedSize, double savedCost)
+        {
+            _compiler = compiler;
+            _lclNum = lclNum;
+            _extensionSize = extensionSize;
+            _extensionCost = extensionCost;
+            SavedSize = savedSize;
+            SavedCost = savedCost;
+        }
+
+        public BasicBlockVisit Visit(BasicBlock exit)
+        {
+            if (_compiler.optLocalIsLiveIntoBlock(_lclNum, exit))
+            {
+                SavedSize -= _extensionSize;
+                SavedCost -= exit.getBBWeight(_compiler) * _extensionCost;
+            }
+
+            return Continue;
+        }
+    }
+
+    private readonly struct WidenedIVStatementVisitor(Compiler compiler, int lclNum, int newLclNum)
+        : PerLoopInfo.IStatementOccurrenceVisitor<WidenedIVStatementVisitor>
+    {
+        public bool Visit(BasicBlock block, Statement statement)
+        {
+            JITDUMP($"Replacing V{lclNum:D2} -> V{newLclNum:D2} in [{statement.RootNode.TreeId:D6}]\n");
+            DISPSTMT(statement);
+            JITDUMP("\n");
+            compiler.optReplaceWidenedIV(lclNum, SsaConfig.RESERVED_SSA_NUM, newLclNum, statement);
+            return true;
+        }
+    }
+
     private GenTree? optFindIVParent(Statement stmt, GenTree tree)
     {
         var link = gtFindLink(stmt, tree);
@@ -58,30 +148,10 @@ public partial class Compiler
 
         const int extensionSize = 3;
         const double extensionCost = 2;
-        var savedCost = 0.0;
-        var savedSize = 0;
-        _ = loopInfo.VisitOccurrences(loop, lclNum, (block, stmt, local) => {
-            var parent = optFindIVParent(stmt, local);
-            if ((parent is null) || (parent.Oper is not GT_CAST))
-            {
-                return true;
-            }
-
-            var cast = parent.AsCast();
-            if ((cast.CastType is not TYP_LONG) || !cast.IsUnsigned || cast.HasOverflowCheck)
-            {
-                return true;
-            }
-            var grandparent = optFindIVParent(stmt, cast);
-            if ((grandparent is not null) && (grandparent.Oper is GT_STORE_LCL_VAR))
-            {
-                return true;
-            }
-
-            savedSize += extensionSize;
-            savedCost += block.getBBWeight(this) * extensionCost;
-            return true;
-        });
+        var occurrenceVisitor = new WideningCostVisitor(this, extensionSize, extensionCost);
+        _ = loopInfo.VisitOccurrences(loop, lclNum, ref occurrenceVisitor);
+        var savedCost = occurrenceVisitor.SavedCost;
+        var savedSize = occurrenceVisitor.SavedSize;
 
         if (!initedToConstant)
         {
@@ -90,14 +160,11 @@ public partial class Compiler
         }
 
         assert(lvaGetDesc(lclNum).lvInSsa);
-        _ = loop.VisitRegularExitBlocks(exit => {
-            if (optLocalIsLiveIntoBlock(lclNum, exit))
-            {
-                savedSize -= extensionSize;
-                savedCost -= exit.getBBWeight(this) * extensionCost;
-            }
-            return Continue;
-        });
+        var exitVisitor = new WideningExitVisitor(
+            this, lclNum, extensionSize, extensionCost, savedSize, savedCost);
+        _ = loop.VisitRegularExitBlocks(ref exitVisitor);
+        savedSize = exitVisitor.SavedSize;
+        savedCost = exitVisitor.SavedCost;
 
         const double allowedSizeRegressionPerCycleImprovement = 2;
         var entry = fgFirstBB;
@@ -345,7 +412,8 @@ public partial class Compiler
             }
             for (var stmt = initBlock.FirstStmt; stmt is not null; stmt = stmt.NextStmt)
             {
-                if (gtFindNodeInTree(stmt.RootNode, tree => tree == narrowInitRoot, GTF_EMPTY) is not null)
+                var predicate = new NodeIdentityPredicate(narrowInitRoot);
+                if (gtFindNodeInTree(stmt.RootNode, ref predicate, GTF_EMPTY) is not null)
                 {
                     insertInitAfter = stmt;
                     break;
@@ -392,13 +460,8 @@ public partial class Compiler
         optBestEffortReplaceNarrowIVUses(lclNum, startLocal.SsaNum, newLclNum,
             initBlock, initStmt.NextStmt);
         JITDUMP("    Replacing inside the loop\n");
-        _ = loopInfo.VisitStatementsWithOccurrences(loop, lclNum, (_, stmt) => {
-            JITDUMP($"Replacing V{lclNum:D2} -> V{newLclNum:D2} in [{stmt.RootNode.TreeId:D6}]\n");
-            DISPSTMT(stmt);
-            JITDUMP("\n");
-            optReplaceWidenedIV(lclNum, SsaConfig.RESERVED_SSA_NUM, newLclNum, stmt);
-            return true;
-        });
+        var replaceVisitor = new WidenedIVStatementVisitor(this, lclNum, newLclNum);
+        _ = loopInfo.VisitStatementsWithOccurrences(loop, lclNum, ref replaceVisitor);
 
         optSinkWidenedIV(lclNum, newLclNum, loop);
         loopInfo.Invalidate(loop);

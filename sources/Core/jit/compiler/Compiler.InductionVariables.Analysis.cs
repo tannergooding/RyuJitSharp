@@ -174,6 +174,24 @@ public partial class Compiler
         return (store.Data.Flags & GTF_SIDE_EFFECT) == 0;
     }
 
+    private readonly struct IsIVUpdateVisitor(Compiler compiler, int lclNum)
+        : PerLoopInfo.IStatementOccurrenceVisitor<IsIVUpdateVisitor>
+    {
+        public readonly bool Visit(BasicBlock block, Statement statement)
+            => compiler.optIsUpdateOfIVWithoutSideEffects(statement.RootNode, lclNum);
+    }
+
+    private readonly struct RemoveUnusedIVStatementVisitor(Compiler compiler)
+        : PerLoopInfo.IStatementOccurrenceVisitor<RemoveUnusedIVStatementVisitor>
+    {
+        public readonly bool Visit(BasicBlock block, Statement statement)
+        {
+            JITDUMP($"  Removing {FMT_STMT(statement.Id)}\n");
+            compiler.fgRemoveStmt(block, statement);
+            return true;
+        }
+    }
+
     private bool optRemoveUnusedIVs(FlowGraphNaturalLoop loop, PerLoopInfo loopInfo)
     {
         JITDUMP("  Now looking for unnecessary primary IVs\n");
@@ -188,19 +206,16 @@ public partial class Compiler
                 continue;
             }
 
-            if (!loopInfo.VisitStatementsWithOccurrences(loop, lclNum,
-                (_, occurrenceStmt) => optIsUpdateOfIVWithoutSideEffects(occurrenceStmt.RootNode, lclNum)))
+            var updateVisitor = new IsIVUpdateVisitor(this, lclNum);
+            if (!loopInfo.VisitStatementsWithOccurrences(loop, lclNum, ref updateVisitor))
             {
                 JITDUMP(" has essential uses, cannot remove\n");
                 continue;
             }
 
             JITDUMP(" has no essential uses and will be removed\n");
-            _ = loopInfo.VisitStatementsWithOccurrences(loop, lclNum, (block, occurrenceStmt) => {
-                JITDUMP($"  Removing {FMT_STMT(occurrenceStmt.Id)}\n");
-                fgRemoveStmt(block, occurrenceStmt);
-                return true;
-            });
+            var removeVisitor = new RemoveUnusedIVStatementVisitor(this);
+            _ = loopInfo.VisitStatementsWithOccurrences(loop, lclNum, ref removeVisitor);
             removed++;
             loopInfo.Invalidate(loop);
         }

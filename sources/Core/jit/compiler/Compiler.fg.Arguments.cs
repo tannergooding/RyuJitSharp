@@ -10,6 +10,30 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private unsafe struct OutgoingArgTempVisitor(
+        Compiler compiler,
+        hashBv availableTemps,
+        CORINFO_CLASS_HANDLE copyClass) : IHbvBitVisitor<OutgoingArgTempVisitor>
+    {
+        public int Temporary;
+
+        public HbvWalk Visit(ulong localNumber)
+        {
+            var layout = compiler.lvaTable[(int)localNumber].Layout;
+            assert(layout is not null);
+
+            if (!layout.IsCustomLayout && (layout.ClassHandle == copyClass))
+            {
+                Temporary = (int)localNumber;
+                JITDUMP($"reusing outgoing struct arg V{Temporary:D2}\n");
+                availableTemps.clearBit(localNumber);
+                return HbvWalk.Abort;
+            }
+
+            return HbvWalk.Continue;
+        }
+    }
+
     internal GenTreeCall fgMorphArgs(GenTreeCall call)
     {
         var flagsSummary = GTF_EMPTY;
@@ -395,19 +419,13 @@ public partial class Compiler
         if (!MinOpts && (fgOrder is FGOrderTree))
         {
             assert(fgAvailableOutgoingArgTemps is not null);
-            found = ForEachHbvBitSet(fgAvailableOutgoingArgTemps, localNumber => {
-                var layout = lvaTable[(int)localNumber].Layout;
-                assert(layout is not null);
-                if (!layout.IsCustomLayout && (layout.ClassHandle == copyClass))
-                {
-                    temporary = (int)localNumber;
-                    JITDUMP($"reusing outgoing struct arg V{temporary:D2}\n");
-                    fgAvailableOutgoingArgTemps.clearBit(localNumber);
-                    return HbvWalk.Abort;
-                }
+            var visitor = new OutgoingArgTempVisitor(this, fgAvailableOutgoingArgTemps, copyClass);
+            found = ForEachHbvBitSet(fgAvailableOutgoingArgTemps, ref visitor) is HbvWalk.Abort;
 
-                return HbvWalk.Continue;
-            }) == HbvWalk.Abort;
+            if (found)
+            {
+                temporary = visitor.Temporary;
+            }
         }
 
         if (!found)

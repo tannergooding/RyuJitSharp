@@ -12,7 +12,7 @@ public sealed partial class BasicBlock
 {
     public BasicBlockVisit VisitAllSuccs(Compiler compiler, Func<BasicBlock, BasicBlockVisit> visitor, bool useProfile = false)
     {
-        var adapter = new DelegateBlockVisitor(visitor);
+        var adapter = new BasicBlockDelegateVisitor(visitor);
         return VisitAllSuccs(compiler, ref adapter, useProfile);
     }
 
@@ -44,7 +44,7 @@ public sealed partial class BasicBlock
 
     public BasicBlockVisit VisitEHSuccs(Compiler compiler, Func<BasicBlock, BasicBlockVisit> visitor)
     {
-        var adapter = new DelegateBlockVisitor(visitor);
+        var adapter = new BasicBlockDelegateVisitor(visitor);
         return VisitEHSuccs(compiler, ref adapter);
     }
 

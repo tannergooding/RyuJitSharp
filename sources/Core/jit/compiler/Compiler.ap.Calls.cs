@@ -10,6 +10,15 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private readonly unsafe struct SubtypeAssertionVisitor(Compiler compiler, ValueNum castToVN, int budget)
+        : IAssertionVisitor<SubtypeAssertionVisitor>
+    {
+        public AssertVisit Visit(ValueNum reachingVN, ASSERT_TP? reachingAssertions)
+            => compiler.optAssertionVNIsSubtype(reachingVN, castToVN, reachingAssertions, budget - 1)
+                ? AssertVisit.Continue
+                : AssertVisit.Abort;
+    }
+
     public unsafe bool optAssertionVNIsSubtype(ValueNum objectVN, ValueNum castToVN, ASSERT_TP? assertions, int budget = 10)
     {
         if ((budget <= 0) || (objectVN == ValueNumStore.NoVN))
@@ -57,9 +66,8 @@ public partial class Compiler
             }
         }
 
-        return optVisitReachingAssertions(objectVN, (reachingVN, reachingAssertions) =>
-            optAssertionVNIsSubtype(reachingVN, castToVN, reachingAssertions, budget - 1) ? AssertVisit.Continue : AssertVisit.Abort)
-            is AssertVisit.Continue;
+        var visitor = new SubtypeAssertionVisitor(this, castToVN, budget);
+        return optVisitReachingAssertions(objectVN, ref visitor) is AssertVisit.Continue;
     }
 
     public GenTree? optAssertionProp_Call(ASSERT_TP? assertions, GenTreeCall call, Statement? statement)

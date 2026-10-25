@@ -52,6 +52,13 @@ public static partial class Globals
 
     public static HbvWalk ForEachHbvBitSet(hashBv bv, Func<indexType, HbvWalk> func)
     {
+        var visitor = new DelegateHbvBitVisitor(func);
+        return ForEachHbvBitSet(bv, ref visitor);
+    }
+
+    public static HbvWalk ForEachHbvBitSet<TVisitor>(hashBv bv, ref TVisitor visitor)
+        where TVisitor : struct, IHbvBitVisitor<TVisitor>, allows ref struct
+    {
         for (var hashNum = 0; hashNum < bv.hashtable_size(); hashNum++)
         {
             var node = bv.nodeArr[hashNum];
@@ -70,7 +77,7 @@ public static partial class Globals
                         var index = AddIndex(AddIndex(baseIndex, (indexType)(el * BITS_PER_ELEMENT)), (indexType)bit);
                         bits ^= (indexType)1 << bit;
 
-                        if (func(index) == HbvWalk.Abort)
+                        if (visitor.Visit(index) == HbvWalk.Abort)
                         {
                             return HbvWalk.Abort;
                         }
@@ -82,6 +89,12 @@ public static partial class Globals
         }
 
         return HbvWalk.Continue;
+    }
+
+    private readonly struct DelegateHbvBitVisitor(Func<indexType, HbvWalk> visitor)
+        : IHbvBitVisitor<DelegateHbvBitVisitor>
+    {
+        public HbvWalk Visit(ulong index) => visitor(index);
     }
 
     [System.Diagnostics.Conditional("DEBUG")]

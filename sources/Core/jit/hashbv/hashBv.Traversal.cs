@@ -13,60 +13,84 @@ namespace RyuJitSharp;
 
 public sealed partial class hashBv
 {
-    [Conditional("DEBUG")]
-    public void dump()
+    private struct DumpBitVisitor : IHbvBitVisitor<DumpBitVisitor>
     {
-        var first = true;
-        jitprintf("{");
-        _ = ForEachHbvBitSet(this, index =>
+        private bool _first;
+
+        public DumpBitVisitor()
         {
-            if (!first)
+            _first = true;
+        }
+
+        public HbvWalk Visit(ulong index)
+        {
+            if (!_first)
             {
                 jitprintf(" ");
             }
 
             jitprintf($"{index}");
-            first = false;
+            _first = false;
             return HbvWalk.Continue;
-        });
+        }
+    }
+
+    private struct DumpFancyBitVisitor : IHbvBitVisitor<DumpFancyBitVisitor>
+    {
+        public ulong LastOne;
+        public ulong LastZero;
+
+        public DumpFancyBitVisitor()
+        {
+            LastOne = Globals.NormalizeIndex(ulong.MaxValue);
+            LastZero = Globals.NormalizeIndex(ulong.MaxValue);
+        }
+
+        public HbvWalk Visit(ulong index)
+        {
+            if (LastOne != unchecked(index - 1))
+            {
+                if (unchecked(LastZero + 1) != LastOne)
+                {
+                    jitprintf($" {unchecked(LastZero + 1)}-{LastOne}");
+                }
+                else
+                {
+                    jitprintf($" {LastOne}");
+                }
+
+                LastZero = unchecked(index - 1);
+            }
+
+            LastOne = index;
+            return HbvWalk.Continue;
+        }
+    }
+
+    [Conditional("DEBUG")]
+    public void dump()
+    {
+        jitprintf("{");
+        var visitor = new DumpBitVisitor();
+        _ = ForEachHbvBitSet(this, ref visitor);
         jitprintf("}\n");
     }
 
     [Conditional("DEBUG")]
     public void dumpFancy()
     {
-        var lastOne = Globals.NormalizeIndex(ulong.MaxValue);
-        var lastZero = Globals.NormalizeIndex(ulong.MaxValue);
-
         jitprintf("{");
         jitprintf($"count:{countBits()}");
-        _ = ForEachHbvBitSet(this, index =>
+        var visitor = new DumpFancyBitVisitor();
+        _ = ForEachHbvBitSet(this, ref visitor);
+
+        if (unchecked(visitor.LastZero + 1) != visitor.LastOne)
         {
-            if (lastOne != unchecked(index - 1))
-            {
-                if (unchecked(lastZero + 1) != lastOne)
-                {
-                    jitprintf($" {unchecked(lastZero + 1)}-{lastOne}");
-                }
-                else
-                {
-                    jitprintf($" {lastOne}");
-                }
-
-                lastZero = unchecked(index - 1);
-            }
-
-            lastOne = index;
-            return HbvWalk.Continue;
-        });
-
-        if (unchecked(lastZero + 1) != lastOne)
-        {
-            jitprintf($" {unchecked(lastZero + 1)}-{lastOne}");
+            jitprintf($" {unchecked(visitor.LastZero + 1)}-{visitor.LastOne}");
         }
         else
         {
-            jitprintf($" {lastOne}");
+            jitprintf($" {visitor.LastOne}");
         }
 
         jitprintf("}\n");

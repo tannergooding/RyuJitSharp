@@ -3826,6 +3826,42 @@ public partial class Compiler
         return walker.GetResult(stmt);
     }
 
+    private readonly struct DelegateTreePredicate(Func<GenTree, bool> predicate) : IGenTreePredicate<DelegateTreePredicate>
+    {
+        public bool IsMatch(GenTree node) => predicate(node);
+    }
+
+    private readonly struct DelegateTreeComplexity(Func<GenTree, uint> getComplexity)
+        : IGenTreeComplexity<DelegateTreeComplexity>
+    {
+        public uint GetComplexity(GenTree node) => getComplexity(node);
+    }
+
+    private readonly struct ConstantTreeComplexity : IGenTreeComplexity<ConstantTreeComplexity>
+    {
+        public uint GetComplexity(GenTree node) => 1;
+    }
+
+    private readonly struct AsyncCallPredicate(Compiler compiler) : IGenTreePredicate<AsyncCallPredicate>
+    {
+        public bool IsMatch(GenTree node) => compiler.gtIsAsyncCall(node);
+    }
+
+    private readonly struct TailCallPredicate : IGenTreePredicate<TailCallPredicate>
+    {
+        public bool IsMatch(GenTree node) => Compiler.gtIsTailCall(node);
+    }
+
+    private readonly struct OperPredicate(genTreeOps oper) : IGenTreePredicate<OperPredicate>
+    {
+        public bool IsMatch(GenTree node) => node.Oper == oper;
+    }
+
+    private readonly struct NodeIdentityPredicate(GenTree target) : IGenTreePredicate<NodeIdentityPredicate>
+    {
+        public bool IsMatch(GenTree node) => node == target;
+    }
+
     /// <summary>Check if a tree contains a node matching the specified predicate. Descend only into subtrees with the specified flags set on them (can be GTF_EMPTY to descend into all nodes).</summary>
     /// <param name="tree">The tree</param>
     /// <param name="predicate">Predicate that the call must match</param>
@@ -3833,50 +3869,72 @@ public partial class Compiler
     /// <returns>Node matching the predicate, or null if no such node was found.</returns>
     public GenTree? gtFindNodeInTree(GenTree tree, Func<GenTree, bool> predicate, GenTreeFlags requiredFlagsToDescendIntoTree)
     {
+        var strategy = new DelegateTreePredicate(predicate);
+        return gtFindNodeInTree(tree, ref strategy, requiredFlagsToDescendIntoTree);
+    }
+
+    public GenTree? gtFindNodeInTree<TPredicate>(GenTree tree, ref TPredicate predicate,
+        GenTreeFlags requiredFlagsToDescendIntoTree)
+        where TPredicate : struct, IGenTreePredicate<TPredicate>
+    {
         if ((tree.Flags & requiredFlagsToDescendIntoTree) != requiredFlagsToDescendIntoTree)
         {
             return null;
         }
 
-        var findNodeVisitor = new FindNodeVisitor(predicate, requiredFlagsToDescendIntoTree);
+        var findNodeVisitor = new FindNodeVisitor<TPredicate>(ref predicate, requiredFlagsToDescendIntoTree);
         _ = findNodeVisitor.WalkTree(ref tree, user: null);
         return findNodeVisitor.Result;
     }
 
     public bool gtComplexityExceeds(GenTree tree, uint limit, Func<GenTree, uint> getComplexity)
     {
+        var strategy = new DelegateTreeComplexity(getComplexity);
+        return gtComplexityExceeds(tree, limit, ref strategy);
+    }
+
+    public bool gtComplexityExceeds(GenTree tree, uint limit)
+    {
+        var strategy = new ConstantTreeComplexity();
+        return gtComplexityExceeds(tree, limit, ref strategy);
+    }
+
+    public bool gtComplexityExceeds<TComplexity>(GenTree tree, uint limit, ref TComplexity complexity)
+        where TComplexity : struct, IGenTreeComplexity<TComplexity>
+    {
         assert(tree is not null);
-        var visitor = new ComplexityVisitor(limit, getComplexity);
+        var visitor = new ComplexityVisitor<TComplexity>(ref complexity, limit);
         return visitor.WalkTree(ref tree, null) is WALK_ABORT;
     }
 
-    private struct ComplexityVisitor : IGenTreeVisitor<ComplexityVisitor>
+    private ref struct ComplexityVisitor<TComplexity> : IGenTreeVisitor<ComplexityVisitor<TComplexity>>
+        where TComplexity : struct, IGenTreeComplexity<TComplexity>
     {
         public static bool DoPreOrder => true;
 
-        private readonly GenTreeStack _ancestors;
+        private GenTreeStack _ancestors;
+        private ref TComplexity _complexityStrategy;
         private readonly uint _limit;
-        private readonly Func<GenTree, uint> _getComplexity;
         private uint _complexity;
 
-        public ComplexityVisitor(uint limit, Func<GenTree, uint> getComplexity)
+        public ComplexityVisitor(ref TComplexity complexity, uint limit)
         {
             _ancestors = [];
+            _complexityStrategy = ref complexity;
             _limit = limit;
-            _getComplexity = getComplexity;
             _complexity = 0;
         }
 
         public fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
-            _complexity = unchecked(_complexity + _getComplexity(use));
+            _complexity = unchecked(_complexity + _complexityStrategy.GetComplexity(use));
             return _complexity > _limit ? WALK_ABORT : WALK_CONTINUE;
         }
 
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<ComplexityVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<ComplexityVisitor<TComplexity>>.WalkTree(ref this, ref use, user, _ancestors);
     }
 
     public GenTree gtFoldExpr(GenTree tree)
@@ -17710,12 +17768,15 @@ public partial class Compiler
         {
             return false;
         }
-        return gtFindNodeInTree(tree, gtIsAsyncCall, GTF_CALL) is not null;
+
+        var predicate = new AsyncCallPredicate(this);
+        return gtFindNodeInTree(tree, ref predicate, GTF_CALL) is not null;
     }
 
     public bool gtTreeContainsOper(GenTree tree, genTreeOps oper)
     {
-        return gtFindNodeInTree(tree, node => node.Oper == oper, GTF_EMPTY) is not null;
+        var predicate = new OperPredicate(oper);
+        return gtFindNodeInTree(tree, ref predicate, GTF_EMPTY) is not null;
     }
 
     /// <summary>Check if a tree contains any tail call or tail call candidate.</summary>
@@ -17724,7 +17785,8 @@ public partial class Compiler
     /// <remarks>While tail calls are generally expected to be top level nodes we do allow some other shapes of calls to be tail calls, including some cascading trivial assignments and casts. This function does a tree walk to check if any sub tree is a tail call.</remarks>
     public bool gtTreeContainsTailCall(GenTree tree)
     {
-        return gtFindNodeInTree(tree, gtIsTailCall, GTF_CALL) is not null;
+        var predicate = new TailCallPredicate();
+        return gtFindNodeInTree(tree, ref predicate, GTF_CALL) is not null;
     }
 
     /// <summary>Check if a tree has a read of the specified local, taking promotion into account.</summary>

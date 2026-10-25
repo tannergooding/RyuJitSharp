@@ -104,7 +104,7 @@ public partial class Compiler
         }
 
         const uint nodeLimit = 16;
-        if (gtComplexityExceeds(fwdSubNode, nodeLimit, static _ => 1u))
+        if (gtComplexityExceeds(fwdSubNode, nodeLimit))
         {
             JITDUMP($" tree to sub has more than {nodeLimit} nodes\n");
             return false;
@@ -144,7 +144,7 @@ public partial class Compiler
 
         const uint nextTreeLimit = 200;
         if ((visitor.Complexity > nextTreeLimit) &&
-            gtComplexityExceeds(fwdSubNode, 1, static _ => 1u))
+            gtComplexityExceeds(fwdSubNode, 1))
         {
             JITDUMP($" next stmt tree is too large ({visitor.Complexity})\n");
             return false;

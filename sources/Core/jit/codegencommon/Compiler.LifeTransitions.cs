@@ -7,6 +7,114 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private readonly struct DeadLocalVisitor : IBitSetVisitor<DeadLocalVisitor>
+    {
+        private readonly Compiler _compiler;
+        private readonly ICodeGen _codeGen;
+
+        public DeadLocalVisitor(Compiler compiler, ICodeGen codeGen)
+        {
+            _compiler = compiler;
+            _codeGen = codeGen;
+        }
+
+        public readonly bool Visit(int deadVarIndex)
+        {
+            var varNum = _compiler.lvaTrackedIndexToLclNum(deadVarIndex);
+            ref var varDsc = ref _compiler.lvaGetDesc(varNum);
+            var isGCRef = varDsc.Type == TYP_REF;
+            var isByRef = varDsc.Type == TYP_BYREF;
+            var isInReg = varDsc.lvIsInReg;
+            var isInMemory = !isInReg || varDsc.IsAlwaysAliveInMemory;
+
+            if (Configuration.HAS_FIXED_REGISTER_SET && isInReg)
+            {
+                var regMask = _codeGen.genGetRegMask(in varDsc);
+                if (isGCRef)
+                {
+                    _codeGen.GCInfo.gcRegGCrefSetCur &= ~regMask;
+                }
+                else if (isByRef)
+                {
+                    _codeGen.GCInfo.gcRegByrefSetCur &= ~regMask;
+                }
+
+                _codeGen.genUpdateRegLife(in varDsc, isBorn: false, isDying: true, null);
+            }
+
+            if (isInMemory && (isGCRef || isByRef))
+            {
+                VarSetOps.RemoveElemD(_compiler, _codeGen.GCInfo.gcVarPtrSetCur, deadVarIndex);
+                if (Configuration.DEBUG && _compiler.verbose)
+                {
+                    jitprintf($"\t\t\t\t\t\t\tV{varNum:D2} becoming dead\n");
+                }
+            }
+
+            _codeGen.getVariableLiveKeeper().siEndVariableLiveRange(varNum);
+            return true;
+        }
+    }
+
+    private readonly struct BornLocalVisitor : IBitSetVisitor<BornLocalVisitor>
+    {
+        private readonly Compiler _compiler;
+        private readonly ICodeGen _codeGen;
+
+        public BornLocalVisitor(Compiler compiler, ICodeGen codeGen)
+        {
+            _compiler = compiler;
+            _codeGen = codeGen;
+        }
+
+        public readonly bool Visit(int bornVarIndex)
+        {
+            var varNum = _compiler.lvaTrackedIndexToLclNum(bornVarIndex);
+            ref var varDsc = ref _compiler.lvaGetDesc(varNum);
+            var isGCRef = varDsc.Type == TYP_REF;
+            var isByRef = varDsc.Type == TYP_BYREF;
+
+            if (varDsc.lvIsInReg)
+            {
+                if (Configuration.HAS_FIXED_REGISTER_SET)
+                {
+                    // EH and spill-at-single-definition locals retain their stack home while enregistered.
+                    if (!varDsc.IsAlwaysAliveInMemory)
+                    {
+                        if (Configuration.DEBUG && _compiler.verbose &&
+                            VarSetOps.IsMember(_compiler, _codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex))
+                        {
+                            jitprintf($"\t\t\t\t\t\t\tRemoving V{varNum:D2} from gcVarPtrSetCur\n");
+                        }
+                        VarSetOps.RemoveElemD(_compiler, _codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex);
+                    }
+
+                    _codeGen.genUpdateRegLife(in varDsc, isBorn: true, isDying: false, null);
+                    var regMask = _codeGen.genGetRegMask(in varDsc);
+                    if (isGCRef)
+                    {
+                        _codeGen.GCInfo.gcRegGCrefSetCur |= regMask;
+                    }
+                    else if (isByRef)
+                    {
+                        _codeGen.GCInfo.gcRegByrefSetCur |= regMask;
+                    }
+                }
+            }
+            else if (_compiler.lvaIsGCTracked(in varDsc))
+            {
+                VarSetOps.AddElemD(_compiler, _codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex);
+                if (Configuration.DEBUG && _compiler.verbose)
+                {
+                    jitprintf($"\t\t\t\t\t\t\tV{varNum:D2} becoming live\n");
+                }
+            }
+
+            _codeGen.getVariableLiveKeeper().siStartVariableLiveRange(in varDsc, varNum);
+            return true;
+        }
+    }
+
     public void compUpdateLife(nint[] newLife, bool forCodeGen)
     {
         if (!VarSetOps.Equal(this, compCurLife, newLife))
@@ -49,86 +157,10 @@ public partial class Compiler
         assert(lvaTrackedToVarNum is not null);
 
         // A dying local can share its register with a newly live local.
-        _ = VarSetOps.VisitBits(this, deadSet, deadVarIndex =>
-        {
-            var varNum = lvaTrackedIndexToLclNum(deadVarIndex);
-            ref var varDsc = ref lvaGetDesc(varNum);
-            var isGCRef = varDsc.Type == TYP_REF;
-            var isByRef = varDsc.Type == TYP_BYREF;
-            var isInReg = varDsc.lvIsInReg;
-            var isInMemory = !isInReg || varDsc.IsAlwaysAliveInMemory;
-            if (Configuration.HAS_FIXED_REGISTER_SET && isInReg)
-            {
-                var regMask = codeGen.genGetRegMask(in varDsc);
-                if (isGCRef)
-                {
-                    codeGen.GCInfo.gcRegGCrefSetCur &= ~regMask;
-                }
-                else if (isByRef)
-                {
-                    codeGen.GCInfo.gcRegByrefSetCur &= ~regMask;
-                }
+        var deadVisitor = new DeadLocalVisitor(this, codeGen);
+        _ = VarSetOps.VisitBits(this, deadSet, ref deadVisitor);
 
-                codeGen.genUpdateRegLife(in varDsc, isBorn: false, isDying: true, null);
-            }
-            if (isInMemory && (isGCRef || isByRef))
-            {
-                VarSetOps.RemoveElemD(this, codeGen.GCInfo.gcVarPtrSetCur, deadVarIndex);
-                if (Configuration.DEBUG && verbose)
-                {
-                    jitprintf($"\t\t\t\t\t\t\tV{varNum:D2} becoming dead\n");
-                }
-            }
-            codeGen.getVariableLiveKeeper().siEndVariableLiveRange(varNum);
-
-            return true;
-        });
-
-        _ = VarSetOps.VisitBits(this, bornSet, bornVarIndex =>
-        {
-            var varNum = lvaTrackedIndexToLclNum(bornVarIndex);
-            ref var varDsc = ref lvaGetDesc(varNum);
-            var isGCRef = varDsc.Type == TYP_REF;
-            var isByRef = varDsc.Type == TYP_BYREF;
-
-            if (varDsc.lvIsInReg)
-            {
-                if (Configuration.HAS_FIXED_REGISTER_SET)
-                {
-                    // EH and spill-at-single-definition locals retain their stack home while enregistered.
-                    if (!varDsc.IsAlwaysAliveInMemory)
-                    {
-                        if (Configuration.DEBUG && verbose &&
-                            VarSetOps.IsMember(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex))
-                        {
-                            jitprintf($"\t\t\t\t\t\t\tRemoving V{varNum:D2} from gcVarPtrSetCur\n");
-                        }
-                        VarSetOps.RemoveElemD(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex);
-                    }
-
-                    codeGen.genUpdateRegLife(in varDsc, isBorn: true, isDying: false, null);
-                    var regMask = codeGen.genGetRegMask(in varDsc);
-                    if (isGCRef)
-                    {
-                        codeGen.GCInfo.gcRegGCrefSetCur |= regMask;
-                    }
-                    else if (isByRef)
-                    {
-                        codeGen.GCInfo.gcRegByrefSetCur |= regMask;
-                    }
-                }
-            }
-            else if (lvaIsGCTracked(in varDsc))
-            {
-                VarSetOps.AddElemD(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex);
-                if (Configuration.DEBUG && verbose)
-                {
-                    jitprintf($"\t\t\t\t\t\t\tV{varNum:D2} becoming live\n");
-                }
-            }
-            codeGen.getVariableLiveKeeper().siStartVariableLiveRange(in varDsc, varNum);
-
-            return true;
-        });
+        var bornVisitor = new BornLocalVisitor(this, codeGen);
+        _ = VarSetOps.VisitBits(this, bornSet, ref bornVisitor);
     }
 }

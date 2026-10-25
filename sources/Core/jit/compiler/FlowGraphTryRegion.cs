@@ -72,16 +72,40 @@ public sealed class FlowGraphTryRegion
     // Unlike loops, try regions enumerate their regular block bit vector directly.
     public BasicBlockVisit VisitTryRegionBlocksReversePostOrder(Func<BasicBlock, BasicBlockVisit> func)
     {
+        var visitor = new BasicBlockDelegateVisitor(func);
+        return VisitTryRegionBlocksReversePostOrder(ref visitor);
+    }
+
+    public BasicBlockVisit VisitTryRegionBlocksReversePostOrder<TVisitor>(ref TVisitor visitor)
+        where TVisitor : struct, IBasicBlockVisitor<TVisitor>
+    {
         assert(CanEnumerateInReversePostOrder());
         var dfsTree = _regions.GetDfsTree();
         assert(dfsTree is not null);
         var traits = _regions.GetBlockBitVecTraits();
-        var result = BitVecOps.VisitBitsReverse(traits, _blocks, index => {
-            assert((uint)index < (uint)dfsTree.PostOrderCount);
-            return func(dfsTree.GetPostOrder(index)) is BasicBlockVisit.Continue;
-        });
+        var adapter = new TryRegionBlockVisitorAdapter<TVisitor>(ref visitor, dfsTree);
+        var result = BitVecOps.VisitBitsReverse(traits, _blocks, ref adapter);
 
         return result ? BasicBlockVisit.Continue : BasicBlockVisit.Abort;
+    }
+
+    private ref struct TryRegionBlockVisitorAdapter<TVisitor> : IBitSetVisitor<TryRegionBlockVisitorAdapter<TVisitor>>
+        where TVisitor : struct, IBasicBlockVisitor<TVisitor>
+    {
+        private ref TVisitor _visitor;
+        private readonly FlowGraphDfsTree _dfsTree;
+
+        public TryRegionBlockVisitorAdapter(ref TVisitor visitor, FlowGraphDfsTree dfsTree)
+        {
+            _visitor = ref visitor;
+            _dfsTree = dfsTree;
+        }
+
+        public bool Visit(int index)
+        {
+            assert((uint)index < (uint)_dfsTree.PostOrderCount);
+            return _visitor.Visit(_dfsTree.GetPostOrder(index)) is BasicBlockVisit.Continue;
+        }
     }
 
     public static void Dump(FlowGraphTryRegion region)

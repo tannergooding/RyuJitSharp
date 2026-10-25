@@ -14,6 +14,27 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private struct ReverseCountedIVVisitor(
+        Compiler compiler, int lclNum, Statement jtrueStmt) : PerLoopInfo.IStatementOccurrenceVisitor<ReverseCountedIVVisitor>
+    {
+        private readonly Compiler _compiler = compiler;
+        private readonly int _lclNum = lclNum;
+        private readonly Statement _jtrueStmt = jtrueStmt;
+
+        public bool HasUseInTest;
+
+        public bool Visit(BasicBlock block, Statement occurrenceStmt)
+        {
+            if (occurrenceStmt == _jtrueStmt)
+            {
+                HasUseInTest = true;
+                return true;
+            }
+
+            return _compiler.optIsUpdateOfIVWithoutSideEffects(occurrenceStmt.RootNode, _lclNum);
+        }
+    }
+
     private bool optMakeLoopDownwardsCounted(ScalarEvolutionContext scevContext,
         FlowGraphNaturalLoop loop, PerLoopInfo loopInfo)
     {
@@ -56,19 +77,12 @@ public partial class Compiler
                 continue;
             }
 
-            var hasUseInTest = false;
-            if (!loopInfo.VisitStatementsWithOccurrences(loop, candidateLclNum, (_, occurrenceStmt) => {
-                if (occurrenceStmt == jtrueStmt)
-                {
-                    hasUseInTest = true;
-                    return true;
-                }
-                return optIsUpdateOfIVWithoutSideEffects(occurrenceStmt.RootNode, candidateLclNum);
-            }))
+            var visitor = new ReverseCountedIVVisitor(this, candidateLclNum, jtrueStmt);
+            if (!loopInfo.VisitStatementsWithOccurrences(loop, candidateLclNum, ref visitor))
             {
                 continue;
             }
-            if (!hasUseInTest)
+            if (!visitor.HasUseInTest)
             {
                 continue;
             }

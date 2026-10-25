@@ -14,6 +14,11 @@ public struct BitSetOps<TEnv, TBitSetTraits>
     where TEnv : class
     where TBitSetTraits : IBitSetTraits<TEnv>
 {
+    private readonly struct DelegateBitSetVisitor(Func<int, bool> visitor) : IBitSetVisitor<DelegateBitSetVisitor>
+    {
+        public bool Visit(int bitIndex) => visitor(bitIndex);
+    }
+
     private static nint[] MakeUninitArrayBits(TEnv env)
         => GC.AllocateUninitializedArray<nint>(TBitSetTraits.GetArrSize(env));
 
@@ -351,6 +356,13 @@ public struct BitSetOps<TEnv, TBitSetTraits>
 
     public static bool VisitBits(TEnv env, ReadOnlySpan<nint> bs, Func<int, bool> func)
     {
+        var visitor = new DelegateBitSetVisitor(func);
+        return VisitBits(env, bs, ref visitor);
+    }
+
+    public static bool VisitBits<TVisitor>(TEnv env, ReadOnlySpan<nint> bs, ref TVisitor visitor)
+        where TVisitor : struct, IBitSetVisitor<TVisitor>, allows ref struct
+    {
         bs = bs[..TBitSetTraits.GetArrSize(env)];
         var bitsPerWord = Unsafe.SizeOf<nint>() * 8;
 
@@ -362,7 +374,7 @@ public struct BitSetOps<TEnv, TBitSetTraits>
             {
                 var index = (int)nint.TrailingZeroCount(bits);
 
-                if (!func((i * bitsPerWord) + index))
+                if (!visitor.Visit((i * bitsPerWord) + index))
                 {
                     return false;
                 }
@@ -376,6 +388,13 @@ public struct BitSetOps<TEnv, TBitSetTraits>
 
     public static bool VisitBitsReverse(TEnv env, ReadOnlySpan<nint> bs, Func<int, bool> func)
     {
+        var visitor = new DelegateBitSetVisitor(func);
+        return VisitBitsReverse(env, bs, ref visitor);
+    }
+
+    public static bool VisitBitsReverse<TVisitor>(TEnv env, ReadOnlySpan<nint> bs, ref TVisitor visitor)
+        where TVisitor : struct, IBitSetVisitor<TVisitor>, allows ref struct
+    {
         bs = bs[..TBitSetTraits.GetArrSize(env)];
         var bitsPerWord = Unsafe.SizeOf<nint>() * 8;
 
@@ -387,7 +406,7 @@ public struct BitSetOps<TEnv, TBitSetTraits>
             {
                 var index = bitsPerWord - 1 - (int)nint.LeadingZeroCount(bits);
 
-                if (!func(((i - 1) * bitsPerWord) + index))
+                if (!visitor.Visit(((i - 1) * bitsPerWord) + index))
                 {
                     return false;
                 }
