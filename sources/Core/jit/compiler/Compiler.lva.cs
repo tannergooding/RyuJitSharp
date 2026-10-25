@@ -3115,7 +3115,7 @@ public partial class Compiler
 
         var typeFlags = eeGetClassAttribs(structHandle);
 
-        var fieldCnt = info.compCompHnd->getClassNumInstanceFields(structHandle);
+        var fieldCnt = eeGetClassNumInstanceFields(structHandle);
         _ = impNormStructType(structHandle);
 
         if (Configuration.TARGET_ARMARCH)
@@ -3140,10 +3140,10 @@ public partial class Compiler
         {
             for (var i = 0; i < fieldCnt; i++)
             {
-                var fieldHandle = info.compCompHnd->getFieldInClass(structHandle, i);
-                var fldOffset = info.compCompHnd->getFieldOffset(fieldHandle);
+                var fieldHandle = eeGetFieldInClass(structHandle, i);
+                var fldOffset = eeGetFieldOffset(fieldHandle);
                 var fieldClassHandle = NO_CLASS_HANDLE;
-                var fieldCorType = info.compCompHnd->getFieldType(fieldHandle, &fieldClassHandle);
+                var fieldCorType = eeGetFieldCorInfoType(fieldHandle, &fieldClassHandle);
                 var fieldVarType = fieldCorType.VarType;
 
                 if (fieldClassHandle != NO_CLASS_HANDLE)

@@ -76,7 +76,7 @@ public partial class Compiler
 
                 var continuation = _compiler.gtNewLclvNode(TYP_REF, newContinuationLocal);
                 var returned = _compiler.gtNewLclvNode(TYP_REF, GetReturnedContinuationVar());
-                var offset = _compiler.info.compCompHnd->getFieldOffset(
+                var offset = _compiler.eeGetFieldOffset(
                     _compiler.eeGetAsyncInfo().continuationNextFldHnd);
                 var next = StoreAtOffset(returned, offset, continuation, TYP_REF);
                 reuse.InsertAtEnd(LIR.SeqTree(_compiler, next));
@@ -89,14 +89,14 @@ public partial class Compiler
 
             var asyncInfo = _compiler.eeGetAsyncInfo();
             var newContinuation = _compiler.gtNewLclvNode(TYP_REF, newContinuationLocal);
-            var resumeInfoOffset = _compiler.info.compCompHnd->getFieldOffset(
+            var resumeInfoOffset = _compiler.eeGetFieldOffset(
                 asyncInfo.continuationResumeInfoFldHnd);
             var resumeInfo = new GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, stateNumber);
             var storeResume = StoreAtOffset(newContinuation, resumeInfoOffset, resumeInfo, TYP_I_IMPL);
             suspension.InsertAtEnd(LIR.SeqTree(_compiler, storeResume));
 
             newContinuation = _compiler.gtNewLclvNode(TYP_REF, newContinuationLocal);
-            var stateOffset = _compiler.info.compCompHnd->getFieldOffset(
+            var stateOffset = _compiler.eeGetFieldOffset(
                 asyncInfo.continuationStateFldHnd);
             var stateValue = _compiler.gtNewIconNode(TYP_INT, stateNumber);
             var storeState = StoreAtOffset(newContinuation, stateOffset, stateValue, TYP_INT);
@@ -145,7 +145,7 @@ public partial class Compiler
             }
 
             newContinuation = _compiler.gtNewLclvNode(TYP_REF, newContinuationLocal);
-            var flagsOffset = _compiler.info.compCompHnd->getFieldOffset(
+            var flagsOffset = _compiler.eeGetFieldOffset(
                 asyncInfo.continuationFlagsFldHnd);
             var flagsNode = _compiler.gtNewIconNode(TYP_INT, flags);
             var storeFlags = StoreAtOffset(newContinuation, flagsOffset, flagsNode, TYP_INT);

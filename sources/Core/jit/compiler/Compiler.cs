@@ -1330,7 +1330,7 @@ public partial class Compiler
         {
             if (hClass != NO_CLASS_HANDLE)
             {
-                var elemKind = info.compCompHnd->getHFAType(hClass);
+                var elemKind = eeGetHfaType(hClass);
 
                 if (elemKind != CORINFO_HFA_ELEM_NONE)
                 {
@@ -1498,7 +1498,7 @@ public partial class Compiler
     }
 
     public unsafe CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, int index)
-        => info.compCompHnd->getMethodInstantiationArgument(ftn, index);
+        => eeGetMethodInstantiationArgument(ftn, index);
 
     public int GetMinVectorByteLength() => (int)(TYP_SIMD8.EmitSize);
 
@@ -1649,7 +1649,7 @@ public partial class Compiler
 
         if (Configuration.TARGET_WASM)
         {
-            var abiType = info.compCompHnd->getWasmLowering(clsHnd);
+            var abiType = eeGetWasmLowering(clsHnd);
 
             // An aggregate wider than its lowered wasm value returns through a hidden buffer.
             if ((abiType is CORINFO_WASM_TYPE_VOID) || (structSize > WasmClassifier.ToJitType(abiType).Size))
@@ -2055,7 +2055,7 @@ public partial class Compiler
     }
 
     public unsafe CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, int index)
-        => info.compCompHnd->getTypeInstantiationArgument(cls, index);
+        => eeGetTypeInstantiationArgument(cls, index);
 
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
@@ -2837,7 +2837,7 @@ public partial class Compiler
                                 return TYP_UNDEF;
                             }
 
-                            var typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                            var typeArgHnd = eeGetTypeInstantiationArgument(typeHnd, 0);
                             simdBaseType = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
 
                             if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
@@ -2890,7 +2890,7 @@ public partial class Compiler
                         return TYP_UNDEF;
                     }
 
-                    var typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                    var typeArgHnd = eeGetTypeInstantiationArgument(typeHnd, 0);
                     simdBaseType = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
 
                     if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
@@ -2909,7 +2909,7 @@ public partial class Compiler
                         return TYP_UNDEF;
                     }
 
-                    var typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                    var typeArgHnd = eeGetTypeInstantiationArgument(typeHnd, 0);
                     simdBaseType = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
 
                     if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
@@ -2928,7 +2928,7 @@ public partial class Compiler
                         return TYP_UNDEF;
                     }
 
-                    var typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                    var typeArgHnd = eeGetTypeInstantiationArgument(typeHnd, 0);
                     simdBaseType = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
 
                     if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
@@ -2953,7 +2953,7 @@ public partial class Compiler
                         return TYP_UNDEF;
                     }
 
-                    var typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                    var typeArgHnd = eeGetTypeInstantiationArgument(typeHnd, 0);
                     simdBaseType = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
 
                     if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))

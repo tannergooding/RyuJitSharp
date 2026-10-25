@@ -1173,7 +1173,7 @@ public partial class Compiler
                     break;
                 }
 
-                var definingClass = info.compCompHnd->getMethodClass(likelyMethod);
+                var definingClass = eeGetMethodClass(likelyMethod);
                 likelyClassAttribs = eeGetClassAttribs(definingClass);
 
                 // For instance methods on value classes we need an extended check to
@@ -1651,7 +1651,7 @@ public partial class Compiler
         }
 
         var elemClsHnd = NO_CLASS_HANDLE;
-        var elemJitType = info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
+        var elemJitType = eeGetChildType(clsHnd, &elemClsHnd);
         var elemType = TypeHandleToVarType(elemJitType, elemClsHnd, out var elemLayout);
 
         // For the ref case, we will only be able to inline if the types match
@@ -1682,7 +1682,7 @@ public partial class Compiler
                 assert(intrinsicName is NI_Array_Address);
                 assert(localSig.retType is CORINFO_TYPE_BYREF);
                 assert(localSig.retTypeClass != NO_CLASS_HANDLE);
-                _ = info.compCompHnd->getChildType(localSig.retTypeClass, &actualElemClsHnd);
+                _ = eeGetChildType(localSig.retTypeClass, &actualElemClsHnd);
             }
 
             // Sealed array and variant types may still be covariant; require an exact type.
@@ -1839,7 +1839,7 @@ public partial class Compiler
                     }
 
                     impResolveToken(codeAddr + 1, out var unboxResolvedToken, CORINFO_TOKENKIND_Class);
-                    var compare = info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass, resolvedToken.hClass);
+                    var compare = eeCompareTypesForEquality(unboxResolvedToken.hClass, resolvedToken.hClass);
                     var optimize = false;
 
                     if (compare is TypeCompareState.Must)
@@ -1927,7 +1927,7 @@ public partial class Compiler
                     {
                         impResolveToken(codeAddr + 1, out var isInstTok, CORINFO_TOKENKIND_Casting);
 
-                        if (info.compCompHnd->compareTypesForCast(resolvedToken.hClass, isInstTok.hClass) is TypeCompareState.MustNot)
+                        if (eeCompareTypesForCast(resolvedToken.hClass, isInstTok.hClass) is TypeCompareState.MustNot)
                         {
                             JITDUMP("\n Importing BOX; ISINST; as null\n");
                             impSpillSideEffects(spillGlobEffects: false, CHECK_SPILL_ALL, "spilling side-effects");
@@ -1977,7 +1977,7 @@ public partial class Compiler
                             if (foldAsHelper is CORINFO_HELP_BOX)
                             {
                                 impResolveToken(codeAddr + 1, out var isInstResolvedToken, CORINFO_TOKENKIND_Casting);
-                                var castResult = info.compCompHnd->compareTypesForCast(resolvedToken.hClass, isInstResolvedToken.hClass);
+                                var castResult = eeCompareTypesForCast(resolvedToken.hClass, isInstResolvedToken.hClass);
 
                                 if (castResult is not TypeCompareState.May)
                                 {
@@ -1993,7 +1993,7 @@ public partial class Compiler
                                 impResolveToken(codeAddr + 1, out var isInstResolvedToken, CORINFO_TOKENKIND_Casting);
                                 var nullableCls = resolvedToken.hClass;
                                 var underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
-                                var castResult = info.compCompHnd->compareTypesForCast(underlyingCls, isInstResolvedToken.hClass);
+                                var castResult = eeCompareTypesForCast(underlyingCls, isInstResolvedToken.hClass);
 
                                 if (castResult is TypeCompareState.Must)
                                 {
@@ -2028,11 +2028,11 @@ public partial class Compiler
 
                             impResolveToken(codeAddr + 1, out var isinstResolvedToken, CORINFO_TOKENKIND_Class);
 
-                            if (info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass, resolvedToken.hClass) is TypeCompareState.Must)
+                            if (eeCompareTypesForEquality(isinstResolvedToken.hClass, resolvedToken.hClass) is TypeCompareState.Must)
                             {
                                 impResolveToken(nextCodeAddr + 1, out var unboxResolvedToken, CORINFO_TOKENKIND_Class);
 
-                                if (info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass, resolvedToken.hClass) is TypeCompareState.Must)
+                                if (eeCompareTypesForEquality(unboxResolvedToken.hClass, resolvedToken.hClass) is TypeCompareState.Must)
                                 {
                                     JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
                                     return 2 + (sizeof(int) * 2);
@@ -2054,13 +2054,13 @@ public partial class Compiler
     public unsafe GenTree impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenTree value)
     {
         assert(info.compCompHnd->isNullableType(nullableCls) is TypeCompareState.Must);
-        var valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
-        var valueOffset = info.compCompHnd->getFieldOffset(valueFldHnd);
+        var valueFldHnd = eeGetFieldInClass(nullableCls, 1);
+        var valueOffset = eeGetFieldOffset(valueFldHnd);
         var resultTmp = lvaGrabTemp(shortLifetime: true, "Nullable<T> tmp");
         lvaSetStruct(resultTmp, nullableCls, unsafeValueClsCheck: false);
 
         var valueStructCls = NO_CLASS_HANDLE;
-        var corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+        var corFldType = eeGetFieldCorInfoType(valueFldHnd, &valueStructCls);
         var valueType = TypeHandleToVarType(corFldType, valueStructCls, out var layout);
 
         // Nullable<T>.hasValue is always at offset zero.
@@ -2080,11 +2080,11 @@ public partial class Compiler
     public unsafe void impLoadNullableFields(GenTree nullableObj, CORINFO_CLASS_HANDLE nullableCls, out GenTree hasValueFld, out GenTree valueFld)
     {
         assert(info.compCompHnd->isNullableType(nullableCls) is TypeCompareState.Must);
-        var valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
+        var valueFldHnd = eeGetFieldInClass(nullableCls, 1);
         var valueStructCls = NO_CLASS_HANDLE;
-        var corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+        var corFldType = eeGetFieldCorInfoType(valueFldHnd, &valueStructCls);
         var valueType = TypeHandleToVarType(corFldType, valueStructCls, out var valueLayout);
-        var valueOffset = info.compCompHnd->getFieldOffset(valueFldHnd);
+        var valueOffset = eeGetFieldOffset(valueFldHnd);
         int objTmp;
 
         if (nullableObj.Oper is not GT_LCL_VAR)
@@ -2467,7 +2467,7 @@ public partial class Compiler
             }
 
             // Get the method's class properties
-            var clsHandle = compCompHnd->getMethodClass(fncHandle);
+            var clsHandle = eeGetMethodClass(fncHandle);
             var clsAttr = eeGetClassAttribs(clsHandle);
 
             if (Configuration.DEBUG)
@@ -3057,7 +3057,7 @@ public partial class Compiler
         }
 
         CORINFO_CLASS_HANDLE fieldClsHnd;
-        var fieldElementType = info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd).VarType;
+        var fieldElementType = eeGetFieldCorInfoType(fieldToken, &fieldClsHnd).VarType;
 
         // Most static initialization data fields are of some structure, but it is possible for them to be of various primitive types as well
         int totalFieldSize;
@@ -3252,7 +3252,7 @@ public partial class Compiler
         }
 
         // Fetch information about the class that introduced the virtual method.
-        var baseClass = info.compCompHnd->getMethodClass(baseMethod);
+        var baseClass = eeGetMethodClass(baseMethod);
         var baseClassAttribs = eeGetClassAttribs(baseClass);
 
         // Is the call an interface call?
@@ -4706,7 +4706,7 @@ public partial class Compiler
             // Check that the 'typeof()' expression is being used on a type that is in fact generic.
             // If that is not the case, we don't expand the intrinsic. This will end up using
             // the usual Type.GetGenericTypeDefinition() at runtime, which will throw in this case.
-            if (info.compCompHnd->getTypeInstantiationArgument(hClassType, 0) != NO_CLASS_HANDLE)
+            if (eeGetTypeInstantiationArgument(hClassType, 0) != NO_CLASS_HANDLE)
             {
                 var hClassResult = info.compCompHnd->getTypeDefinition(hClassType);
 
@@ -5776,11 +5776,11 @@ public partial class Compiler
         nullableObj = impGetNodeAddr(nullableObj, CHECK_SPILL_ALL, GTF_IND_INITCLASS, out var indirFlags);
         nullableObj = impCloneExpr(nullableObj, out var nullableObjClone, CHECK_SPILL_ALL, "nullable obj clone");
 
-        var valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
-        var cnsValueOffset = info.compCompHnd->getFieldOffset(valueFldHnd);
+        var valueFldHnd = eeGetFieldInClass(nullableCls, 1);
+        var cnsValueOffset = eeGetFieldOffset(valueFldHnd);
 
         var valueStructCls = NO_CLASS_HANDLE;
-        var corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+        var corFldType = eeGetFieldCorInfoType(valueFldHnd, &valueStructCls);
         var valueType = TypeHandleToVarType(corFldType, valueStructCls, out var layout);
 
         var valueOffset = gtNewIconNode(TYP_I_IMPL, cnsValueOffset);
@@ -10249,7 +10249,7 @@ public partial class Compiler
                         // compareTypesForEquality should bail on comparisons for shared value classes.
                         if (clsHnd != NO_CLASS_HANDLE)
                         {
-                            var compare = info.compCompHnd->compareTypesForEquality(resolvedToken.hClass, clsHnd);
+                            var compare = eeCompareTypesForEquality(resolvedToken.hClass, clsHnd);
 
                             if (compare is TypeCompareState.Must)
                             {
@@ -12690,7 +12690,7 @@ public partial class Compiler
             node = gtNewCommaNode(node.Type, store, node);
         }
 
-        var helper = info.compCompHnd->getArrayRank(resolvedToken.hClass) is 1 ? CORINFO_HELP_NEW_MDARR_RARE : CORINFO_HELP_NEW_MDARR;
+        var helper = eeGetArrayRank(resolvedToken.hClass) is 1 ? CORINFO_HELP_NEW_MDARR_RARE : CORINFO_HELP_NEW_MDARR;
 
         node = gtNewHelperCallNode(TYP_REF, helper, classHandle, gtNewIconNode(TYP_INT, numArgs), node);
 
@@ -13064,7 +13064,7 @@ public partial class Compiler
         JITDUMP("\nChecking if we can import 'static readonly' as a jit-time constant... ");
 
         CORINFO_CLASS_HANDLE fieldClsHnd;
-        var fieldType = info.compCompHnd->getFieldType(field, &fieldClsHnd, ownerCls).VarType;
+        var fieldType = eeGetFieldCorInfoType(field, &fieldClsHnd, ownerCls).VarType;
 
         if (varTypeIsIntegral(fieldType) || varTypeIsFloating(fieldType) || (fieldType is TYP_REF))
         {
@@ -13089,7 +13089,7 @@ public partial class Compiler
         else if (fieldType is TYP_STRUCT)
         {
             var totalSize = eeGetClassSize(fieldClsHnd);
-            var fieldsCnt = info.compCompHnd->getClassNumInstanceFields(fieldClsHnd);
+            var fieldsCnt = eeGetClassNumInstanceFields(fieldClsHnd);
 
             // For large structs we only want to handle "initialized with zero" case
             // e.g. Guid.Empty and decimal.Zero static readonly fields.
@@ -13167,10 +13167,10 @@ public partial class Compiler
             // Only single-field structs are supported here to avoid potential regressions where
             // Metadata-driven struct promotion leads to regressions.
 
-            var innerField = info.compCompHnd->getFieldInClass(fieldClsHnd, num: 0);
+            var innerField = eeGetFieldInClass(fieldClsHnd, fieldIndex: 0);
 
             CORINFO_CLASS_HANDLE innerFieldClsHnd;
-            var fieldVarType = info.compCompHnd->getFieldType(innerField, &innerFieldClsHnd, fieldClsHnd).VarType;
+            var fieldVarType = eeGetFieldCorInfoType(innerField, &innerFieldClsHnd, fieldClsHnd).VarType;
 
             // Technically, we can support frozen gc refs here and maybe floating point in future
             if (!varTypeIsIntegral(fieldVarType))
@@ -13179,7 +13179,7 @@ public partial class Compiler
                 return null;
             }
 
-            var fldOffset = (ushort)(info.compCompHnd->getFieldOffset(innerField));
+            var fldOffset = (ushort)(eeGetFieldOffset(innerField));
 
             if ((fldOffset is not 0) || (totalSize != fieldVarType.Size) || (totalSize is 0))
             {
@@ -13585,7 +13585,7 @@ public partial class Compiler
 
         if (isMDArray)
         {
-            rank = info.compCompHnd->getArrayRank(arrayClsHnd);
+            rank = eeGetArrayRank(arrayClsHnd);
 
             if (rank is 0)
             {
@@ -13735,14 +13735,14 @@ public partial class Compiler
             numElementsOverflow = (length < 0) || ((nuint)length > uint.MaxValue);
             numElements = unchecked((int)length);
 
-            if (!info.compCompHnd->isSDArray(arrayClsHnd))
+            if (!eeIsSDArray(arrayClsHnd))
             {
                 return null;
             }
         }
 
         CORINFO_CLASS_HANDLE elemClsHnd;
-        var elementType = info.compCompHnd->getChildType(arrayClsHnd, &elemClsHnd).VarType;
+        var elementType = eeGetChildType(arrayClsHnd, &elemClsHnd).VarType;
 
         //
         // Note that genTypeSize will return zero for non primitive types, which is exactly
@@ -14261,15 +14261,15 @@ public partial class Compiler
         //  result._hasValue = true;
         //  result._value = MethodTableLookup(obj);
         //
-        var valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
+        var valueFldHnd = eeGetFieldInClass(nullableCls, 1);
 
         var valueStructCls = NO_CLASS_HANDLE;
-        var corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+        var corFldType = eeGetFieldCorInfoType(valueFldHnd, &valueStructCls);
 
         var valueType = TypeHandleToVarType(corFldType, valueStructCls, out var layout);
 
         var hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
-        var valueOffset = (ushort)(info.compCompHnd->getFieldOffset(valueFldHnd));
+        var valueOffset = (ushort)(eeGetFieldOffset(valueFldHnd));
         var boxedContentAddr = gtNewBinaryNode(GT_ADD, TYP_BYREF, gtCloneExpr(objClone), gtNewIconNode(TYP_I_IMPL, Configuration.TARGET_POINTER_SIZE));
 
         // Load the boxed content from the object (op1):
@@ -15897,7 +15897,7 @@ public partial class Compiler
             JITDUMP($"\nConsidering optimization of {(isCastClass ? "castclass" : "isinst")} from {(isExact ? "exact " : "")}{FMT_DSP_PTR(fromClass)} ({eeGetClassName(fromClass)}) to {FMT_DSP_PTR(toClass)} ({eeGetClassName(toClass)})\n");
 
             // Perhaps we know if the cast will succeed or fail.
-            var castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass);
+            var castResult = eeCompareTypesForCast(fromClass, toClass);
 
             if (castResult == TypeCompareState.Must)
             {
@@ -19966,7 +19966,7 @@ public partial class Compiler
 
         if (doPrint)
         {
-            var baseClass = info.compCompHnd->getMethodClass(baseMethod);
+            var baseClass = eeGetMethodClass(baseMethod);
             var baseClassAttribs = eeGetClassAttribs(baseClass);
             var derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) is not 0);
             var callKind = ((baseClassAttribs & CORINFO_FLG_INTERFACE) is not 0) ? "interface" : "virtual";
@@ -20378,7 +20378,7 @@ public partial class Compiler
         // make sure both arguments are `typeof()`
         if (gtIsTypeof(typeTo, out var hClassTo) && gtIsTypeof(typeFrom, out var hClassFrom))
         {
-            var castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo);
+            var castResult = eeCompareTypesForCast(hClassFrom, hClassTo);
 
             if (castResult is TypeCompareState.May)
             {
@@ -20718,7 +20718,7 @@ public partial class Compiler
             else if (corType == CORINFO_TYPE_BYREF)
             {
                 sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-                corType = info.compCompHnd->getChildType(sigClass, &sigClass);
+                corType = eeGetChildType(sigClass, &sigClass);
             }
 
             if (argNode is not null)

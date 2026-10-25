@@ -129,7 +129,7 @@ public sealed partial class ValueNumStore
                 $"({_compiler.eeGetClassName(class0)}) and {FMT_PTR((void*)_compiler.dspPtr(class1))} " +
                 $"({_compiler.eeGetClassName(class1)}) for equality\n");
         }
-        var state = _compiler.info.compCompHnd->compareTypesForEquality(
+        var state = _compiler.eeCompareTypesForEquality(
             class0, class1);
         if (state is TypeCompareState.May)
         {
@@ -165,7 +165,7 @@ public sealed partial class ValueNumStore
                 EmbeddedHandleMapLookup(ConstantValue<nint>(castToVN), ref compileTimeHandle) &&
                 (compileTimeHandle != 0))
             {
-                var state = _compiler.info.compCompHnd->compareTypesForCast(
+                var state = _compiler.eeCompareTypesForCast(
                     castFrom, (CORINFO_CLASS_HANDLE)compileTimeHandle);
                 if (state is TypeCompareState.Must)
                 {

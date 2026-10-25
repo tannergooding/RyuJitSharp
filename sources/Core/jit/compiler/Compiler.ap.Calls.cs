@@ -34,7 +34,7 @@ public partial class Compiler
 
         assert(castTo != NO_CLASS_HANDLE);
         var castFrom = vnStore.GetObjectType(objectVN, out _, out _);
-        if ((castFrom != NO_CLASS_HANDLE) && (info.compCompHnd->compareTypesForCast(castFrom, castTo) is TypeCompareState.Must))
+        if ((castFrom != NO_CLASS_HANDLE) && (eeCompareTypesForCast(castFrom, castTo) is TypeCompareState.Must))
         {
             return true;
         }
@@ -52,7 +52,7 @@ public partial class Compiler
                 }
 
                 if (vnStore.IsVNTypeHandle(assertion.Op2.VN, out var source) &&
-                    (info.compCompHnd->compareTypesForCast(source, castTo) is TypeCompareState.Must))
+                    (eeCompareTypesForCast(source, castTo) is TypeCompareState.Must))
                 {
                     result = true;
                     return false;

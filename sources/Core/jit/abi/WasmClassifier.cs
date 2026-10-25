@@ -31,13 +31,12 @@ public ref struct WasmClassifier
 
             var classHandle = layout.ClassHandle;
             assert(classHandle != NO_CLASS_HANDLE);
-            var wasmAbiType = comp.info.compCompHnd->getWasmLowering(classHandle);
+            var wasmAbiType = comp.eeGetWasmLowering(classHandle);
             var passByRef = false;
-            var abiType = TYP_UNDEF;
+            var abiType = TYP_I_IMPL;
 
             if (wasmAbiType is CORINFO_WASM_TYPE_VOID)
             {
-                abiType = TYP_I_IMPL;
                 passByRef = true;
             }
             else

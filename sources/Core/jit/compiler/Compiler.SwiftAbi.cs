@@ -39,7 +39,7 @@ public partial class Compiler
         {
             assert(typeHnd == NO_CLASS_HANDLE);
             var clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->args, argHnd);
-            type = info.compCompHnd->getChildType(clsHnd, &typeHnd);
+            type = eeGetChildType(clsHnd, &typeHnd);
         }
 
         if ((type is not CORINFO_TYPE_VALUECLASS) || !info.compCompHnd->isIntrinsicType(typeHnd))

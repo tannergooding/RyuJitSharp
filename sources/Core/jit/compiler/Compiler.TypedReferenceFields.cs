@@ -13,7 +13,7 @@ public partial class Compiler
         {
             _refAnyClass = eeGetBuiltinClass(CLASSID_TYPED_BYREF);
         }
-        return info.compCompHnd->getFieldInClass(_refAnyClass, 0);
+        return eeGetFieldInClass(_refAnyClass, 0);
     }
 
     public unsafe CORINFO_FIELD_HANDLE GetRefanyTypeField()
@@ -22,6 +22,6 @@ public partial class Compiler
         {
             _refAnyClass = eeGetBuiltinClass(CLASSID_TYPED_BYREF);
         }
-        return info.compCompHnd->getFieldInClass(_refAnyClass, 1);
+        return eeGetFieldInClass(_refAnyClass, 1);
     }
 }

@@ -33,7 +33,7 @@ public struct ClassLayoutBuilder
     public static unsafe bool IsArrayTooLarge(Compiler compiler, CORINFO_CLASS_HANDLE arrayHandle, int length, int maxByteSize)
     {
         var elemClsHnd = NO_CLASS_HANDLE;
-        var type = compiler.info.compCompHnd->getChildType(arrayHandle, &elemClsHnd).VarType;
+        var type = compiler.eeGetChildType(arrayHandle, &elemClsHnd).VarType;
 
         var elementSize = (type is TYP_STRUCT) ? compiler.typGetObjLayout(elemClsHnd).Size : type.Size;
         var byteSize = unchecked((long)(elementSize) * length);
@@ -52,11 +52,11 @@ public struct ClassLayoutBuilder
         assert(arrayHandle != NO_CLASS_HANDLE);
 
         var elemClsHnd = NO_CLASS_HANDLE;
-        var corType = compiler.info.compCompHnd->getChildType(arrayHandle, &elemClsHnd);
+        var corType = compiler.eeGetChildType(arrayHandle, &elemClsHnd);
         var type = corType.VarType;
 
         var elementLayout = null as ClassLayout;
-        var elementSize = 0;
+        int elementSize;
 
         if (type == TYP_STRUCT)
         {

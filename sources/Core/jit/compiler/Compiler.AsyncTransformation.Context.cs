@@ -126,7 +126,7 @@ public partial class Compiler
             {
                 ReplaceAsyncPlaceholder(block, contAddrPlaceholder,
                     ContinuationAddressAtOffset(layout.ContinuationContextOffset));
-                var flagsOffset = _compiler.info.compCompHnd->getFieldOffset(
+                var flagsOffset = _compiler.eeGetFieldOffset(
                     asyncInfo.continuationFlagsFldHnd);
                 ReplaceAsyncPlaceholder(block, flagsPlaceholder,
                     ContinuationAddressAtOffset(flagsOffset, fromData: false));
@@ -271,7 +271,7 @@ public partial class Compiler
                 suspension.InsertAtEnd(LIR.SeqTree(_compiler, capture));
                 ReplaceAsyncPlaceholder(suspension, contPlaceholder,
                     ContinuationAddressAtOffset(layout.ContinuationContextOffset));
-                var flagsOffset = _compiler.info.compCompHnd->getFieldOffset(
+                var flagsOffset = _compiler.eeGetFieldOffset(
                     asyncInfo.continuationFlagsFldHnd);
                 ReplaceAsyncPlaceholder(suspension, flagsPlaceholder,
                     ContinuationAddressAtOffset(flagsOffset, fromData: false));

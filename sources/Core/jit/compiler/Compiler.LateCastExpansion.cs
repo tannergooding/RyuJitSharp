@@ -144,7 +144,7 @@ public partial class Compiler
                 castHelper._callMoreFlags |= GTF_CALL_M_CAST_OBJ_NONNULL;
             }
 
-            var castResult = info.compCompHnd->compareTypesForCast(fromClass, castToCls);
+            var castResult = eeCompareTypesForCast(fromClass, castToCls);
             if (isCastClass && (castResult is TypeCompareState.MustNot))
             {
                 typeCheckPassed = TypeCheckPassedAction.CallHelper_AlwaysThrows;
@@ -235,7 +235,7 @@ public partial class Compiler
                 return 0;
             }
 
-            var castResult = info.compCompHnd->compareTypesForCast((CORINFO_CLASS_HANDLE)candidates[0], castToCls);
+            var castResult = eeCompareTypesForCast((CORINFO_CLASS_HANDLE)candidates[0], castToCls);
             if (castResult is TypeCompareState.May)
             {
                 JITDUMP("compareTypesForCast returned May for this candidate\n");

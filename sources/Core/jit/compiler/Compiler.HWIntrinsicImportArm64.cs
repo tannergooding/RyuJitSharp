@@ -191,7 +191,7 @@ public partial class Compiler
                     if (op2.Type == TYP_STRUCT)
                     {
                         info.compNeedsConsecutiveRegisters = true;
-                        var fieldCount = unchecked((uint)info.compCompHnd->getClassNumInstanceFields(argClass));
+                        var fieldCount = unchecked((uint)eeGetClassNumInstanceFields(argClass));
                         if (op2.Oper != GT_LCL_VAR)
                         {
                             var temp = lvaGrabTemp(true, "StoreVectorN");
@@ -233,7 +233,7 @@ public partial class Compiler
                     var argClass = NO_CLASS_HANDLE;
                     var argType = strip(info.compCompHnd->getArgType(signature, arg2, &argClass)).VarType;
                     op2 = impPopStack().val;
-                    var fieldCount = unchecked((uint)info.compCompHnd->getClassNumInstanceFields(argClass));
+                    var fieldCount = unchecked((uint)eeGetClassNumInstanceFields(argClass));
                     argType = strip(info.compCompHnd->getArgType(signature, arg1, &argClass)).VarType;
                     op1 = getArgForHWIntrinsic(argType, argClass);
                     assert(op2.Type == TYP_STRUCT);
@@ -273,7 +273,7 @@ public partial class Compiler
                     op3 = impPopStack().val;
                     argType = strip(info.compCompHnd->getArgType(signature, arg2, &argClass)).VarType;
                     op2 = impPopStack().val;
-                    var fieldCount = unchecked((uint)info.compCompHnd->getClassNumInstanceFields(argClass));
+                    var fieldCount = unchecked((uint)eeGetClassNumInstanceFields(argClass));
                     if (op2.Type == TYP_STRUCT)
                     {
                         info.compNeedsConsecutiveRegisters = true;
@@ -447,7 +447,7 @@ public partial class Compiler
                     assert(HWIntrinsicInfo.IsMultiReg(intrinsic));
                     assert(op1.Type == TYP_STRUCT);
                     info.compNeedsConsecutiveRegisters = true;
-                    var fieldCount = unchecked((uint)info.compCompHnd->getClassNumInstanceFields(argClass));
+                    var fieldCount = unchecked((uint)eeGetClassNumInstanceFields(argClass));
                     if (op1.Oper != GT_LCL_VAR)
                     {
                         var temp = lvaGrabTemp(true, "LoadAndInsertScalar temp tree");
@@ -473,7 +473,7 @@ public partial class Compiler
                     if (op1.Type == TYP_STRUCT)
                     {
                         info.compNeedsConsecutiveRegisters = true;
-                        var fieldCount = unchecked((uint)info.compCompHnd->getClassNumInstanceFields(argClass));
+                        var fieldCount = unchecked((uint)eeGetClassNumInstanceFields(argClass));
                         if (op1.Oper != GT_LCL_VAR)
                         {
                             var temp = lvaGrabTemp(true, "VectorTableLookup temp tree");
@@ -505,7 +505,7 @@ public partial class Compiler
                     if (op2.Type == TYP_STRUCT)
                     {
                         info.compNeedsConsecutiveRegisters = true;
-                        var fieldCount = unchecked((uint)info.compCompHnd->getClassNumInstanceFields(argClass));
+                        var fieldCount = unchecked((uint)eeGetClassNumInstanceFields(argClass));
                         if (op2.Oper != GT_LCL_VAR)
                         {
                             var temp = lvaGrabTemp(true, "VectorTableLookupExtension temp tree");
@@ -531,7 +531,7 @@ public partial class Compiler
                     var argClass = NO_CLASS_HANDLE;
                     var argType = strip(info.compCompHnd->getArgType(signature, arg3, &argClass)).VarType;
                     op3 = impPopStack().val;
-                    var fieldCount = unchecked((uint)info.compCompHnd->getClassNumInstanceFields(argClass));
+                    var fieldCount = unchecked((uint)eeGetClassNumInstanceFields(argClass));
                     if (op3.Type == TYP_STRUCT)
                     {
                         info.compNeedsConsecutiveRegisters = true;
@@ -582,7 +582,7 @@ public partial class Compiler
                     var tempClass = NO_CLASS_HANDLE;
                     var pointerType = strip(info.compCompHnd->getArgType(signature, arg, &tempClass));
                     assert(pointerType == CORINFO_TYPE_PTR);
-                    pointerType = info.compCompHnd->getChildType(argClass, &tempClass);
+                    pointerType = eeGetChildType(argClass, &tempClass);
                     assert(pointerType.PreciseVarType < simdBaseType);
                     op3 = impPopStack().val;
                     op2 = impPopStack().val;
@@ -818,7 +818,7 @@ public partial class Compiler
                     if (op1.Type == TYP_STRUCT)
                     {
                         info.compNeedsConsecutiveRegisters = true;
-                        var fieldCount = unchecked((uint)info.compCompHnd->getClassNumInstanceFields(argClass));
+                        var fieldCount = unchecked((uint)eeGetClassNumInstanceFields(argClass));
                         op1 = gtConvertTableOpToFieldListArm64(op1, fieldCount);
                     }
                     var node = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1, op2);
@@ -912,9 +912,9 @@ public partial class Compiler
 
         for (uint field = 0; field < fieldCount; field++)
         {
-            var handle = info.compCompHnd->getFieldInClass(clsHnd, unchecked((int)field));
+            var handle = eeGetFieldInClass(clsHnd, unchecked((int)field));
             CORINFO_CLASS_HANDLE structType;
-            _ = info.compCompHnd->getFieldType(handle, &structType).PreciseVarType;
+            _ = eeGetFieldCorInfoType(handle, &structType).PreciseVarType;
             _ = getBaseTypeAndSizeOfSimdType(structType, out var sizeBytes);
             var simdType = GetSimdTypeForSize(sizeBytes);
 

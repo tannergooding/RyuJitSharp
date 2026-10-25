@@ -29,14 +29,14 @@ public partial class Compiler
         for (; ; )
         {
             // Every nested value class in the chain must also have exactly one field.
-            if (!eeIsValueClass(clsHnd) || info.compCompHnd->getClassNumInstanceFields(clsHnd) is not 1)
+            if (!eeIsValueClass(clsHnd) || eeGetClassNumInstanceFields(clsHnd) is not 1)
             {
                 return false;
             }
 
             var pClsHnd = &clsHnd;
-            var fieldHandle = info.compCompHnd->getFieldInClass(clsHnd, 0);
-            var fieldType = info.compCompHnd->getFieldType(fieldHandle, pClsHnd);
+            var fieldHandle = eeGetFieldInClass(clsHnd, 0);
+            var fieldType = eeGetFieldCorInfoType(fieldHandle, pClsHnd);
             var fieldVarType = fieldType.VarType;
 
             if (fieldType == CORINFO_TYPE_VALUECLASS)

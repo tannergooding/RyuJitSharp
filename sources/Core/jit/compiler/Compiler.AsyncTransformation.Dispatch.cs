@@ -67,7 +67,7 @@ public partial class Compiler
 
                 var resumedContinuation = _compiler.gtNewLclvNode(
                     TYP_REF, _compiler.lvaAsyncContinuationArg);
-                var stateOffset = _compiler.info.compCompHnd->getFieldOffset(
+                var stateOffset = _compiler.eeGetFieldOffset(
                     _compiler.eeGetAsyncInfo().continuationStateFldHnd);
                 var state = LoadFromOffset(resumedContinuation, stateOffset, TYP_INT,
                     GTF_IND_NONFAULTING);
@@ -86,7 +86,7 @@ public partial class Compiler
                     $"{FMT_BB(switchBlock.bbNum)} for resumption with {_states.Count} states\n");
 
                 continuation = _compiler.gtNewLclvNode(TYP_REF, _compiler.lvaAsyncContinuationArg);
-                var stateOffset = _compiler.info.compCompHnd->getFieldOffset(
+                var stateOffset = _compiler.eeGetFieldOffset(
                     _compiler.eeGetAsyncInfo().continuationStateFldHnd);
                 var state = LoadFromOffset(continuation, stateOffset, TYP_INT,
                     GTF_IND_NONFAULTING);

@@ -60,11 +60,11 @@ public partial class Compiler
                 if (retFieldType is TYP_STRUCT)
                 {
                     assert(retFieldBaseType is TYP_UNDEF);
-                    var fieldCount = info.compCompHnd->getClassNumInstanceFields(sig.retTypeSigClass);
+                    var fieldCount = eeGetClassNumInstanceFields(sig.retTypeSigClass);
                     assert(fieldCount > 1);
-                    var fieldHandle = info.compCompHnd->getFieldInClass(sig.retTypeClass, 0);
+                    var fieldHandle = eeGetFieldInClass(sig.retTypeClass, 0);
                     CORINFO_CLASS_HANDLE structType;
-                    _ = info.compCompHnd->getFieldType(fieldHandle, &structType);
+                    _ = eeGetFieldCorInfoType(fieldHandle, &structType);
                     simdBaseType = getBaseTypeAndSizeOfSimdType(structType, out var fieldSizeBytes);
 
                     switch (fieldCount)
@@ -170,13 +170,13 @@ public partial class Compiler
             }
             if (Configuration.DEBUG)
             {
-                var fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+                var fieldCount = eeGetClassNumInstanceFields(argClass);
                 assert(fieldCount > 1);
             }
 
             CORINFO_CLASS_HANDLE classHnd;
-            var fieldHandle = info.compCompHnd->getFieldInClass(argClass, 0);
-            _ = info.compCompHnd->getFieldType(fieldHandle, &classHnd);
+            var fieldHandle = eeGetFieldInClass(argClass, 0);
+            _ = eeGetFieldCorInfoType(fieldHandle, &classHnd);
             assert(isIntrinsicType(classHnd));
             simdBaseType = getBaseTypeAndSizeOfSimdType(classHnd, out var sizeBytes);
             simdSize = checked((byte)sizeBytes);
@@ -787,7 +787,7 @@ public partial class Compiler
                     var baseJitType = strip(info.compCompHnd->getArgType(sigPointer, arg, &tmpClass));
                     if (baseJitType is CORINFO_TYPE_PTR)
                     {
-                        baseJitType = info.compCompHnd->getChildType(argClass, &tmpClass);
+                        baseJitType = eeGetChildType(argClass, &tmpClass);
                     }
 
                     simdBaseType = baseJitType.PreciseVarType;

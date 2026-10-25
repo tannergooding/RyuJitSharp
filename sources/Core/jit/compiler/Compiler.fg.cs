@@ -1268,7 +1268,7 @@ public partial class Compiler
     {
         for (var i = 0; ; i++)
         {
-            var instArg = info.compCompHnd->getTypeInstantiationArgument(handle, i);
+            var instArg = eeGetTypeInstantiationArgument(handle, i);
 
             if (instArg == NO_CLASS_HANDLE)
             {
@@ -9437,7 +9437,7 @@ public partial class Compiler
         noway_assert(call._callType is CT_USER_FUNC);
 
         var methHnd = call._callMethHnd;
-        var clsHnd = info.compCompHnd->getMethodClass(methHnd);
+        var clsHnd = eeGetMethodClass(methHnd);
 
         assert(call.Args.HasThisPointer);
         assert(call.Args.CountArgs() is 3);

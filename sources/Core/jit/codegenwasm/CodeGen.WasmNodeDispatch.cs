@@ -1274,7 +1274,7 @@ public sealed partial class CodeGen
         }
         else if (callRetType is TYP_STRUCT)
         {
-            var retWasmType = _compiler.info.compCompHnd->getWasmLowering(call.RetClsHnd);
+            var retWasmType = _compiler.eeGetWasmLowering(call.RetClsHnd);
             // A wider struct is returned through a hidden buffer and must take the branch above.
             assert(retWasmType is not CORINFO_WASM_TYPE_VOID);
             assert(_compiler.info.compCompHnd->getClassSize(call.RetClsHnd) <=
@@ -1329,7 +1329,7 @@ public sealed partial class CodeGen
 
                     if (((methodFlags & CORINFO_FLG_CONSTRUCTOR) != 0) &&
                         (stringClass != NO_CLASS_HANDLE) &&
-                        (_compiler.info.compCompHnd->getMethodClass(parameters.methHnd) == stringClass))
+                        (_compiler.eeGetMethodClass(parameters.methHnd) == stringClass))
                     {
                         // String constructors are emitted as static string-returning calls.
                         sigInfoLocal.retType = CORINFO_TYPE_CLASS;

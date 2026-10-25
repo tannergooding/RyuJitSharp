@@ -288,7 +288,7 @@ internal static unsafe class SysVX64ClassifierTests
             Assert.That(classifier.StackSize, Is.EqualTo(stackSize * 2));
             Assert.That(classifier.Classify(compiler, TYP_INT, null, WellKnownArg.None).Segments[0].Register,
                 Is.EqualTo(regNumber.REG_X64_EDI));
-            Assert.That(metadata.QueryCount, Is.EqualTo(2));
+            Assert.That(metadata.QueryCount, Is.EqualTo(1));
         });
     }
 
@@ -316,7 +316,7 @@ internal static unsafe class SysVX64ClassifierTests
             AssertStack(classifier.Classify(compiler, TYP_STRUCT, layout, WellKnownArg.None), 0, -1);
             Assert.That(classifier.StackSize, Is.Zero);
             AssertStack(classifier.Classify(compiler, TYP_STRUCT, layout, WellKnownArg.None), 0, -1);
-            Assert.That(metadata.QueryCount, Is.EqualTo(2));
+            Assert.That(metadata.QueryCount, Is.EqualTo(1));
         });
     }
 

@@ -212,7 +212,7 @@ public partial class Compiler
         }
 
         CORINFO_CLASS_HANDLE arrayElementHandle = null;
-        var arrayElemType = info.compCompHnd->getChildType(arrayHandle, &arrayElementHandle);
+        var arrayElemType = eeGetChildType(arrayHandle, &arrayElementHandle);
 
         // Verify array type handle is really an array of ref type
         assert(arrayElemType == CORINFO_TYPE_CLASS);
@@ -242,7 +242,7 @@ public partial class Compiler
         }
 
         // Array's type is not sealed but we know its exact type
-        if (arrayIsExact && (valueHandle != NO_CLASS_HANDLE) && (info.compCompHnd->compareTypesForCast(valueHandle, arrayElementHandle) == TypeCompareState.Must))
+        if (arrayIsExact && (valueHandle != NO_CLASS_HANDLE) && (eeCompareTypesForCast(valueHandle, arrayElementHandle) == TypeCompareState.Must))
         {
             JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
             return true;
@@ -5324,7 +5324,7 @@ public partial class Compiler
             if ((cls1Hnd != NO_CLASS_HANDLE) && (cls2Hnd != NO_CLASS_HANDLE))
             {
                 JITDUMP($"Asking runtime to compare {FMT_PTR(cls1Hnd)} ({eeGetClassName(cls1Hnd)}) and {FMT_PTR(cls2Hnd)} ({eeGetClassName(cls2Hnd)}) for equality\n");
-                var s = info.compCompHnd->compareTypesForEquality(cls1Hnd, cls2Hnd);
+                var s = eeCompareTypesForEquality(cls1Hnd, cls2Hnd);
 
                 if (s is not TypeCompareState.May)
                 {
@@ -5465,7 +5465,7 @@ public partial class Compiler
             // with `true/false` + null check.
             if ((objCls != NO_CLASS_HANDLE) && (isExact || info.compCompHnd->isExactType(objCls)))
             {
-                var tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
+                var tcs = eeCompareTypesForEquality(objCls, clsHnd);
 
                 if (tcs is not TypeCompareState.May)
                 {
@@ -5591,7 +5591,7 @@ public partial class Compiler
     /// <returns>null if element class handle is unknown, otherwise the class handle.</returns>
     public unsafe CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree array)
     {
-        var arrayClassHnd = gtGetClassHandle(array, out var isArrayExact, out var isArrayNonNull);
+        var arrayClassHnd = gtGetClassHandle(array, out _, out _);
 
         if (arrayClassHnd is not null)
         {
@@ -5602,7 +5602,7 @@ public partial class Compiler
             {
                 // We know for sure it is an array
                 CORINFO_CLASS_HANDLE elemClassHnd;
-                var arrayElemType = info.compCompHnd->getChildType(arrayClassHnd, &elemClassHnd);
+                var arrayElemType = eeGetChildType(arrayClassHnd, &elemClassHnd);
 
                 if (arrayElemType == CORINFO_TYPE_CLASS)
                 {
@@ -5762,7 +5762,7 @@ public partial class Compiler
                         // This is a constructor call.
                         var methodFlags = info.compCompHnd->getMethodAttribs(method);
                         assert((methodFlags & CORINFO_FLG_CONSTRUCTOR) != 0);
-                        objClass = info.compCompHnd->getMethodClass(method);
+                        objClass = eeGetMethodClass(method);
                         isExact = true;
                         isNonNull = true;
                     }
@@ -5957,7 +5957,7 @@ public partial class Compiler
         isNonNull = false;
 
         var fieldClass = NO_CLASS_HANDLE;
-        var fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
+        var fieldCorType = eeGetFieldCorInfoType(fieldHnd, &fieldClass);
 
         if (fieldCorType == CORINFO_TYPE_CLASS)
         {

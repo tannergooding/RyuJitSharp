@@ -38,7 +38,7 @@ public partial class Compiler
                     argClass = info.compCompHnd->getArgClass(pSig, sigArg);
                 }
 
-                argType = info.compCompHnd->getChildType(argClass, &argClass);
+                argType = eeGetChildType(argClass, &argClass);
             }
 
             if (argType is not CORINFO_TYPE_VALUECLASS)
@@ -97,7 +97,7 @@ public partial class Compiler
                             BADCODE("SwiftSelf<T> must be the last argument in the signature");
                         }
 
-                        selfType = info.compCompHnd->getTypeInstantiationArgument(argClass, 0);
+                        selfType = eeGetTypeInstantiationArgument(argClass, 0);
                         if (info.compCompHnd->asCorInfoType(selfType) is not CORINFO_TYPE_VALUECLASS)
                         {
                             BADCODE("SwiftSelf<T> expects T to be a value class");

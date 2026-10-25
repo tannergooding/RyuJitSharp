@@ -1278,7 +1278,7 @@ public partial class Compiler
 
                         case NI_Vector_GetCount:
                         {
-                            var typeArgHnd = compiler.info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
+                            var typeArgHnd = compiler.eeGetTypeInstantiationArgument(clsHnd, 0);
                             var simdBaseJitType = compiler.info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
 
                             switch (simdBaseJitType)
@@ -1868,11 +1868,11 @@ public partial class Compiler
                         {
                             var arrayHnd = compiler.gtGetClassHandle(array, out _, out notNull);
 
-                            if ((arrayHnd == NO_CLASS_HANDLE) || !compiler.info.compCompHnd->isSDArray(arrayHnd))
+                            if ((arrayHnd == NO_CLASS_HANDLE) || !compiler.eeIsSDArray(arrayHnd))
                             {
                                 return null;
                             }
-                            jitType = compiler.info.compCompHnd->getChildType(arrayHnd, &elemHnd);
+                            jitType = compiler.eeGetChildType(arrayHnd, &elemHnd);
                         }
 
                         array = compiler.impPopStack().val;
@@ -2012,8 +2012,8 @@ public partial class Compiler
                         }
 
                         // Bounds check
-                        var lengthHnd = compiler.info.compCompHnd->getFieldInClass(clsHnd, 1);
-                        var lengthOffset = compiler.info.compCompHnd->getFieldOffset(lengthHnd);
+                        var lengthHnd = compiler.eeGetFieldInClass(clsHnd, 1);
+                        var lengthOffset = compiler.eeGetFieldOffset(lengthHnd);
 
                         var lengthFieldAddr = compiler.gtNewFieldAddrNode(ptrToSpan, lengthHnd, lengthOffset);
                         var length = compiler.gtNewIndir(TYP_INT, lengthFieldAddr);
@@ -2031,8 +2031,8 @@ public partial class Compiler
                             index = compiler.gtNewBinaryNode(GT_MUL, TYP_I_IMPL, index, sizeofNode);
                         }
 
-                        var ptrHnd = compiler.info.compCompHnd->getFieldInClass(clsHnd, 0);
-                        var ptrOffset = compiler.info.compCompHnd->getFieldOffset(ptrHnd);
+                        var ptrHnd = compiler.eeGetFieldInClass(clsHnd, 0);
+                        var ptrOffset = compiler.eeGetFieldOffset(ptrHnd);
                         var dataFieldAddr = compiler.gtNewFieldAddrNode(ptrToSpanClone, ptrHnd, ptrOffset);
                         var data = compiler.gtNewIndir(TYP_BYREF, dataFieldAddr);
                         var result = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, data, index);
@@ -2072,8 +2072,8 @@ public partial class Compiler
                             compiler.gtDispTree(ptrToSpan);
                         }
 
-                        var lengthHnd = compiler.info.compCompHnd->getFieldInClass(clsHnd, 1);
-                        var lengthOffset = compiler.info.compCompHnd->getFieldOffset(lengthHnd);
+                        var lengthHnd = compiler.eeGetFieldInClass(clsHnd, 1);
+                        var lengthOffset = compiler.eeGetFieldOffset(lengthHnd);
 
                         var lengthFieldAddr = compiler.gtNewFieldAddrNode(ptrToSpan, lengthHnd, lengthOffset);
                         var lengthField = compiler.gtNewIndir(TYP_INT, lengthFieldAddr);
@@ -3333,9 +3333,9 @@ public partial class Compiler
 
                             if (arrCls != NO_CLASS_HANDLE)
                             {
-                                var rank = compiler.info.compCompHnd->getArrayRank(arrCls);
+                                var rank = compiler.eeGetArrayRank(arrCls);
 
-                                if ((rank > 1) && !compiler.info.compCompHnd->isSDArray(arrCls))
+                                if ((rank > 1) && !compiler.eeIsSDArray(arrCls))
                                 {
                                     // `rank` is guaranteed to be <=32 (see MAX_RANK in vm\array.h). Any constant argument is `int` sized.
                                     var dimValue = gtDim.AsIntConCommon().IntegralValue;

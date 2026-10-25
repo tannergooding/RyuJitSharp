@@ -10,8 +10,24 @@ public partial class Compiler
     public unsafe void eeGetSystemVAmd64PassStructInRegisterDescriptor(
         CORINFO_CLASS_HANDLE structHandle, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* descriptor)
     {
-        var success = info.compCompHnd->getSystemVAmd64PassStructInRegisterDescriptor(structHandle, descriptor);
-        noway_assert(success);
+        var key = (nint)structHandle;
+        var cache = _systemVStructPassingDescriptorCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedDescriptor))
+        {
+            descriptor->CopyFrom(cachedDescriptor);
+        }
+        else
+        {
+            var success = info.compCompHnd->getSystemVAmd64PassStructInRegisterDescriptor(structHandle, descriptor);
+            noway_assert(success);
+
+            if (success)
+            {
+                cache ??= [];
+                cache.Add(key, *descriptor);
+                _systemVStructPassingDescriptorCache = cache;
+            }
+        }
 
         if (Configuration.DEBUG && verbose)
         {

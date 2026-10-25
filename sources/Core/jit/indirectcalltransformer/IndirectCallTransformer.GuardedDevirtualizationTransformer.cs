@@ -283,7 +283,7 @@ public sealed partial class IndirectCallTransformer
             }
             else
             {
-                _compiler.lvaSetClass(thisTemp, _compiler.info.compCompHnd->getMethodClass(inlineInfo.guardedMethodHandle));
+                _compiler.lvaSetClass(thisTemp, _compiler.eeGetMethodClass(inlineInfo.guardedMethodHandle));
             }
 
             _compiler.fgInsertStmtAtEnd(block, _compiler.gtNewStmt(store));
@@ -368,7 +368,7 @@ public sealed partial class IndirectCallTransformer
 
                 _compiler.fgInsertStmtAtEnd(block, _compiler.gtNewStmt(call, _stmt.DebugInfo));
                 var oldRetExpr = inlineInfo.retExpr;
-                inlineInfo.clsHandle = _compiler.info.compCompHnd->getMethodClass(methodHnd);
+                inlineInfo.clsHandle = _compiler.eeGetMethodClass(methodHnd);
                 inlineInfo.exactContextHandle = exactContext;
                 inlineInfo.preexistingSpillTemp = _returnTemp;
                 call.SingleInlineCandidateInfo = inlineInfo;

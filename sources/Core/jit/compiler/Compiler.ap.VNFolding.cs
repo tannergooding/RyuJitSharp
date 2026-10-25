@@ -402,7 +402,7 @@ public partial class Compiler
                     {
                         var to = gtGetHelperArgClassHandle(castClass);
                         if ((to != NO_CLASS_HANDLE) &&
-                            (info.compCompHnd->compareTypesForCast(from, to) is TypeCompareState.Must))
+                            (eeCompareTypesForCast(from, to) is TypeCompareState.Must))
                         {
                             castObject = fgMakeMultiUse(ref castObjectArg.NodeRef);
                             return gtWrapWithSideEffects(castObject, call, GTF_ALL_EFFECT, true);

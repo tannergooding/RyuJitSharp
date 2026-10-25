@@ -38,6 +38,33 @@ public partial class Compiler
     private readonly record struct ClassLayoutQueryKey(
         nint ClassHandle, ClassLayoutQueryKind QueryKind, bool DoubleAlignHint);
 
+    private readonly record struct FieldInClassCacheKey(nint ClassHandle, int FieldIndex);
+
+    private readonly record struct FieldTypeCacheKey(nint FieldHandle, nint MemberParent, bool HasStructTypeOutput);
+
+    private readonly record struct FieldTypeCacheValue(CorInfoType FieldType, nint StructType);
+
+    private enum InstantiationArgumentQueryKind
+    {
+        Type,
+        Method,
+    }
+
+    private readonly record struct InstantiationArgumentCacheKey(
+        nint Handle, int Index, InstantiationArgumentQueryKind QueryKind);
+
+    private readonly record struct ChildTypeCacheKey(nint ClassHandle, bool HasClassHandleOutput);
+
+    private readonly record struct ChildTypeCacheValue(CorInfoType ChildType, nint ChildClassHandle, bool HasChildClassHandle);
+
+    private struct TypeComparisonCacheEntry
+    {
+        public nint LeftClassHandle;
+        public nint RightClassHandle;
+        public TypeCompareState Result;
+        public bool HasValue;
+    }
+
     private const int BuiltinClassCacheLength = (int)CorInfoClassId.CLASSID_NUMERICS_VECTORT + 1;
 
     [InlineArray(BuiltinClassCacheLength)]
@@ -52,6 +79,20 @@ public partial class Compiler
     private Dictionary<ClassLayoutQueryKey, int>? _classLayoutQueryCache;
     private Dictionary<nint, CorInfoFlag>? _classAttribsCache;
     private Dictionary<nint, bool>? _valueClassCache;
+    private Dictionary<nint, nint>? _methodClassCache;
+    private Dictionary<nint, CorInfoHFAElemType>? _hfaTypeCache;
+    private Dictionary<nint, CorInfoWasmType>? _wasmLoweringCache;
+    private Dictionary<nint, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR>? _systemVStructPassingDescriptorCache;
+    private Dictionary<nint, int>? _classInstanceFieldCountCache;
+    private Dictionary<FieldInClassCacheKey, nint>? _fieldInClassCache;
+    private Dictionary<nint, int>? _fieldOffsetCache;
+    private Dictionary<FieldTypeCacheKey, FieldTypeCacheValue>? _fieldTypeCache;
+    private Dictionary<InstantiationArgumentCacheKey, nint>? _instantiationArgumentCache;
+    private Dictionary<ChildTypeCacheKey, ChildTypeCacheValue>? _childTypeCache;
+    private Dictionary<nint, int>? _arrayRankCache;
+    private Dictionary<nint, bool>? _singleDimensionalArrayCache;
+    private TypeComparisonCacheEntry _lastTypeCastComparison;
+    private TypeComparisonCacheEntry _lastTypeEqualityComparison;
 
     private interface IEEPrintVisitor<TSelf>
         where TSelf : struct, IEEPrintVisitor<TSelf>
@@ -330,6 +371,216 @@ public partial class Compiler
         return value;
     }
 
+    public unsafe int eeGetClassNumInstanceFields(CORINFO_CLASS_HANDLE classHandle)
+    {
+        var key = (nint)classHandle;
+        var cache = _classInstanceFieldCountCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        var fieldCount = info.compCompHnd->getClassNumInstanceFields(classHandle);
+
+        cache ??= [];
+        cache.Add(key, fieldCount);
+        _classInstanceFieldCountCache = cache;
+        return fieldCount;
+    }
+
+    public unsafe CORINFO_FIELD_HANDLE eeGetFieldInClass(CORINFO_CLASS_HANDLE classHandle, int fieldIndex)
+    {
+        var key = new FieldInClassCacheKey((nint)classHandle, fieldIndex);
+        var cache = _fieldInClassCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedFieldHandle))
+        {
+            return (CORINFO_FIELD_HANDLE)cachedFieldHandle;
+        }
+
+        var fieldHandle = info.compCompHnd->getFieldInClass(classHandle, fieldIndex);
+
+        cache ??= [];
+        cache.Add(key, (nint)fieldHandle);
+        _fieldInClassCache = cache;
+        return fieldHandle;
+    }
+
+    public unsafe int eeGetFieldOffset(CORINFO_FIELD_HANDLE fieldHandle)
+    {
+        var key = (nint)fieldHandle;
+        var cache = _fieldOffsetCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        var fieldOffset = info.compCompHnd->getFieldOffset(fieldHandle);
+
+        cache ??= [];
+        cache.Add(key, fieldOffset);
+        _fieldOffsetCache = cache;
+        return fieldOffset;
+    }
+
+    public unsafe CORINFO_CLASS_HANDLE eeGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE classHandle, int index) =>
+        eeGetInstantiationArgument((nint)classHandle, index, InstantiationArgumentQueryKind.Type);
+
+    public unsafe CORINFO_CLASS_HANDLE eeGetMethodInstantiationArgument(CORINFO_METHOD_HANDLE methodHandle, int index) =>
+        eeGetInstantiationArgument((nint)methodHandle, index, InstantiationArgumentQueryKind.Method);
+
+    private unsafe CORINFO_CLASS_HANDLE eeGetInstantiationArgument(
+        nint handle, int index, InstantiationArgumentQueryKind queryKind)
+    {
+        var key = new InstantiationArgumentCacheKey(handle, index, queryKind);
+        var cache = _instantiationArgumentCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedClassHandle))
+        {
+            return (CORINFO_CLASS_HANDLE)cachedClassHandle;
+        }
+
+        var classHandle = queryKind switch {
+            InstantiationArgumentQueryKind.Type =>
+                info.compCompHnd->getTypeInstantiationArgument((CORINFO_CLASS_HANDLE)handle, index),
+            InstantiationArgumentQueryKind.Method =>
+                info.compCompHnd->getMethodInstantiationArgument((CORINFO_METHOD_HANDLE)handle, index),
+            _ => throw new InvalidOperationException("Unexpected instantiation-argument query."),
+        };
+
+        cache ??= [];
+        cache.Add(key, (nint)classHandle);
+        _instantiationArgumentCache = cache;
+        return classHandle;
+    }
+
+    public unsafe CorInfoType eeGetChildType(CORINFO_CLASS_HANDLE classHandle, CORINFO_CLASS_HANDLE* childClassHandle)
+    {
+        var key = new ChildTypeCacheKey((nint)classHandle, childClassHandle is not null);
+        var cache = _childTypeCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            if ((childClassHandle is not null) && cachedValue.HasChildClassHandle)
+            {
+                *childClassHandle = (CORINFO_CLASS_HANDLE)cachedValue.ChildClassHandle;
+            }
+
+            return cachedValue.ChildType;
+        }
+
+        var childType = info.compCompHnd->getChildType(classHandle, childClassHandle);
+        var hasChildClassHandle = (childClassHandle is not null) &&
+                                  (childType is CORINFO_TYPE_CLASS or CORINFO_TYPE_VALUECLASS);
+        var childTypeClass = hasChildClassHandle ? (nint)(*childClassHandle) : 0;
+
+        cache ??= [];
+        cache.Add(key, new ChildTypeCacheValue(childType, childTypeClass, hasChildClassHandle));
+        _childTypeCache = cache;
+        return childType;
+    }
+
+    public unsafe bool eeIsSDArray(CORINFO_CLASS_HANDLE classHandle)
+    {
+        var key = (nint)classHandle;
+        var cache = _singleDimensionalArrayCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        var isSDArray = info.compCompHnd->isSDArray(classHandle);
+
+        cache ??= [];
+        cache.Add(key, isSDArray);
+        _singleDimensionalArrayCache = cache;
+        return isSDArray;
+    }
+
+    public unsafe int eeGetArrayRank(CORINFO_CLASS_HANDLE classHandle)
+    {
+        var key = (nint)classHandle;
+        var cache = _arrayRankCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        var arrayRank = info.compCompHnd->getArrayRank(classHandle);
+
+        cache ??= [];
+        cache.Add(key, arrayRank);
+        _arrayRankCache = cache;
+        return arrayRank;
+    }
+
+    public unsafe TypeCompareState eeCompareTypesForCast(
+        CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
+    {
+        ref var cache = ref _lastTypeCastComparison;
+        var leftClassHandle = (nint)fromClass;
+        var rightClassHandle = (nint)toClass;
+        if (cache.HasValue &&
+            (cache.LeftClassHandle == leftClassHandle) &&
+            (cache.RightClassHandle == rightClassHandle))
+        {
+            return cache.Result;
+        }
+
+        var result = info.compCompHnd->compareTypesForCast(fromClass, toClass);
+
+        cache.LeftClassHandle = leftClassHandle;
+        cache.RightClassHandle = rightClassHandle;
+        cache.Result = result;
+        cache.HasValue = true;
+        return result;
+    }
+
+    public unsafe TypeCompareState eeCompareTypesForEquality(
+        CORINFO_CLASS_HANDLE leftClass, CORINFO_CLASS_HANDLE rightClass)
+    {
+        ref var cache = ref _lastTypeEqualityComparison;
+        var leftClassHandle = (nint)leftClass;
+        var rightClassHandle = (nint)rightClass;
+        if (cache.HasValue &&
+            (cache.LeftClassHandle == leftClassHandle) &&
+            (cache.RightClassHandle == rightClassHandle))
+        {
+            return cache.Result;
+        }
+
+        var result = info.compCompHnd->compareTypesForEquality(leftClass, rightClass);
+
+        cache.LeftClassHandle = leftClassHandle;
+        cache.RightClassHandle = rightClassHandle;
+        cache.Result = result;
+        cache.HasValue = true;
+        return result;
+    }
+
+    public unsafe CorInfoType eeGetFieldCorInfoType(
+        CORINFO_FIELD_HANDLE fieldHandle, CORINFO_CLASS_HANDLE* structType = null, CORINFO_CLASS_HANDLE memberParent = null)
+    {
+        var key = new FieldTypeCacheKey((nint)fieldHandle, (nint)memberParent, structType is not null);
+        var cache = _fieldTypeCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            if ((structType is not null) && (cachedValue.FieldType is CORINFO_TYPE_VALUECLASS))
+            {
+                *structType = (CORINFO_CLASS_HANDLE)cachedValue.StructType;
+            }
+
+            return cachedValue.FieldType;
+        }
+
+        var fieldType = info.compCompHnd->getFieldType(fieldHandle, structType, memberParent);
+        var structClass = ((structType is not null) && (fieldType is CORINFO_TYPE_VALUECLASS))
+                        ? (nint)(*structType)
+                        : 0;
+
+        cache ??= [];
+        cache.Add(key, new FieldTypeCacheValue(fieldType, structClass));
+        _fieldTypeCache = cache;
+        return fieldType;
+    }
+
     public unsafe var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, in CORINFO_SIG_INFO sigInfo)
     {
         fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
@@ -409,8 +660,64 @@ public partial class Compiler
         }
         else
         {
-            return info.compCompHnd->getMethodClass(unchecked((CORINFO_METHOD_HANDLE)((nint)(context) & ~(nint)(CORINFO_CONTEXTFLAGS_MASK))));
+            return eeGetMethodClass(unchecked((CORINFO_METHOD_HANDLE)((nint)(context) & ~(nint)(CORINFO_CONTEXTFLAGS_MASK))));
         }
+    }
+
+    public unsafe CORINFO_CLASS_HANDLE eeGetMethodClass(CORINFO_METHOD_HANDLE methodHandle)
+    {
+        if (methodHandle == info.compMethodHnd)
+        {
+            return info.compClassHnd;
+        }
+
+        var key = (nint)methodHandle;
+        var cache = _methodClassCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedClassHandle))
+        {
+            return (CORINFO_CLASS_HANDLE)cachedClassHandle;
+        }
+
+        var classHandle = info.compCompHnd->getMethodClass(methodHandle);
+
+        cache ??= [];
+        cache.Add(key, (nint)classHandle);
+        _methodClassCache = cache;
+        return classHandle;
+    }
+
+    public unsafe CorInfoHFAElemType eeGetHfaType(CORINFO_CLASS_HANDLE classHandle)
+    {
+        var key = (nint)classHandle;
+        var cache = _hfaTypeCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        var hfaType = info.compCompHnd->getHFAType(classHandle);
+
+        cache ??= [];
+        cache.Add(key, hfaType);
+        _hfaTypeCache = cache;
+        return hfaType;
+    }
+
+    public unsafe CorInfoWasmType eeGetWasmLowering(CORINFO_CLASS_HANDLE classHandle)
+    {
+        var key = (nint)classHandle;
+        var cache = _wasmLoweringCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        var wasmType = info.compCompHnd->getWasmLowering(classHandle);
+
+        cache ??= [];
+        cache.Add(key, wasmType);
+        _wasmLoweringCache = cache;
+        return wasmType;
     }
 
     /// <summary>Get the name (including namespace and instantiation) of a type.</summary>
@@ -508,14 +815,14 @@ public partial class Compiler
 
     public unsafe var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE memberParent = null)
     {
-        return info.compCompHnd->getFieldType(fldHnd, structType: null, memberParent).VarType;
+        return eeGetFieldCorInfoType(fldHnd, structType: null, memberParent).VarType;
     }
 
     public unsafe var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, out CORINFO_CLASS_HANDLE structHnd, CORINFO_CLASS_HANDLE memberParent = null)
     {
         fixed (CORINFO_CLASS_HANDLE* pStructHnd = &structHnd)
         {
-            return info.compCompHnd->getFieldType(fldHnd, pStructHnd, memberParent).VarType;
+            return eeGetFieldCorInfoType(fldHnd, pStructHnd, memberParent).VarType;
         }
     }
 

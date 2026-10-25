@@ -632,7 +632,7 @@ public partial class Compiler
             var layout = _compiler.lvaGetDesc(lclNum).Layout;
             assert(layout is not null);
 
-            var hfaType = _compiler.info.compCompHnd->getHFAType(layout.ClassHandle);
+            var hfaType = _compiler.eeGetHfaType(layout.ClassHandle);
             return hfaType != CORINFO_HFA_ELEM_NONE;
         }
 
