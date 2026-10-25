@@ -614,8 +614,27 @@ public sealed partial class BasicBlock : LIR.Range
     public bool EndsWithTailCallOrJmp(Compiler comp, bool fastTailCallsOnly = false)
         => EndsWithJmpMethod(comp) || EndsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly: false, out _);
 
+    private readonly struct DelegateBlockVisitor : IBasicBlockVisitor<DelegateBlockVisitor>
+    {
+        private readonly Func<BasicBlock, BasicBlockVisit> _visitor;
+
+        public DelegateBlockVisitor(Func<BasicBlock, BasicBlockVisit> visitor)
+        {
+            _visitor = visitor;
+        }
+
+        public BasicBlockVisit Visit(BasicBlock block) => _visitor(block);
+    }
+
     /// <summary>Visit enclosed finally/fault handlers that can execute after this filter during second-pass EH.</summary>
     public BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler comp, Func<BasicBlock, BasicBlockVisit> func)
+    {
+        var visitor = new DelegateBlockVisitor(func);
+        return VisitEHEnclosedHandlerSecondPassSuccs(comp, ref visitor);
+    }
+
+    public BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs<TVisitor>(Compiler comp, ref TVisitor visitor)
+        where TVisitor : struct, IBasicBlockVisitor<TVisitor>, allows ref struct
     {
         if (!hasHndIndex)
         {
@@ -658,7 +677,7 @@ public sealed partial class BasicBlock : LIR.Range
             {
                 ref var enclosed = ref comp.ehGetDsc((ushort)index);
 
-                if (enclosed.HasFinallyOrFaultHandler && (func(enclosed.ebdHndBeg) is BasicBlockVisit.Abort))
+                if (enclosed.HasFinallyOrFaultHandler && (visitor.Visit(enclosed.ebdHndBeg) is BasicBlockVisit.Abort))
                 {
                     return BasicBlockVisit.Abort;
                 }
@@ -670,6 +689,13 @@ public sealed partial class BasicBlock : LIR.Range
 
     public BasicBlockVisit VisitRegularSuccs(Compiler comp, Func<BasicBlock, BasicBlockVisit> func)
     {
+        var visitor = new DelegateBlockVisitor(func);
+        return VisitRegularSuccs(comp, ref visitor);
+    }
+
+    public BasicBlockVisit VisitRegularSuccs<TVisitor>(Compiler comp, ref TVisitor visitor)
+        where TVisitor : struct, IBasicBlockVisitor<TVisitor>, allows ref struct
+    {
         switch (_kind)
         {
             case BBJ_EHFINALLYRET:
@@ -679,7 +705,7 @@ public sealed partial class BasicBlock : LIR.Range
                 {
                     foreach (var edge in targets.Succs)
                     {
-                        if (func(edge.DestinationBlock) is BasicBlockVisit.Abort)
+                        if (visitor.Visit(edge.DestinationBlock) is BasicBlockVisit.Abort)
                         {
                             return BasicBlockVisit.Abort;
                         }
@@ -696,17 +722,17 @@ public sealed partial class BasicBlock : LIR.Range
             case BBJ_LEAVE:
             case BBJ_ALWAYS:
             {
-                return func(Target);
+                return visitor.Visit(Target);
             }
 
             case BBJ_COND:
             {
-                if (func(FalseTarget) is BasicBlockVisit.Abort)
+                if (visitor.Visit(FalseTarget) is BasicBlockVisit.Abort)
                 {
                     return BasicBlockVisit.Abort;
                 }
 
-                if ((TrueEdge != FalseEdge) && (func(TrueTarget) is BasicBlockVisit.Abort))
+                if ((TrueEdge != FalseEdge) && (visitor.Visit(TrueTarget) is BasicBlockVisit.Abort))
                 {
                     return BasicBlockVisit.Abort;
                 }
@@ -718,7 +744,7 @@ public sealed partial class BasicBlock : LIR.Range
             {
                 foreach (var edge in bbSwtTargets.Succs)
                 {
-                    if (func(edge.DestinationBlock) is BasicBlockVisit.Abort)
+                    if (visitor.Visit(edge.DestinationBlock) is BasicBlockVisit.Abort)
                     {
                         return BasicBlockVisit.Abort;
                     }

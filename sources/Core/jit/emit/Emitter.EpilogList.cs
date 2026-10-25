@@ -5,17 +5,21 @@
 
 namespace RyuJitSharp;
 
+internal interface IEpilogListVisitor
+{
+    nuint Visit(uint codeOffset);
+}
+
 public partial class Emitter
 {
-    public unsafe delegate nuint emitEpilogCallbackType(void* context, uint codeOffset);
-
     protected sealed class EpilogList
     {
         public EpilogList? elNext;
         public emitLocation elLoc;
     }
 
-    public unsafe nuint emitGenEpilogLst(emitEpilogCallbackType callback, void* context)
+    internal nuint emitGenEpilogLst<TVisitor>(ref TVisitor visitor)
+        where TVisitor : struct, IEpilogListVisitor
     {
         if (!Configuration.JIT32_GCENCODER)
         {
@@ -35,7 +39,7 @@ public partial class Emitter
             assert((group.igFlags & InsGroupFlags.Epilog) != 0);
 
             // The recorded location, not necessarily the group's start, identifies the epilog.
-            size = unchecked(size + callback(context, epilog.elLoc.CodeOffset(this)));
+            size = unchecked(size + visitor.Visit(epilog.elLoc.CodeOffset(this)));
         }
 
         return size;

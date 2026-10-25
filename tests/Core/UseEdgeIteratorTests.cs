@@ -196,6 +196,142 @@ internal static unsafe class UseEdgeIteratorTests
         });
     }
 
+    [Test]
+    public static void OperandVisitorsPreserveOrderAbortAndState()
+    {
+        WithCompiler(compiler => {
+            var first = compiler.gtNewIconNode(TYP_INT, 1);
+            var second = compiler.gtNewIconNode(TYP_INT, 2);
+            var third = compiler.gtNewIconNode(TYP_INT, 3);
+            var nested = new GenTreeOp(GT_ADD, TYP_INT, first, second) {
+                Flags = GenTreeFlags.GTF_REVERSE_OPS,
+            };
+            var tree = new GenTreeOp(GT_ADD, TYP_INT, nested, third) {
+                Flags = GenTreeFlags.GTF_REVERSE_OPS,
+            };
+            var visitor = new FirstOperandVisitor();
+
+            Assert.That(tree.VisitOperands(ref visitor), Is.EqualTo(GenTree.VisitResult.Abort));
+            Assert.That(visitor.Count, Is.EqualTo(1));
+            Assert.That(visitor.Operand, Is.SameAs(nested));
+            Assert.That(tree.FirstNodeInOperandOrder(), Is.SameAs(first));
+        });
+    }
+
+    [Test]
+    public static void OperandUseVisitorCanMutateAndAbort()
+    {
+        WithCompiler(compiler => {
+            var first = compiler.gtNewIconNode(TYP_INT, 1);
+            var second = compiler.gtNewIconNode(TYP_INT, 2);
+            var replacement = compiler.gtNewIconNode(TYP_INT, 3);
+            var tree = new GenTreeOp(GT_ADD, TYP_INT, first, second);
+            var visitor = new ReplaceFirstOperandVisitor(replacement);
+
+            Assert.That(tree.VisitOperandUses(ref visitor), Is.EqualTo(GenTree.VisitResult.Abort));
+            Assert.That(visitor.Count, Is.EqualTo(1));
+            Assert.That(tree.AsOp().Op1, Is.SameAs(replacement));
+            Assert.That(tree.AsOp().Op2, Is.SameAs(second));
+        });
+    }
+
+    [Test]
+    public static void OperandAdapterPreservesVisitorStateWhenCallbackThrows()
+    {
+        WithCompiler(compiler => {
+            var tree = new GenTreeOp(
+                GT_ADD,
+                TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 1),
+                compiler.gtNewIconNode(TYP_INT, 2));
+            var visitor = new ThrowingOperandVisitor();
+
+            try
+            {
+                _ = tree.VisitOperands(ref visitor);
+                Assert.Fail("Expected the operand visitor to throw.");
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            Assert.That(visitor.Count, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public static void FirstNodeInOperandOrderDoesNotAllocateAfterWarmup()
+    {
+        WithCompiler(compiler => {
+            var first = compiler.gtNewIconNode(TYP_INT, 1);
+            var second = compiler.gtNewIconNode(TYP_INT, 2);
+            var tree = new GenTreeOp(
+                GT_ADD,
+                TYP_INT,
+                new GenTreeOp(GT_ADD, TYP_INT, first, second),
+                compiler.gtNewIconNode(TYP_INT, 3));
+            GenTree result = tree;
+
+            for (var index = 0; index < 32; index++)
+            {
+                result = tree.FirstNodeInOperandOrder();
+            }
+
+            var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+
+            for (var index = 0; index < 128; index++)
+            {
+                result = tree.FirstNodeInOperandOrder();
+            }
+
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+            Assert.That(result, Is.SameAs(first));
+            Assert.That(allocated, Is.Zero);
+        });
+    }
+
+    private struct FirstOperandVisitor : IGenTreeOperandVisitor<FirstOperandVisitor>
+    {
+        public int Count;
+        public GenTree? Operand;
+
+        public GenTree.VisitResult Visit(GenTree operand)
+        {
+            Count++;
+            Operand = operand;
+            return GenTree.VisitResult.Abort;
+        }
+    }
+
+    private struct ReplaceFirstOperandVisitor(GenTree replacement) : IGenTreeOperandUseVisitor<ReplaceFirstOperandVisitor>
+    {
+        public int Count;
+
+        public GenTree.VisitResult Visit(ref GenTree use)
+        {
+            Count++;
+            use = replacement;
+            return GenTree.VisitResult.Abort;
+        }
+    }
+
+    private struct ThrowingOperandVisitor : IGenTreeOperandVisitor<ThrowingOperandVisitor>
+    {
+        public int Count;
+
+        public GenTree.VisitResult Visit(GenTree operand)
+        {
+            Count++;
+
+            if (Count == 2)
+            {
+                throw new InvalidOperationException();
+            }
+
+            return GenTree.VisitResult.Continue;
+        }
+    }
+
     private struct AbortingLocalVisitor() : IGenTreeVisitor<AbortingLocalVisitor>
     {
         private readonly Stack<GenTree> _ancestors = [];

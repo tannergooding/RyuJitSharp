@@ -610,16 +610,7 @@ public sealed partial class WasmRegAlloc
 
     private static GenTree FirstNodeInOperandOrder(GenTree node)
     {
-        var firstNode = node;
-        while (firstNode.VisitOperands(operand =>
-        {
-            firstNode = operand;
-            return GenTree.VisitResult.Abort;
-        }) is GenTree.VisitResult.Abort)
-        {
-        }
-
-        return firstNode;
+        return node.FirstNodeInOperandOrder();
     }
 
     private void CollectReference(GenTree node)

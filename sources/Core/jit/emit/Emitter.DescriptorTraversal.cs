@@ -8,6 +8,11 @@ using System.Collections.Generic;
 
 namespace RyuJitSharp;
 
+internal interface IEmitterInstructionDescriptorVisitor
+{
+    void Visit(Emitter.instrDesc descriptor, Compiler compiler);
+}
+
 public partial class Emitter
 {
     private void emitAdvanceInstrDesc(ref instrDesc? descriptor, nuint size)
@@ -159,7 +164,8 @@ public partial class Emitter
         return false;
     }
 
-    private void emitWalkIDs(emitLocation from, Action<instrDesc, Compiler> process, Compiler context)
+    internal void emitWalkIDs<TVisitor>(emitLocation from, ref TVisitor visitor, Compiler context)
+        where TVisitor : struct, IEmitterInstructionDescriptorVisitor
     {
         if (!emitGetLocationInfo(from, out var group, out var descriptor, out var remaining))
         {
@@ -169,20 +175,24 @@ public partial class Emitter
         do
         {
             assert(descriptor is not null);
-            process(descriptor, context);
+            visitor.Visit(descriptor, context);
         }
         while (emitNextID(ref group, ref descriptor, ref remaining));
     }
 
-    private static void emitGenerateUnwindNop(instrDesc descriptor, Compiler compiler)
+    private readonly struct UnwindNopVisitor : IEmitterInstructionDescriptorVisitor
     {
-        compiler.RecordUnwindPadding(Configuration.TARGET_ARM ? descriptor.idCodeSize() : 4);
+        public void Visit(instrDesc descriptor, Compiler compiler)
+        {
+            compiler.RecordUnwindPadding(Configuration.TARGET_ARM ? descriptor.idCodeSize() : 4);
+        }
     }
 
     public void emitUnwindNopPadding(emitLocation from, Compiler compiler)
     {
         RequireUnwindFragmentTarget();
-        emitWalkIDs(from, emitGenerateUnwindNop, compiler);
+        var visitor = new UnwindNopVisitor();
+        emitWalkIDs(from, ref visitor, compiler);
     }
 
     public uint emitGetInstructionSize(emitLocation location)

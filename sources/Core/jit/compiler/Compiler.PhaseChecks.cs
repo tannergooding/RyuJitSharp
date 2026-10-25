@@ -34,17 +34,6 @@ public partial class Compiler
             return;
         }
 
-        static void VisitPreorder(BasicBlock block, int index)
-        {
-            assert(block.bbPreorderNum == index);
-        }
-
-        void VisitPostorder(BasicBlock block, int index)
-        {
-            assert(block.bbPostorderNum == index);
-            assert(dfsTree.GetPostOrder(index) == block);
-        }
-
         assert(fgFirstBB is not null);
         var entries = new List<BasicBlock> { fgFirstBB };
         if (fgEntryBB is not null)
@@ -58,8 +47,8 @@ public partial class Compiler
             entries.Add(genReturnBB);
         }
 
-        var count = fgRunDfs(VisitPreorder, VisitPostorder, static (block, successor) => { },
-            entries, dfsTree.IsProfileAware);
+        var visitor = new DfsTreeValidator(dfsTree);
+        var count = fgRunDfs(ref visitor, entries, dfsTree.IsProfileAware);
         assert(dfsTree.PostOrderCount == count);
 
         assert((_loops is null) || (_loops.DfsTree == dfsTree));

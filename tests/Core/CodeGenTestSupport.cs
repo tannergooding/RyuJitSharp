@@ -1,7 +1,9 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
@@ -89,4 +91,34 @@ internal static unsafe class CodeGenTestSupport
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
+
+    internal readonly struct EmitterDescriptorRecorder : IEmitterInstructionDescriptorVisitor
+    {
+        private readonly List<Emitter.instrDesc>? _descriptors;
+        private readonly Compiler? _expectedCompiler;
+        private readonly bool _failIfVisited;
+
+        internal EmitterDescriptorRecorder(
+            List<Emitter.instrDesc>? descriptors = null, Compiler? expectedCompiler = null, bool failIfVisited = false)
+        {
+            _descriptors = descriptors;
+            _expectedCompiler = expectedCompiler;
+            _failIfVisited = failIfVisited;
+        }
+
+        public readonly void Visit(Emitter.instrDesc descriptor, Compiler compiler)
+        {
+            if (_failIfVisited)
+            {
+                throw new AssertionException("A corrupt end location must not visit a descriptor.");
+            }
+
+            if (_expectedCompiler is not null)
+            {
+                Assert.That(compiler, Is.SameAs(_expectedCompiler));
+            }
+
+            _descriptors?.Add(descriptor);
+        }
+    }
 }

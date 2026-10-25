@@ -140,22 +140,45 @@ internal static unsafe class Arm64EmitterBookkeepingTests
         body.igFlags |= InsGroupFlags.NoGCInterrupt | InsGroupFlags.FuncletProlog;
         prolog.igOffs = 4;
         body.igOffs = bodyOffset;
-        var calls = 0;
 
-        var completed = emitter.emitGenNoGCLst((funcIndex, offset, size, firstSize, isFuncletProlog) =>
-        {
-            calls++;
-            Assert.That(funcIndex, Is.Zero);
-            var visitingProlog = calls == 1 && !skipMain;
-            Assert.That(offset, Is.EqualTo(visitingProlog ? 4u : bodyOffset));
-            Assert.That(size, Is.EqualTo(visitingProlog ? prologSize : bodySize));
-            Assert.That(firstSize, Is.EqualTo(visitingProlog ? prologSize : bodySize));
-            Assert.That(isFuncletProlog, Is.EqualTo(!visitingProlog));
-            return calls < expected;
-        }, skipMain);
+        var visitor = new NoGcRangeRecorder(skipMain, expected, prologSize, bodySize, bodyOffset);
+        var completed = emitter.emitGenNoGCLst(ref visitor, skipMain);
 
         Assert.That(completed, Is.False);
-        Assert.That(calls, Is.EqualTo(expected));
+        Assert.That(visitor.Calls, Is.EqualTo(expected));
+    }
+
+    private struct NoGcRangeRecorder : INoGcRangeVisitor
+    {
+        private readonly bool _skipMain;
+        private readonly int _expected;
+        private readonly uint _prologSize;
+        private readonly uint _bodySize;
+        private readonly uint _bodyOffset;
+
+        public int Calls;
+
+        public NoGcRangeRecorder(bool skipMain, int expected, uint prologSize, uint bodySize, uint bodyOffset)
+        {
+            _skipMain = skipMain;
+            _expected = expected;
+            _prologSize = prologSize;
+            _bodySize = bodySize;
+            _bodyOffset = bodyOffset;
+            Calls = 0;
+        }
+
+        public bool Visit(uint funcIndex, uint offset, uint size, uint firstSize, bool isFuncletProlog)
+        {
+            Calls++;
+            Assert.That(funcIndex, Is.Zero);
+            var visitingProlog = Calls == 1 && !_skipMain;
+            Assert.That(offset, Is.EqualTo(visitingProlog ? 4u : _bodyOffset));
+            Assert.That(size, Is.EqualTo(visitingProlog ? _prologSize : _bodySize));
+            Assert.That(firstSize, Is.EqualTo(visitingProlog ? _prologSize : _bodySize));
+            Assert.That(isFuncletProlog, Is.EqualTo(!visitingProlog));
+            return Calls < _expected;
+        }
     }
 
     private static (Compiler Compiler, TestEmitter Emitter) CreateEmitter()

@@ -143,13 +143,10 @@ internal static class Arm64CodeGenDivisionTests
             firstGroup = firstGroup.igNext;
         }
         var firstInstructionGroup = firstGroup ?? throw new AssertionException("Missing instruction group.");
-        Walk(emitter, new emitLocation(firstInstructionGroup), (descriptor, _) => descriptors.Add(descriptor), compiler);
+        var visitor = new CodeGenTestSupport.EmitterDescriptorRecorder(descriptors);
+        emitter.emitWalkIDs(new emitLocation(firstInstructionGroup), ref visitor, compiler);
         return descriptors;
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitWalkIDs")]
-    private static extern void Walk(Emitter emitter, emitLocation location,
-        Action<Emitter.instrDesc, Compiler> process, Compiler context);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
     private static extern ref insGroup? FirstGroup(Emitter emitter);

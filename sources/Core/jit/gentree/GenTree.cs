@@ -3023,7 +3023,51 @@ public partial class GenTree
     // in HIR if for some reason you need to visit operands in the order in which they will execute.
     public VisitResult VisitOperands(GenTreeVisitorFunc visitor)
     {
-        return VisitOperandUses((ref use) => visitor(use));
+        var adapter = new DelegateOperandVisitor(visitor);
+        return VisitOperandUses(ref adapter);
+    }
+
+    public VisitResult VisitOperands<TVisitor>(ref TVisitor visitor)
+        where TVisitor : struct, IGenTreeOperandVisitor<TVisitor>
+    {
+        var adapter = new NonMutatingOperandAdapter<TVisitor>(ref visitor);
+        return VisitOperandUses(ref adapter);
+    }
+
+    private readonly struct DelegateOperandVisitor : IGenTreeOperandUseVisitor<DelegateOperandVisitor>
+    {
+        private readonly GenTreeVisitorFunc _visitor;
+
+        public DelegateOperandVisitor(GenTreeVisitorFunc visitor)
+        {
+            _visitor = visitor;
+        }
+
+        public VisitResult Visit(ref GenTree use) => _visitor(use);
+    }
+
+    private ref struct NonMutatingOperandAdapter<TVisitor> : IGenTreeOperandUseVisitor<NonMutatingOperandAdapter<TVisitor>>
+        where TVisitor : struct, IGenTreeOperandVisitor<TVisitor>
+    {
+        private ref TVisitor _visitor;
+
+        public NonMutatingOperandAdapter(ref TVisitor visitor)
+        {
+            _visitor = ref visitor;
+        }
+
+        public VisitResult Visit(ref GenTree use) => _visitor.Visit(use);
+    }
+
+    private struct FirstOperandVisitor : IGenTreeOperandVisitor<FirstOperandVisitor>
+    {
+        public GenTree? Operand;
+
+        public VisitResult Visit(GenTree operand)
+        {
+            Operand = operand;
+            return VisitResult.Abort;
+        }
     }
 
     public GenTree FirstNodeInOperandOrder()
@@ -3033,16 +3077,26 @@ public partial class GenTree
 
         do
         {
-            visitResult = node.VisitOperands(operand => {
-                node = operand;
-                return VisitResult.Abort;
-            });
+            var visitor = new FirstOperandVisitor();
+            visitResult = node.VisitOperands(ref visitor);
+
+            if (visitResult is VisitResult.Abort)
+            {
+                node = visitor.Operand!;
+            }
         } while (visitResult is VisitResult.Abort);
 
         return node;
     }
 
     public VisitResult VisitOperandUses(GenTreeUseVisitorFunc visitor)
+    {
+        var adapter = new DelegateOperandUseVisitor(visitor);
+        return VisitOperandUses(ref adapter);
+    }
+
+    public VisitResult VisitOperandUses<TVisitor>(ref TVisitor visitor)
+        where TVisitor : IGenTreeOperandUseVisitor<TVisitor>, allows ref struct
     {
         var result = VisitResult.Continue;
         var oper = _oper;
@@ -3057,7 +3111,7 @@ public partial class GenTree
 
             if (op.Op1 is not null)
             {
-                result = visitor(ref op.Op1Ref);
+                result = visitor.Visit(ref op.Op1Ref);
             }
             else
             {
@@ -3069,13 +3123,13 @@ public partial class GenTree
 
             // We can have null op1 and non-null op2 for some nodes, such as GT_LEA
 
-            if ((result is not VisitResult.Abort) && (op.Op2 is not null))
+            if (result is not VisitResult.Abort)
             {
-                result = visitor(ref op.Op2Ref);
-            }
-            else
-            {
-                if (Configuration.DEBUG)
+                if (op.Op2 is not null)
+                {
+                    result = visitor.Visit(ref op.Op2Ref);
+                }
+                else if (Configuration.DEBUG)
                 {
                     assert(op.IsNullOp2Legal);
                 }
@@ -3087,7 +3141,7 @@ public partial class GenTree
 
             if (unOp.Op1 is not null)
             {
-                result = visitor(ref unOp.Op1Ref);
+                result = visitor.Visit(ref unOp.Op1Ref);
             }
             else
             {
@@ -3109,7 +3163,7 @@ public partial class GenTree
 
                     foreach (var use in phi.Uses)
                     {
-                        result = visitor(ref use.NodeRef);
+                        result = visitor.Visit(ref use.NodeRef);
 
                         if (result is VisitResult.Abort)
                         {
@@ -3122,15 +3176,15 @@ public partial class GenTree
                 case GT_CMPXCHG:
                 {
                     var cmpXchg = AsCmpXchg();
-                    result = visitor(ref cmpXchg.AddrRef);
+                    result = visitor.Visit(ref cmpXchg.AddrRef);
 
                     if (result is not VisitResult.Abort)
                     {
-                        result = visitor(ref cmpXchg.DataRef);
+                        result = visitor.Visit(ref cmpXchg.DataRef);
 
                         if (result is not VisitResult.Abort)
                         {
-                            result = visitor(ref cmpXchg.ComparandRef);
+                            result = visitor.Visit(ref cmpXchg.ComparandRef);
                         }
                     }
                     break;
@@ -3142,15 +3196,15 @@ public partial class GenTree
                 case GT_SELECT:
                 {
                     var conditional = AsConditional();
-                    result = visitor(ref conditional.CondRef);
+                    result = visitor.Visit(ref conditional.CondRef);
 
                     if (result is not VisitResult.Abort)
                     {
-                        result = visitor(ref conditional.Op1Ref);
+                        result = visitor.Visit(ref conditional.Op1Ref);
 
                         if ((result is not VisitResult.Abort) && (conditional.Op2 is not null))
                         {
-                            result = visitor(ref conditional.Op2Ref);
+                            result = visitor.Visit(ref conditional.Op2Ref);
                         }
                     }
                     break;
@@ -3162,7 +3216,7 @@ public partial class GenTree
 
                     foreach (ref var operand in hwintrinsic.Operands)
                     {
-                        result = visitor(ref operand);
+                        result = visitor.Visit(ref operand);
 
                         if (result is VisitResult.Abort)
                         {
@@ -3175,7 +3229,7 @@ public partial class GenTree
                 case GT_ARR_ELEM:
                 {
                     var arrElem = AsArrElem();
-                    result = visitor(ref arrElem.ArrObjRef);
+                    result = visitor.Visit(ref arrElem.ArrObjRef);
 
                     if (result is not VisitResult.Abort)
                     {
@@ -3183,7 +3237,7 @@ public partial class GenTree
 
                         foreach (ref var arrInd in arrInds[..arrElem.ArrRank])
                         {
-                            result = visitor(ref arrInd);
+                            result = visitor.Visit(ref arrInd);
 
                             if (result is VisitResult.Abort)
                             {
@@ -3201,7 +3255,7 @@ public partial class GenTree
 
                     foreach (var arg in args.EarlyArgs)
                     {
-                        result = visitor(ref arg.EarlyNodeRef);
+                        result = visitor.Visit(ref arg.EarlyNodeRef);
 
                         if (result is VisitResult.Abort)
                         {
@@ -3213,7 +3267,7 @@ public partial class GenTree
                     {
                         foreach (var arg in args.LateArgs)
                         {
-                            result = visitor(ref arg.LateNodeRef);
+                            result = visitor.Visit(ref arg.LateNodeRef);
 
                             if (result is VisitResult.Abort)
                             {
@@ -3223,7 +3277,7 @@ public partial class GenTree
 
                         if ((result is not VisitResult.Abort) && (call.ControlExpr is not null))
                         {
-                            result = visitor(ref call.ControlExprRef);
+                            result = visitor.Visit(ref call.ControlExprRef);
                         }
                     }
                     break;
@@ -3235,7 +3289,7 @@ public partial class GenTree
 
                     foreach (var use in fieldList.Uses)
                     {
-                        result = visitor(ref use.NodeRef);
+                        result = visitor.Visit(ref use.NodeRef);
 
                         if (result is VisitResult.Abort)
                         {
@@ -3253,5 +3307,17 @@ public partial class GenTree
             }
         }
         return result;
+    }
+
+    private readonly struct DelegateOperandUseVisitor : IGenTreeOperandUseVisitor<DelegateOperandUseVisitor>
+    {
+        private readonly GenTreeUseVisitorFunc _visitor;
+
+        public DelegateOperandUseVisitor(GenTreeUseVisitorFunc visitor)
+        {
+            _visitor = visitor;
+        }
+
+        public VisitResult Visit(ref GenTree use) => _visitor(ref use);
     }
 }

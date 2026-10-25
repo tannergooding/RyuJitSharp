@@ -3,14 +3,18 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-
 namespace RyuJitSharp;
+
+internal interface INoGcRangeVisitor
+{
+    bool Visit(uint funcIndex, uint offset, uint size, uint firstSize, bool isFuncletProlog);
+}
 
 public partial class Emitter
 {
-    public bool emitGenNoGCLst(Func<uint, uint, uint, uint, bool, bool> callback,
+    internal bool emitGenNoGCLst<TVisitor>(ref TVisitor visitor,
         bool skipMainPrologsAndEpilogs = false)
+        where TVisitor : struct, INoGcRangeVisitor
     {
         for (var group = emitIGlist; group is not null; group = group.igNext)
         {
@@ -30,7 +34,7 @@ public partial class Emitter
                 assert(descriptors.Length > 0);
                 var firstSize = descriptors[0].idCodeSize();
                 assert(firstSize > 0);
-                if (!callback(group.igFuncIdx, group.igOffs, group.igSize, firstSize,
+                if (!visitor.Visit(group.igFuncIdx, group.igOffs, group.igSize, firstSize,
                     (group.igFlags & InsGroupFlags.FuncletProlog) != 0))
                 {
                     return false;

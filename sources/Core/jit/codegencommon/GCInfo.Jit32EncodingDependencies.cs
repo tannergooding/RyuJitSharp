@@ -9,23 +9,22 @@ namespace RyuJitSharp;
 
 public partial struct GCInfo
 {
-    private unsafe struct EpilogTableWriter
+    private unsafe struct EpilogTableWriter : IEpilogListVisitor
     {
         internal byte* Destination;
         internal uint PreviousOffset;
-    }
 
-    private static unsafe nuint gcRecordEpilog(void* context, uint offset)
-    {
-        var writer = (EpilogTableWriter*)context;
-        var size = encodeUDelta(writer->Destination, offset, writer->PreviousOffset);
-        if (writer->Destination != null)
+        public nuint Visit(uint offset)
         {
-            writer->Destination += size;
-        }
+            var size = GCInfo.encodeUDelta(Destination, offset, PreviousOffset);
+            if (Destination != null)
+            {
+                Destination += size;
+            }
 
-        writer->PreviousOffset = offset;
-        return size;
+            PreviousOffset = offset;
+            return size;
+        }
     }
 
     private static byte VarTypeToReturnKind(var_types type)
@@ -201,20 +200,36 @@ public partial struct GCInfo
         var noGCRegions = 0u;
         if (_codeGen.Interruptible)
         {
-            var lastEndOffset = uint.MaxValue;
-            _ = _codeGen.Emitter.emitGenNoGCLst((_, offset, size, _, _) =>
-            {
-                if (lastEndOffset != offset)
-                {
-                    noGCRegions = unchecked(noGCRegions + 1);
-                }
-
-                lastEndOffset = unchecked(offset + size);
-                return true;
-            }, skipMainPrologsAndEpilogs: true);
+            var visitor = new NoGcRegionCountVisitor(uint.MaxValue);
+            _ = _codeGen.Emitter.emitGenNoGCLst(ref visitor, skipMainPrologsAndEpilogs: true);
+            noGCRegions = visitor.Count;
         }
 
         noGCRegionCount = noGCRegions;
+    }
+
+    private struct NoGcRegionCountVisitor : INoGcRangeVisitor
+    {
+        private uint _lastEndOffset;
+
+        public uint Count;
+
+        public NoGcRegionCountVisitor(uint lastEndOffset)
+        {
+            _lastEndOffset = lastEndOffset;
+            Count = 0;
+        }
+
+        public bool Visit(uint funcIndex, uint offset, uint size, uint firstSize, bool isFuncletProlog)
+        {
+            if (_lastEndOffset != offset)
+            {
+                Count = unchecked(Count + 1);
+            }
+
+            _lastEndOffset = unchecked(offset + size);
+            return true;
+        }
     }
 
     private static unsafe void WriteVerificationMarker(ref byte* destination, ref nuint size,
@@ -479,7 +494,7 @@ public partial struct GCInfo
                 Destination = write != 0 ? destination : null,
                 PreviousOffset = 0,
             };
-            var epilogTableSize = emitter.emitGenEpilogLst(gcRecordEpilog, &writer);
+            var epilogTableSize = emitter.emitGenEpilogLst(ref writer);
             size += epilogTableSize;
             if (write != 0)
             {

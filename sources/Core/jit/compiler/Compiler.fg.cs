@@ -10316,33 +10316,75 @@ public partial class Compiler
         return res;
     }
 
-    public FlowGraphDfsTree fgComputeDfs(bool useProfile = false)
+    private interface IFlowGraphDfsVisitor<TSelf>
+        where TSelf : struct, IFlowGraphDfsVisitor<TSelf>
     {
-        var postOrder = new BasicBlock[fgBBcount];
-        var hasCycle = false;
+        void PreOrderVisit(BasicBlock block, int index);
 
-        void VisitPreorder(BasicBlock block, int index)
+        void PostOrderVisit(BasicBlock block, int index);
+
+        void EdgeVisit(BasicBlock block, BasicBlock successor);
+    }
+
+    private struct DfsTreeBuilder(int basicBlockCount, BasicBlock[] postOrder) : IFlowGraphDfsVisitor<DfsTreeBuilder>
+    {
+        public bool HasCycle;
+
+        public readonly void PreOrderVisit(BasicBlock block, int index)
         {
             block.bbPreorderNum = index;
             block.bbPostorderNum = -1;
         }
 
-        void VisitPostorder(BasicBlock block, int index)
+        public readonly void PostOrderVisit(BasicBlock block, int index)
         {
             block.bbPostorderNum = index;
-            assert(index < fgBBcount);
+            assert(index < basicBlockCount);
             postOrder[index] = block;
         }
 
-        void VisitEdge(BasicBlock block, BasicBlock successor)
+        public void EdgeVisit(BasicBlock block, BasicBlock successor)
         {
             // A node still active in the DFS, discovered no later than the
             // current block, is an ancestor reached by a backedge.
             if ((successor.bbPreorderNum <= block.bbPreorderNum) && (successor.bbPostorderNum == -1))
             {
-                hasCycle = true;
+                HasCycle = true;
             }
         }
+    }
+
+    private readonly struct DfsTreeValidator(FlowGraphDfsTree tree) : IFlowGraphDfsVisitor<DfsTreeValidator>
+    {
+        public void PreOrderVisit(BasicBlock block, int index)
+        {
+            assert(block.bbPreorderNum == index);
+        }
+
+        public void PostOrderVisit(BasicBlock block, int index)
+        {
+            assert(block.bbPostorderNum == index);
+            assert(tree.GetPostOrder(index) == block);
+        }
+
+        public void EdgeVisit(BasicBlock block, BasicBlock successor)
+        {
+        }
+    }
+
+    private readonly struct SuccessorListVisitor(List<BasicBlock> successors) : IBasicBlockVisitor<SuccessorListVisitor>
+    {
+        public BasicBlockVisit Visit(BasicBlock block)
+        {
+            successors.Add(block);
+            return BasicBlockVisit.Continue;
+        }
+    }
+
+    public FlowGraphDfsTree fgComputeDfs(bool useProfile = false)
+    {
+        var postOrder = new BasicBlock[fgBBcount];
+        var visitor = new DfsTreeBuilder(fgBBcount, postOrder);
 
         assert(fgFirstBB is not null);
         var entries = new List<BasicBlock> { fgFirstBB };
@@ -10358,13 +10400,13 @@ public partial class Compiler
             entries.Add(genReturnBB);
         }
 
-        var count = fgRunDfs(VisitPreorder, VisitPostorder, VisitEdge, entries, useProfile);
+        var count = fgRunDfs(ref visitor, entries, useProfile);
 
-        return new FlowGraphDfsTree(this, postOrder, count, hasCycle, useProfile);
+        return new FlowGraphDfsTree(this, postOrder, count, visitor.HasCycle, useProfile);
     }
 
-    private int fgRunDfs(Action<BasicBlock, int> visitPreorder, Action<BasicBlock, int> visitPostorder,
-        Action<BasicBlock, BasicBlock> visitEdge, List<BasicBlock> entries, bool useProfile)
+    private int fgRunDfs<TVisitor>(ref TVisitor visitor, List<BasicBlock> entries, bool useProfile)
+        where TVisitor : struct, IFlowGraphDfsVisitor<TVisitor>
     {
         var traits = new BitVecTraits(this, fgBBNumMax + 1);
         var visited = BitVecOps.MakeEmpty(traits);
@@ -10372,11 +10414,17 @@ public partial class Compiler
         var postOrderIndex = 0;
         var pending = new Stack<(BasicBlock Block, List<BasicBlock> Successors, int Next)>();
 
-        void VisitEntry(BasicBlock entry)
+        assert(entries.Count > 0);
+        foreach (var entry in entries)
         {
+            if (BitVecOps.IsMember(traits, visited, entry.bbNum))
+            {
+                continue;
+            }
+
             BitVecOps.AddElemD(traits, visited, entry.bbNum);
             pending.Push((entry, fgGetAllSuccessors(entry, useProfile), 0));
-            visitPreorder(entry, preOrderIndex++);
+            visitor.PreOrderVisit(entry, preOrderIndex++);
 
             while (pending.Count > 0)
             {
@@ -10384,7 +10432,7 @@ public partial class Compiler
 
                 if (next == successors.Count)
                 {
-                    visitPostorder(block, postOrderIndex++);
+                    visitor.PostOrderVisit(block, postOrderIndex++);
                     continue;
                 }
 
@@ -10394,19 +10442,10 @@ public partial class Compiler
                 if (BitVecOps.TryAddElemD(traits, visited, successor.bbNum))
                 {
                     pending.Push((successor, fgGetAllSuccessors(successor, useProfile), 0));
-                    visitPreorder(successor, preOrderIndex++);
+                    visitor.PreOrderVisit(successor, preOrderIndex++);
                 }
 
-                visitEdge(block, successor);
-            }
-        }
-
-        assert(entries.Count > 0);
-        foreach (var entry in entries)
-        {
-            if (!BitVecOps.IsMember(traits, visited, entry.bbNum))
-            {
-                VisitEntry(entry);
+                visitor.EdgeVisit(block, successor);
             }
         }
 
@@ -10418,10 +10457,8 @@ public partial class Compiler
     internal List<BasicBlock> fgGetAllSuccessors(BasicBlock block, bool useProfile = false)
     {
         var successors = new List<BasicBlock>();
-        _ = block.VisitAllSuccs(this, successor => {
-            successors.Add(successor);
-            return BasicBlockVisit.Continue;
-        }, useProfile);
+        var visitor = new SuccessorListVisitor(successors);
+        _ = block.VisitAllSuccs(this, ref visitor, useProfile);
 
         return successors;
     }

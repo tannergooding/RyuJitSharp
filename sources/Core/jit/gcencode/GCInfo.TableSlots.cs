@@ -224,22 +224,10 @@ public partial struct GCInfo
             if (mode == MakeRegPtrMode.MAKE_REG_PTR_MODE_DO_WORK)
             {
                 assert(prologSize <= codeSize);
-                var uninterruptibleEnd = prologSize;
-                _ = _codeGen.Emitter.emitGenNoGCLst((funcIndex, offset, size, firstSize, isProlog) => {
-                    if (offset < uninterruptibleEnd)
-                    {
-                        assert(funcIndex == 0);
-                        assert(unchecked(offset + size) <= uninterruptibleEnd);
-                        return true;
-                    }
-                    if (offset > uninterruptibleEnd)
-                    {
-                        var end = isProlog ? offset : unchecked(offset + firstSize);
-                        encoder.DefineInterruptibleRange(uninterruptibleEnd, unchecked(end - uninterruptibleEnd));
-                    }
-                    uninterruptibleEnd = unchecked(offset + size);
-                    return true;
-                });
+                var visitor = new UninterruptibleRangeVisitor(encoder, prologSize);
+                _ = _codeGen.Emitter.emitGenNoGCLst(ref visitor);
+                var uninterruptibleEnd = visitor.UninterruptibleEnd;
+
                 if (uninterruptibleEnd < codeSize)
                 {
                     encoder.DefineInterruptibleRange(uninterruptibleEnd, codeSize - uninterruptibleEnd);
@@ -253,6 +241,38 @@ public partial struct GCInfo
         else
         {
             gcMakeFramelessCallSites(encoder, mode);
+        }
+    }
+
+    private struct UninterruptibleRangeVisitor : INoGcRangeVisitor
+    {
+        private readonly GcInfoEncoderWithLogging _encoder;
+
+        public uint UninterruptibleEnd;
+
+        public UninterruptibleRangeVisitor(GcInfoEncoderWithLogging encoder, uint prologSize)
+        {
+            _encoder = encoder;
+            UninterruptibleEnd = prologSize;
+        }
+
+        public bool Visit(uint funcIndex, uint offset, uint size, uint firstSize, bool isFuncletProlog)
+        {
+            if (offset < UninterruptibleEnd)
+            {
+                assert(funcIndex == 0);
+                assert(unchecked(offset + size) <= UninterruptibleEnd);
+                return true;
+            }
+
+            if (offset > UninterruptibleEnd)
+            {
+                var end = isFuncletProlog ? offset : unchecked(offset + firstSize);
+                _encoder.DefineInterruptibleRange(UninterruptibleEnd, unchecked(end - UninterruptibleEnd));
+            }
+
+            UninterruptibleEnd = unchecked(offset + size);
+            return true;
         }
     }
 

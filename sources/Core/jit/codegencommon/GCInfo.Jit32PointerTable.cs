@@ -398,6 +398,19 @@ public partial struct GCInfo
         }
     }
 
+    private readonly struct NoGCRegionEncoderVisitor : INoGcRangeVisitor
+    {
+        private readonly NoGCRegionEncoder _encoder;
+
+        public NoGCRegionEncoderVisitor(NoGCRegionEncoder encoder)
+        {
+            _encoder = encoder;
+        }
+
+        public unsafe bool Visit(uint funcIndex, uint offset, uint size, uint firstSize, bool isFuncletProlog)
+            => _encoder.Emit(offset, size);
+    }
+
     private readonly unsafe nuint gcMakeRegPtrTable(byte* destination, int mask, InfoHdr header,
         uint codeSize, ref nuint argTabOffset)
     {
@@ -427,9 +440,8 @@ public partial struct GCInfo
         if (header.noGCRegionCnt != 0)
         {
             var encoder = new NoGCRegionEncoder(mask != 0 ? destination : null);
-            _ = _codeGen.Emitter.emitGenNoGCLst(
-                (_, offset, size, _, _) => encoder.Emit(offset, size),
-                skipMainPrologsAndEpilogs: true);
+            var visitor = new NoGCRegionEncoderVisitor(encoder);
+            _ = _codeGen.Emitter.emitGenNoGCLst(ref visitor, skipMainPrologsAndEpilogs: true);
             totalSize += encoder.TotalSize;
             if (mask == -1)
             {

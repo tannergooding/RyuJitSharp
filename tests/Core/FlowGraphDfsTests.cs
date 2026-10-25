@@ -210,18 +210,32 @@ internal static unsafe class FlowGraphDfsTests
 
             Assert.That(enumerator.NextSuccessor, Is.Null);
             Assert.That(enumerator.NextSuccessor, Is.Null);
-            var visited = 0;
-            var result = block.VisitRegularSuccs(compiler, successor => {
-                Assert.That(successor, Is.SameAs(expected[0]));
-                visited++;
-                return BasicBlockVisit.Abort;
-            });
-            Assert.That(visited, Is.EqualTo(count == 0 ? 0 : 1));
+            var visitor = new FirstSuccessorAbortVisitor();
+            var result = block.VisitRegularSuccs(compiler, ref visitor);
+            Assert.That(visitor.Count, Is.EqualTo(count == 0 ? 0 : 1));
+            if (count != 0)
+            {
+                Assert.That(visitor.Visited, Is.SameAs(expected[0]));
+            }
+
             Assert.That(result, Is.EqualTo(count == 0 ? BasicBlockVisit.Continue : BasicBlockVisit.Abort));
         }
         finally
         {
             JitTls.Compiler = previous;
+        }
+    }
+
+    private struct FirstSuccessorAbortVisitor : IBasicBlockVisitor<FirstSuccessorAbortVisitor>
+    {
+        public int Count;
+        public BasicBlock? Visited;
+
+        public BasicBlockVisit Visit(BasicBlock block)
+        {
+            Count++;
+            Visited = block;
+            return BasicBlockVisit.Abort;
         }
     }
 

@@ -70,11 +70,8 @@ internal static unsafe class Arm64EmitterLocationTests
         List<Emitter.instrDesc> visited = [];
         var location = new emitLocation(first, Emitter.emitSpecifiedOffset(afterFirst ? 1u : 0u, 0));
 
-        Walk(emitter, location, (descriptor, context) =>
-        {
-            Assert.That(context, Is.SameAs(compiler));
-            visited.Add(descriptor);
-        }, compiler);
+        var visitor = new CodeGenTestSupport.EmitterDescriptorRecorder(visited, compiler);
+        emitter.emitWalkIDs(location, ref visitor, compiler);
 
         Emitter.instrDesc[] expected = afterFirst ? [currentDescriptor] : [savedDescriptor, currentDescriptor];
         Assert.That(visited, Is.EqualTo(expected));
@@ -87,7 +84,8 @@ internal static unsafe class Arm64EmitterLocationTests
         var first = emitter.Allocate();
         var second = emitter.Allocate();
         List<Emitter.instrDesc> visited = [];
-        Walk(emitter, new emitLocation(emitter.emitCurIG), (descriptor, _) => visited.Add(descriptor), compiler);
+        var visitor = new CodeGenTestSupport.EmitterDescriptorRecorder(visited);
+        emitter.emitWalkIDs(new emitLocation(emitter.emitCurIG), ref visitor, compiler);
 
         Emitter.instrDesc[] expected = [first, second];
         Assert.That(visited, Is.EqualTo(expected));
@@ -149,14 +147,15 @@ internal static unsafe class Arm64EmitterLocationTests
         try
         {
             var location = new emitLocation(Group());
+            var visitor = new CodeGenTestSupport.EmitterDescriptorRecorder(failIfVisited: true);
             if (minOpts)
             {
-                Assert.DoesNotThrow(() => Walk(emitter, location,
-                    (_, _) => Assert.Fail("A corrupt end location must not visit a descriptor."), compiler));
+                Assert.DoesNotThrow(() => emitter.emitWalkIDs(location, ref visitor, compiler));
             }
             else
             {
-                var error = Assert.Throws<FatalJitException>(() => Walk(emitter, location, (_, _) => { }, compiler));
+                var error = Assert.Throws<FatalJitException>(() =>
+                    emitter.emitWalkIDs(location, ref visitor, compiler));
                 Assert.That(error, Has.Property(nameof(FatalJitException.Result))
                     .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
             }
@@ -219,10 +218,6 @@ internal static unsafe class Arm64EmitterLocationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_cgEmitter")]
     private static extern ref Emitter CodeGenEmitter(CodeGen codeGen);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitWalkIDs")]
-    private static extern void Walk(Emitter emitter, emitLocation location,
-        Action<Emitter.instrDesc, Compiler> process, Compiler context);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitUnwindNopPadding")]
     private static extern void UnwindPadding(Emitter emitter, emitLocation location, Compiler compiler);
