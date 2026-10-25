@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Start Batch 4 with B07/B08: inspect the saved diagnostic span/search and comparer findings and use LSP to close their production callsites. Implement one bounded family at a time, preserving diagnostic order, sort/tie behavior, and SortNative.",
+    "nextAction": "Proceed with F12: use LSP to close Emitter.emitSplit and UnwindInfo.Storage callers, then replace only the managed GCHandle callback bridge with typed state while preserving fragment size/order, location lifetime, and exception behavior.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
       "scope": "First-pass Batch 4: apply B07/B08 local diagnostic span/search and comparer simplifications; specialize admitted live managed callback families F01-F13/F15/F16, remove R01 traversal scaffolding where truly unused, and close R11 exception-safe pool/callback-context work through all callers. Include only F14 managed printers, not unmanaged error-trap/rooting redesign.",
       "doneWhen": "Each selected callback/API family is complete through callers and adapters or has a concrete deferral; traversal order, phase lifecycle, abort state, diagnostics, ownership, and output remain unchanged; focused Debug/Release Core tests, relevant Target tests, and full-analysis Core builds pass.",
       "validation": "Use the saved inventory and LSP to establish caller closures and existing constrained-strategy prior art. Preserve a baseline before output-sensitive changes, then run combined focused Debug/Release tests and target fixtures. No pinned native binary/capture is available, so report that frontier as unavailable and do not claim codegen parity.",
-      "deferred": "Do not redesign phase-state ownership, IR/arena/CFG/collection representations, unmanaged callback rooting or timing proxies, or the dynamic-TLS/async-resume boundaries. Keep F01 driver allocation and F14 native error-trap work explicitly deferred."
+      "deferred": "B08 scope-index comparer conversion is deferred because equal lifetime keys are consumed by debug-scope publication without a permitted tie-order change. B07 large-message decoding remains on the string path; R11 still has other pool/callback-context sites. Do not redesign phase-state ownership, IR/arena/CFG/collection representations, unmanaged callback rooting or timing proxies, or the dynamic-TLS/async-resume boundaries. Keep F01 driver allocation and F14 native error-trap work explicitly deferred."
     },
     "dynamicTlsInputBoundary": {
       "status": "Unresolved; existing captures do not establish a stable native TLS index or reproducible EE allocation sequence.",

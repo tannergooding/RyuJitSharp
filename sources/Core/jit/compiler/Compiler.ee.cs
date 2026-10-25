@@ -18,6 +18,9 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private static readonly SearchValues<byte> s_objectDescriptionLineBreaks =
+        SearchValues.Create((byte)('\n'), (byte)('\r'));
+
     public CORINFO_EE_INFO eeInfo;
 
     public bool eeInfoInitialized;
@@ -80,30 +83,48 @@ public partial class Compiler
         var stackBuffer = (Span<byte>)(inlineStackBuffer);
         var arrayBuffer = null as byte[];
 
-        var printed = printFunc(stackBuffer, out var requiredBufferSize);
-
-        scoped Span<byte> messageUtf8;
-
-        if (requiredBufferSize <= stackBuffer.Length)
+        try
         {
-            assert(printed == (requiredBufferSize - 1));
-            messageUtf8 = stackBuffer[..printed];
-        }
-        else
-        {
-            arrayBuffer = ArrayPool<byte>.Shared.Rent(requiredBufferSize);
-            printed = printFunc(arrayBuffer.AsSpan(0, requiredBufferSize), out requiredBufferSize);
+            var printed = printFunc(stackBuffer, out var requiredBufferSize);
 
-            assert(printed == (requiredBufferSize - 1));
-            messageUtf8 = arrayBuffer.AsSpan(0, printed);
-        }
-        _ = stringBuilder.Append(Encoding.UTF8.GetString(messageUtf8));
+            scoped Span<byte> messageUtf8;
 
-        if (arrayBuffer is not null)
-        {
-            ArrayPool<byte>.Shared.Return(arrayBuffer);
+            if (requiredBufferSize <= stackBuffer.Length)
+            {
+                assert(printed == (requiredBufferSize - 1));
+                messageUtf8 = stackBuffer[..printed];
+            }
+            else
+            {
+                arrayBuffer = ArrayPool<byte>.Shared.Rent(requiredBufferSize);
+                printed = printFunc(arrayBuffer.AsSpan(0, requiredBufferSize), out requiredBufferSize);
+
+                assert(printed == (requiredBufferSize - 1));
+                messageUtf8 = arrayBuffer.AsSpan(0, printed);
+            }
+
+            var characterCount = Encoding.UTF8.GetCharCount(messageUtf8);
+
+            if (characterCount <= stackBuffer.Length)
+            {
+                Span<char> messageUtf16 = stackalloc char[characterCount];
+                var charsWritten = Encoding.UTF8.GetChars(messageUtf8, messageUtf16);
+                _ = stringBuilder.Append(messageUtf16[..charsWritten]);
+            }
+            else
+            {
+                _ = stringBuilder.Append(Encoding.UTF8.GetString(messageUtf8));
+            }
+
+            return stringBuilder;
         }
-        return stringBuilder;
+        finally
+        {
+            if (arrayBuffer is not null)
+            {
+                ArrayPool<byte>.Shared.Return(arrayBuffer);
+            }
+        }
     }
 
     public static unsafe CORINFO_METHOD_HANDLE eeFindHelper(CorInfoHelpFunc helpFunc)
@@ -876,7 +897,7 @@ public partial class Compiler
             var actualLen = info.compCompHnd->printObjectDescription(handle, &inlineObjectDecsriptionUtf8.e0, 64);
             var objectDescriptionUtf8 = ((Span<byte>)(inlineObjectDecsriptionUtf8))[..(int)(actualLen)];
 
-            objectDescriptionUtf8.ReplaceAny(SearchValues.Create((byte)('\n'), (byte)('\r')), (byte)(' '));
+            objectDescriptionUtf8.ReplaceAny(s_objectDescriptionLineBreaks, (byte)(' '));
             var terminator = objectDescriptionUtf8.IndexOf((byte)0);
 
             if (terminator >= 0)
