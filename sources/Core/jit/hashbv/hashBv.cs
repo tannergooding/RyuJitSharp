@@ -18,11 +18,6 @@ public sealed partial class hashBv
 
     public static hashBv Create(Compiler compiler) => new();
 
-    public static void Init(Compiler compiler)
-    {
-        // Managed allocation needs no compiler-owned arena free lists.
-    }
-
     public int hashtable_size() => 1 << log2_hashSize;
 
     private static int getHashForIndex(indexType index, int tableSize)

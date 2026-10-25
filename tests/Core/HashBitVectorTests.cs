@@ -35,7 +35,6 @@ internal static class HashBitVectorTests
     public static void GrowthPreservesNativeBucketAndNodeOrder(int nodes, int buckets)
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-        hashBv.Init(compiler);
         var vector = hashBv.Create(compiler);
         int[] offsets = [0, 31, 32, 127];
         var values = Enumerable.Range(0, nodes).SelectMany(n => offsets.Select(bit => (indexType)((n * 128) + bit))).ToArray();

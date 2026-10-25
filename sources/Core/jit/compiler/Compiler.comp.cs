@@ -110,10 +110,6 @@ public partial class Compiler
 
     public bool compRationalIRForm;
 
-    public bool compGeneratingProlog;
-
-    public bool compGeneratingEpilog;
-
     public bool compGeneratingUnwindProlog;
 
     public bool compGeneratingUnwindEpilog;
@@ -258,8 +254,6 @@ public partial class Compiler
     private unsafe JitTimer? compJitTimer;
 
     /// <summary>Summary of the Timer information for the whole run.</summary>
-    private static CompTimeSummaryInfo s_compJitTimerSummary;
-
     /// <summary>If a log file for JIT time is desired, filename to write it to.</summary>
     private static nint compJitTimeLogFilename;
 
@@ -3205,8 +3199,6 @@ public partial class Compiler
                 assert(impInlineRoot._inlineStrategy is not null);
                 impInlineRoot._inlineStrategy.NoteImport();
             }
-
-            hashBv.Init(this);
 
             VarSetOps.AssignAllowUninitRhs(this, ref compCurLife, VarSetOps.UninitVal());
         });

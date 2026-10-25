@@ -21,16 +21,14 @@ internal static class ArrayStackTests
     private static readonly int[] s_expectedAfterReverse = [4, 3, 2, 1];
 
     [Test]
-    public static void PushAndEmplaceGrowTheStackAndPreserveReferences()
+    public static void PushGrowsTheStackAndPreservesReferences()
     {
         var stack = new ArrayStack<int>(initialCapacity: 9);
 
-        for (var i = 0; i < 19; i++)
+        for (var i = 0; i < 20; i++)
         {
             stack.Push(i);
         }
-
-        stack.Emplace(static () => 19);
 
         Assert.That(stack.Empty(), Is.False);
         Assert.That(stack.Height(), Is.EqualTo(20));

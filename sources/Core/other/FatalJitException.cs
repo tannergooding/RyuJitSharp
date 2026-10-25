@@ -2429,14 +2429,6 @@ public enum FatalJitErrorCode
     DebuggerLookupsAreOnlyAvailableInDebugBuilds = 1229,
     /// <summary>GenTree::s_gtNodeSizes native allocation sizes are not ported.</summary>
     GenTreeSGtNodeSizesNativeAllocationSizesAreNotPorted = 1230,
-    /// <summary>INS_MULADD is not defined for this target.</summary>
-    INSMULADDIsNotDefinedForThisTarget = 1231,
-    /// <summary>INS_ABS is not defined for this target.</summary>
-    INSABSIsNotDefinedForThisTarget = 1232,
-    /// <summary>INS_SQRT is not defined for this target.</summary>
-    INSSQRTIsNotDefinedForThisTarget = 1233,
-    /// <summary>The instruction alias is not defined for this target.</summary>
-    InstructionAliasIsNotDefinedForThisTarget = 1234,
     /// <summary>Native sizeof(GenTreeLclFld) is not ported.</summary>
     NativeSizeofGenTreeLclFldIsNotPorted = 1235,
     /// <summary>Native sizeof(GenTreeCall) is not ported.</summary>
@@ -6897,10 +6889,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.NoCompilerIsActiveOnThisThread => "No compiler is active on this thread.",
             FatalJitErrorCode.DebuggerLookupsAreOnlyAvailableInDebugBuilds => "Debugger lookups are only available in Debug builds.",
             FatalJitErrorCode.GenTreeSGtNodeSizesNativeAllocationSizesAreNotPorted => "GenTree::s_gtNodeSizes native allocation sizes are not ported.",
-            FatalJitErrorCode.INSMULADDIsNotDefinedForThisTarget => "INS_MULADD is not defined for this target.",
-            FatalJitErrorCode.INSABSIsNotDefinedForThisTarget => "INS_ABS is not defined for this target.",
-            FatalJitErrorCode.INSSQRTIsNotDefinedForThisTarget => "INS_SQRT is not defined for this target.",
-            FatalJitErrorCode.InstructionAliasIsNotDefinedForThisTarget => "The instruction alias is not defined for this target.",
             FatalJitErrorCode.NativeSizeofGenTreeLclFldIsNotPorted => "Native sizeof(GenTreeLclFld) is not ported.",
             FatalJitErrorCode.NativeSizeofGenTreeCallIsNotPorted => "Native sizeof(GenTreeCall) is not ported.",
             FatalJitErrorCode.GenNodeSizeStatsCollectionIsNotPorted => "genNodeSizeStats collection is not ported.",

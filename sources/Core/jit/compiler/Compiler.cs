@@ -525,7 +525,6 @@ public partial class Compiler
         if (!compIsForInlining)
         {
             codeGen = getCodeGenerator(this);
-            hashBv.Init(this);
 
             //
             // Initialize all the per-method statistics gathering data structures.

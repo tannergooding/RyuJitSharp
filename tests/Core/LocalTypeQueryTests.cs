@@ -10,26 +10,6 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class LocalTypeQueryTests
 {
-    [TestCase(false, false)]
-    [TestCase(false, true)]
-    [TestCase(true, false)]
-    [TestCase(true, true)]
-    public static void ParameterFlagsReadOnlyTheSelectedDescriptor(bool parameter, bool registerArgument)
-    {
-        var compiler = NewCompiler();
-        compiler.lvaTable[0].lvIsParam = parameter;
-        compiler.lvaTable[0].lvIsRegArg = registerArgument;
-        compiler.lvaTable[1].lvIsParam = !parameter;
-        compiler.lvaTable[1].lvIsRegArg = !registerArgument;
-
-        Assert.That(compiler.lvaIsParameter(0), Is.EqualTo(parameter));
-        Assert.That(compiler.lvaIsRegArgument(0), Is.EqualTo(registerArgument));
-        Assert.That(compiler.lvaIsParameter(1), Is.EqualTo(!parameter));
-        Assert.That(compiler.lvaIsRegArgument(1), Is.EqualTo(!registerArgument));
-        Assert.That(compiler.lvaTable[0].lvIsParam, Is.EqualTo(parameter));
-        Assert.That(compiler.lvaTable[0].lvIsRegArg, Is.EqualTo(registerArgument));
-    }
-
     [TestCase(TYP_BYTE, TYP_INT)]
     [TestCase(TYP_UBYTE, TYP_INT)]
     [TestCase(TYP_SHORT, TYP_INT)]

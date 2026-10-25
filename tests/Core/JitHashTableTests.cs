@@ -10,7 +10,7 @@ namespace RyuJitSharp.UnitTests;
 internal static class JitHashTableTests
 {
     [Test]
-    public static void LookupSetAndEmplacePreserveExistingValues()
+    public static void LookupSetAndPointerAddPreserveValues()
     {
         var table = new JitHashTable<uint, string>(new ConstantHashInfo());
         table.Reallocate(7);
@@ -20,16 +20,14 @@ internal static class JitHashTableTests
         Assert.That(table.Lookup(1, out var value), Is.True);
         Assert.That(value, Is.EqualTo("updated"));
 
-        var existing = table.Emplace(1, () => throw new InvalidOperationException());
-        Assert.That(existing.Value, Is.EqualTo("updated"));
-
         var added = table.LookupPointerOrAdd(2, "default");
         added.Value = "assigned";
         Assert.That(table.Lookup(2, out value), Is.True);
         Assert.That(value, Is.EqualTo("assigned"));
 
-        var created = table.Emplace(3, () => "constructed");
-        Assert.That(created.Value, Is.EqualTo("constructed"));
+        Assert.That(table.Set(3, "constructed"), Is.False);
+        Assert.That(table.Lookup(3, out value), Is.True);
+        Assert.That(value, Is.EqualTo("constructed"));
         Assert.That(table.GetCount(), Is.EqualTo(3));
     }
 

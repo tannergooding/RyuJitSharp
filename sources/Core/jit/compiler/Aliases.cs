@@ -10,8 +10,6 @@ global using NodeToTestDataMap = System.Collections.Generic.Dictionary<RyuJitSha
 
 global using FieldHandleSet = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_FIELD_STRUCT_>, RyuJitSharp.FieldKindForVN>;
 
-global using ClassHandleSet = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_CLASS_STRUCT_>, bool>;
-
 global using BlockToFlowEdgeMap = System.Collections.Generic.Dictionary<RyuJitSharp.BasicBlock, RyuJitSharp.FlowEdge?>;
 
 global using BasicBlockLocalPairSet = System.Collections.Generic.Dictionary<RyuJitSharp.Compiler.BasicBlockLocalPair, bool>;

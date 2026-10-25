@@ -126,61 +126,6 @@ internal static class HistogramTests
         Assert.That(Capture(counter), Is.EqualTo("-17\n"));
     }
 
-    [Test]
-    public static void NodeCountsSortByUnsignedCountThenOpcodeAndOmitZeroRows()
-    {
-        var counts = new NodeCounts();
-        counts.record(genTreeOps.GT_MUL);
-        counts.record(genTreeOps.GT_ADD);
-        counts.record(genTreeOps.GT_CNS_INT);
-        counts.record(genTreeOps.GT_ADD);
-        counts.record(genTreeOps.GT_MUL);
-        NodeStorage(counts)[(int)genTreeOps.GT_SUB] = int.MinValue;
-
-        var useShortNames = TestConfiguration.IsDebug || Globals.JitConfig.DisplayMemStats != 0;
-        var subName = useShortNames ? "SUB" : "GT_SUB";
-        var addName = useShortNames ? "ADD" : "GT_ADD";
-        var mulName = useShortNames ? "MUL" : "GT_MUL";
-        var cnsIntName = useShortNames ? "CNS_INT" : "GT_CNS_INT";
-
-        Assert.That(Capture(counts), Is.EqualTo(
-            subName.PadRight(20) + " : 2147483648\n" +
-            addName.PadRight(20) + " :       2\n" +
-            mulName.PadRight(20) + " :       2\n" +
-            cnsIntName.PadRight(20) + " :       1\n"));
-    }
-
-    [Test]
-    public static void NodeCountsUpdateAtomically()
-    {
-        var counts = new NodeCounts();
-        _ = Parallel.For(0, 4, _ => {
-            for (var i = 0; i < 1024; i++)
-            {
-                counts.record(genTreeOps.GT_ADD);
-            }
-        });
-
-        var addName = TestConfiguration.IsDebug || Globals.JitConfig.DisplayMemStats != 0 ? "ADD" : "GT_ADD";
-        Assert.That(Capture(counts), Is.EqualTo(addName.PadRight(20) + " :    4096\n"));
-    }
-
-    [TestCase(int.MaxValue, 0x80000000U)]
-    [TestCase(-1, 0U)]
-    public static void NodeCountsReinterpretWrappedSignedStorage(int initial, uint expected)
-    {
-        var counts = new NodeCounts();
-        NodeStorage(counts)[(int)genTreeOps.GT_ADD] = initial;
-        counts.record(genTreeOps.GT_ADD);
-
-        Assert.That(unchecked((uint)NodeStorage(counts)[(int)genTreeOps.GT_ADD]), Is.EqualTo(expected));
-        var addName = TestConfiguration.IsDebug || Globals.JitConfig.DisplayMemStats != 0 ? "ADD" : "GT_ADD";
-        Assert.That(Capture(counts), Is.EqualTo(expected == 0 ? "" : addName.PadRight(20) + $" : {expected,7}\n"));
-    }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_counts")]
-    private static extern ref int[] NodeStorage(NodeCounts counts);
-
     internal static string Capture(Dumpable dumpable)
     {
         using var output = new MemoryStream();

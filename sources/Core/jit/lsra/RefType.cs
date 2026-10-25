@@ -22,10 +22,3 @@ public enum RefType : byte
     RefTypeUpperVectorRestore = 0x42,
     RefTypeKillGCRefs = 0x80,
 }
-
-public enum BlockStartOrEnd
-{
-    BlockPositionStart = 0,
-    BlockPositionEnd = 1,
-    PositionCount = 2,
-}

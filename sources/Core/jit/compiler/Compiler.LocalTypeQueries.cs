@@ -7,20 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public bool lvaIsParameter(int varNum)
-    {
-        ref var varDsc = ref lvaGetDesc(varNum);
-
-        return varDsc.lvIsParam;
-    }
-
-    public bool lvaIsRegArgument(int varNum)
-    {
-        ref var varDsc = ref lvaGetDesc(varNum);
-
-        return varDsc.lvIsRegArg;
-    }
-
     // A local can be accessed through different machine types; these queries expose its normalized type.
     public var_types lvaGetActualType(int lclNum)
     {

@@ -47,7 +47,13 @@ internal static class EmitterPlaceholderTests
             {
                 case IGPT_PROLOG:
                 {
-                    codeGen.genReserveProlog(block);
+                    emitter.emitCreatePlaceholderIG(
+                        IGPT_PROLOG,
+                        block,
+                        VarSetOps.MakeEmpty(compiler),
+                        default,
+                        default,
+                        last: false);
                     break;
                 }
 
@@ -174,7 +180,13 @@ internal static class EmitterPlaceholderTests
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
         {
             var emitter = codeGen.Emitter;
-            codeGen.genReserveProlog(new BasicBlock(null, null));
+            emitter.emitCreatePlaceholderIG(
+                IGPT_PROLOG,
+                new BasicBlock(null, null),
+                VarSetOps.MakeEmpty(compiler),
+                default,
+                default,
+                last: false);
             var root = LastPlaceholder(emitter);
             assert(root is not null);
             compiler.compCurrFuncIdx = 1;

@@ -486,7 +486,7 @@ public partial class Compiler
                     newMemoryVN = vnStore.VNForMapStore(newMemoryVN, fieldVN, vnStore.VNForExpr(entryBlock, mapType));
                 }
             }
-            if (sideEffects.ArrayElemTypesModified is not null)
+            if (sideEffects.HasModifiedElemTypes)
             {
                 foreach (var elementClass in sideEffects.EnumerateModifiedElemTypesInNativeOrder())
                 {
@@ -506,7 +506,7 @@ public partial class Compiler
         {
             assert(memoryKind is ByrefExposed);
             assert((sideEffects.FieldsModified is null) || sideEffects.HasMemoryHavoc[(int)memoryKind]);
-            assert((sideEffects.ArrayElemTypesModified is null) || sideEffects.HasMemoryHavoc[(int)memoryKind]);
+            assert(!sideEffects.HasModifiedElemTypes || sideEffects.HasMemoryHavoc[(int)memoryKind]);
         }
 
         JITDUMP($"  Final {memoryKind} state is ${newMemoryVN:x}.\n");

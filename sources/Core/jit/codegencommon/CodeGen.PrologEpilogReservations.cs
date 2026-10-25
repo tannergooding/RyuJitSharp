@@ -9,12 +9,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genReserveProlog(BasicBlock block)
-    {
-        JITDUMP($"Reserving prolog IG for block {FMT_BB(block.bbNum)}\n");
-        Emitter.emitCreatePlaceholderIG(IGPT_PROLOG, block, VarSetOps.MakeEmpty(_compiler), default, default, last: false);
-    }
-
     public void genReserveEpilog(BasicBlock block)
     {
         JITDUMP($"Reserving epilog IG for block {FMT_BB(block.bbNum)}\n");

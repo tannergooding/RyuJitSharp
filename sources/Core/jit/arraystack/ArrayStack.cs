@@ -33,18 +33,6 @@ internal sealed class ArrayStack<T>
         IncrementVersion();
     }
 
-    internal void Emplace(Func<T> createItem)
-    {
-        if (_count == _data.Length)
-        {
-            Realloc();
-        }
-
-        _data[_count] = createItem();
-        _count++;
-        IncrementVersion();
-    }
-
     internal T Pop()
     {
         Debug.Assert(_count > 0);

@@ -2125,8 +2125,6 @@ public partial class Compiler
         }
     }
 
-    public List<FlowEdge>? fgPredListSortVector;
-
     /// <summary>The number of separate return points in the method.</summary>
     public int fgReturnCount;
 

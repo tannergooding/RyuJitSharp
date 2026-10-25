@@ -229,7 +229,7 @@ internal static unsafe class LoopSideEffectTests
                 Assert.That(effects.HasMemoryHavoc[(int)MemoryKind.GcHeap], Is.False);
                 var elemType = new Pointer<CORINFO_CLASS_STRUCT_>(
                     (CORINFO_CLASS_STRUCT_*)(((nint)TYP_INT << 1) | 1));
-                Assert.That(effects.ArrayElemTypesModified, Does.ContainKey(elemType));
+                Assert.That(effects.EnumerateModifiedElemTypesInNativeOrder(), Does.Contain(elemType));
             }
         }
         finally
@@ -430,7 +430,7 @@ internal static unsafe class LoopSideEffectTests
                 Assert.That(VarSetOps.IsMember(compiler, effects.VarUseDef, 2), Is.True);
                 Assert.That(VarSetOps.IsMember(compiler, effects.VarUseDef, 3), Is.True);
                 Assert.That(effects.ContainsCall, Is.EqualTo(includeCall));
-                Assert.That(effects.ArrayElemTypesModified is not null,
+                Assert.That(effects.HasModifiedElemTypes,
                     Is.EqualTo(location == "array"));
                 Assert.That(effects.FieldsModified is not null, Is.EqualTo(location == "field"));
 
@@ -438,7 +438,7 @@ internal static unsafe class LoopSideEffectTests
                 {
                     var encodedElemType = ((nint)TYP_INT << 1) | 1;
                     var elemKey = new Pointer<CORINFO_CLASS_STRUCT_>((CORINFO_CLASS_STRUCT_*)encodedElemType);
-                    Assert.That(effects.ArrayElemTypesModified, Does.ContainKey(elemKey));
+                    Assert.That(effects.EnumerateModifiedElemTypesInNativeOrder(), Does.Contain(elemKey));
                     if (address is GenTreeArrAddr arrAddr)
                     {
                         VNFuncApp app = default;
@@ -519,7 +519,7 @@ internal static unsafe class LoopSideEffectTests
                 Assert.That(effects.HasMemoryHavoc[(int)MemoryKind.ByrefExposed], Is.False);
                 Assert.That(effects.ContainsCall, Is.True);
                 Assert.That(effects.FieldsModified, Does.ContainKey(field));
-                Assert.That(effects.ArrayElemTypesModified, Does.ContainKey(elem));
+                Assert.That(effects.EnumerateModifiedElemTypesInNativeOrder(), Does.Contain(elem));
             }
 
             compiler.optRecordLoopNestsMemoryHavoc(outer!, 1 << (int)MemoryKind.ByrefExposed);

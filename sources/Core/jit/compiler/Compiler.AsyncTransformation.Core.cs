@@ -16,8 +16,6 @@ public partial class Compiler
         private int _returnedContinuationVar = BAD_VAR_NUM;
         private int _newContinuationVar = BAD_VAR_NUM;
         private int _reuseContinuationVar = BAD_VAR_NUM;
-        private int _dataArrayVar = BAD_VAR_NUM;
-        private int _gcDataArrayVar = BAD_VAR_NUM;
         private int _resultBaseVar = BAD_VAR_NUM;
         private int _exceptionVar = BAD_VAR_NUM;
         private BasicBlock? _lastSuspensionBB;

@@ -361,28 +361,6 @@ internal sealed class JitHashTable<TKey, TValue>
         return false;
     }
 
-    internal ValueReference Emplace(TKey key, Func<TValue> valueFactory)
-    {
-        CheckGrowth();
-        assert(_tableSizeInfo.prime != 0);
-
-        var index = GetIndexForKey(key);
-        var node = _table![index];
-        while ((node is not null) && !_keyInfo.Equals(key, node.GetKey()))
-        {
-            node = node.Next;
-        }
-
-        if (node is null)
-        {
-            node = AllocateNode(_table[index], key, valueFactory());
-            _table[index] = node;
-            _tableCount++;
-        }
-
-        return new ValueReference(node);
-    }
-
     internal bool Remove(TKey key)
     {
         if (_tableSizeInfo.prime == 0)

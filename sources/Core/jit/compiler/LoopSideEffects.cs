@@ -22,7 +22,7 @@ public sealed class LoopSideEffects
 
     public FieldHandleSet? FieldsModified;
 
-    public ClassHandleSet? ArrayElemTypesModified;
+    internal bool HasModifiedElemTypes => _modifiedElemTypeOrder is not null;
 
     public bool ContainsCall;
 
@@ -46,11 +46,9 @@ public sealed class LoopSideEffects
 
     public unsafe void AddModifiedElemType(Compiler compiler, CORINFO_CLASS_HANDLE classHandle)
     {
-        ArrayElemTypesModified ??= [];
         _modifiedElemTypeOrder ??= new NativeLoopKeyOrder<Pointer<CORINFO_CLASS_STRUCT_>>();
         _modifiedElemTypeOrder.Add(new Pointer<CORINFO_CLASS_STRUCT_>(classHandle),
             unchecked((uint)(nuint)classHandle));
-        ArrayElemTypesModified[classHandle] = true;
     }
 
     public IEnumerable<KeyValuePair<Pointer<CORINFO_FIELD_STRUCT_>, FieldKindForVN>>
