@@ -7,6 +7,53 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    private struct RedundantCmpPeepholeVisitor : IPeepholeVisitor<RedundantCmpPeepholeVisitor>
+    {
+        private readonly emitAttr _size;
+        private readonly regNumber _reg1;
+        private readonly regNumber _reg2;
+
+        public bool Result { get; private set; }
+
+        public RedundantCmpPeepholeVisitor(emitAttr size, regNumber reg1, regNumber reg2)
+        {
+            _size = size;
+            _reg1 = reg1;
+            _reg2 = reg2;
+        }
+
+        public emitPeepholeResult Visit(instrDesc id)
+        {
+            var ins = id.idIns();
+            if (ins == INS_cmp)
+            {
+                if (id.idInsFmt() != insFormat.IF_XARCH_RRD_RRD)
+                {
+                    return emitPeepholeResult.PEEPHOLE_ABORT;
+                }
+
+                if ((id.idReg1() == _reg1) && (id.idReg2() == _reg2))
+                {
+                    Result = _size == id.idOpSize();
+                }
+
+                return emitPeepholeResult.PEEPHOLE_ABORT;
+            }
+
+            if (emitDoesInsModifyFlags(ins))
+            {
+                return emitPeepholeResult.PEEPHOLE_ABORT;
+            }
+
+            if (emitIsInstrWritingToReg(id, _reg1) || emitIsInstrWritingToReg(id, _reg2))
+            {
+                return emitPeepholeResult.PEEPHOLE_ABORT;
+            }
+
+            return emitPeepholeResult.PEEPHOLE_CONTINUE;
+        }
+    }
+
     public bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
     {
         if (!Configuration.TARGET_XARCH)
@@ -33,38 +80,9 @@ public partial class Emitter
             return false;
         }
 
-        var result = false;
-        emitPeepholeIterateLastInstrs(id => {
-            var ins = id.idIns();
-            if (ins == INS_cmp)
-            {
-                if (id.idInsFmt() != insFormat.IF_XARCH_RRD_RRD)
-                {
-                    return emitPeepholeResult.PEEPHOLE_ABORT;
-                }
-
-                if ((id.idReg1() == reg1) && (id.idReg2() == reg2))
-                {
-                    result = size == id.idOpSize();
-                }
-
-                return emitPeepholeResult.PEEPHOLE_ABORT;
-            }
-
-            if (emitDoesInsModifyFlags(ins))
-            {
-                return emitPeepholeResult.PEEPHOLE_ABORT;
-            }
-
-            if (emitIsInstrWritingToReg(id, reg1) || emitIsInstrWritingToReg(id, reg2))
-            {
-                return emitPeepholeResult.PEEPHOLE_ABORT;
-            }
-
-            return emitPeepholeResult.PEEPHOLE_CONTINUE;
-        });
-
-        return result;
+        var visitor = new RedundantCmpPeepholeVisitor(size, reg1, reg2);
+        emitPeepholeIterateLastInstrs(ref visitor);
+        return visitor.Result;
     }
 
     public bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond)

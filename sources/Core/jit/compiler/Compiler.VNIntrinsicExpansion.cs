@@ -16,6 +16,13 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private readonly struct VNIntrinsicExpansionVisitor(Compiler compiler)
+        : IHelperExpansionVisitor<VNIntrinsicExpansionVisitor>
+    {
+        public unsafe bool Expand(ref BasicBlock block, Statement statement, GenTreeCall call)
+            => compiler.fgVNBasedIntrinsicExpansionForCall(ref block, statement, call);
+    }
+
     public unsafe PhaseStatus fgVNBasedIntrinsicExpansion()
     {
         if (!MethodHasSpecialIntrinsics || opts.OptimizationDisabled)
@@ -29,7 +36,8 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        return fgExpandHelper(fgVNBasedIntrinsicExpansionForCall, skipRarelyRunBlocks: true);
+        var visitor = new VNIntrinsicExpansionVisitor(this);
+        return fgExpandHelper(ref visitor, skipRarelyRunBlocks: true);
     }
 
     private unsafe bool fgVNBasedIntrinsicExpansionForCall(ref BasicBlock block, Statement stmt, GenTreeCall call)

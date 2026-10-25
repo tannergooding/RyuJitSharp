@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
@@ -13,6 +14,16 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ScalarEvolutionTests
 {
+    private readonly struct ScevRecordingVisitor(List<Scev> visited, Scev? stopAt)
+        : IScevVisitor<ScevRecordingVisitor>
+    {
+        public ScevVisit Visit(Scev node)
+        {
+            visited.Add(node);
+            return ReferenceEquals(node, stopAt) ? ScevVisit.Abort : ScevVisit.Continue;
+        }
+    }
+
     [TestCase(TYP_INT, int.MaxValue, 1, int.MinValue)]
     [TestCase(TYP_INT, -1, 2, 1)]
     [TestCase(TYP_LONG, long.MaxValue, 1, long.MinValue)]
@@ -72,6 +83,23 @@ internal static unsafe class ScalarEvolutionTests
                 Is.EqualTo(ScevVisit.Abort));
             Assert.That(context.NewAddRec(local, context.NewConstant(TYP_INT, 1)).IsInvariant(), Is.False);
         });
+    }
+
+    [Test]
+    public static void ConstrainedVisitPreservesOrderSharingAndAbort()
+    {
+        var shared = new ScevLocal(TYP_INT, 2, 3);
+        var expression = new ScevBinop(ScevOper.Add, TYP_INT, shared, shared);
+        var visited = new List<Scev>();
+        var visitor = new ScevRecordingVisitor(visited, stopAt: null);
+
+        Assert.That(expression.Visit(ref visitor), Is.EqualTo(ScevVisit.Continue));
+        Assert.That(visited, Is.EqualTo(new Scev[] { expression, shared, shared }));
+
+        visited.Clear();
+        visitor = new ScevRecordingVisitor(visited, shared);
+        Assert.That(expression.Visit(ref visitor), Is.EqualTo(ScevVisit.Abort));
+        Assert.That(visited, Is.EqualTo(new Scev[] { expression, shared }));
     }
 
     [Test]

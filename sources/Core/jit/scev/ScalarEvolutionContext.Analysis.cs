@@ -13,6 +13,11 @@ namespace RyuJitSharp;
 
 public sealed partial class ScalarEvolutionContext
 {
+    private readonly struct RecursiveScevVisitor(Scev target) : IScevVisitor<RecursiveScevVisitor>
+    {
+        public ScevVisit Visit(Scev node) => ReferenceEquals(node, target) ? ScevVisit.Abort : ScevVisit.Continue;
+    }
+
     private const int AnalysisMaxDepth = 64;
 
     private readonly Compiler _compiler;
@@ -434,10 +439,13 @@ public sealed partial class ScalarEvolutionContext
             {
                 numAppearances++;
             }
-            else if (addOperand.Visit(node => ReferenceEquals(node, recursiveScev)
-                         ? ScevVisit.Abort : ScevVisit.Continue) is ScevVisit.Abort)
+            else
             {
-                return null;
+                var visitor = new RecursiveScevVisitor(recursiveScev);
+                if (addOperand.Visit(ref visitor) is ScevVisit.Abort)
+                {
+                    return null;
+                }
             }
         }
 

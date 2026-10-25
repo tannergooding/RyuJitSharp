@@ -423,7 +423,7 @@ public partial class Compiler
                 return;
             }
 
-            var index = LowerBound(aggregate.Replacements, local.LclOffs, static rep => rep.Offset);
+            var index = LowerBound(aggregate.Replacements, local.LclOffs);
             JITDUMP($"Processing primitive use [{local.TreeId:D6}] of V{local.LclNum:D2}." +
                 $"[{local.LclOffs:D3}..{local.LclOffs + local.Type.Size:D3})\n");
             if ((index >= aggregate.Replacements.Count) ||

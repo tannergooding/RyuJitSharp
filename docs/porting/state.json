@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Start F08: trace field-list per-register queries and physical-promotion lower-bound projections with LSP; preserve lazy evaluation order, query count, and first-not-less-than semantics.",
+    "nextAction": "Start F15: trace capturing sorts in funclet ordering, async layout, and Wasm intervals; preserve comparer/tie semantics and leave B08 scope-index sorting deferred.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
       "scope": "First-pass Batch 4: apply B07/B08 local diagnostic span/search and comparer simplifications; specialize admitted live managed callback families F01-F13/F15/F16, remove R01 traversal scaffolding where truly unused, and close R11 exception-safe pool/callback-context work through all callers. Include only F14 managed printers, not unmanaged error-trap/rooting redesign.",

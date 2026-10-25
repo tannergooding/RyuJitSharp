@@ -21,6 +21,34 @@ public sealed partial class Lowering
         }
     }
 
+    private interface IRegisterInfoProvider<TSelf>
+        where TSelf : struct, IRegisterInfoProvider<TSelf>
+    {
+        LowerFieldListRegisterInfo GetRegisterInfo(int index);
+    }
+
+    private readonly struct CallArgRegisterInfoProvider(CallArg arg)
+        : IRegisterInfoProvider<CallArgRegisterInfoProvider>
+    {
+        public LowerFieldListRegisterInfo GetRegisterInfo(int index)
+        {
+            ref readonly var segment = ref arg.AbiInfo.Segments[index];
+            return new LowerFieldListRegisterInfo(segment.Offset, segment.GetRegisterType());
+        }
+    }
+
+    private readonly struct ReturnRegisterInfoProvider(ReturnTypeDesc descriptor)
+        : IRegisterInfoProvider<ReturnRegisterInfoProvider>
+    {
+        public LowerFieldListRegisterInfo GetRegisterInfo(int index)
+        {
+            var returnIndex = (byte)index;
+            return new LowerFieldListRegisterInfo(
+                descriptor.GetReturnFieldOffset(returnIndex),
+                descriptor.GetReturnRegType(returnIndex));
+        }
+    }
+
     private int StoreFieldListToNewLocal(ClassLayout layout, GenTreeFieldList fieldList)
     {
         JITDUMP($"Spilling field list [{fieldList.TreeId:D6}] to stack\n");
@@ -48,14 +76,9 @@ public sealed partial class Lowering
     private unsafe void LowerArgFieldList(CallArg arg, GenTreeFieldList fieldList)
     {
         assert(!arg.AbiInfo.HasAnyStackSegment);
+        var registerInfoProvider = new CallArgRegisterInfoProvider(arg);
 
-        LowerFieldListRegisterInfo GetRegisterInfo(int index)
-        {
-            ref readonly var segment = ref arg.AbiInfo.Segments[index];
-            return new LowerFieldListRegisterInfo(segment.Offset, segment.GetRegisterType());
-        }
-
-        if (!IsFieldListCompatibleWithRegisters(fieldList, arg.AbiInfo.NumSegments, GetRegisterInfo))
+        if (!IsFieldListCompatibleWithRegisters(fieldList, arg.AbiInfo.NumSegments, ref registerInfoProvider))
         {
             var layout = CompilerInstance.typGetObjLayout(arg.SignatureClassHandle);
             var localNumber = StoreFieldListToNewLocal(layout, fieldList);
@@ -70,7 +93,7 @@ public sealed partial class Lowering
         }
         else
         {
-            LowerFieldListToFieldListOfRegisters(fieldList, arg.AbiInfo.NumSegments, GetRegisterInfo);
+            LowerFieldListToFieldListOfRegisters(fieldList, arg.AbiInfo.NumSegments, ref registerInfoProvider);
         }
 
         var use = fieldList.Uses.Head;
@@ -89,14 +112,15 @@ public sealed partial class Lowering
         }
     }
 
-    private static bool IsFieldListCompatibleWithRegisters(
-        GenTreeFieldList fieldList, int numRegs, Func<int, LowerFieldListRegisterInfo> getRegInfo)
+    private static bool IsFieldListCompatibleWithRegisters<TProvider>(
+        GenTreeFieldList fieldList, int numRegs, ref TProvider registerInfoProvider)
+        where TProvider : struct, IRegisterInfoProvider<TProvider>
     {
         JITDUMP($"Checking if field list [{fieldList.TreeId:D6}] is compatible with registers: ");
         var use = fieldList.Uses.Head;
         for (var index = 0; index < numRegs; index++)
         {
-            var regInfo = getRegInfo(index);
+            var regInfo = registerInfoProvider.GetRegisterInfo(index);
             var regStart = regInfo.Offset;
             var regType = regInfo.RegType;
             var regEnd = regStart + regType.Size;
@@ -159,8 +183,9 @@ public sealed partial class Lowering
         return true;
     }
 
-    private void LowerFieldListToFieldListOfRegisters(
-        GenTreeFieldList fieldList, int numRegs, Func<int, LowerFieldListRegisterInfo> getRegInfo)
+    private void LowerFieldListToFieldListOfRegisters<TProvider>(
+        GenTreeFieldList fieldList, int numRegs, ref TProvider registerInfoProvider)
+        where TProvider : struct, IRegisterInfoProvider<TProvider>
     {
         var compiler = CompilerInstance;
         var use = fieldList.Uses.Head;
@@ -168,7 +193,7 @@ public sealed partial class Lowering
 
         for (var index = 0; index < numRegs; index++)
         {
-            var regInfo = getRegInfo(index);
+            var regInfo = registerInfoProvider.GetRegisterInfo(index);
             var regStart = regInfo.Offset;
             var regType = regInfo.RegType;
             var regEnd = regStart + regType.Size;

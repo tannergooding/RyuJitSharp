@@ -34,6 +34,13 @@ public partial class Compiler
         CallHelper_AlwaysThrows,
     }
 
+    private readonly struct LateCastExpansionVisitor(Compiler compiler)
+        : IHelperExpansionVisitor<LateCastExpansionVisitor>
+    {
+        public unsafe bool Expand(ref BasicBlock block, Statement statement, GenTreeCall call)
+            => compiler.fgLateCastExpansionForCall(ref block, statement, call);
+    }
+
     public PhaseStatus fgLateCastExpansion()
     {
         if (!MethodHasExpandableCasts || opts.OptimizationDisabled)
@@ -41,7 +48,8 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        return fgExpandHelper(fgLateCastExpansionForCall, skipRarelyRunBlocks: true);
+        var visitor = new LateCastExpansionVisitor(this);
+        return fgExpandHelper(ref visitor, skipRarelyRunBlocks: true);
     }
 
     private unsafe int PickCandidatesForTypeCheck(GenTreeCall castHelper, Span<nint> candidates,

@@ -15,6 +15,20 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private readonly struct NativeAotThreadLocalExpansionVisitor(Compiler compiler)
+        : IHelperExpansionVisitor<NativeAotThreadLocalExpansionVisitor>
+    {
+        public unsafe bool Expand(ref BasicBlock block, Statement statement, GenTreeCall call)
+            => compiler.fgExpandThreadLocalAccessForCallNativeAOT(ref block, statement, call);
+    }
+
+    private readonly struct ThreadLocalExpansionVisitor(Compiler compiler)
+        : IHelperExpansionVisitor<ThreadLocalExpansionVisitor>
+    {
+        public unsafe bool Expand(ref BasicBlock block, Statement statement, GenTreeCall call)
+            => compiler.fgExpandThreadLocalAccessForCall(ref block, statement, call);
+    }
+
     public unsafe PhaseStatus fgExpandThreadLocalAccess()
     {
         if (!MethodHasTlsFieldAccess)
@@ -26,7 +40,8 @@ public partial class Compiler
         // NativeAOT has no generated slow TLS helper and must expand even rarely run blocks.
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            return fgExpandHelper(fgExpandThreadLocalAccessForCallNativeAOT);
+            var visitor = new NativeAotThreadLocalExpansionVisitor(this);
+            return fgExpandHelper(ref visitor);
         }
 
         if (opts.OptimizationDisabled)
@@ -41,7 +56,8 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        return fgExpandHelper(fgExpandThreadLocalAccessForCall, skipRarelyRunBlocks: true);
+        var normalVisitor = new ThreadLocalExpansionVisitor(this);
+        return fgExpandHelper(ref normalVisitor, skipRarelyRunBlocks: true);
     }
 
     private unsafe bool fgExpandThreadLocalAccessForCallNativeAOT(ref BasicBlock block, Statement stmt, GenTreeCall call)

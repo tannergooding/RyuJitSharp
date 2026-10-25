@@ -7,6 +7,14 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    private readonly struct X86BaseImmediateVisitor(
+        CodeGen codeGen, instruction ins, emitAttr attr, regNumber targetReg, GenTree op1, insOpts instOptions)
+        : IHardwareImmediateCaseVisitor<X86BaseImmediateVisitor>
+    {
+        public void Emit(sbyte immediate) =>
+            codeGen.inst_RV_TT_IV(ins, attr, targetReg, op1, immediate, instOptions);
+    }
+
     public void genX86BaseIntrinsic(GenTreeHWIntrinsic node, insOpts instOptions)
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
@@ -261,16 +269,13 @@ public sealed partial class CodeGen
                 var op2 = node.GetOp(2);
                 var attr = targetType.ActualType.EmitSize;
 
-                void EmitSwCase(sbyte i)
-                {
-                    inst_RV_TT_IV(ins, attr, targetReg, op1, i, instOptions);
-                }
+                var visitor = new X86BaseImmediateVisitor(this, ins, attr, targetReg, op1, instOptions);
 
                 if (op2.Oper.IsCnsIntOrI)
                 {
                     var ival = op2.AsIntCon().IconValue;
                     assert((ival >= 0) && (ival <= 255));
-                    EmitSwCase(unchecked((sbyte)ival));
+                    visitor.Emit(unchecked((sbyte)ival));
                 }
                 else
                 {
@@ -279,7 +284,7 @@ public sealed partial class CodeGen
                     var baseReg = _internalRegisters.Extract(node);
                     var offsReg = _internalRegisters.GetSingle(node);
                     genHWIntrinsicJumpTableFallback(intrinsicId, ins, EA_16BYTE, op2.RegNum,
-                        baseReg, offsReg, EmitSwCase);
+                        baseReg, offsReg, ref visitor);
                 }
                 break;
             }

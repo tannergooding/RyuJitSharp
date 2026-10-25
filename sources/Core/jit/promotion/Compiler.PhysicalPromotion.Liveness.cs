@@ -229,7 +229,7 @@ public partial class Compiler
             else
             {
                 var offset = occurrence.LclOffs;
-                var index = LowerBound(replacements, offset, static rep => rep.Offset);
+                var index = LowerBound(replacements, offset);
                 if ((index == replacements.Count) || (replacements[index].Offset != offset))
                 {
                     var isFullRemainderDef = isDef && (aggregate.UnpromotedMin >= offset) &&
@@ -246,7 +246,7 @@ public partial class Compiler
         private static int FirstOverlappingReplacement(
             List<PhysicalPromotionReplacement> replacements, int offset, int size)
         {
-            var index = LowerBound(replacements, offset, static rep => rep.Offset);
+            var index = LowerBound(replacements, offset);
             if ((index > 0) && replacements[index - 1].Overlaps(offset, size))
             {
                 index--;
@@ -461,7 +461,7 @@ public partial class Compiler
             else
             {
                 var offset = local.LclOffs;
-                var index = LowerBound(replacements, offset, static rep => rep.Offset);
+                var index = LowerBound(replacements, offset);
                 var isRemainder = (index == replacements.Count) || (replacements[index].Offset != offset);
                 var varIndex = baseIndex + (isRemainder ? 0 : 1 + index);
                 var fullDef = isDef && (!isRemainder ||

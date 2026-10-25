@@ -7,6 +7,40 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    private readonly struct HardwareIntrinsicImmediateOp2Visitor(
+        CodeGen codeGen, GenTreeHWIntrinsic node, NamedIntrinsic intrinsic, instruction ins, emitAttr simdSize,
+        regNumber targetReg, regNumber op1Reg, GenTree op1, insOpts options)
+        : IHardwareImmediateCaseVisitor<HardwareIntrinsicImmediateOp2Visitor>
+    {
+        public void Emit(sbyte immediate)
+        {
+            if (HWIntrinsicInfo.CopiesUpperBits(intrinsic))
+            {
+                assert(!op1.IsContained);
+                codeGen.Emitter.emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op1Reg, immediate, options);
+            }
+            else
+            {
+                codeGen.genHWIntrinsic_R_RM_I(node, ins, simdSize, immediate, options);
+            }
+        }
+    }
+
+    private readonly struct HardwareIntrinsicImmediateOp3Visitor(
+        CodeGen codeGen, GenTreeHWIntrinsic node, instruction ins, emitAttr simdSize, insOpts options)
+        : IHardwareImmediateCaseVisitor<HardwareIntrinsicImmediateOp3Visitor>
+    {
+        public void Emit(sbyte immediate) => codeGen.genHWIntrinsic_R_R_RM_I(node, ins, simdSize, immediate, options);
+    }
+
+    private readonly struct HardwareIntrinsicImmediateOp4Visitor(
+        CodeGen codeGen, GenTreeHWIntrinsic node, instruction ins, emitAttr simdSize, insOpts options)
+        : IHardwareImmediateCaseVisitor<HardwareIntrinsicImmediateOp4Visitor>
+    {
+        public void Emit(sbyte immediate) =>
+            codeGen.genHWIntrinsic_R_R_R_RM_I(node, ins, simdSize, immediate, options);
+    }
+
     public void genHWIntrinsicXarch(GenTreeHWIntrinsic node)
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
@@ -157,9 +191,10 @@ public sealed partial class CodeGen
                                 var operand = node.GetOp(1);
                                 var baseReg = _internalRegisters.Extract(node);
                                 var offsReg = _internalRegisters.GetSingle(node);
+                                var visitor = new RoundedRrmHardwareImmediateCaseVisitor(
+                                    this, node, ins, simdSize, targetReg, operand, options);
                                 genHWIntrinsicJumpTableFallback(intrinsic, ins, simdSize, lastOp.RegNum, baseReg, offsReg,
-                                    immediate => genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, operand,
-                                        AddEmbRoundingMode(options, immediate)));
+                                    ref visitor);
                                 break;
                             }
 
@@ -167,9 +202,9 @@ public sealed partial class CodeGen
                             {
                                 var baseReg = _internalRegisters.Extract(node);
                                 var offsReg = _internalRegisters.GetSingle(node);
+                                var visitor = new RoundedRrrmHardwareImmediateCaseVisitor(this, node, ins, simdSize, options);
                                 genHWIntrinsicJumpTableFallback(intrinsic, ins, simdSize, lastOp.RegNum, baseReg, offsReg,
-                                    immediate => genHWIntrinsic_R_R_RM(node, ins, simdSize,
-                                        AddEmbRoundingMode(options, immediate)));
+                                    ref visitor);
                                 break;
                             }
 
@@ -292,30 +327,21 @@ public sealed partial class CodeGen
                     }
                     else if (HWIntrinsicInfo.isImmOp(intrinsic, op2))
                     {
-                        void EmitCase(sbyte immediate)
-                        {
-                            if (HWIntrinsicInfo.CopiesUpperBits(intrinsic))
-                            {
-                                assert(!op1.IsContained);
-                                Emitter.emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op1Reg, immediate, options);
-                            }
-                            else
-                            {
-                                genHWIntrinsic_R_RM_I(node, ins, simdSize, immediate, options);
-                            }
-                        }
+                        var visitor = new HardwareIntrinsicImmediateOp2Visitor(
+                            this, node, intrinsic, ins, simdSize, targetReg, op1Reg, op1, options);
 
                         if (op2.Oper.IsCnsIntOrI)
                         {
                             var immediate = op2.AsIntCon().IconValue;
                             assert((immediate >= 0) && (immediate <= 255));
-                            EmitCase(unchecked((sbyte)immediate));
+                            visitor.Emit(unchecked((sbyte)immediate));
                         }
                         else
                         {
                             var baseReg = _internalRegisters.Extract(node);
                             var offsReg = _internalRegisters.GetSingle(node);
-                            genHWIntrinsicJumpTableFallback(intrinsic, ins, simdSize, op2Reg, baseReg, offsReg, EmitCase);
+                            genHWIntrinsicJumpTableFallback(intrinsic, ins, simdSize, op2Reg, baseReg, offsReg,
+                                ref visitor);
                         }
                     }
                     else if (node.Type == TYP_VOID)
@@ -340,21 +366,19 @@ public sealed partial class CodeGen
                     assert(fixedImmediate == -1);
                     if (HWIntrinsicInfo.isImmOp(intrinsic, op3))
                     {
-                        void EmitCase(sbyte immediate)
-                        {
-                            genHWIntrinsic_R_R_RM_I(node, ins, simdSize, immediate, options);
-                        }
+                        var visitor = new HardwareIntrinsicImmediateOp3Visitor(this, node, ins, simdSize, options);
                         if (op3.Oper.IsCnsIntOrI)
                         {
                             var immediate = op3.AsIntCon().IconValue;
                             assert((immediate >= 0) && (immediate <= 255));
-                            EmitCase(unchecked((sbyte)immediate));
+                            visitor.Emit(unchecked((sbyte)immediate));
                         }
                         else
                         {
                             var baseReg = _internalRegisters.Extract(node);
                             var offsReg = _internalRegisters.GetSingle(node);
-                            genHWIntrinsicJumpTableFallback(intrinsic, ins, simdSize, op3Reg, baseReg, offsReg, EmitCase);
+                            genHWIntrinsicJumpTableFallback(intrinsic, ins, simdSize, op3Reg, baseReg, offsReg,
+                                ref visitor);
                         }
                     }
                     else if (category == HW_Category_MemoryLoad)
@@ -457,21 +481,19 @@ public sealed partial class CodeGen
                     assert(fixedImmediate == -1);
                     if (HWIntrinsicInfo.isImmOp(intrinsic, op4))
                     {
-                        void EmitCase(sbyte immediate)
-                        {
-                            genHWIntrinsic_R_R_R_RM_I(node, ins, simdSize, immediate, options);
-                        }
+                        var visitor = new HardwareIntrinsicImmediateOp4Visitor(this, node, ins, simdSize, options);
                         if (op4.Oper.IsCnsIntOrI)
                         {
                             var immediate = op4.AsIntCon().IconValue;
                             assert((immediate >= 0) && (immediate <= 255));
-                            EmitCase(unchecked((sbyte)immediate));
+                            visitor.Emit(unchecked((sbyte)immediate));
                         }
                         else
                         {
                             var baseReg = _internalRegisters.Extract(node);
                             var offsReg = _internalRegisters.GetSingle(node);
-                            genHWIntrinsicJumpTableFallback(intrinsic, ins, simdSize, op4.RegNum, baseReg, offsReg, EmitCase);
+                            genHWIntrinsicJumpTableFallback(intrinsic, ins, simdSize, op4.RegNum, baseReg, offsReg,
+                                ref visitor);
                         }
                     }
                     else

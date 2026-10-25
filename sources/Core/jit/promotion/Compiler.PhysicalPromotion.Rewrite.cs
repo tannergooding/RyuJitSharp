@@ -13,6 +13,27 @@ public partial class Compiler
         Compiler compiler, PhysicalPromotionAggregateInfoMap aggregates, PhysicalPromotionLiveness liveness,
         FlowGraphDfsTree dfsTree)
     {
+        private interface IReplacementVisitor<TSelf>
+            where TSelf : struct, IReplacementVisitor<TSelf>
+        {
+            bool Visit(PhysicalPromotionReplacement replacement);
+        }
+
+        private readonly struct WriteBackBeforeCurrentStatementVisitor(
+            PhysicalPromotionReplaceVisitor owner, int local) : IReplacementVisitor<WriteBackBeforeCurrentStatementVisitor>
+        {
+            public bool Visit(PhysicalPromotionReplacement replacement) =>
+                owner.WriteBackBeforeCurrentStatement(local, replacement);
+        }
+
+        private readonly struct WriteBackBeforeUseVisitor(
+            PhysicalPromotionReplaceVisitor owner, PhysicalPromotionDecompositionStatementList prefix, int local)
+            : IReplacementVisitor<WriteBackBeforeUseVisitor>
+        {
+            public bool Visit(PhysicalPromotionReplacement replacement) =>
+                owner.WriteBackBeforeUse(prefix, local, replacement);
+        }
+
         private readonly Compiler _compiler = compiler;
         private readonly PhysicalPromotionAggregateInfoMap _aggregates = aggregates;
         private readonly PhysicalPromotionLiveness _liveness = liveness;
@@ -303,8 +324,7 @@ public partial class Compiler
                     return GenTree.VisitResult.Continue;
                 }
 
-                var index = LowerBound(aggregate.Replacements, occurrence.LclOffs,
-                    static replacement => replacement.Offset);
+                var index = LowerBound(aggregate.Replacements, occurrence.LclOffs);
                 if ((index < aggregate.Replacements.Count) &&
                     (aggregate.Replacements[index].Offset == occurrence.LclOffs))
                 {
@@ -360,8 +380,8 @@ public partial class Compiler
             }
         }
 
-        private void VisitOverlappingReplacements(int local, int offset, int size,
-            Func<PhysicalPromotionReplacement, bool> visit)
+        private void VisitOverlappingReplacements<TVisitor>(int local, int offset, int size, ref TVisitor visitor)
+            where TVisitor : struct, IReplacementVisitor<TVisitor>
         {
             var aggregate = _aggregates.Lookup(local);
             if ((aggregate is null) ||
@@ -372,7 +392,7 @@ public partial class Compiler
 
             for (var index = first; index < end; index++)
             {
-                if (!visit(aggregate.Replacements[index]))
+                if (!visitor.Visit(aggregate.Replacements[index]))
                 {
                     break;
                 }
@@ -406,37 +426,44 @@ public partial class Compiler
             }
         }
 
+        private bool WriteBackBeforeCurrentStatement(int local, PhysicalPromotionReplacement replacement)
+        {
+            if (replacement.NeedsWriteBack)
+            {
+                var tree = _compiler.PhysicalPromotionCreateWriteBack(local, replacement);
+                var statement = _compiler.fgNewStmtFromTree(tree);
+                JITDUMP($"Writing back {replacement.Description} before {FMT_STMT(CurrentStatement.Id)}\n");
+                DISPSTMT(statement);
+                _compiler.fgInsertStmtBefore(CurrentBlock, CurrentStatement, statement);
+                ClearNeedsWriteBack(replacement);
+            }
+
+            return true;
+        }
+
         private void WriteBackBeforeCurrentStatement(int local, int offset, int size)
         {
-            VisitOverlappingReplacements(local, offset, size, replacement =>
-            {
-                if (replacement.NeedsWriteBack)
-                {
-                    var tree = _compiler.PhysicalPromotionCreateWriteBack(local, replacement);
-                    var statement = _compiler.fgNewStmtFromTree(tree);
-                    JITDUMP($"Writing back {replacement.Description} before {FMT_STMT(CurrentStatement.Id)}\n");
-                    DISPSTMT(statement);
-                    _compiler.fgInsertStmtBefore(CurrentBlock, CurrentStatement, statement);
-                    ClearNeedsWriteBack(replacement);
-                }
+            var visitor = new WriteBackBeforeCurrentStatementVisitor(this, local);
+            VisitOverlappingReplacements(local, offset, size, ref visitor);
+        }
 
-                return true;
-            });
+        private bool WriteBackBeforeUse(PhysicalPromotionDecompositionStatementList prefix, int local,
+            PhysicalPromotionReplacement replacement)
+        {
+            if (replacement.NeedsWriteBack)
+            {
+                prefix.AddStatement(_compiler.PhysicalPromotionCreateWriteBack(local, replacement));
+                ClearNeedsWriteBack(replacement);
+            }
+
+            return true;
         }
 
         private void WriteBackBeforeUse(ref GenTree use, int local, int offset, int size)
         {
             var prefix = new PhysicalPromotionDecompositionStatementList();
-            VisitOverlappingReplacements(local, offset, size, replacement =>
-            {
-                if (replacement.NeedsWriteBack)
-                {
-                    prefix.AddStatement(_compiler.PhysicalPromotionCreateWriteBack(local, replacement));
-                    ClearNeedsWriteBack(replacement);
-                }
-
-                return true;
-            });
+            var visitor = new WriteBackBeforeUseVisitor(this, prefix, local);
+            VisitOverlappingReplacements(local, offset, size, ref visitor);
 
             if (prefix.Count != 0)
             {

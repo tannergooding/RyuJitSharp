@@ -18,6 +18,69 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private interface IEEPrintVisitor<TSelf>
+        where TSelf : struct, IEEPrintVisitor<TSelf>
+    {
+        int Print(Span<byte> buffer, out int requiredBufferSize);
+    }
+
+    private readonly struct DelegateEEPrintVisitor(EEPrintFunc printFunc) : IEEPrintVisitor<DelegateEEPrintVisitor>
+    {
+        public int Print(Span<byte> buffer, out int requiredBufferSize) =>
+            printFunc(buffer, out requiredBufferSize);
+    }
+
+    private readonly unsafe struct EEPrintFieldNameVisitor(Compiler compiler, CORINFO_FIELD_HANDLE fieldHandle)
+        : IEEPrintVisitor<EEPrintFieldNameVisitor>
+    {
+        public int Print(Span<byte> buffer, out int requiredBufferSize)
+        {
+            fixed (byte* pBuffer = buffer)
+            {
+                nint nativeRequiredBufferSize;
+                var result = (int)(compiler.info.compCompHnd->printFieldName(
+                    fieldHandle, pBuffer, buffer.Length, &nativeRequiredBufferSize));
+
+                requiredBufferSize = (int)(nativeRequiredBufferSize);
+                return result;
+            }
+        }
+    }
+
+    private readonly unsafe struct EEPrintMethodNameVisitor(Compiler compiler, CORINFO_METHOD_HANDLE methodHandle)
+        : IEEPrintVisitor<EEPrintMethodNameVisitor>
+    {
+        public int Print(Span<byte> buffer, out int requiredBufferSize)
+        {
+            fixed (byte* pBuffer = buffer)
+            {
+                nint nativeRequiredBufferSize;
+                var result = (int)(compiler.info.compCompHnd->printMethodName(
+                    methodHandle, pBuffer, buffer.Length, &nativeRequiredBufferSize));
+
+                requiredBufferSize = (int)(nativeRequiredBufferSize);
+                return result;
+            }
+        }
+    }
+
+    private readonly unsafe struct EEPrintClassNameVisitor(Compiler compiler, CORINFO_CLASS_HANDLE classHandle)
+        : IEEPrintVisitor<EEPrintClassNameVisitor>
+    {
+        public int Print(Span<byte> buffer, out int requiredBufferSize)
+        {
+            fixed (byte* pBuffer = buffer)
+            {
+                nint nativeRequiredBufferSize;
+                var result = (int)(compiler.info.compCompHnd->printClassName(
+                    classHandle, pBuffer, buffer.Length, &nativeRequiredBufferSize));
+
+                requiredBufferSize = (int)(nativeRequiredBufferSize);
+                return result;
+            }
+        }
+    }
+
     private static readonly SearchValues<byte> s_objectDescriptionLineBreaks =
         SearchValues.Create((byte)('\n'), (byte)('\r'));
 
@@ -79,13 +142,20 @@ public partial class Compiler
     /// <param name="printFunc">A functor to print the string that follows the conventions of the JIT-EE print* functions.</param>
     public StringBuilder eeAppendPrint(StringBuilder stringBuilder, EEPrintFunc printFunc)
     {
+        var visitor = new DelegateEEPrintVisitor(printFunc);
+        return eeAppendPrint(stringBuilder, ref visitor);
+    }
+
+    private StringBuilder eeAppendPrint<TVisitor>(StringBuilder stringBuilder, ref TVisitor visitor)
+        where TVisitor : struct, IEEPrintVisitor<TVisitor>
+    {
         Unsafe.SkipInit(out InlineArray256<byte> inlineStackBuffer);
         var stackBuffer = (Span<byte>)(inlineStackBuffer);
         var arrayBuffer = null as byte[];
 
         try
         {
-            var printed = printFunc(stackBuffer, out var requiredBufferSize);
+            var printed = visitor.Print(stackBuffer, out var requiredBufferSize);
 
             scoped Span<byte> messageUtf8;
 
@@ -97,7 +167,7 @@ public partial class Compiler
             else
             {
                 arrayBuffer = ArrayPool<byte>.Shared.Rent(requiredBufferSize);
-                printed = printFunc(arrayBuffer.AsSpan(0, requiredBufferSize), out requiredBufferSize);
+                printed = visitor.Print(arrayBuffer.AsSpan(0, requiredBufferSize), out requiredBufferSize);
 
                 assert(printed == (requiredBufferSize - 1));
                 messageUtf8 = arrayBuffer.AsSpan(0, printed);
@@ -702,16 +772,8 @@ public partial class Compiler
             _ = stringBuilder.Append(':');
         }
 
-        _ = eeAppendPrint(stringBuilder, (buffer, out requiredBufferSize) => {
-            fixed (byte* pBuffer = buffer)
-            {
-                nint nativeRequiredBufferSize;
-                var result = (int)(info.compCompHnd->printFieldName(fldHnd, pBuffer, buffer.Length, &nativeRequiredBufferSize));
-
-                requiredBufferSize = (int)(nativeRequiredBufferSize);
-                return result;
-            }
-        });
+        var visitor = new EEPrintFieldNameVisitor(this, fldHnd);
+        _ = eeAppendPrint(stringBuilder, ref visitor);
 
         return stringBuilder;
     }
@@ -753,16 +815,8 @@ public partial class Compiler
             _ = stringBuilder.Append(':');
         }
 
-        _ = eeAppendPrint(stringBuilder, (buffer, out requiredBufferSize) => {
-            fixed (byte* pBuffer = buffer)
-            {
-                nint nativeRequiredBufferSize;
-                var result = (int)(info.compCompHnd->printMethodName(methodHandle, pBuffer, buffer.Length, &nativeRequiredBufferSize));
-
-                requiredBufferSize = (int)(nativeRequiredBufferSize);
-                return result;
-            }
-        });
+        var visitor = new EEPrintMethodNameVisitor(this, methodHandle);
+        _ = eeAppendPrint(stringBuilder, ref visitor);
 
         if (includeMethodInstantiation && (sigInfo->sigInst.methInstCount > 0))
         {
@@ -990,16 +1044,8 @@ public partial class Compiler
             return stringBuilder;
         }
 
-        _ = eeAppendPrint(stringBuilder, (buffer, out requiredBufferSize) => {
-            fixed (byte* pBuffer = buffer)
-            {
-                nint nativeRquiredBufferSize;
-                var result = (int)(info.compCompHnd->printClassName(classHandle, pBuffer, buffer.Length, &nativeRquiredBufferSize));
-
-                requiredBufferSize = (int)(nativeRquiredBufferSize);
-                return result;
-            }
-        });
+        var visitor = new EEPrintClassNameVisitor(this, classHandle);
+        _ = eeAppendPrint(stringBuilder, ref visitor);
 
         if (!includeInstantiation)
         {

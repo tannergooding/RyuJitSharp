@@ -9,8 +9,51 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    private interface IHardwareImmediateCaseVisitor<TSelf>
+        where TSelf : struct, IHardwareImmediateCaseVisitor<TSelf>
+    {
+        void Emit(sbyte immediate);
+    }
+
+    private readonly struct DelegateHardwareImmediateCaseVisitor(Action<sbyte> emit)
+        : IHardwareImmediateCaseVisitor<DelegateHardwareImmediateCaseVisitor>
+    {
+        public void Emit(sbyte immediate) => emit(immediate);
+    }
+
+    private readonly struct RoundedRrmHardwareImmediateCaseVisitor(
+        CodeGen codeGen, GenTreeHWIntrinsic node, instruction ins, emitAttr attr, regNumber reg, GenTree rmOp,
+        insOpts options) : IHardwareImmediateCaseVisitor<RoundedRrmHardwareImmediateCaseVisitor>
+    {
+        public void Emit(sbyte immediate) => codeGen.genHWIntrinsic_R_RM(node, ins, attr, reg, rmOp,
+            AddEmbRoundingMode(options, immediate));
+    }
+
+    private readonly struct RoundedRrrmHardwareImmediateCaseVisitor(
+        CodeGen codeGen, GenTreeHWIntrinsic node, instruction ins, emitAttr attr, insOpts options)
+        : IHardwareImmediateCaseVisitor<RoundedRrrmHardwareImmediateCaseVisitor>
+    {
+        public void Emit(sbyte immediate) => codeGen.genHWIntrinsic_R_R_RM(node, ins, attr,
+            AddEmbRoundingMode(options, immediate));
+    }
+
+    private readonly struct RoundedFmaHardwareImmediateCaseVisitor(
+        CodeGen codeGen, GenTreeHWIntrinsic node, insOpts options)
+        : IHardwareImmediateCaseVisitor<RoundedFmaHardwareImmediateCaseVisitor>
+    {
+        public void Emit(sbyte immediate) => codeGen.genFmaIntrinsic(node, AddEmbRoundingMode(options, immediate));
+    }
+
     public unsafe void genHWIntrinsicJumpTableFallback(NamedIntrinsic intrinsic, instruction ins, emitAttr attr,
         regNumber nonConstImmReg, regNumber baseReg, regNumber offsReg, Action<sbyte> emitSwCase)
+    {
+        var visitor = new DelegateHardwareImmediateCaseVisitor(emitSwCase);
+        genHWIntrinsicJumpTableFallback(intrinsic, ins, attr, nonConstImmReg, baseReg, offsReg, ref visitor);
+    }
+
+    private unsafe void genHWIntrinsicJumpTableFallback<TVisitor>(NamedIntrinsic intrinsic, instruction ins, emitAttr attr,
+        regNumber nonConstImmReg, regNumber baseReg, regNumber offsReg, ref TVisitor visitor)
+        where TVisitor : struct, IHardwareImmediateCaseVisitor<TVisitor>
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(nonConstImmReg != REG_NA);
@@ -70,7 +113,7 @@ public sealed partial class CodeGen
             {
                 continue;
             }
-            emitSwCase(unchecked((sbyte)index));
+            visitor.Emit(unchecked((sbyte)index));
             pendingJmpToEnd = true;
         }
         genDefineTempLabel(tableEnd);
@@ -97,9 +140,10 @@ public sealed partial class CodeGen
                 var operand = node.GetOp(1);
                 var baseReg = _internalRegisters.Extract(node);
                 var offsReg = _internalRegisters.GetSingle(node);
+                var visitor = new RoundedRrmHardwareImmediateCaseVisitor(
+                    this, node, ins, attr, targetReg, operand, INS_OPTS_NONE);
                 genHWIntrinsicJumpTableFallback(intrinsic, ins, attr, lastOp.RegNum, baseReg, offsReg,
-                    immediate => genHWIntrinsic_R_RM(node, ins, attr, targetReg, operand,
-                        AddEmbRoundingMode(INS_OPTS_NONE, immediate)));
+                    ref visitor);
                 break;
             }
 
@@ -113,9 +157,10 @@ public sealed partial class CodeGen
                 var operand = node.GetOp(1);
                 var baseReg = _internalRegisters.Extract(node);
                 var offsReg = _internalRegisters.GetSingle(node);
+                var visitor = new RoundedRrmHardwareImmediateCaseVisitor(
+                    this, node, ins, attr, targetReg, operand, INS_OPTS_NONE);
                 genHWIntrinsicJumpTableFallback(intrinsic, ins, attr, lastOp.RegNum, baseReg, offsReg,
-                    immediate => genHWIntrinsic_R_RM(node, ins, attr, targetReg, operand,
-                        AddEmbRoundingMode(INS_OPTS_NONE, immediate)));
+                    ref visitor);
                 break;
             }
 
@@ -125,9 +170,9 @@ public sealed partial class CodeGen
                 assert(varTypeIsLong(baseType));
                 var baseReg = _internalRegisters.Extract(node);
                 var offsReg = _internalRegisters.GetSingle(node);
+                var visitor = new RoundedRrrmHardwareImmediateCaseVisitor(this, node, ins, EA_8BYTE, INS_OPTS_NONE);
                 genHWIntrinsicJumpTableFallback(intrinsic, ins, attr, lastOp.RegNum, baseReg, offsReg,
-                    immediate => genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE,
-                        AddEmbRoundingMode(INS_OPTS_NONE, immediate)));
+                    ref visitor);
                 break;
             }
 
@@ -150,8 +195,9 @@ public sealed partial class CodeGen
                 var baseReg = _internalRegisters.Extract(node);
                 var offsReg = _internalRegisters.GetSingle(node);
                 // FMA must choose 132/213/231 using the actual source/destination aliases.
+                var visitor = new RoundedFmaHardwareImmediateCaseVisitor(this, node, INS_OPTS_NONE);
                 genHWIntrinsicJumpTableFallback(intrinsic, ins, attr, lastOp.RegNum, baseReg, offsReg,
-                    immediate => genFmaIntrinsic(node, AddEmbRoundingMode(INS_OPTS_NONE, immediate)));
+                    ref visitor);
                 break;
             }
 

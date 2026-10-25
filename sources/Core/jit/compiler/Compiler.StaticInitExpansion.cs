@@ -16,6 +16,13 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private readonly struct StaticInitExpansionVisitor(Compiler compiler)
+        : IHelperExpansionVisitor<StaticInitExpansionVisitor>
+    {
+        public unsafe bool Expand(ref BasicBlock block, Statement statement, GenTreeCall call)
+            => compiler.fgExpandStaticInitForCall(ref block, statement, call);
+    }
+
     public PhaseStatus fgExpandStaticInit()
     {
         if (!MethodHasStaticInit)
@@ -32,7 +39,8 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        return fgExpandHelper(fgExpandStaticInitForCall, skipRarelyRunBlocks: !isNativeAot);
+        var visitor = new StaticInitExpansionVisitor(this);
+        return fgExpandHelper(ref visitor, skipRarelyRunBlocks: !isNativeAot);
     }
 
     private unsafe bool fgExpandStaticInitForCall(ref BasicBlock block, Statement stmt, GenTreeCall call)

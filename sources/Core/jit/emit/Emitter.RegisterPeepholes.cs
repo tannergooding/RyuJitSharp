@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -15,6 +13,118 @@ public partial class Emitter
     {
         PEEPHOLE_ABORT,
         PEEPHOLE_CONTINUE,
+    }
+
+    private interface IPeepholeVisitor<TSelf>
+        where TSelf : struct, IPeepholeVisitor<TSelf>
+    {
+        emitPeepholeResult Visit(instrDesc descriptor);
+    }
+
+    private struct UpperBitsZeroPeepholeVisitor : IPeepholeVisitor<UpperBitsZeroPeepholeVisitor>
+    {
+        private readonly regNumber _reg;
+        private readonly emitAttr _size;
+
+        public bool Result { get; private set; }
+
+        public UpperBitsZeroPeepholeVisitor(regNumber reg, emitAttr size)
+        {
+            _reg = reg;
+            _size = size;
+        }
+
+        public emitPeepholeResult Visit(instrDesc id)
+        {
+            if (!emitIsInstrWritingToReg(id, _reg))
+            {
+                return emitPeepholeResult.PEEPHOLE_CONTINUE;
+            }
+
+            switch (id.idIns())
+            {
+                case INS_call:
+                case INS_cwde or INS_cdq or INS_movsx or INS_movsxd:
+                {
+                    return emitPeepholeResult.PEEPHOLE_ABORT;
+                }
+
+                case INS_movzx:
+                {
+                    if ((_size == EA_1BYTE) || (_size == EA_2BYTE))
+                    {
+                        Result = id.idOpSize() <= _size;
+                    }
+                    else if (_size == EA_4BYTE)
+                    {
+                        // MOVZX always zeroes the upper 32 bits.
+                        Result = true;
+                    }
+                    return emitPeepholeResult.PEEPHOLE_ABORT;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
+            if (_size == EA_4BYTE)
+            {
+                Result = id.idOpSize() == EA_4BYTE;
+            }
+            return emitPeepholeResult.PEEPHOLE_ABORT;
+        }
+    }
+
+    private struct UpperBitsSignExtendedPeepholeVisitor : IPeepholeVisitor<UpperBitsSignExtendedPeepholeVisitor>
+    {
+        private readonly regNumber _reg;
+        private readonly emitAttr _size;
+
+        public bool Result { get; private set; }
+
+        public UpperBitsSignExtendedPeepholeVisitor(regNumber reg, emitAttr size)
+        {
+            _reg = reg;
+            _size = size;
+        }
+
+        public emitPeepholeResult Visit(instrDesc id)
+        {
+            if (!emitIsInstrWritingToReg(id, _reg))
+            {
+                return emitPeepholeResult.PEEPHOLE_CONTINUE;
+            }
+
+            switch (id.idIns())
+            {
+                case INS_call:
+                {
+                    return emitPeepholeResult.PEEPHOLE_ABORT;
+                }
+
+                case INS_movsx or INS_movsxd:
+                {
+                    if ((_size == EA_1BYTE) || (_size == EA_2BYTE))
+                    {
+                        Result = id.idOpSize() <= _size;
+                    }
+                    else if (_size == EA_4BYTE)
+                    {
+                        // MOVSX/MOVSXD always sign-extend to eight bytes (REX.W).
+                        Result = true;
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+            return emitPeepholeResult.PEEPHOLE_ABORT;
+        }
     }
 
     private bool emitGetLastIns(out insGroup? group, out instrDesc? descriptor)
@@ -77,7 +187,8 @@ public partial class Emitter
         return false;
     }
 
-    private void emitPeepholeIterateLastInstrs(Func<instrDesc, emitPeepholeResult> action)
+    private void emitPeepholeIterateLastInstrs<TVisitor>(ref TVisitor visitor)
+        where TVisitor : struct, IPeepholeVisitor<TVisitor>
     {
         assert(emitCanPeepholeLastIns());
         if (Configuration.TARGET_XARCH)
@@ -92,7 +203,7 @@ public partial class Emitter
                 assert(id is not null);
                 assert(curInsIG is not null);
 
-                switch (action(id))
+                switch (visitor.Visit(id))
                 {
                     case emitPeepholeResult.PEEPHOLE_ABORT:
                     {
@@ -134,7 +245,7 @@ public partial class Emitter
             FatalJitException.ThrowFatalJitException(FatalJitErrorCode.PeepholeIterationRequiresALastInstruction);
             return;
         }
-        _ = action(lastIns);
+        _ = visitor.Visit(lastIns);
     }
 
     public bool AreUpperBitsZero(regNumber reg, emitAttr size)
@@ -154,51 +265,9 @@ public partial class Emitter
             return false;
         }
 
-        var result = false;
-        emitPeepholeIterateLastInstrs(id => {
-            if (emitIsInstrWritingToReg(id, reg))
-            {
-                switch (id.idIns())
-                {
-                    case INS_call:
-                    case INS_cwde or INS_cdq or INS_movsx or INS_movsxd:
-                    {
-                        return emitPeepholeResult.PEEPHOLE_ABORT;
-                    }
-
-                    case INS_movzx:
-                    {
-                        if ((size == EA_1BYTE) || (size == EA_2BYTE))
-                        {
-                            result = id.idOpSize() <= size;
-                        }
-                        else if (size == EA_4BYTE)
-                        {
-                            // MOVZX always zeroes the upper 32 bits.
-                            result = true;
-                        }
-                        return emitPeepholeResult.PEEPHOLE_ABORT;
-                    }
-
-                    default:
-                    {
-                        break;
-                    }
-                }
-
-                if (size == EA_4BYTE)
-                {
-                    result = id.idOpSize() == EA_4BYTE;
-                }
-                return emitPeepholeResult.PEEPHOLE_ABORT;
-            }
-            else
-            {
-                return emitPeepholeResult.PEEPHOLE_CONTINUE;
-            }
-        });
-
-        return result;
+        var visitor = new UpperBitsZeroPeepholeVisitor(reg, size);
+        emitPeepholeIterateLastInstrs(ref visitor);
+        return visitor.Result;
     }
 
     public bool AreUpperBitsSignExtended(regNumber reg, emitAttr size)
@@ -218,45 +287,9 @@ public partial class Emitter
             return false;
         }
 
-        var result = false;
-        emitPeepholeIterateLastInstrs(id => {
-            if (emitIsInstrWritingToReg(id, reg))
-            {
-                switch (id.idIns())
-                {
-                    case INS_call:
-                    {
-                        return emitPeepholeResult.PEEPHOLE_ABORT;
-                    }
-
-                    case INS_movsx or INS_movsxd:
-                    {
-                        if ((size == EA_1BYTE) || (size == EA_2BYTE))
-                        {
-                            result = id.idOpSize() <= size;
-                        }
-                        else if (size == EA_4BYTE)
-                        {
-                            // MOVSX/MOVSXD always sign-extend to eight bytes (REX.W).
-                            result = true;
-                        }
-                        break;
-                    }
-
-                    default:
-                    {
-                        break;
-                    }
-                }
-                return emitPeepholeResult.PEEPHOLE_ABORT;
-            }
-            else
-            {
-                return emitPeepholeResult.PEEPHOLE_CONTINUE;
-            }
-        });
-
-        return result;
+        var visitor = new UpperBitsSignExtendedPeepholeVisitor(reg, size);
+        emitPeepholeIterateLastInstrs(ref visitor);
+        return visitor.Result;
     }
 
     public static bool emitIsInstrWritingToReg(instrDesc id, regNumber reg)

@@ -11,9 +11,14 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private delegate bool HelperExpansionFunction(ref BasicBlock block, Statement statement, GenTreeCall call);
+    private interface IHelperExpansionVisitor<TSelf>
+        where TSelf : struct, IHelperExpansionVisitor<TSelf>
+    {
+        bool Expand(ref BasicBlock block, Statement statement, GenTreeCall call);
+    }
 
-    private PhaseStatus fgExpandHelper(HelperExpansionFunction expansionFunction, bool skipRarelyRunBlocks = false)
+    private PhaseStatus fgExpandHelper<TVisitor>(ref TVisitor visitor, bool skipRarelyRunBlocks = false)
+        where TVisitor : struct, IHelperExpansionVisitor<TVisitor>
     {
         var result = PhaseStatus.MODIFIED_NOTHING;
         for (var block = fgFirstBB; block is not null; block = block.Next)
@@ -24,14 +29,10 @@ public partial class Compiler
             }
 
             var originalBlock = block;
-            while (fgExpandHelperForBlock(ref block, expansionFunction))
+            while (fgExpandHelperForBlock(ref block, ref visitor))
             {
                 result = PhaseStatus.MODIFIED_EVERYTHING;
-                if (Configuration.DEBUG)
-                {
-                    assert(originalBlock != block);
-                    originalBlock = block;
-                }
+                AssertHelperExpansionMovedToNewBlock(ref originalBlock, block);
             }
         }
 
@@ -43,7 +44,15 @@ public partial class Compiler
         return result;
     }
 
-    private static bool fgExpandHelperForBlock(ref BasicBlock block, HelperExpansionFunction expansionFunction)
+    [System.Diagnostics.Conditional("DEBUG")]
+    private static void AssertHelperExpansionMovedToNewBlock(ref BasicBlock originalBlock, BasicBlock currentBlock)
+    {
+        assert(originalBlock != currentBlock);
+        originalBlock = currentBlock;
+    }
+
+    private static bool fgExpandHelperForBlock<TVisitor>(ref BasicBlock block, ref TVisitor visitor)
+        where TVisitor : struct, IHelperExpansionVisitor<TVisitor>
     {
         for (var stmt = block.GetFirstNonPhiDef(); stmt is not null; stmt = stmt.NextStmt)
         {
@@ -54,7 +63,7 @@ public partial class Compiler
 
             foreach (var tree in stmt.TreeList)
             {
-                if ((tree is GenTreeCall call) && expansionFunction(ref block, stmt, call))
+                if ((tree is GenTreeCall call) && visitor.Expand(ref block, stmt, call))
                 {
                     return true;
                 }

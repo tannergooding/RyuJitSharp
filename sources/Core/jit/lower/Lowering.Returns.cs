@@ -89,15 +89,9 @@ public sealed partial class Lowering
         var compiler = CompilerInstance;
         var returnDescriptor = compiler.compRetTypeDesc;
         var registerCount = returnDescriptor.ReturnRegCount;
+        var registerInfoProvider = new ReturnRegisterInfoProvider(returnDescriptor);
 
-        LowerFieldListRegisterInfo GetRegisterInfo(int index)
-        {
-            var offset = returnDescriptor.GetReturnFieldOffset((byte)index);
-            var type = returnDescriptor.GetReturnRegType((byte)index);
-            return new LowerFieldListRegisterInfo(offset, type);
-        }
-
-        if (!IsFieldListCompatibleWithRegisters(fieldList, registerCount, GetRegisterInfo))
+        if (!IsFieldListCompatibleWithRegisters(fieldList, registerCount, ref registerInfoProvider))
         {
             var layout = compiler.typGetObjLayout(compiler.info.compMethodInfo->args.retTypeClass);
             var localNumber = StoreFieldListToNewLocal(layout, fieldList);
@@ -127,7 +121,7 @@ public sealed partial class Lowering
             return;
         }
 
-        LowerFieldListToFieldListOfRegisters(fieldList, registerCount, GetRegisterInfo);
+        LowerFieldListToFieldListOfRegisters(fieldList, registerCount, ref registerInfoProvider);
     }
 
     private void ContainCheckRet(GenTreeUnOp ret)

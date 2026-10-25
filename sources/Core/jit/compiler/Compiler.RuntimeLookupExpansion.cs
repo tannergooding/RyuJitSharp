@@ -15,6 +15,13 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private readonly struct RuntimeLookupExpansionVisitor(Compiler compiler)
+        : IHelperExpansionVisitor<RuntimeLookupExpansionVisitor>
+    {
+        public unsafe bool Expand(ref BasicBlock block, Statement statement, GenTreeCall call)
+            => compiler.fgExpandRuntimeLookupsForCall(ref block, statement, call);
+    }
+
     public PhaseStatus fgExpandRuntimeLookups()
     {
         if (!MethodHasExpRuntimeLookup)
@@ -22,7 +29,8 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        return fgExpandHelper(fgExpandRuntimeLookupsForCall);
+        var visitor = new RuntimeLookupExpansionVisitor(this);
+        return fgExpandHelper(ref visitor);
     }
 
     private unsafe bool fgExpandRuntimeLookupsForCall(ref BasicBlock block, Statement stmt, GenTreeCall call)

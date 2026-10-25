@@ -13,6 +13,12 @@ public partial class Compiler
 {
     internal const int PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT = 64;
 
+    private interface ILowerBoundProjection<TSelf, TEntry>
+        where TSelf : struct, ILowerBoundProjection<TSelf, TEntry>
+    {
+        int GetOffset(TEntry entry);
+    }
+
     internal sealed class PhysicalPromotionReplacement(int offset, var_types accessType)
     {
         public BasicBlock? ReadBackPlacement;
@@ -51,7 +57,7 @@ public partial class Compiler
                 return false;
             }
 
-            first = LowerBound(Replacements, offset, static rep => rep.Offset);
+            first = LowerBound(Replacements, offset);
             if ((first > 0) && Replacements[first - 1].Overlaps(offset, size))
             {
                 first--;
@@ -62,7 +68,7 @@ public partial class Compiler
                 return false;
             }
 
-            end = LowerBound(Replacements, offset + size, static rep => rep.Offset);
+            end = LowerBound(Replacements, offset + size);
             return true;
         }
     }
@@ -93,14 +99,25 @@ public partial class Compiler
         }
     }
 
-    internal static int LowerBound<T>(List<T> entries, int offset, Func<T, int> getOffset)
+    internal static int LowerBound(List<PhysicalPromotionReplacement> entries, int offset)
+        => LowerBound<PhysicalPromotionReplacement, ReplacementOffsetProjection>(entries, offset);
+
+    internal static int LowerBound(List<PhysicalPromotionAccess> entries, int offset)
+        => LowerBound<PhysicalPromotionAccess, AccessOffsetProjection>(entries, offset);
+
+    internal static int LowerBound(List<PhysicalPromotionPrimitiveAccess> entries, int offset)
+        => LowerBound<PhysicalPromotionPrimitiveAccess, PrimitiveAccessOffsetProjection>(entries, offset);
+
+    private static int LowerBound<TEntry, TProjection>(List<TEntry> entries, int offset)
+        where TProjection : struct, ILowerBoundProjection<TProjection, TEntry>
     {
+        var projection = default(TProjection);
         var min = 0;
         var max = entries.Count;
         while (min < max)
         {
             var mid = min + ((max - min) / 2);
-            if (getOffset(entries[mid]) < offset)
+            if (projection.GetOffset(entries[mid]) < offset)
             {
                 min = mid + 1;
             }
@@ -193,6 +210,24 @@ public partial class Compiler
         public readonly var_types AccessType = accessType;
     }
 
+    private readonly struct ReplacementOffsetProjection
+        : ILowerBoundProjection<ReplacementOffsetProjection, PhysicalPromotionReplacement>
+    {
+        public int GetOffset(PhysicalPromotionReplacement entry) => entry.Offset;
+    }
+
+    private readonly struct AccessOffsetProjection
+        : ILowerBoundProjection<AccessOffsetProjection, PhysicalPromotionAccess>
+    {
+        public int GetOffset(PhysicalPromotionAccess entry) => entry.Offset;
+    }
+
+    private readonly struct PrimitiveAccessOffsetProjection
+        : ILowerBoundProjection<PrimitiveAccessOffsetProjection, PhysicalPromotionPrimitiveAccess>
+    {
+        public int GetOffset(PhysicalPromotionPrimitiveAccess entry) => entry.Offset;
+    }
+
     internal sealed class PhysicalPromotionLocalUses
     {
         private readonly List<PhysicalPromotionAccess> _accesses = [];
@@ -203,7 +238,7 @@ public partial class Compiler
         public void RecordAccess(int offset, var_types type, ClassLayout? layout,
                                  PhysicalPromotionAccessKindFlags flags, weight_t weight)
         {
-            var index = LowerBound(_accesses, offset, static access => access.Offset);
+            var index = LowerBound(_accesses, offset);
             PhysicalPromotionAccess? access = null;
 
             while ((index < _accesses.Count) && (_accesses[index].Offset == offset))
@@ -350,7 +385,7 @@ public partial class Compiler
         }
         public void RecordInducedAccess(int offset, var_types type, weight_t weight)
         {
-            var index = LowerBound(_inducedAccesses, offset, static access => access.Offset);
+            var index = LowerBound(_inducedAccesses, offset);
             PhysicalPromotionPrimitiveAccess? access = null;
 
             while ((index < _inducedAccesses.Count) && (_inducedAccesses[index].Offset == offset))
@@ -461,7 +496,7 @@ public partial class Compiler
                 }
 
                 aggregate ??= AddAggregate(aggregates, lclNum);
-                var index = LowerBound(aggregate.Replacements, induced.Offset, static rep => rep.Offset);
+                var index = LowerBound(aggregate.Replacements, induced.Offset);
                 assert(!aggregate.OverlappingReplacements(induced.Offset,
                     induced.AccessType.Size, out _, out _));
                 aggregate.Replacements.Insert(index, new PhysicalPromotionReplacement(induced.Offset, induced.AccessType));
@@ -487,7 +522,7 @@ public partial class Compiler
 
         private PhysicalPromotionAccess? FindAccess(int offset, var_types type)
         {
-            var index = LowerBound(_accesses, offset, static access => access.Offset);
+            var index = LowerBound(_accesses, offset);
             while ((index < _accesses.Count) && (_accesses[index].Offset == offset))
             {
                 if (_accesses[index].AccessType == type)

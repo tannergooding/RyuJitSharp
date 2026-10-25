@@ -28,6 +28,12 @@ public enum ScevVisit
     Continue,
 }
 
+internal interface IScevVisitor<TSelf>
+    where TSelf : struct, IScevVisitor<TSelf>
+{
+    ScevVisit Visit(Scev node);
+}
+
 public enum RelopEvaluationResult
 {
     Unknown,
@@ -48,6 +54,16 @@ public readonly struct SimplificationAssumptions
 [DebuggerDisplay("[{Oper}, {Type}]")]
 public class Scev
 {
+    private readonly struct DelegateScevVisitor(Func<Scev, ScevVisit> visitor) : IScevVisitor<DelegateScevVisitor>
+    {
+        public ScevVisit Visit(Scev node) => visitor(node);
+    }
+
+    private readonly struct InvariantVisitor : IScevVisitor<InvariantVisitor>
+    {
+        public ScevVisit Visit(Scev node) => node.Oper is ScevOper.AddRec ? ScevVisit.Abort : ScevVisit.Continue;
+    }
+
     public ScevOper Oper { get; }
 
     public var_types Type { get; }
@@ -81,7 +97,14 @@ public class Scev
 
     public ScevVisit Visit(Func<Scev, ScevVisit> visitor)
     {
-        if (visitor(this) is ScevVisit.Abort)
+        var adapter = new DelegateScevVisitor(visitor);
+        return Visit(ref adapter);
+    }
+
+    internal ScevVisit Visit<TVisitor>(ref TVisitor visitor)
+        where TVisitor : struct, IScevVisitor<TVisitor>
+    {
+        if (visitor.Visit(this) is ScevVisit.Abort)
         {
             return ScevVisit.Abort;
         }
@@ -96,17 +119,19 @@ public class Scev
 
             case ScevBinop binop:
             {
-                return (binop.Op1.Visit(visitor) is ScevVisit.Abort) ? ScevVisit.Abort : binop.Op2.Visit(visitor);
+                return (binop.Op1.Visit(ref visitor) is ScevVisit.Abort)
+                    ? ScevVisit.Abort : binop.Op2.Visit(ref visitor);
             }
 
             case ScevUnop unop:
             {
-                return unop.Op1.Visit(visitor);
+                return unop.Op1.Visit(ref visitor);
             }
 
             case ScevAddRec addRec:
             {
-                return (addRec.Start.Visit(visitor) is ScevVisit.Abort) ? ScevVisit.Abort : addRec.Step.Visit(visitor);
+                return (addRec.Start.Visit(ref visitor) is ScevVisit.Abort)
+                    ? ScevVisit.Abort : addRec.Step.Visit(ref visitor);
             }
 
             default:
@@ -128,8 +153,11 @@ public class Scev
         }
     }
 
-    public bool IsInvariant() => Visit(node => node.Oper is ScevOper.AddRec ? ScevVisit.Abort : ScevVisit.Continue)
-        is ScevVisit.Continue;
+    public bool IsInvariant()
+    {
+        var visitor = new InvariantVisitor();
+        return Visit(ref visitor) is ScevVisit.Continue;
+    }
 
     public Scev PeelAdditions(out long offset)
     {

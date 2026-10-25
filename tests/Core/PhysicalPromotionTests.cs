@@ -19,6 +19,22 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class PhysicalPromotionTests
 {
+    [Test]
+    public static void LowerBoundReturnsTheFirstEntryNotLessThanOffset()
+    {
+        List<Compiler.PhysicalPromotionReplacement> entries = [
+            new(0, TYP_INT),
+            new(4, TYP_INT),
+            new(4, TYP_LONG),
+            new(8, TYP_INT),
+        ];
+
+        Assert.That(Compiler.LowerBound(entries, -1), Is.Zero);
+        Assert.That(Compiler.LowerBound(entries, 4), Is.EqualTo(1));
+        Assert.That(Compiler.LowerBound(entries, 5), Is.EqualTo(3));
+        Assert.That(Compiler.LowerBound(entries, 9), Is.EqualTo(entries.Count));
+    }
+
     [TestCase(TYP_VOID)]
     [TestCase(TYP_INT)]
     public static void ConditionalTraversalDoesNotClassifyValuesWithoutReadBacks(var_types type)
