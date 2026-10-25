@@ -27,7 +27,6 @@ public partial class Compiler
     private struct Stress64RsltMulVisitor(Compiler compiler) : IGenTreeVisitor<Stress64RsltMulVisitor>
     {
         private readonly Compiler _compiler = compiler;
-        private readonly GenTreeStack _ancestors = [];
 
         public static bool DoPreOrder => true;
 
@@ -61,7 +60,7 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<Stress64RsltMulVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<Stress64RsltMulVisitor>.WalkTree(ref this, ref use, user);
     }
 
     public void lvaStressLclFld()
@@ -225,7 +224,6 @@ public partial class Compiler
     {
         private readonly Compiler _compiler = compiler;
         private readonly bool _firstPass = firstPass;
-        private readonly GenTreeStack _ancestors = [];
 
         public static bool DoPreOrder => true;
 
@@ -235,6 +233,6 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<StressLclFldVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<StressLclFldVisitor>.WalkTree(ref this, ref use, user);
     }
 }

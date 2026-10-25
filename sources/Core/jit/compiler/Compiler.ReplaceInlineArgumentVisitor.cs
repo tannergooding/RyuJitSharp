@@ -9,7 +9,6 @@ public partial class Compiler
 {
     private struct ReplaceInlineArgumentVisitor(GenTree target, GenTree replacement) : IGenTreeVisitor<ReplaceInlineArgumentVisitor>
     {
-        private readonly GenTreeStack _ancestors = [];
 
         public static bool DoPreOrder => true;
 
@@ -27,6 +26,6 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => fgWalkResult.WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<ReplaceInlineArgumentVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<ReplaceInlineArgumentVisitor>.WalkTree(ref this, ref use, user);
     }
 }

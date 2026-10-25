@@ -11,13 +11,10 @@ public struct MeasureIRVisitor : IGenTreeVisitor<MeasureIRVisitor>
 
     public static bool UseExecutionOrder => true;
 
-    private readonly GenTreeStack _ancestors;
-
     private int _nodeCount;
 
     public MeasureIRVisitor()
     {
-        _ancestors = [];
     }
 
     public readonly int NodeCount => _nodeCount;
@@ -32,5 +29,5 @@ public struct MeasureIRVisitor : IGenTreeVisitor<MeasureIRVisitor>
     }
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<MeasureIRVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<MeasureIRVisitor>.WalkTree(ref this, ref use, user);
 }

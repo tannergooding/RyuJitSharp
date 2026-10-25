@@ -12,12 +12,10 @@ public struct SpillRetExprHelper : IGenTreeVisitor<SpillRetExprHelper>
 
     public static bool UseExecutionOrder => true;
 
-    private readonly GenTreeStack _ancestors;
     private Compiler _compiler;
 
     public SpillRetExprHelper(Compiler compiler)
     {
-        _ancestors = [];
         _compiler = compiler;
     }
 
@@ -81,5 +79,5 @@ public struct SpillRetExprHelper : IGenTreeVisitor<SpillRetExprHelper>
     public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
         => Compiler.WALK_CONTINUE;
 
-    public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<SpillRetExprHelper>.WalkTree(ref this, ref use, user, _ancestors);
+    public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<SpillRetExprHelper>.WalkTree(ref this, ref use, user);
 }

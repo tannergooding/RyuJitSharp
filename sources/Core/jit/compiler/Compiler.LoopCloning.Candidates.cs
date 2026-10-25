@@ -205,7 +205,6 @@ public partial class Compiler
         private readonly LoopCloneContext _context;
         private readonly bool _arrayBounds;
         private readonly bool _gdvTests;
-        private readonly GenTreeStack _ancestors;
         public Statement? Stmt;
 
         public LoopCloneVisitor(Compiler compiler, FlowGraphNaturalLoop loop, LoopCloneContext context,
@@ -216,7 +215,6 @@ public partial class Compiler
             _context = context;
             _arrayBounds = arrayBounds;
             _gdvTests = gdvTests;
-            _ancestors = [];
             Stmt = null;
         }
 
@@ -236,7 +234,7 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<LoopCloneVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<LoopCloneVisitor>.WalkTree(ref this, ref use, user);
     }
 
     private unsafe fgWalkResult optCanOptimizeByLoopCloning(GenTree tree, FlowGraphNaturalLoop loop,

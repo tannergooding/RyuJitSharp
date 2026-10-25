@@ -15,7 +15,6 @@ public partial class Compiler
         private readonly Compiler _compiler;
         private readonly BasicBlock _block;
         private readonly Statement _statement;
-        private readonly GenTreeStack _ancestors;
         private readonly List<GenTreeUse> _useStack;
 
         public RemoveTreesAfterNoReturnCallVisitor(Compiler compiler, BasicBlock block, Statement statement)
@@ -23,7 +22,6 @@ public partial class Compiler
             _compiler = compiler;
             _block = block;
             _statement = statement;
-            _ancestors = [];
             _useStack = [];
         }
 
@@ -96,6 +94,6 @@ public partial class Compiler
         }
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<RemoveTreesAfterNoReturnCallVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<RemoveTreesAfterNoReturnCallVisitor>.WalkTree(ref this, ref use, user);
     }
 }

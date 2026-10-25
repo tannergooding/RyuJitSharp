@@ -249,7 +249,6 @@ public sealed partial class RangeCheck
         private readonly Compiler _compiler;
         private readonly ASSERT_TP _assertions;
         private readonly GenTree _target;
-        private readonly GenTreeStack _ancestors;
 
         public int Budget { get; private set; }
 
@@ -258,7 +257,6 @@ public sealed partial class RangeCheck
             _compiler = compiler;
             _assertions = assertions;
             _target = target;
-            _ancestors = [];
             Budget = budget;
         }
 
@@ -288,6 +286,6 @@ public sealed partial class RangeCheck
         }
 
         public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<AssertionsAccumulator>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<AssertionsAccumulator>.WalkTree(ref this, ref use, user);
     }
 }

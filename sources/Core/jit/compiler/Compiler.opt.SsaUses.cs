@@ -25,7 +25,6 @@ public partial class Compiler
 
         private readonly Compiler _compiler = compiler;
         private readonly BasicBlock _block = block;
-        private readonly GenTreeStack _ancestors = [];
 
         public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
@@ -50,6 +49,6 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<SsaRecordingVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<SsaRecordingVisitor>.WalkTree(ref this, ref use, user);
     }
 }

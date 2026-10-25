@@ -218,7 +218,6 @@ public partial class Compiler
     private struct ReplaceWidenedIVVisitor(Compiler compiler, int lclNum, int ssaNum, int newLclNum)
         : IGenTreeVisitor<ReplaceWidenedIVVisitor>
     {
-        private readonly GenTreeStack _ancestors = [];
         public static bool DoPreOrder => true;
         public bool MadeChanges { get; private set; }
 
@@ -272,7 +271,7 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<ReplaceWidenedIVVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<ReplaceWidenedIVVisitor>.WalkTree(ref this, ref use, user);
     }
 
     private void optReplaceWidenedIV(int lclNum, int ssaNum, int newLclNum, Statement stmt)

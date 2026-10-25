@@ -158,14 +158,12 @@ public partial class Compiler
         private readonly Compiler _compiler;
         private readonly double _blockWeight;
         private readonly Dictionary<int, MaskConversionsWeight> _weights;
-        private readonly GenTreeStack _ancestors;
 
         public MaskConversionsCheckVisitor(Compiler compiler, double blockWeight, Dictionary<int, MaskConversionsWeight> weights)
         {
             _compiler = compiler;
             _blockWeight = blockWeight;
             _weights = weights;
-            _ancestors = [];
         }
 
         public static bool DoPreOrder => true;
@@ -279,20 +277,18 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<MaskConversionsCheckVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<MaskConversionsCheckVisitor>.WalkTree(ref this, ref use, user);
     }
 
     private struct MaskConversionsUpdateVisitor : IGenTreeVisitor<MaskConversionsUpdateVisitor>
     {
         private readonly Compiler _compiler;
         private readonly Dictionary<int, MaskConversionsWeight> _weights;
-        private readonly GenTreeStack _ancestors;
 
         public MaskConversionsUpdateVisitor(Compiler compiler, Dictionary<int, MaskConversionsWeight> weights)
         {
             _compiler = compiler;
             _weights = weights;
-            _ancestors = [];
         }
 
         public static bool DoPostOrder => true;
@@ -389,6 +385,6 @@ public partial class Compiler
         }
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<MaskConversionsUpdateVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<MaskConversionsUpdateVisitor>.WalkTree(ref this, ref use, user);
     }
 }

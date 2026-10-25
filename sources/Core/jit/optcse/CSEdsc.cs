@@ -79,7 +79,6 @@ public sealed class CSEdsc
     {
         private const int MaxLocals = 8;
 
-        private readonly GenTreeStack _ancestors = [];
         private readonly int[] _locals = new int[MaxLocals];
         private readonly int[] _counts = new int[MaxLocals];
 
@@ -124,7 +123,7 @@ public sealed class CSEdsc
         // WalkTree must mutate this visitor to retain the counts after traversal.
 #pragma warning disable IDE0251
         public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<LocalCountingVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<LocalCountingVisitor>.WalkTree(ref this, ref use, user);
 #pragma warning restore IDE0251
     }
 }

@@ -17,7 +17,6 @@ public partial class Compiler
         public static bool DoPostOrder => true;
         public static bool UseExecutionOrder => true;
 
-        private readonly GenTreeStack _ancestors = [];
         private readonly int _parentLclNum = compiler.lvaGetDesc(lclNum).lvIsStructField
             ? compiler.lvaGetDesc(lclNum).lvParentLcl : BAD_VAR_NUM;
         private GenTree? _node;
@@ -98,7 +97,7 @@ public partial class Compiler
         }
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<ForwardSubVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<ForwardSubVisitor>.WalkTree(ref this, ref use, user);
     }
 
     private struct ForwardSubEffectsVisitor(Compiler compiler) : IGenTreeVisitor<ForwardSubEffectsVisitor>
@@ -106,7 +105,6 @@ public partial class Compiler
         public static bool DoPostOrder => true;
         public static bool UseExecutionOrder => true;
 
-        private readonly GenTreeStack _ancestors = [];
         private GenTreeFlags _flags;
         public readonly GenTreeFlags Flags => _flags;
 
@@ -123,7 +121,7 @@ public partial class Compiler
         }
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<ForwardSubEffectsVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<ForwardSubEffectsVisitor>.WalkTree(ref this, ref use, user);
     }
 
     private struct ForwardSubCollectVisitor(int lclNum) : IGenTreeVisitor<ForwardSubCollectVisitor>
@@ -131,7 +129,6 @@ public partial class Compiler
         public static bool DoPreOrder => true;
         public static bool UseExecutionOrder => true;
 
-        private readonly GenTreeStack _ancestors = [];
         private readonly List<GenTreeLclVar> _uses = [];
         public readonly List<GenTreeLclVar> Uses => _uses;
         public bool Bail { get; private set; }
@@ -154,6 +151,6 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<ForwardSubCollectVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<ForwardSubCollectVisitor>.WalkTree(ref this, ref use, user);
     }
 }

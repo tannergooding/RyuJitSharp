@@ -15,13 +15,11 @@ public struct FindNonInlineCandidateVisitor : IGenTreeVisitor<FindNonInlineCandi
 
     private readonly Compiler _compiler;
     private readonly Statement _stmt;
-    private readonly GenTreeStack _ancestors;
 
     public FindNonInlineCandidateVisitor(Compiler compiler, Statement stmt)
     {
         _compiler = compiler;
         _stmt = stmt;
-        _ancestors = [];
     }
 
     public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
@@ -40,5 +38,5 @@ public struct FindNonInlineCandidateVisitor : IGenTreeVisitor<FindNonInlineCandi
     }
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<FindNonInlineCandidateVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<FindNonInlineCandidateVisitor>.WalkTree(ref this, ref use, user);
 }

@@ -45,13 +45,11 @@ public partial class Compiler
 
         private GenTree? _result;
         private readonly Compiler _compiler;
-        private readonly GenTreeStack _ancestors;
         private readonly GenTreeFlags _flags;
 
         public SideEffectExtractor(Compiler compiler, GenTreeFlags flags)
         {
             _compiler = compiler;
-            _ancestors = [];
             _flags = flags;
         }
 
@@ -128,7 +126,7 @@ public partial class Compiler
 
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
-        public fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<SideEffectExtractor>.WalkTree(ref this, ref use, user, _ancestors);
+        public fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<SideEffectExtractor>.WalkTree(ref this, ref use, user);
 
         public void Append(GenTree node)
         {

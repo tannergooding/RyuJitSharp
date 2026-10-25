@@ -13132,12 +13132,10 @@ public partial class Compiler
         public static bool DoLclVarsOnly => true;
 
         private readonly Compiler _compiler;
-        private readonly GenTreeStack _ancestors;
 
         public ReplaceSwiftErrorVisitor(Compiler compiler)
         {
             _compiler = compiler;
-            _ancestors = [];
         }
 
         public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
@@ -13158,7 +13156,7 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<ReplaceSwiftErrorVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<ReplaceSwiftErrorVisitor>.WalkTree(ref this, ref use, user);
     }
 
     public PhaseStatus fgAddSwiftErrorReturns()

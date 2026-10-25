@@ -9,14 +9,12 @@ public struct ExceptionsWalker : IGenTreeVisitor<ExceptionsWalker>
 {
     public static bool DoPreOrder => true;
 
-    private readonly GenTreeStack _ancestors;
     private readonly Compiler _compiler;
 
     private ExceptionSetFlags _preciseExceptions;
 
     public ExceptionsWalker(Compiler compiler)
     {
-        _ancestors = [];
         _compiler = compiler;
     }
 
@@ -39,5 +37,5 @@ public struct ExceptionsWalker : IGenTreeVisitor<ExceptionsWalker>
     }
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<ExceptionsWalker>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<ExceptionsWalker>.WalkTree(ref this, ref use, user);
 }

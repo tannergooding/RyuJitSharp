@@ -14,14 +14,12 @@ public partial class Compiler
         public static bool DoPreOrder => true;
 
         private readonly Compiler _compiler;
-        private readonly GenTreeStack _ancestors;
         private readonly GenTree _readTree;
         private int _numStoresChecked;
 
         public MayHaveStoreInterferenceVisitor(Compiler compiler, GenTree readTree)
         {
             _compiler = compiler;
-            _ancestors = [];
             _readTree = readTree;
         }
 
@@ -52,6 +50,6 @@ public partial class Compiler
 
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
-        public fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<MayHaveStoreInterferenceVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        public fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<MayHaveStoreInterferenceVisitor>.WalkTree(ref this, ref use, user);
     }
 }

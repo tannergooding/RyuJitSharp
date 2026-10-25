@@ -599,13 +599,11 @@ public sealed partial class IndirectCallTransformer
         private struct ClonabilityVisitor : IGenTreeVisitor<ClonabilityVisitor>
         {
             public static bool DoPreOrder => true;
-            private readonly GenTreeStack _ancestors;
             public GenTree? UnclonableNode;
             public uint NodeCount;
 
             public ClonabilityVisitor()
             {
-                _ancestors = [];
             }
 
             public Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
@@ -641,7 +639,7 @@ public sealed partial class IndirectCallTransformer
             public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => Compiler.WALK_CONTINUE;
 
             public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-                => IGenTreeVisitor<ClonabilityVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+                => IGenTreeVisitor<ClonabilityVisitor>.WalkTree(ref this, ref use, user);
         }
 
         private GenTree? CreateTreeForLookup(CORINFO_METHOD_HANDLE methHnd, in CORINFO_CONST_LOOKUP lookup)

@@ -14,13 +14,11 @@ public partial class Compiler
         public static bool DoPreOrder => true;
 
         private readonly Compiler _compiler;
-        private readonly GenTreeStack _ancestors;
         private readonly ref optCSE_MaskData _maskData;
 
         public MaskDataWalker(Compiler compiler, ref optCSE_MaskData maskData)
         {
             _compiler = compiler;
-            _ancestors = [];
             _maskData = ref maskData;
         }
 
@@ -50,6 +48,6 @@ public partial class Compiler
 
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
-        public fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<MaskDataWalker>.WalkTree(ref this, ref use, user, _ancestors);
+        public fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<MaskDataWalker>.WalkTree(ref this, ref use, user);
     }
 }

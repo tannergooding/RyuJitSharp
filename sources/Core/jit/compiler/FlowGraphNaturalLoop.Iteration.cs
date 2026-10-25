@@ -17,13 +17,11 @@ public sealed partial class FlowGraphNaturalLoop
 
         private readonly Compiler _compiler;
         private readonly Func<int, GenTreeLclVarCommon, bool> _visit;
-        private readonly GenTreeStack _ancestors;
 
         public DefVisitor(Compiler compiler, Func<int, GenTreeLclVarCommon, bool> visit)
         {
             _compiler = compiler;
             _visit = visit;
-            _ancestors = [];
         }
 
         public fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
@@ -42,7 +40,7 @@ public sealed partial class FlowGraphNaturalLoop
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<DefVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<DefVisitor>.WalkTree(ref this, ref use, user);
     }
 
     private bool VisitDefs(Func<int, GenTreeLclVarCommon, bool> visit)

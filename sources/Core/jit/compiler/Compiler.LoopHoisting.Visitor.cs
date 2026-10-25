@@ -42,7 +42,6 @@ public partial class Compiler
         private readonly LoopHoistContext _context;
         private readonly BitVecTraits _traits;
         private readonly BitVec _defExecuted;
-        private readonly GenTreeStack _ancestors;
         private readonly List<HoistValue> _values;
         private bool _canHoistSideEffects;
         private BasicBlock? _currentBlock;
@@ -55,7 +54,6 @@ public partial class Compiler
             _context = context;
             _traits = traits;
             _defExecuted = defExecuted;
-            _ancestors = [];
             _values = [];
             _canHoistSideEffects = true;
         }
@@ -386,6 +384,6 @@ public partial class Compiler
         }
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<LoopHoistVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<LoopHoistVisitor>.WalkTree(ref this, ref use, user);
     }
 }

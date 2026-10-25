@@ -371,14 +371,12 @@ public partial class Compiler
         private readonly Compiler _compiler;
         private readonly BasicBlock _block;
         private readonly Statement _statement;
-        private readonly GenTreeStack _ancestors;
 
         public MarkLocalVarsVisitor(Compiler compiler, BasicBlock block, Statement statement)
         {
             _compiler = compiler;
             _block = block;
             _statement = statement;
-            _ancestors = [];
         }
 
         public static bool DoPreOrder => true;
@@ -392,6 +390,6 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<MarkLocalVarsVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<MarkLocalVarsVisitor>.WalkTree(ref this, ref use, user);
     }
 }

@@ -107,7 +107,6 @@ public partial class Compiler
     private struct BoundsChecksVisitor(Statement stmt, int stmtIdx, List<BoundCheckLocation> locations)
         : IGenTreeVisitor<BoundsChecksVisitor>
     {
-        private readonly GenTreeStack _ancestors = [];
 
         public static bool DoPreOrder => true;
         public static bool DoPostOrder => true;
@@ -127,7 +126,7 @@ public partial class Compiler
         }
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<BoundsChecksVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<BoundsChecksVisitor>.WalkTree(ref this, ref use, user);
     }
 
     private bool DoesRangeCheckCloningComplexityExceed(List<BoundsCheckInfo> checks)

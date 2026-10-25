@@ -80,11 +80,9 @@ public partial class Compiler
 
     private struct NoReturnCallFinder : IGenTreeVisitor<NoReturnCallFinder>
     {
-        private readonly GenTreeStack _ancestors;
 
         public NoReturnCallFinder()
         {
-            _ancestors = [];
         }
 
         public static bool DoPreOrder => true;
@@ -112,6 +110,6 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<NoReturnCallFinder>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<NoReturnCallFinder>.WalkTree(ref this, ref use, user);
     }
 }

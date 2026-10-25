@@ -361,7 +361,6 @@ public partial class Compiler
         private readonly Compiler _compiler;
         private readonly int _lclNum;
         private readonly nint _value;
-        private readonly GenTreeStack _ancestors;
         public bool MadeChanges;
 
         public LoopUnrollReplaceVisitor(Compiler compiler, int lclNum, nint value)
@@ -369,7 +368,6 @@ public partial class Compiler
             _compiler = compiler;
             _lclNum = lclNum;
             _value = value;
-            _ancestors = [];
             MadeChanges = false;
         }
 
@@ -386,7 +384,7 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<LoopUnrollReplaceVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<LoopUnrollReplaceVisitor>.WalkTree(ref this, ref use, user);
     }
 
     private void optReplaceScalarUsesWithConst(BasicBlock block, int lclNum, nint value)

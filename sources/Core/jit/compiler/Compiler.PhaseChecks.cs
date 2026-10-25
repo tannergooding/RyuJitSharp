@@ -194,14 +194,12 @@ public partial class Compiler
         private readonly Compiler _compiler;
         private readonly BitVecTraits _traits;
         private readonly BitVec _nodes;
-        private readonly GenTreeStack _ancestors;
 
         public UniquenessCheckWalker(Compiler compiler)
         {
             _compiler = compiler;
             _traits = new BitVecTraits(compiler, compiler.compGenTreeID);
             _nodes = BitVecOps.MakeEmpty(_traits);
-            _ancestors = [];
         }
 
         public static bool DoPreOrder => true;
@@ -228,18 +226,16 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<UniquenessCheckWalker>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<UniquenessCheckWalker>.WalkTree(ref this, ref use, user);
     }
 
     private struct DebugLocalSequencer : IGenTreeVisitor<DebugLocalSequencer>
     {
         private readonly Compiler _compiler;
-        private readonly GenTreeStack _ancestors;
 
         public DebugLocalSequencer(Compiler compiler)
         {
             _compiler = compiler;
-            _ancestors = [];
             Locals = [];
         }
 
@@ -284,6 +280,6 @@ public partial class Compiler
                 ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue) is GenTree.VisitResult.Abort;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<DebugLocalSequencer>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<DebugLocalSequencer>.WalkTree(ref this, ref use, user);
     }
 }

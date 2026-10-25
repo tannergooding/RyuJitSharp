@@ -17,7 +17,6 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
     public static bool UseExecutionOrder => true;
 
     private readonly Compiler _compiler;
-    private readonly GenTreeStack _ancestors;
 
     private BasicBlock _bb;
     private Statement _splitStmt;
@@ -32,7 +31,6 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
     public SplitTreeVisitor(Compiler compiler, BasicBlock bb, Statement stmt, GenTree splitNode, bool early)
     {
         _compiler = compiler;
-        _ancestors = [];
 
         _bb = bb;
         _splitStmt = stmt;
@@ -122,7 +120,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
     }
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<SplitTreeVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<SplitTreeVisitor>.WalkTree(ref this, ref use, user);
 
     private readonly bool IsReturned(ref GenTree use, GenTree? user, bool userIsReturned)
     {

@@ -16,13 +16,12 @@ public partial class Compiler
     private struct PhysicalPromotionAddressExposedVisitor(Compiler compiler)
         : IGenTreeVisitor<PhysicalPromotionAddressExposedVisitor>
     {
-        private readonly GenTreeStack _ancestors = [];
 
         public static bool DoLclVarsOnly => true;
         public static bool DoPreOrder => true;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<PhysicalPromotionAddressExposedVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<PhysicalPromotionAddressExposedVisitor>.WalkTree(ref this, ref use, user);
 
         public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
             => compiler.lvaGetDesc(use.AsLclVarCommon().LclNum).IsAddressExposed

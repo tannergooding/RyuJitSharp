@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using static RyuJitSharp.Compiler;
 
 namespace RyuJitSharp;
@@ -26,6 +27,17 @@ public interface IGenTreeVisitor<TSelf>
 
     /// <summary>when true, then walker will visit a node's operands in execution order (e.g. if a binary operator has the `GTF_REVERSE_OPS` flag set, the second operand will be visited before the first).</summary>
     static virtual bool UseExecutionOrder => false;
+
+    protected static fgWalkResult WalkTree(ref TSelf self, ref GenTree use, GenTree? user)
+    {
+        if (TSelf.ComputeStack)
+        {
+            throw new InvalidOperationException("Ancestor-tracking visitors require an ancestor stack.");
+        }
+
+        // The walker never reads the stack when ComputeStack is false.
+        return WalkTree(ref self, ref use, user, default!);
+    }
 
     protected static fgWalkResult WalkTree(ref TSelf self, ref GenTree use, GenTree? user, GenTreeStack ancestors)
     {

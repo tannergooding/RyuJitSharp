@@ -11,11 +11,8 @@ public struct FindCatchArgVisitor : IGenTreeVisitor<FindCatchArgVisitor>
 
     public static bool UseExecutionOrder => true;
 
-    private readonly GenTreeStack _ancestors;
-
     public FindCatchArgVisitor()
     {
-        _ancestors = [];
     }
 
     public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
@@ -25,5 +22,5 @@ public struct FindCatchArgVisitor : IGenTreeVisitor<FindCatchArgVisitor>
         => (use.Oper is GT_CATCH_ARG) ? Compiler.WALK_ABORT : Compiler.WALK_CONTINUE;
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<FindCatchArgVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<FindCatchArgVisitor>.WalkTree(ref this, ref use, user);
 }

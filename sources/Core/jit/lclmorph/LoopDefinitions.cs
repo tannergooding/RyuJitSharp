@@ -87,13 +87,11 @@ internal sealed class LoopDefinitions
     {
         private readonly Compiler _compiler;
         private readonly LocalDefinitionsMap _map;
-        private readonly GenTreeStack _ancestors;
 
         internal LocalsVisitor(Compiler compiler, LocalDefinitionsMap map)
         {
             _compiler = compiler;
             _map = map;
-            _ancestors = [];
         }
 
         public static bool DoPreOrder => true;
@@ -139,7 +137,7 @@ internal sealed class LoopDefinitions
         public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => Compiler.WALK_CONTINUE;
 
         public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<LocalsVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<LocalsVisitor>.WalkTree(ref this, ref use, user);
     }
 
     // This set specializes the native unsigned-to-bool JitHashTable, whose

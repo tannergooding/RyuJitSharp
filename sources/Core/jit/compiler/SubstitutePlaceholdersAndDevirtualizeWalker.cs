@@ -16,7 +16,6 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
     public static bool UseExecutionOrder => true;
 
     private readonly Compiler _compiler;
-    private readonly GenTreeStack _ancestors;
     private Statement? _curStmt;
     private Statement? _firstNewStmt;
     private bool _madeChanges;
@@ -24,7 +23,6 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
     public SubstitutePlaceholdersAndDevirtualizeWalker(Compiler compiler)
     {
         _compiler = compiler;
-        _ancestors = [];
     }
 
     public readonly bool MadeChanges => _madeChanges;
@@ -525,7 +523,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
     }
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>.WalkTree(ref this, ref use, user);
 
     /// <summary>Update a "STORE(..., inlinee)" tree.</summary>
     /// <param name="store">The store with the inlinee as value</param>

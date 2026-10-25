@@ -15,14 +15,12 @@ public partial class Compiler
 
         private GenTree _prevNode;
         private readonly Compiler _compiler;
-        private readonly GenTreeStack _ancestors;
         private readonly bool _isLIR;
 
         public SetTreeSeqVisitor(Compiler compiler, GenTree tree, bool isLIR)
         {
             _prevNode = tree;
             _compiler = compiler;
-            _ancestors = [];
             _isLIR = isLIR;
 
             if (Configuration.DEBUG)
@@ -55,7 +53,7 @@ public partial class Compiler
             return WALK_CONTINUE;
         }
 
-        public fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<SetTreeSeqVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        public fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<SetTreeSeqVisitor>.WalkTree(ref this, ref use, user);
 
         public GenTree Sequence()
         {

@@ -11,7 +11,6 @@ public partial class Compiler
     {
         private readonly Compiler _compiler = compiler;
         private readonly GenTreeCall _tailCall = tailCall;
-        private readonly GenTreeStack _ancestors = [];
         private int _localNumber = BAD_VAR_NUM;
         private bool _active;
 
@@ -115,6 +114,6 @@ public partial class Compiler
         }
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<TailCallIRValidatorVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<TailCallIRValidatorVisitor>.WalkTree(ref this, ref use, user);
     }
 }

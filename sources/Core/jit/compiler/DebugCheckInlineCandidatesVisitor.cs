@@ -10,11 +10,8 @@ public struct DebugCheckInlineCandidatesVisitor : IGenTreeVisitor<DebugCheckInli
 {
     public static bool DoPreOrder => true;
 
-    private readonly GenTreeStack _ancestors;
-
     public DebugCheckInlineCandidatesVisitor()
     {
-        _ancestors = [];
     }
 
     public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
@@ -37,5 +34,5 @@ public struct DebugCheckInlineCandidatesVisitor : IGenTreeVisitor<DebugCheckInli
     }
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<DebugCheckInlineCandidatesVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<DebugCheckInlineCandidatesVisitor>.WalkTree(ref this, ref use, user);
 }

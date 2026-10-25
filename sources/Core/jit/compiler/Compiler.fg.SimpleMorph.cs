@@ -1036,11 +1036,8 @@ internal struct MarkColonCondVisitor : IGenTreeVisitor<MarkColonCondVisitor>
 {
     public static bool DoPreOrder => true;
 
-    private readonly GenTreeStack _ancestors;
-
     public MarkColonCondVisitor()
     {
-        _ancestors = [];
     }
 
     public readonly Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
@@ -1052,5 +1049,5 @@ internal struct MarkColonCondVisitor : IGenTreeVisitor<MarkColonCondVisitor>
     public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => Compiler.WALK_CONTINUE;
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<MarkColonCondVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<MarkColonCondVisitor>.WalkTree(ref this, ref use, user);
 }

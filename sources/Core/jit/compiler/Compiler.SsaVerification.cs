@@ -115,12 +115,10 @@ public partial class Compiler
             public static bool DoPreOrder => true;
 
             private readonly SsaCheckVisitor _checker;
-            private readonly GenTreeStack _ancestors;
 
             public TreeWalker(SsaCheckVisitor checker)
             {
                 _checker = checker;
-                _ancestors = [];
             }
 
             public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
@@ -141,7 +139,7 @@ public partial class Compiler
             public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
             public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-                => IGenTreeVisitor<TreeWalker>.WalkTree(ref this, ref use, user, _ancestors);
+                => IGenTreeVisitor<TreeWalker>.WalkTree(ref this, ref use, user);
         }
 
         private readonly Compiler _compiler;

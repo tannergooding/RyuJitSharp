@@ -14,13 +14,11 @@ public partial class Compiler
         public static bool DoPreOrder => true;
 
         private readonly Compiler _compiler;
-        private readonly GenTreeStack _ancestors;
         private readonly int _lclNum;
 
         public TreeHasLocalStoreVisitor(Compiler compiler, int lclNum)
         {
             _compiler = compiler;
-            _ancestors = [];
             _lclNum = lclNum;
 
             assert(!_compiler.lvaGetDesc(lclNum).IsAddressExposed);
@@ -64,6 +62,6 @@ public partial class Compiler
 
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
-        public fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<TreeHasLocalStoreVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        public fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<TreeHasLocalStoreVisitor>.WalkTree(ref this, ref use, user);
     }
 }

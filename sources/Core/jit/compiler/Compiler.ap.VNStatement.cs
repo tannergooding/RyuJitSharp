@@ -11,7 +11,6 @@ public partial class Compiler
         private readonly Compiler _compiler;
         private readonly BasicBlock _block;
         private readonly Statement _statement;
-        private readonly GenTreeStack _ancestors;
 
         public static bool DoPostOrder => true;
 
@@ -22,7 +21,6 @@ public partial class Compiler
             _compiler = compiler;
             _block = block;
             _statement = statement;
-            _ancestors = [];
         }
 
         public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
@@ -34,7 +32,7 @@ public partial class Compiler
         }
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<VNAssertionPropVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<VNAssertionPropVisitor>.WalkTree(ref this, ref use, user);
     }
 
     public fgWalkResult optVNBasedFoldCurStmt(BasicBlock block, Statement statement, GenTree? parent, GenTree tree)

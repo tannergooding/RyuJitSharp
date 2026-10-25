@@ -47,12 +47,10 @@ public partial class Compiler
     private struct InvertCountTreeInfoVisitor : IGenTreeVisitor<InvertCountTreeInfoVisitor>
     {
         public static bool DoPreOrder => true;
-        private readonly GenTreeStack _ancestors;
         public OptInvertCountTreeInfoType Result;
 
         public InvertCountTreeInfoVisitor()
         {
-            _ancestors = [];
             Result = default;
         }
 
@@ -73,7 +71,7 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<InvertCountTreeInfoVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<InvertCountTreeInfoVisitor>.WalkTree(ref this, ref use, user);
     }
 
     private bool optTryInvertWhileLoop(FlowGraphNaturalLoop loop)

@@ -11,7 +11,6 @@ namespace RyuJitSharp;
 internal partial struct LocalAddressVisitor
 {
     private readonly List<Value> _valueStack = [];
-    private readonly GenTreeStack _ancestors = [];
     private Statement? _statement;
     private bool _madeChanges;
     private bool _propagatedAddrs;
@@ -27,7 +26,7 @@ internal partial struct LocalAddressVisitor
     internal readonly bool PropagatedAnyAddresses => _propagatedAddrs;
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<LocalAddressVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<LocalAddressVisitor>.WalkTree(ref this, ref use, user);
 
     internal void VisitStmt(Statement stmt)
     {

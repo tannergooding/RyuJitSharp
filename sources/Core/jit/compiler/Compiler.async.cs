@@ -355,12 +355,10 @@ public partial class Compiler
     private struct AddAsyncContextArgsVisitor : IGenTreeVisitor<AddAsyncContextArgsVisitor>
     {
         private readonly Compiler _compiler;
-        private readonly GenTreeStack _ancestors;
 
         public AddAsyncContextArgsVisitor(Compiler compiler)
         {
             _compiler = compiler;
-            _ancestors = [];
         }
 
         public static bool DoPreOrder => true;
@@ -467,6 +465,6 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<AddAsyncContextArgsVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<AddAsyncContextArgsVisitor>.WalkTree(ref this, ref use, user);
     }
 }

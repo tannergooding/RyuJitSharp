@@ -8,11 +8,9 @@ namespace RyuJitSharp;
 public struct CheckTransformableIndirectCallsVisitor : IGenTreeVisitor<CheckTransformableIndirectCallsVisitor>
 {
     public static bool DoPreOrder => true;
-    private readonly GenTreeStack _ancestors;
 
     public CheckTransformableIndirectCallsVisitor()
     {
-        _ancestors = [];
     }
 
     public readonly Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
@@ -30,5 +28,5 @@ public struct CheckTransformableIndirectCallsVisitor : IGenTreeVisitor<CheckTran
     public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => Compiler.WALK_CONTINUE;
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<CheckTransformableIndirectCallsVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<CheckTransformableIndirectCallsVisitor>.WalkTree(ref this, ref use, user);
 }

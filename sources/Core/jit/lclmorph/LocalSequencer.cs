@@ -12,13 +12,11 @@ public struct LocalSequencer : IGenTreeVisitor<LocalSequencer>
     public static bool UseExecutionOrder => true;
 
     private readonly Compiler _compiler;
-    private readonly GenTreeStack _ancestors;
     private GenTree? _prevNode;
 
     public LocalSequencer(Compiler compiler)
     {
         _compiler = compiler;
-        _ancestors = [];
     }
 
     public readonly Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user) => Compiler.WALK_CONTINUE;
@@ -40,7 +38,7 @@ public struct LocalSequencer : IGenTreeVisitor<LocalSequencer>
         return Compiler.WALK_CONTINUE;
     }
 
-    public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<LocalSequencer>.WalkTree(ref this, ref use, user, _ancestors);
+    public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user) => IGenTreeVisitor<LocalSequencer>.WalkTree(ref this, ref use, user);
 
     /// <summary>Start sequencing a statement. Must be called before other members are called for a specified statement.</summary>
     /// <param name="stmt">the statement</param>

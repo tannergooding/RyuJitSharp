@@ -20,7 +20,6 @@ public partial class Compiler
     {
         public static bool DoPreOrder => true;
 
-        private readonly GenTreeStack _ancestors;
         private readonly GenTree _node;
         private GenTree? _parent;
         private bool _found;
@@ -28,7 +27,6 @@ public partial class Compiler
 
         public FindLinkWalker(GenTree node)
         {
-            _ancestors = [];
             _node = node;
         }
 
@@ -90,6 +88,6 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<FindLinkWalker>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<FindLinkWalker>.WalkTree(ref this, ref use, user);
     }
 }

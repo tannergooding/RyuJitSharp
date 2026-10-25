@@ -134,7 +134,6 @@ public partial class Compiler
 
     private struct MorphStatementBlockOpsVisitor(Compiler compiler) : IGenTreeVisitor<MorphStatementBlockOpsVisitor>
     {
-        private readonly GenTreeStack _ancestors = [];
 
         public static bool DoPostOrder => true;
 
@@ -151,6 +150,6 @@ public partial class Compiler
         }
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<MorphStatementBlockOpsVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<MorphStatementBlockOpsVisitor>.WalkTree(ref this, ref use, user);
     }
 }

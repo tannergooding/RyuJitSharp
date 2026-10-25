@@ -10,7 +10,6 @@ public ref struct FindNodeVisitor<TPredicate> : IGenTreeVisitor<FindNodeVisitor<
 {
     public static bool DoPreOrder => true;
 
-    private GenTreeStack _ancestors;
     private ref TPredicate _predicate;
     private readonly GenTreeFlags _requiredFlagsToDescendIntoTree;
 
@@ -18,7 +17,6 @@ public ref struct FindNodeVisitor<TPredicate> : IGenTreeVisitor<FindNodeVisitor<
 
     public FindNodeVisitor(ref TPredicate predicate, GenTreeFlags requiredFlagsToDescendIntoTree)
     {
-        _ancestors = [];
         _predicate = ref predicate;
         _requiredFlagsToDescendIntoTree = requiredFlagsToDescendIntoTree;
     }
@@ -45,5 +43,5 @@ public ref struct FindNodeVisitor<TPredicate> : IGenTreeVisitor<FindNodeVisitor<
     }
 
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-        => IGenTreeVisitor<FindNodeVisitor<TPredicate>>.WalkTree(ref this, ref use, user, _ancestors);
+        => IGenTreeVisitor<FindNodeVisitor<TPredicate>>.WalkTree(ref this, ref use, user);
 }

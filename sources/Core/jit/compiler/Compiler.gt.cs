@@ -3912,14 +3912,12 @@ public partial class Compiler
     {
         public static bool DoPreOrder => true;
 
-        private GenTreeStack _ancestors;
         private ref TComplexity _complexityStrategy;
         private readonly uint _limit;
         private uint _complexity;
 
         public ComplexityVisitor(ref TComplexity complexity, uint limit)
         {
-            _ancestors = [];
             _complexityStrategy = ref complexity;
             _limit = limit;
             _complexity = 0;
@@ -3934,7 +3932,7 @@ public partial class Compiler
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<ComplexityVisitor<TComplexity>>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<ComplexityVisitor<TComplexity>>.WalkTree(ref this, ref use, user);
     }
 
     public GenTree gtFoldExpr(GenTree tree)

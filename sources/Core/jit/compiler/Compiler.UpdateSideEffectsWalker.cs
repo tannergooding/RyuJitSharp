@@ -10,12 +10,10 @@ public partial class Compiler
     private struct UpdateSideEffectsWalker : IGenTreeVisitor<UpdateSideEffectsWalker>
     {
         private readonly Compiler _compiler;
-        private readonly GenTreeStack _ancestors;
 
         internal UpdateSideEffectsWalker(Compiler compiler)
         {
             _compiler = compiler;
-            _ancestors = [];
         }
 
         public static bool DoPreOrder => true;
@@ -64,6 +62,6 @@ public partial class Compiler
         }
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<UpdateSideEffectsWalker>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<UpdateSideEffectsWalker>.WalkTree(ref this, ref use, user);
     }
 }

@@ -17,7 +17,6 @@ public sealed partial class ObjectAllocator
 
         private readonly CloneInfo _info;
         private readonly int _newLclNum;
-        private readonly GenTreeStack _ancestors;
 
         public bool MadeChanges;
 
@@ -25,7 +24,6 @@ public sealed partial class ObjectAllocator
         {
             _info = info;
             _newLclNum = newLclNum;
-            _ancestors = [];
             MadeChanges = false;
         }
 
@@ -62,7 +60,7 @@ public sealed partial class ObjectAllocator
             => Compiler.WALK_CONTINUE;
 
         public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
-            => IGenTreeVisitor<ReplaceVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+            => IGenTreeVisitor<ReplaceVisitor>.WalkTree(ref this, ref use, user);
     }
 
     private unsafe void CloneAndSpecialize(CloneInfo info)
