@@ -704,7 +704,7 @@ public partial class Compiler
 
         var character = (ushort)0;
         if ((index < int.MaxValue) && (objHandle != NO_OBJECT_HANDLE) &&
-            info.compCompHnd->getStringChar(objHandle, (int)index, &character))
+            eeGetStringChar(objHandle, (int)index, &character))
         {
             if (Configuration.DEBUG)
             {

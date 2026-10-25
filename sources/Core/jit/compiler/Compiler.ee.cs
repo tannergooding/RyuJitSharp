@@ -65,7 +65,23 @@ public partial class Compiler
         public bool HasValue;
     }
 
+    private enum DiagnosticNameKind
+    {
+        Class,
+        ShortClass,
+        Field,
+        Method,
+        FullMethod,
+    }
+
+    private readonly record struct DiagnosticNameCacheKey(
+        nint Handle, DiagnosticNameKind Kind, bool IncludeType, bool IncludeReturnType, bool IncludeThisSpecifier);
+
+    private readonly record struct StringCharacterCacheKey(nint StringHandle, int Index);
+
     private const int BuiltinClassCacheLength = (int)CorInfoClassId.CLASSID_NUMERICS_VECTORT + 1;
+    // Diagnostic-only strings can be numerous in large methods; cap their retention per compiler.
+    private const int MaxDiagnosticNameCacheEntries = 64;
 
     [InlineArray(BuiltinClassCacheLength)]
     private struct BuiltinClassHandleCache
@@ -93,6 +109,8 @@ public partial class Compiler
     private Dictionary<nint, bool>? _singleDimensionalArrayCache;
     private TypeComparisonCacheEntry _lastTypeCastComparison;
     private TypeComparisonCacheEntry _lastTypeEqualityComparison;
+    private Dictionary<DiagnosticNameCacheKey, string>? _diagnosticNameCache;
+    private Dictionary<StringCharacterCacheKey, ushort>? _stringCharacterCache;
 
     private interface IEEPrintVisitor<TSelf>
         where TSelf : struct, IEEPrintVisitor<TSelf>
@@ -494,6 +512,27 @@ public partial class Compiler
         return isSDArray;
     }
 
+    public unsafe bool eeGetStringChar(CORINFO_OBJECT_HANDLE stringHandle, int index, ushort* value)
+    {
+        var key = new StringCharacterCacheKey((nint)stringHandle, index);
+        var cache = _stringCharacterCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            *value = cachedValue;
+            return true;
+        }
+
+        var success = info.compCompHnd->getStringChar(stringHandle, index, value);
+        if (success)
+        {
+            cache ??= [];
+            cache.Add(key, *value);
+            _stringCharacterCache = cache;
+        }
+
+        return success;
+    }
+
     public unsafe int eeGetArrayRank(CORINFO_CLASS_HANDLE classHandle)
     {
         var key = (nint)classHandle;
@@ -720,12 +759,44 @@ public partial class Compiler
         return wasmType;
     }
 
+    private bool TryGetDiagnosticName(DiagnosticNameCacheKey key, out string value)
+    {
+        var cache = _diagnosticNameCache;
+        if ((cache is not null) && cache.TryGetValue(key, out var cachedValue))
+        {
+            value = cachedValue;
+            return true;
+        }
+
+        value = string.Empty;
+        return false;
+    }
+
+    private void CacheDiagnosticName(DiagnosticNameCacheKey key, string value)
+    {
+        var cache = _diagnosticNameCache;
+        if ((cache is not null) && (cache.Count >= MaxDiagnosticNameCacheEntries))
+        {
+            return;
+        }
+
+        cache ??= [];
+        _ = cache.TryAdd(key, value);
+        _diagnosticNameCache = cache;
+    }
+
     /// <summary>Get the name (including namespace and instantiation) of a type.</summary>
     /// <param name="classHandle">the handle of the class</param>
     /// <returns>The name string.</returns>
     /// <remarks>If missing information (in SPMI), then return a placeholder string.</remarks>
     public unsafe string eeGetClassName(CORINFO_CLASS_HANDLE classHandle)
     {
+        var key = new DiagnosticNameCacheKey((nint)classHandle, DiagnosticNameKind.Class, false, false, false);
+        if (TryGetDiagnosticName(key, out var cachedName))
+        {
+            return cachedName;
+        }
+
         var stringBuilder = new StringBuilder();
 
         var success = eeRunFunctorWithSpmiErrorTrap(() =>
@@ -735,7 +806,15 @@ public partial class Compiler
                 includeInstantiation: true
             )
         );
-        return success ? stringBuilder.ToString() : "<unknown class>";
+
+        if (!success)
+        {
+            return "<unknown class>";
+        }
+
+        var className = stringBuilder.ToString();
+        CacheDiagnosticName(key, className);
+        return className;
     }
 
     public unsafe ref CORINFO_EE_INFO eeGetEEInfo()
@@ -782,6 +861,12 @@ public partial class Compiler
     /// <param name="includeType">Whether to prefix the string with &lt;type name&gt;:</param>
     public unsafe string eeGetFieldName(CORINFO_FIELD_HANDLE fldHnd, bool includeType)
     {
+        var key = new DiagnosticNameCacheKey((nint)fldHnd, DiagnosticNameKind.Field, includeType, false, false);
+        if (TryGetDiagnosticName(key, out var cachedName))
+        {
+            return cachedName;
+        }
+
         var stringBuilder = new StringBuilder();
 
         var success = eeRunFunctorWithSpmiErrorTrap(() =>
@@ -792,25 +877,30 @@ public partial class Compiler
             )
         );
 
-        if (!success)
+        if (success)
         {
-            if (includeType)
-            {
-                _ = stringBuilder.Clear();
-                _ = stringBuilder.Append("<unknown class>:");
-
-                success = eeRunFunctorWithSpmiErrorTrap(() =>
-                    eePrintField(
-                        stringBuilder,
-                        fldHnd,
-                        includeType: false
-                    )
-                );
-
-                return success ? stringBuilder.ToString() : "<unknown class>:<unknown field>";
-            }
+            var fieldName = stringBuilder.ToString();
+            CacheDiagnosticName(key, fieldName);
+            return fieldName;
         }
-        return success ? stringBuilder.ToString() : "<unknown field>";
+
+        if (includeType)
+        {
+            _ = stringBuilder.Clear();
+            _ = stringBuilder.Append("<unknown class>:");
+
+            success = eeRunFunctorWithSpmiErrorTrap(() =>
+                eePrintField(
+                    stringBuilder,
+                    fldHnd,
+                    includeType: false
+                )
+            );
+
+            return success ? stringBuilder.ToString() : "<unknown class>:<unknown field>";
+        }
+
+        return "<unknown field>";
     }
 
     public unsafe var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE memberParent = null)
@@ -891,6 +981,13 @@ public partial class Compiler
             return helper.ToString();
         }
 
+        var key = new DiagnosticNameCacheKey(
+            (nint)methodHandle, DiagnosticNameKind.FullMethod, false, includeReturnType, includeThisSpecifier);
+        if (TryGetDiagnosticName(key, out var cachedName))
+        {
+            return cachedName;
+        }
+
         var stringBuilder = new StringBuilder();
         var classHandle = NO_CLASS_HANDLE;
 
@@ -915,7 +1012,9 @@ public partial class Compiler
 
         if (success)
         {
-            return stringBuilder.ToString();
+            var fullName = stringBuilder.ToString();
+            CacheDiagnosticName(key, fullName);
+            return fullName;
         }
         return eeGetMethodName(methodHandle);
     }
@@ -926,6 +1025,12 @@ public partial class Compiler
     /// <remarks>See <see cref="eeGetMethodFullName" /> for documentation about the buffer.</remarks>
     public unsafe string eeGetMethodName(CORINFO_METHOD_HANDLE methodHandle)
     {
+        var key = new DiagnosticNameCacheKey((nint)methodHandle, DiagnosticNameKind.Method, false, false, false);
+        if (TryGetDiagnosticName(key, out var cachedName))
+        {
+            return cachedName;
+        }
+
         var stringBuilder = new StringBuilder();
 
         var success = eeRunFunctorWithSpmiErrorTrap(() =>
@@ -943,7 +1048,14 @@ public partial class Compiler
                 includeThisSpecifier: false
             )
         );
-        return success ? stringBuilder.ToString() : "<unknown method>";
+        if (!success)
+        {
+            return "<unknown method>";
+        }
+
+        var methodName = stringBuilder.ToString();
+        CacheDiagnosticName(key, methodName);
+        return methodName;
     }
 
     public unsafe void eeGetMethodSig(CORINFO_METHOD_HANDLE methHnd, out CORINFO_SIG_INFO returnSigInfo, CORINFO_CLASS_HANDLE owner = null)
@@ -960,6 +1072,12 @@ public partial class Compiler
     /// <returns>String without instantiation.</returns>
     public unsafe string eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     {
+        var key = new DiagnosticNameCacheKey((nint)clsHnd, DiagnosticNameKind.ShortClass, false, false, false);
+        if (TryGetDiagnosticName(key, out var cachedName))
+        {
+            return cachedName;
+        }
+
         var stringBuilder = new StringBuilder();
 
         var success = eeRunFunctorWithSpmiErrorTrap(() =>
@@ -969,7 +1087,14 @@ public partial class Compiler
                 includeInstantiation: false
             )
         );
-        return success ? stringBuilder.ToString() : "<unknown class>";
+        if (!success)
+        {
+            return "<unknown class>";
+        }
+
+        var shortClassName = stringBuilder.ToString();
+        CacheDiagnosticName(key, shortClassName);
+        return shortClassName;
     }
 
     public unsafe void eeGetSig(int sigTok, CORINFO_MODULE_HANDLE scope, CORINFO_CONTEXT_HANDLE context, out CORINFO_SIG_INFO sigInfo)

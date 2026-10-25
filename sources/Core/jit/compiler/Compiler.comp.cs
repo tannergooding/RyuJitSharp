@@ -20,6 +20,8 @@ public partial class Compiler
 {
     private unsafe PatchpointInfo* _ownedPatchpointInfo;
 
+    private Dictionary<CorInfoHelpFunc, CORINFO_CONST_LOOKUP>? _helperFunctionLookupCache;
+
     /// <summary>Always present</summary>
     public InlineContext? compInlineContext;
 
@@ -1527,10 +1529,23 @@ public partial class Compiler
 
         if (info.compMatchedVM)
         {
+            var cache = _helperFunctionLookupCache;
+            if ((cache is not null) && cache.TryGetValue(ftnNum, out var cachedLookup))
+            {
+                return cachedLookup;
+            }
+
             info.compCompHnd->getHelperFtn(ftnNum, &lookup);
 
             // The JIT only expects these two possible access types
             assert(lookup.accessType is IAT_VALUE or IAT_PVALUE);
+
+            if (lookup.accessType is IAT_VALUE or IAT_PVALUE)
+            {
+                cache ??= [];
+                cache.Add(ftnNum, lookup);
+                _helperFunctionLookupCache = cache;
+            }
         }
         else
         {
