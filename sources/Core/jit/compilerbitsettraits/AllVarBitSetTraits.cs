@@ -29,17 +29,12 @@ public struct AllVarBitSetTraits : IBitSetTraits<Compiler>, IBitSetOpCounterTrai
             return null;
         }
 
-        global::RyuJitSharp.BitSetSupport.BitSetOpCounter __jitExceptionReturnResult283;
-        var __jitExceptionCoalesceLeft284 = Compiler._allvarsetOpCounter;
-        if (__jitExceptionCoalesceLeft284 != null)
-        {
-            __jitExceptionReturnResult283 = __jitExceptionCoalesceLeft284;
-        }
-        else
+        var counter = Compiler._allvarsetOpCounter;
+        if (counter is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AllVarsetOperationCounterIsNotInitialized);
-            __jitExceptionReturnResult283 = default;
         }
-        return __jitExceptionReturnResult283;
+
+        return counter;
     }
 }

@@ -114,30 +114,22 @@ internal sealed class AsyncContinuationLayout
 
         foreach (var ret in Returns)
         {
-            string __jitExceptionResult21;
-            bool __jitExceptionCondition22;
-            __jitExceptionCondition22 = ret.Type.ReturnType is TYP_STRUCT;
-            if (__jitExceptionCondition22)
+            string type;
+            if (ret.Type.ReturnType is TYP_STRUCT)
             {
-                global::RyuJitSharp.ClassLayout __jitExceptionOperand23;
-                var __jitExceptionCoalesceLeft24 = ret.Type.ReturnLayout;
-                if (__jitExceptionCoalesceLeft24 != null)
-                {
-                    __jitExceptionOperand23 = __jitExceptionCoalesceLeft24;
-                }
-                else
+                var returnLayout = ret.Type.ReturnLayout;
+                if (returnLayout is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructReturnHasNoLayout);
-                    __jitExceptionOperand23 = default;
                 }
 
-                __jitExceptionResult21 = __jitExceptionOperand23.ClassName;
+                type = returnLayout.ClassName;
             }
             else
             {
-                __jitExceptionResult21 = ret.Type.ReturnType.Name;
+                type = ret.Type.ReturnType.Name;
             }
-            var type = __jitExceptionResult21;
+
             JITDUMP($"{prefix}  +{ret.Offset:D3} {ret.Size} bytes for {type} return\n");
         }
     }
@@ -304,18 +296,12 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
 
             if ((dsc.Type is TYP_STRUCT) || dsc.IsImplicitByRef)
             {
-                global::RyuJitSharp.ClassLayout __jitExceptionResult25;
-                var __jitExceptionCoalesceLeft26 = dsc.Layout;
-                if (__jitExceptionCoalesceLeft26 != null)
-                {
-                    __jitExceptionResult25 = __jitExceptionCoalesceLeft26;
-                }
-                else
+                var localLayout = dsc.Layout;
+                if (localLayout is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalHasNoLayout);
-                    __jitExceptionResult25 = default;
                 }
-                var localLayout = __jitExceptionResult25;
+
                 assert(!localLayout.HasGCByRef());
                 info.Alignment = localLayout.GetAlignmentRequirement(_compiler);
                 info.Size = checked((int)localLayout.Size);

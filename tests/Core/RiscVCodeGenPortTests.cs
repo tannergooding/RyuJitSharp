@@ -5,8 +5,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.BasicBlockFlags;
@@ -2913,12 +2915,13 @@ internal static unsafe class RiscVCodeGenPortTests
     [Test]
     public static void CatchReturnDispatchPreservesRiscVBlockLabelRecordingBoundary()
     {
-        WithCodeGen((_, codeGen) =>
+        WithCodeGen((compiler, codeGen) =>
         {
             var block = new BasicBlock(null, null);
             var target = new BasicBlock(null, null);
             target.SetFlags(BBF_HAS_LABEL);
             block.SetKindAndTargetEdge(BBKinds.BBJ_EHCATCHRET, new FlowEdge(block, target, null));
+            compiler.compCurBB = block;
 
             var initialCount = RecordedInstructions(codeGen.Emitter).Count;
 
@@ -2929,6 +2932,35 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_lea));
             Assert.That(descriptors[^1].RiscVBBlabel, Is.SameAs(target));
             Assert.That(descriptors[^1].idCodeSize(), Is.EqualTo(8u));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(descriptors[^1].idDebugOnlyInfo()?.idCatchRet, Is.True);
+            }
+        });
+    }
+
+    [Test]
+    public static void BranchLabelDisassemblyPreservesBoundAndUnboundLabels()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var targetGroup = new insGroup();
+            var targetBlock = new BasicBlock(null, null);
+            targetBlock.SetFlags(BBF_HAS_LABEL);
+
+            emitter.emitIns_R_LRiscV64(INS_lea, EA_4BYTE, targetGroup, REG_S1);
+            var instructions = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var boundDescriptor = instructions[^1];
+
+            emitter.emitIns_R_LRiscV64(INS_lea, EA_4BYTE, targetBlock, REG_S1);
+            var unboundDescriptor = instructions[^1];
+
+            Assert.That(DisassembleBranchLabel(emitter, boundDescriptor), Is.EqualTo(emitter.emitLabelString(targetGroup)));
+            Assert.That(
+                DisassembleBranchLabel(emitter, unboundDescriptor),
+                Is.EqualTo($"L_M{compiler.compMethodID:D3}_{FMT_BB(targetBlock.bbNum)}"));
         });
     }
 
@@ -3388,6 +3420,28 @@ internal static unsafe class RiscVCodeGenPortTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitSizeOfInsDsc")]
     private static extern int DescriptorSize(Emitter emitter, Emitter.instrDesc descriptor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispBranchLabelRiscV64")]
+    private static extern void EmitDispBranchLabel(Emitter emitter, Emitter.instrDesc id);
+
+    private static string DisassembleBranchLabel(Emitter emitter, Emitter.instrDesc id)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new JitTextWriter(stream, leaveOpen: true);
+        var previousWriter = s_jitstdout;
+
+        try
+        {
+            s_jitstdout = writer;
+            EmitDispBranchLabel(emitter, id);
+            writer.Flush();
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
+        finally
+        {
+            s_jitstdout = previousWriter;
+        }
+    }
 
     private sealed class DescriptorSizeProbe : Emitter.instrDesc
     {

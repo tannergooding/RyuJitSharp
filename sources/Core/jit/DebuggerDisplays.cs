@@ -511,18 +511,11 @@ internal sealed class RefPositionDebuggerProxy
                 return [];
             }
 
-            global::RyuJitSharp.Referenceable __jitExceptionResult0;
-            var __jitExceptionCoalesceLeft1 = _reference.referent;
-            if (__jitExceptionCoalesceLeft1 != null)
-            {
-                __jitExceptionResult0 = __jitExceptionCoalesceLeft1;
-            }
-            else
+            var referent = _reference.referent;
+            if (referent is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NonEmptyRegisterAssignmentRequiresAReferent);
-                __jitExceptionResult0 = default;
             }
-            var referent = __jitExceptionResult0;
 
             return DebuggerDisplayHelpers.GetRegisters(
                 DebuggerDisplayHelpers.GetRegisterMask(_reference.registerAssignment, referent.registerType));

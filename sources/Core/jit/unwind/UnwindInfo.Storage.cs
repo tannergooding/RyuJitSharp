@@ -240,18 +240,12 @@ public sealed partial class UnwindInfo
             return;
         }
 
-        global::RyuJitSharp.UnwindInfo.UnwindFragmentInfo __jitExceptionResult709;
-        var __jitExceptionCoalesceLeft710 = uwiFragmentFirst;
-        if (__jitExceptionCoalesceLeft710 != null)
-        {
-            __jitExceptionResult709 = __jitExceptionCoalesceLeft710;
-        }
-        else
+        var first = uwiFragmentFirst;
+        if (first is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindInformationHasNotBeenInitialized);
-            __jitExceptionResult709 = default;
         }
-        var first = __jitExceptionResult709;
+
         var fragmentCount = 0;
         for (var fragment = first; fragment is not null; fragment = fragment.ufiNext)
         {
@@ -288,18 +282,13 @@ public sealed partial class UnwindInfo
     private Compiler GetCompiler()
     {
         RequireUnwindStorageTarget();
-        global::RyuJitSharp.Compiler __jitExceptionReturnResult711;
-        var __jitExceptionCoalesceLeft712 = m_compiler;
-        if (__jitExceptionCoalesceLeft712 != null)
-        {
-            __jitExceptionReturnResult711 = __jitExceptionCoalesceLeft712;
-        }
-        else
+        var compiler = m_compiler;
+        if (compiler is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindInformationHasNotBeenInitialized);
-            __jitExceptionReturnResult711 = default;
         }
-        return __jitExceptionReturnResult711;
+
+        return compiler;
     }
 
     private static void RequireUnwindStorageTarget()

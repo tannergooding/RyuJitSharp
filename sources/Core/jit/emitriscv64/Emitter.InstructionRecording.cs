@@ -73,18 +73,12 @@ public partial class Emitter
 
         if (Configuration.DEBUG && (_compiler?.compCurBB?.Kind == BBJ_EHCATCHRET))
         {
-            global::RyuJitSharp.Emitter.instrDescDebugInfo __jitExceptionResult381;
-            var __jitExceptionCoalesceLeft382 = id.idDebugOnlyInfo();
-            if (__jitExceptionCoalesceLeft382 != null)
-            {
-                __jitExceptionResult381 = __jitExceptionCoalesceLeft382;
-            }
-            else
+            var debugInfo = id.idDebugOnlyInfo();
+            if (debugInfo is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVLabelInstructionsRequireDebugDescriptorInfo);
-                __jitExceptionResult381 = default;
             }
-            var debugInfo = __jitExceptionResult381;
+
             debugInfo.idCatchRet = true;
         }
 

@@ -35,18 +35,12 @@ public partial class Emitter
                 InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(
                 ins, FIRST_AVXVNNIINT8_INSTRUCTION, LAST_AVXVNNIINT16_INSTRUCTION))
             {
-                global::RyuJitSharp.Compiler __jitExceptionResult287;
-                var __jitExceptionCoalesceLeft288 = _compiler;
-                if (__jitExceptionCoalesceLeft288 != null)
-                {
-                    __jitExceptionResult287 = __jitExceptionCoalesceLeft288;
-                }
-                else
+                var compiler = _compiler;
+                if (compiler is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
-                    __jitExceptionResult287 = default;
                 }
-                var compiler = __jitExceptionResult287;
+
                 return compiler.compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT_V512);
             }
             return true;
@@ -59,18 +53,12 @@ public partial class Emitter
 
         if (Configuration.FEATURE_HW_INTRINSICS)
         {
-            global::RyuJitSharp.Compiler __jitExceptionResult289;
-            var __jitExceptionCoalesceLeft290 = _compiler;
-            if (__jitExceptionCoalesceLeft290 != null)
-            {
-                __jitExceptionResult289 = __jitExceptionCoalesceLeft290;
-            }
-            else
+            var instructionCompiler = _compiler;
+            if (instructionCompiler is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
-                __jitExceptionResult289 = default;
             }
-            var instructionCompiler = __jitExceptionResult289;
+
             return ins switch
             {
                 INS_aesdec or INS_aesdeclast or INS_aesenc or INS_aesenclast or INS_pclmulqdq =>

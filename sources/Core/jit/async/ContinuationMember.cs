@@ -97,27 +97,42 @@ public readonly struct ContinuationMember
     [Conditional("DEBUG")]
     public void Print()
     {
-        string __jitExceptionResult27;
+        string description;
+
         switch (Type)
         {
             case ContinuationMemberType.CustomAwaiterOfLayout:
-                __jitExceptionResult27 = $"CustomAwaiter<{CustomAwaiterLayout.ClassName}>";
+            {
+                description = $"CustomAwaiter<{CustomAwaiterLayout.ClassName}>";
                 break;
+            }
+
             case ContinuationMemberType.InlineFrameExecutionContext:
-                __jitExceptionResult27 = $"ExecutionContext for inline depth {_inlineDepth}";
+            {
+                description = $"ExecutionContext for inline depth {_inlineDepth}";
                 break;
+            }
+
             case ContinuationMemberType.InlineFrameContinuationContext:
-                __jitExceptionResult27 = $"Continuation context for inline depth {_inlineDepth}";
+            {
+                description = $"Continuation context for inline depth {_inlineDepth}";
                 break;
+            }
+
             case ContinuationMemberType.InlineFrameFlags:
-                __jitExceptionResult27 = $"Continuation flags for inline depth {_inlineDepth}";
+            {
+                description = $"Continuation flags for inline depth {_inlineDepth}";
                 break;
+            }
+
             default:
+            {
                 JitExceptionHelpers.ThrowUnreachableException();
-                __jitExceptionResult27 = default;
+                description = default;
                 break;
+            }
         }
-        var description = __jitExceptionResult27;
+
         jitprintf(description);
     }
 }

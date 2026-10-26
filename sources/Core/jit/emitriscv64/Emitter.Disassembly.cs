@@ -77,46 +77,28 @@ public partial class Emitter
     {
         if (id.idIsBound())
         {
-            global::RyuJitSharp.insGroup __jitExceptionResult337;
-            var __jitExceptionCoalesceLeft338 = id.RiscVIGlabel;
-            if (__jitExceptionCoalesceLeft338 != null)
-            {
-                __jitExceptionResult337 = __jitExceptionCoalesceLeft338;
-            }
-            else
+            var target = id.RiscVIGlabel;
+            if (target is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BoundRISCVBranchRequiresAnInstructionGroup);
-                __jitExceptionResult337 = default;
             }
-            var target = __jitExceptionResult337;
+
             emitPrintLabel(target);
             return;
         }
 
-        global::RyuJitSharp.BasicBlock __jitExceptionResult339;
-        var __jitExceptionCoalesceLeft340 = id.RiscVBBlabel;
-        if (__jitExceptionCoalesceLeft340 != null)
-        {
-            __jitExceptionResult339 = __jitExceptionCoalesceLeft340;
-        }
-        else
+        var block = id.RiscVBBlabel;
+        if (block is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnboundRISCVBranchRequiresABasicBlock);
-            __jitExceptionResult339 = default;
         }
-        var block = __jitExceptionResult339;
-        global::RyuJitSharp.Compiler __jitExceptionResult341;
-        var __jitExceptionCoalesceLeft342 = _compiler;
-        if (__jitExceptionCoalesceLeft342 != null)
-        {
-            __jitExceptionResult341 = __jitExceptionCoalesceLeft342;
-        }
-        else
+
+        var compiler = _compiler;
+        if (compiler is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
-            __jitExceptionResult341 = default;
         }
-        var compiler = __jitExceptionResult341;
+
         jitprintf($"L_M{compiler.compMethodID:D3}_{FMT_BB(block.bbNum)}");
     }
 
