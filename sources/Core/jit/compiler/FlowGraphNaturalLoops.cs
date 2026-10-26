@@ -11,6 +11,52 @@ namespace RyuJitSharp;
 
 public sealed partial class FlowGraphNaturalLoops
 {
+    private readonly struct LoopExitDiscoveryVisitor : IBasicBlockVisitor<LoopExitDiscoveryVisitor>
+    {
+        private readonly Compiler _compiler;
+        private readonly FlowGraphNaturalLoop _loop;
+
+        public LoopExitDiscoveryVisitor(Compiler compiler, FlowGraphNaturalLoop loop)
+        {
+            _compiler = compiler;
+            _loop = loop;
+        }
+
+        public readonly BasicBlockVisit Visit(BasicBlock loopBlock)
+        {
+            var successorVisitor = new LoopExitSuccessorVisitor(_compiler, _loop, loopBlock);
+            _ = loopBlock.VisitRegularSuccs(_compiler, ref successorVisitor);
+            return BasicBlockVisit.Continue;
+        }
+    }
+
+    private readonly struct LoopExitSuccessorVisitor : IBasicBlockVisitor<LoopExitSuccessorVisitor>
+    {
+        private readonly Compiler _compiler;
+        private readonly FlowGraphNaturalLoop _loop;
+        private readonly BasicBlock _loopBlock;
+
+        public LoopExitSuccessorVisitor(Compiler compiler, FlowGraphNaturalLoop loop, BasicBlock loopBlock)
+        {
+            _compiler = compiler;
+            _loop = loop;
+            _loopBlock = loopBlock;
+        }
+
+        public readonly BasicBlockVisit Visit(BasicBlock successor)
+        {
+            if (!_loop.ContainsBlock(successor))
+            {
+                var exitEdge = _compiler.fgGetPredForBlock(successor, _loopBlock);
+                assert(exitEdge is not null);
+                JITDUMP($"{FMT_BB(_loopBlock.bbNum)} -> {FMT_BB(successor.bbNum)} is an exit edge\n");
+                _loop._exitEdges.Add(exitEdge);
+            }
+
+            return BasicBlockVisit.Continue;
+        }
+    }
+
     private readonly FlowGraphDfsTree _dfsTree;
     private readonly List<FlowGraphNaturalLoop> _loops = [];
     private int _improperLoopHeaders;
@@ -182,20 +228,8 @@ public sealed partial class FlowGraphNaturalLoops
             }
 
             JITDUMP($"Loop has {BitVecOps.Count(loopTraits, loop._blocks)} blocks\n");
-            _ = loop.VisitLoopBlocksReversePostOrder(loopBlock => {
-                _ = loopBlock.VisitRegularSuccs(comp, succBlock => {
-                    if (!loop.ContainsBlock(succBlock))
-                    {
-                        var exitEdge = comp.fgGetPredForBlock(succBlock, loopBlock);
-                        assert(exitEdge is not null);
-                        JITDUMP($"{FMT_BB(loopBlock.bbNum)} -> {FMT_BB(succBlock.bbNum)} is an exit edge\n");
-                        loop._exitEdges.Add(exitEdge);
-                    }
-
-                    return BasicBlockVisit.Continue;
-                });
-                return BasicBlockVisit.Continue;
-            });
+            var loopExitVisitor = new LoopExitDiscoveryVisitor(comp, loop);
+            _ = loop.VisitLoopBlocksReversePostOrder(ref loopExitVisitor);
 
             foreach (var predEdge in header.PredEdges)
             {

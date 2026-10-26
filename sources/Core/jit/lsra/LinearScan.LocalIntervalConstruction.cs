@@ -7,6 +7,74 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
+    private readonly struct UpperVectorRestoreVisitor : IBitSetVisitor<UpperVectorRestoreVisitor>
+    {
+        private readonly LinearScan _linearScan;
+        private readonly uint _location;
+
+        public UpperVectorRestoreVisitor(LinearScan linearScan, uint location)
+        {
+            _linearScan = linearScan;
+            _location = location;
+        }
+
+        public readonly bool Visit(int variableIndex)
+        {
+            var interval = _linearScan.getIntervalForLocalVar(checked((uint)variableIndex));
+            _linearScan.buildUpperVectorRestoreRefPosition(interval, _location, null, false, 0);
+            return true;
+        }
+    }
+
+    private readonly struct LiveOutCandidateVisitor : IBitSetVisitor<LiveOutCandidateVisitor>
+    {
+        private readonly LinearScan _linearScan;
+        private readonly uint _blockNumber;
+
+        public LiveOutCandidateVisitor(LinearScan linearScan, uint blockNumber)
+        {
+            _linearScan = linearScan;
+            _blockNumber = blockNumber;
+        }
+
+        public readonly bool Visit(int variableIndex)
+        {
+            ref var local = ref _linearScan.getTrackedLocal(variableIndex);
+            assert(local.lvLRACandidate);
+            var lastReference = _linearScan.getIntervalForLocalVar(checked((uint)variableIndex)).lastRefPosition;
+            if ((lastReference is not null) && (lastReference.bbNum == _blockNumber))
+            {
+                lastReference.lastUse = false;
+            }
+            return true;
+        }
+    }
+
+    private readonly struct ExcludeUnvisitedSuccessorVisitor : IBasicBlockVisitor<ExcludeUnvisitedSuccessorVisitor>
+    {
+        private readonly LinearScan _linearScan;
+        private readonly VARSET_TP _exposedUses;
+
+        public ExcludeUnvisitedSuccessorVisitor(LinearScan linearScan, VARSET_TP exposedUses)
+        {
+            _linearScan = linearScan;
+            _exposedUses = exposedUses;
+        }
+
+        public readonly BasicBlockVisit Visit(BasicBlock successor)
+        {
+            if (VarSetOps.IsEmpty(_linearScan._compiler, _exposedUses))
+            {
+                return BasicBlockVisit.Abort;
+            }
+            if (!_linearScan.isBlockVisited(successor))
+            {
+                VarSetOps.DiffD(_linearScan._compiler, _exposedUses, successor.bbLiveIn);
+            }
+            return BasicBlockVisit.Continue;
+        }
+    }
+
     private bool _doDoubleAlign;
 
     private void buildIntervalsWithLocals()
@@ -310,11 +378,8 @@ public sealed partial class LinearScan
 
             if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
             {
-                _ = VarSetOps.VisitBits(_compiler, _largeVectorVars, variableIndex => {
-                    var interval = getIntervalForLocalVar(checked((uint)variableIndex));
-                    buildUpperVectorRestoreRefPosition(interval, _referenceBuildLocation, null, false, 0);
-                    return true;
-                });
+                var visitor = new UpperVectorRestoreVisitor(this, _referenceBuildLocation);
+                _ = VarSetOps.VisitBits(_compiler, _largeVectorVars, ref visitor);
             }
 
             markBlockVisited(block);
@@ -335,22 +400,10 @@ public sealed partial class LinearScan
                 VarSetOps.DiffD(_compiler, exposedUses, nextBlock.bbLiveIn);
             }
 
-            BasicBlockVisit ExcludeUnvisitedSuccessor(BasicBlock successor)
+            var successorVisitor = new ExcludeUnvisitedSuccessorVisitor(this, exposedUses);
+            if (block.VisitRegularSuccs(_compiler, ref successorVisitor) is not BasicBlockVisit.Abort)
             {
-                if (VarSetOps.IsEmpty(_compiler, exposedUses))
-                {
-                    return BasicBlockVisit.Abort;
-                }
-                if (!isBlockVisited(successor))
-                {
-                    VarSetOps.DiffD(_compiler, exposedUses, successor.bbLiveIn);
-                }
-                return BasicBlockVisit.Continue;
-            }
-
-            if (block.VisitRegularSuccs(_compiler, ExcludeUnvisitedSuccessor) is not BasicBlockVisit.Abort)
-            {
-                _ = block.VisitEHSuccs(_compiler, ExcludeUnvisitedSuccessor);
+                _ = block.VisitEHSuccs(_compiler, ref successorVisitor);
             }
 
             if (!VarSetOps.IsEmpty(_compiler, exposedUses))
@@ -368,16 +421,8 @@ public sealed partial class LinearScan
             }
 
             var liveOutCandidates = VarSetOps.Intersection(_compiler, _registerCandidateVars, block.bbLiveOut);
-            _ = VarSetOps.VisitBits(_compiler, liveOutCandidates, variableIndex => {
-                ref var local = ref getTrackedLocal(variableIndex);
-                assert(local.lvLRACandidate);
-                var lastReference = getIntervalForLocalVar(checked((uint)variableIndex)).lastRefPosition;
-                if ((lastReference is not null) && (lastReference.bbNum == block.bbNum))
-                {
-                    lastReference.lastUse = false;
-                }
-                return true;
-            });
+            var liveOutVisitor = new LiveOutCandidateVisitor(this, checked((uint)block.bbNum));
+            _ = VarSetOps.VisitBits(_compiler, liveOutCandidates, ref liveOutVisitor);
 
             checkLastUses(block);
             if (Configuration.DEBUG && VERBOSE)

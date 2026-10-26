@@ -118,6 +118,21 @@ internal static class PortingCorpus
             return 20;
         }
 
+        if (RepeatedFields(3) != 46)
+        {
+            return 22;
+        }
+
+        if (GenericMetadataReuse(3) != 32)
+        {
+            return 23;
+        }
+
+        if (RepeatedCalls(3) != 60)
+        {
+            return 24;
+        }
+
         return 0;
     }
 
@@ -279,10 +294,72 @@ internal static class PortingCorpus
         return values[selectedIndex] + values[4 - selectedIndex];
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int RepeatedFields(int value)
+    {
+        var item = new MetadataFields
+        {
+            Number = value,
+            Wide = value + 1,
+            Reference = value,
+        };
+        var values = new[] { item, item };
+        var boxedValue = (int)item.Reference!;
+
+        var sum = item.Number + item.Number + item.Number + item.Number;
+        sum += (int)item.Wide + (int)item.Wide + (int)item.Wide + (int)item.Wide;
+        sum += values[0].Number + values[1].Number + values[0].Number + values[1].Number;
+        sum += boxedValue + boxedValue;
+
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int GenericMetadataReuse(int value)
+    {
+        var integerBox = new GenericMetadataBox<int>
+        {
+            Value = value,
+            Tag = value + 1,
+        };
+        var stringBox = new GenericMetadataBox<string>
+        {
+            Value = "x",
+            Tag = value + 2,
+        };
+        var integerBoxes = new[] { integerBox, integerBox };
+
+        var sum = integerBox.Value + integerBox.Value + integerBoxes[0].Value + integerBoxes[1].Value;
+        sum += integerBox.Tag + integerBox.Tag + stringBox.Tag + stringBox.Tag;
+        sum += stringBox.Value.Length + stringBox.Value.Length;
+
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int RepeatedCalls(int value)
+    {
+        return Add(value, 1) + Add(value, 2) + Add(value, 3) + Add(value, 4) +
+            Add(value, 5) + Add(value, 6) + Add(value, 7) + Add(value, 8);
+    }
+
     private struct Triple
     {
         public long First;
         public long Second;
         public long Third;
+    }
+
+    private struct MetadataFields
+    {
+        public int Number;
+        public long Wide;
+        public object? Reference;
+    }
+
+    private struct GenericMetadataBox<T>
+    {
+        public T Value;
+        public int Tag;
     }
 }

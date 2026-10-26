@@ -9,6 +9,48 @@ public struct GCSafePointSuccessorEnumerator
 {
     private const int InlineSuccessorCount = 2;
 
+    private struct InlineSuccessorVisitor : IBasicBlockVisitor<InlineSuccessorVisitor>
+    {
+        private InlineArray2<BasicBlock> _successors;
+        private int _count;
+
+        public readonly int Count => _count;
+
+        public readonly InlineArray2<BasicBlock> Successors => _successors;
+
+        public BasicBlockVisit Visit(BasicBlock successor)
+        {
+            if (_count < InlineSuccessorCount)
+            {
+                _successors[_count] = successor;
+            }
+
+            _count++;
+            return BasicBlockVisit.Continue;
+        }
+    }
+
+    private struct SuccessorArrayVisitor : IBasicBlockVisitor<SuccessorArrayVisitor>
+    {
+        private readonly BasicBlock[] _successors;
+        private int _count;
+
+        public SuccessorArrayVisitor(BasicBlock[] successors)
+        {
+            _successors = successors;
+            _count = 0;
+        }
+
+        public readonly int Count => _count;
+
+        public BasicBlockVisit Visit(BasicBlock successor)
+        {
+            assert(_count < _successors.Length);
+            _successors[_count++] = successor;
+            return BasicBlockVisit.Continue;
+        }
+    }
+
     private BasicBlock _block;
 
     private InlineArray2<BasicBlock> _inlineSuccessors;
@@ -23,18 +65,10 @@ public struct GCSafePointSuccessorEnumerator
     {
         _block = block;
 
-        var numSuccs = 0;
-        InlineArray2<BasicBlock> inlineSuccessors = default;
-
-        _ = block.VisitRegularSuccs(comp, (succ) => {
-            if (numSuccs < InlineSuccessorCount)
-            {
-                inlineSuccessors[numSuccs] = succ;
-            }
-
-            numSuccs++;
-            return BasicBlockVisit.Continue;
-        });
+        var inlineSuccessorVisitor = new InlineSuccessorVisitor();
+        _ = block.VisitRegularSuccs(comp, ref inlineSuccessorVisitor);
+        var numSuccs = inlineSuccessorVisitor.Count;
+        var inlineSuccessors = inlineSuccessorVisitor.Successors;
 
         if (numSuccs is 0)
         {
@@ -57,16 +91,10 @@ public struct GCSafePointSuccessorEnumerator
 
         if (numSuccs > InlineSuccessorCount)
         {
-            var foundSuccs = 0;
             var successors = new BasicBlock[numSuccs];
-
-            _ = block.VisitRegularSuccs(comp, (succ) => {
-                assert(foundSuccs < numSuccs);
-                successors[foundSuccs++] = succ;
-                return BasicBlockVisit.Continue;
-            });
-
-            assert(foundSuccs == numSuccs);
+            var successorArrayVisitor = new SuccessorArrayVisitor(successors);
+            _ = block.VisitRegularSuccs(comp, ref successorArrayVisitor);
+            assert(successorArrayVisitor.Count == numSuccs);
             _successors = successors;
         }
         else

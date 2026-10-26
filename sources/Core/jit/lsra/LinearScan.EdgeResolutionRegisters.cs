@@ -10,6 +10,53 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
+    private struct AvailableRegistersVisitor : IBitSetVisitor<AvailableRegistersVisitor>
+    {
+        private readonly LinearScan _linearScan;
+        private readonly regNumberSmall[] _fromMap;
+        private readonly regNumberSmall[]? _toMap;
+        private regMask _freeRegisters;
+
+        public AvailableRegistersVisitor(
+            LinearScan linearScan,
+            regNumberSmall[] fromMap,
+            regNumberSmall[]? toMap,
+            regMask freeRegisters)
+        {
+            _linearScan = linearScan;
+            _fromMap = fromMap;
+            _toMap = toMap;
+            _freeRegisters = freeRegisters;
+        }
+
+        public readonly regMask FreeRegisters => _freeRegisters;
+
+        public bool Visit(int bitIndex)
+        {
+            var trackedIndex = checked((uint)bitIndex);
+            var fromRegister = _linearScan.getVarReg(_fromMap, trackedIndex);
+            assert(fromRegister != REG_NA);
+
+            if (fromRegister != REG_STK)
+            {
+                _freeRegisters &= ~_linearScan.resolutionRegisterMask(fromRegister, trackedIndex);
+            }
+
+            if (_toMap is not null)
+            {
+                var toRegister = _linearScan.getVarReg(_toMap, trackedIndex);
+                assert(toRegister != REG_NA);
+
+                if (toRegister != REG_STK)
+                {
+                    _freeRegisters &= ~_linearScan.resolutionRegisterMask(toRegister, trackedIndex);
+                }
+            }
+
+            return _freeRegisters != SRBM_NONE;
+        }
+    }
+
     private regNumber getTempRegForResolution(BasicBlock fromBlock, BasicBlock? toBlock,
         var_types type, VARSET_TP sharedCriticalLiveSet, regMaskTP terminatorConsumedRegs)
     {
@@ -51,24 +98,10 @@ public sealed partial class LinearScan
         freeRegs &= ~terminatorConsumedRegs.GetRegSetForType(type);
 
         var liveVariables = toBlock is null ? fromBlock.bbLiveOut : toBlock.bbLiveIn;
-        _ = VarSetOps.VisitBits(_compiler, liveVariables, index => {
-            var fromReg = getVarReg(fromMap, checked((uint)index));
-            assert(fromReg != REG_NA);
-            if (fromReg != REG_STK)
-            {
-                freeRegs &= ~resolutionRegisterMask(fromReg, checked((uint)index));
-            }
-            if (toMap is not null)
-            {
-                var toReg = getVarReg(toMap, checked((uint)index));
-                assert(toReg != REG_NA);
-                if (toReg != REG_STK)
-                {
-                    freeRegs &= ~resolutionRegisterMask(toReg, checked((uint)index));
-                }
-            }
-            return freeRegs != SRBM_NONE;
-        });
+        var liveVariableVisitor = new AvailableRegistersVisitor(this, fromMap, toMap, freeRegs);
+        _ = VarSetOps.VisitBits(_compiler, liveVariables, ref liveVariableVisitor);
+        freeRegs = liveVariableVisitor.FreeRegisters;
+
         if (toBlock is null)
         {
             var sharedMap = _sharedCriticalVarToRegMap;
@@ -80,15 +113,9 @@ public sealed partial class LinearScan
     );
                 return default!;
             }
-            _ = VarSetOps.VisitBits(_compiler, sharedCriticalLiveSet, index => {
-                var register = getVarReg(sharedMap, checked((uint)index));
-                assert(register != REG_NA);
-                if (register != REG_STK)
-                {
-                    freeRegs &= ~resolutionRegisterMask(register, checked((uint)index));
-                }
-                return freeRegs != SRBM_NONE;
-            });
+            var sharedRegisterVisitor = new AvailableRegistersVisitor(this, sharedMap, null, freeRegs);
+            _ = VarSetOps.VisitBits(_compiler, sharedCriticalLiveSet, ref sharedRegisterVisitor);
+            freeRegs = sharedRegisterVisitor.FreeRegisters;
         }
 
         if (Configuration.TARGET_ARM && type is TYP_DOUBLE)

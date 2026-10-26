@@ -320,6 +320,10 @@ implicit-byref ABI and exercises parameter descriptor retyping before global
 morph.
 `LoopSum` exercises a counted loop, while `IndexedArray` exercises dynamic
 array allocation, length-based iteration, and variable-indexed loads and stores.
+`RepeatedFields`, `GenericMetadataReuse`, and `RepeatedCalls` add repeated
+instance/array/closed-generic field accesses and calls to the same no-inline
+callee within one method. `Main` checks their results; this is a focused
+metadata-reuse cohort, not a broad application workload.
 It is a standalone fixture, not a compiler coverage claim.
 
 Use `scripts\porting\Invoke-PortingCorpus.ps1` with `-CoreRoot`, `-Corpus`,

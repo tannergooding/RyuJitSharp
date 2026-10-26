@@ -7,9 +7,19 @@ namespace RyuJitSharp;
 
 public sealed partial class SsaBuilder
 {
-    private void AddPhiArgsToSuccessors(BasicBlock block)
+    private readonly struct PhiArgumentsSuccessorVisitor : IBasicBlockVisitor<PhiArgumentsSuccessorVisitor>
     {
-        _ = block.VisitAllSuccs(_compiler, succ => {
+        private readonly SsaBuilder _ssaBuilder;
+        private readonly BasicBlock _predecessor;
+
+        public PhiArgumentsSuccessorVisitor(SsaBuilder ssaBuilder, BasicBlock predecessor)
+        {
+            _ssaBuilder = ssaBuilder;
+            _predecessor = predecessor;
+        }
+
+        public readonly BasicBlockVisit Visit(BasicBlock succ)
+        {
             foreach (var statement in succ.Statements)
             {
                 if (!statement.IsPhiDefnStmt)
@@ -20,8 +30,8 @@ public sealed partial class SsaBuilder
                 var store = statement.RootNode.AsLclVar();
                 var phi = store.Data.AsPhi();
                 var lclNum = store.LclNum;
-                var ssaNum = _renameStack.Top(lclNum);
-                AddPhiArg(succ, statement, phi, lclNum, ssaNum, block);
+                var ssaNum = _ssaBuilder._renameStack.Top(lclNum);
+                _ssaBuilder.AddPhiArg(succ, statement, phi, lclNum, ssaNum, _predecessor);
             }
 
             foreach (var kind in new AllMemoryKinds())
@@ -32,10 +42,11 @@ public sealed partial class SsaBuilder
                     continue;
                 }
 
-                if ((kind is GcHeap) && _compiler.byrefStatesMatchGcHeapStates)
+                if ((kind is GcHeap) && _ssaBuilder._compiler.byrefStatesMatchGcHeapStates)
                 {
                     assert(kind > ByrefExposed);
-                    assert(block.bbMemorySsaNumOut[(int)kind] == block.bbMemorySsaNumOut[(int)ByrefExposed]);
+                    assert(_predecessor.bbMemorySsaNumOut[(int)kind] ==
+                        _predecessor.bbMemorySsaNumOut[(int)ByrefExposed]);
                     var byrefPhi = succ.bbMemorySsaPhiFunc[(int)ByrefExposed];
                     assert((byrefPhi == succMemoryPhi) ||
                            (byrefPhi?._nextArg == (succMemoryPhi == BasicBlock.EmptyMemoryPhiDef ? null : succMemoryPhi)));
@@ -43,7 +54,7 @@ public sealed partial class SsaBuilder
                     continue;
                 }
 
-                var ssaNum = block.bbMemorySsaNumOut[(int)kind];
+                var ssaNum = _predecessor.bbMemorySsaNumOut[(int)kind];
                 if (succMemoryPhi == BasicBlock.EmptyMemoryPhiDef)
                 {
                     succMemoryPhi = new BasicBlock.MemoryPhiArg(ssaNum);
@@ -66,24 +77,24 @@ public sealed partial class SsaBuilder
                     }
                 }
 
-                if (Configuration.DEBUG && _compiler.verboseSsa)
+                if (Configuration.DEBUG && _ssaBuilder._compiler.verboseSsa)
                 {
-                    logf($"  Added phi arg for {kind} u:{ssaNum} from {FMT_BB(block.bbNum)} in {FMT_BB(succ.bbNum)}.\n");
+                    logf($"  Added phi arg for {kind} u:{ssaNum} from {FMT_BB(_predecessor.bbNum)} in {FMT_BB(succ.bbNum)}.\n");
                 }
             }
 
-            if (_compiler.bbIsTryBeg(succ))
+            if (_ssaBuilder._compiler.bbIsTryBeg(succ))
             {
                 // Entering a try brings the predecessor's live-out names into its handlers.
                 assert(succ.hasTryIndex);
                 var tryIndex = succ.TryIndex;
                 while (tryIndex != EHblkDsc.NO_ENCLOSING_INDEX)
                 {
-                    if (block.hasTryIndex)
+                    if (_predecessor.hasTryIndex)
                     {
-                        for (var blockTryIndex = block.TryIndex;
+                        for (var blockTryIndex = _predecessor.TryIndex;
                              blockTryIndex != EHblkDsc.NO_ENCLOSING_INDEX;
-                             blockTryIndex = _compiler.ehGetEnclosingTryIndex(blockTryIndex))
+                             blockTryIndex = _ssaBuilder._compiler.ehGetEnclosingTryIndex(blockTryIndex))
                         {
                             if (blockTryIndex == tryIndex)
                             {
@@ -98,7 +109,7 @@ public sealed partial class SsaBuilder
                         }
                     }
 
-                    ref var succTry = ref _compiler.ehGetDsc(tryIndex);
+                    ref var succTry = ref _ssaBuilder._compiler.ehGetDsc(tryIndex);
                     if (succTry.ebdTryBeg != succ)
                     {
                         break;
@@ -106,16 +117,22 @@ public sealed partial class SsaBuilder
 
                     if (succTry.HasFilter)
                     {
-                        AddPhiArgsToNewlyEnteredHandler(block, succ, succTry.ebdFilter);
+                        _ssaBuilder.AddPhiArgsToNewlyEnteredHandler(_predecessor, succ, succTry.ebdFilter);
                     }
-                    AddPhiArgsToNewlyEnteredHandler(block, succ, succTry.ebdHndBeg);
+                    _ssaBuilder.AddPhiArgsToNewlyEnteredHandler(_predecessor, succ, succTry.ebdHndBeg);
 
                     tryIndex = succTry.ebdEnclosingTryIndex;
                 }
             }
 
             return BasicBlockVisit.Continue;
-        });
+        }
+    }
+
+    private void AddPhiArgsToSuccessors(BasicBlock block)
+    {
+        var visitor = new PhiArgumentsSuccessorVisitor(this, block);
+        _ = block.VisitAllSuccs(_compiler, ref visitor);
     }
 
     private void AddPhiArgsToNewlyEnteredHandler(BasicBlock predEnterBlock, BasicBlock enterBlock,

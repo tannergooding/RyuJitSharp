@@ -8,6 +8,23 @@ namespace RyuJitSharp;
 public partial class Liveness<TLiveness>
     where TLiveness : ILivenessPolicy
 {
+    private readonly struct LiveOutSuccessorVisitor : IBasicBlockVisitor<LiveOutSuccessorVisitor>
+    {
+        private readonly Liveness<TLiveness> _liveness;
+
+        public LiveOutSuccessorVisitor(Liveness<TLiveness> liveness)
+        {
+            _liveness = liveness;
+        }
+
+        public readonly BasicBlockVisit Visit(BasicBlock successor)
+        {
+            VarSetOps.UnionD(_liveness._compiler, _liveness._liveOut, successor.bbLiveIn);
+            _liveness._memoryLiveOut |= successor.bbMemoryLiveIn;
+            return BasicBlockVisit.Continue;
+        }
+    }
+
     private nint[] _liveIn = [];
     private nint[] _liveOut = [];
     private nint[] _ehHandlerLiveVars = [];
@@ -96,11 +113,8 @@ public partial class Liveness<TLiveness>
             VarSetOps.UnionD(_compiler, _liveOut, _compiler.fgEntryBB.bbLiveIn);
         }
 
-        _ = block.VisitRegularSuccs(_compiler, successor => {
-            VarSetOps.UnionD(_compiler, _liveOut, successor.bbLiveIn);
-            _memoryLiveOut |= successor.bbMemoryLiveIn;
-            return BasicBlockVisit.Continue;
-        });
+        var liveOutVisitor = new LiveOutSuccessorVisitor(this);
+        _ = block.VisitRegularSuccs(_compiler, ref liveOutVisitor);
 
         if (keepAliveThis)
         {
