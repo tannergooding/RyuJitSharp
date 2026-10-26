@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -14,6 +15,8 @@ namespace RyuJitSharp;
 /// <summary>Manage a list of methods that is read from a file.</summary>
 public sealed class MethodSet2
 {
+    private const int HashIndexThreshold = 100;
+
     // Methods are approximately in the format output by JitFunctionTrace, e.g.:
     //
     //     System.CLRConfig:GetBoolValue(ref,byref):bool (MethodHash=3c54d35e)
@@ -28,6 +31,8 @@ public sealed class MethodSet2
 
     /// <summary>List of function info</summary>
     private MethodInfo? _infos;
+    private readonly HashSet<string>? _methodNames;
+    private readonly HashSet<int>? _methodHashes;
 
     // Take a Unicode string with the filename containing a list of function names, parse it, and store it.
     public unsafe MethodSet2(byte* pFilenameUtf8)
@@ -125,9 +130,21 @@ public sealed class MethodSet2
                 ++methodCount;
             }
 
-            if (methodCount > 100)
+            if (methodCount > HashIndexThreshold)
             {
                 JITDUMP($"Warning: high method count ({methodCount}) for MethodSet with linear search lookups might be slow\n");
+
+                var methodNames = new HashSet<string>(methodCount, StringComparer.OrdinalIgnoreCase);
+                var methodHashes = new HashSet<int>(methodCount);
+
+                for (var info = _infos; info is not null; info = info.Next)
+                {
+                    _ = methodNames.Add(info.Name);
+                    _ = methodHashes.Add(info.Hash);
+                }
+
+                _methodNames = methodNames;
+                _methodHashes = methodHashes;
             }
         }
     }
@@ -141,6 +158,11 @@ public sealed class MethodSet2
     // TODO: make this more like JitConfigValues.MethodSet.contains()?
     public unsafe bool IsInSet(string methodName)
     {
+        if (_methodNames is not null)
+        {
+            return _methodNames.Contains(methodName);
+        }
+
         for (var info = _infos; info is not null; info = info.Next)
         {
             if (info.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase))
@@ -156,6 +178,11 @@ public sealed class MethodSet2
     /// <returns></returns>
     public bool IsInSet(int methodHash)
     {
+        if (_methodHashes is not null)
+        {
+            return _methodHashes.Contains(methodHash);
+        }
+
         for (var info = _infos; info is not null; info = info.Next)
         {
             if (info.Hash == methodHash)
