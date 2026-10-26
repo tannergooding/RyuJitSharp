@@ -296,6 +296,7 @@ public static partial class API_ICorJitInfo_NamesExtensions
             var parameters = signature.AsSpan(openParen + 1, signature.Length - openParen - 2);
             var arguments = new List<string>();
             var parameterDeclarations = new List<string>();
+            var parameterTypes = new List<string>();
 
             foreach (var parameter in parameters.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
             {
@@ -305,6 +306,7 @@ public static partial class API_ICorJitInfo_NamesExtensions
                 var parameterName = declaration[(nameIndex + 1)..];
                 arguments.Add(parameterName);
                 parameterDeclarations.Add($"{parameterType} {parameterName}");
+                parameterTypes.Add(parameterType);
             }
 
             var returnType = signature[..(openParen - name.Length - 1)];
@@ -312,11 +314,28 @@ public static partial class API_ICorJitInfo_NamesExtensions
             var call = $"wrapHnd->{name}({string.Join(", ", arguments)})";
             var thunkParameterDeclarations = parameterDeclarations.ToArray();
             var thunkArguments = arguments.ToArray();
+            var thunkParameterTypes = parameterTypes.ToArray();
+            var hasBooleanParameter = false;
+
+            // UnmanagedCallersOnly requires blittable parameters; native bool is one byte.
+            for (var i = 0; i < parameterTypes.Count; i++)
+            {
+                if (parameterTypes[i] is not "bool")
+                {
+                    continue;
+                }
+
+                thunkParameterDeclarations[i] = $"byte {arguments[i]}";
+                thunkArguments[i] = $"{arguments[i]} != 0";
+                thunkParameterTypes[i] = "byte";
+                hasBooleanParameter = true;
+            }
 
             if (name.Equals("notifyInstructionSetUsage", StringComparison.Ordinal))
             {
                 thunkParameterDeclarations[0] = "CORINFO_InstructionSet nativeInstructionSet";
                 thunkArguments[0] = "instructionSet";
+                thunkParameterTypes[0] = "CORINFO_InstructionSet";
             }
 
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public {signature}");
@@ -383,8 +402,28 @@ public static partial class API_ICorJitInfo_NamesExtensions
             _ = thunks.AppendLine("    }");
             _ = thunks.AppendLine();
 
-            _ = vtableAssignments.AppendLine(CultureInfo.InvariantCulture,
-                $"        {vtablePath} = &Thunk_{name};");
+            if (hasBooleanParameter)
+            {
+                var thunkPointerName = $"thunk_{name}";
+
+                _ = vtableAssignments.AppendLine("        delegate* unmanaged[MemberFunction]<");
+                _ = vtableAssignments.AppendLine("            ICorJitInfo*,");
+
+                foreach (var parameterType in thunkParameterTypes)
+                {
+                    _ = vtableAssignments.AppendLine(CultureInfo.InvariantCulture, $"            {parameterType},");
+                }
+
+                _ = vtableAssignments.AppendLine(CultureInfo.InvariantCulture,
+                    $"            {unmanagedReturnType}> {thunkPointerName} = &Thunk_{name};");
+                _ = vtableAssignments.AppendLine(CultureInfo.InvariantCulture,
+                    $"        *(nint*)(void*)(&{vtablePath}) = (nint){thunkPointerName};");
+            }
+            else
+            {
+                _ = vtableAssignments.AppendLine(CultureInfo.InvariantCulture,
+                    $"        {vtablePath} = &Thunk_{name};");
+            }
             apiCount++;
         });
 
@@ -439,6 +478,7 @@ public sealed unsafe partial class WrapICorJitInfo
             return default;
         }
 
+        // Byte thunk parameters preserve the native one-byte bool ABI for unmanaged entry points.
 {{vtableAssignments}}        return vtable;
     }
 

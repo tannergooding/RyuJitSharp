@@ -125,6 +125,9 @@ execution validation unchanged. Fast-mode success is not a full-analysis checkpo
 CLR API timing is compiled universally and remains off by default. Enable it
 with `JitEECallTimingInfo` in a Release build on an x86/x64 host; Debug builds
 and unsupported hosts reject an enabled request.
+For per-API counts and timings in a NativeAOT JIT, also publish with
+`-p:RyuJitMeasureClrApiCalls=true`. The detailed table suppresses APIs whose
+aggregate time is below 0.5 ms, except `getExpectedTargetArchitecture`.
 
 Full analysis uses the repository's analyzer configuration. The root
 `.editorconfig` temporarily disables CA1508, CA2329, CA2330, CA3001, CA5390 and

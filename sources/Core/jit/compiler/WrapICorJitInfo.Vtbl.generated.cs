@@ -26,6 +26,7 @@ public sealed unsafe partial class WrapICorJitInfo
             return default;
         }
 
+        // Byte thunk parameters preserve the native one-byte bool ABI for unmanaged entry points.
         vtable->Base.Base.isIntrinsic = &Thunk_isIntrinsic;
         vtable->Base.Base.canValueClassInstancePointerEscape = &Thunk_canValueClassInstancePointerEscape;
         vtable->Base.Base.notifyMethodInfoUsage = &Thunk_notifyMethodInfoUsage;
@@ -38,8 +39,23 @@ public sealed unsafe partial class WrapICorJitInfo
         vtable->Base.Base.canInline = &Thunk_canInline;
         vtable->Base.Base.beginInlining = &Thunk_beginInlining;
         vtable->Base.Base.reportInliningDecision = &Thunk_reportInliningDecision;
-        vtable->Base.Base.canTailCall = &Thunk_canTailCall;
-        vtable->Base.Base.reportTailCallDecision = &Thunk_reportTailCallDecision;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_METHOD_HANDLE,
+            CORINFO_METHOD_HANDLE,
+            CORINFO_METHOD_HANDLE,
+            byte,
+            byte> thunk_canTailCall = &Thunk_canTailCall;
+        *(nint*)(void*)(&vtable->Base.Base.canTailCall) = (nint)thunk_canTailCall;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_METHOD_HANDLE,
+            CORINFO_METHOD_HANDLE,
+            byte,
+            CorInfoTailCall,
+            byte*,
+            void> thunk_reportTailCallDecision = &Thunk_reportTailCallDecision;
+        *(nint*)(void*)(&vtable->Base.Base.reportTailCallDecision) = (nint)thunk_reportTailCallDecision;
         vtable->Base.Base.getEHinfo = &Thunk_getEHinfo;
         vtable->Base.Base.getMethodClass = &Thunk_getMethodClass;
         vtable->Base.Base.getMethodVTableOffset = &Thunk_getMethodVTableOffset;
@@ -76,19 +92,41 @@ public sealed unsafe partial class WrapICorJitInfo
         vtable->Base.Base.getIsClassInitedFlagAddress = &Thunk_getIsClassInitedFlagAddress;
         vtable->Base.Base.getClassThreadStaticDynamicInfo = &Thunk_getClassThreadStaticDynamicInfo;
         vtable->Base.Base.getClassStaticDynamicInfo = &Thunk_getClassStaticDynamicInfo;
-        vtable->Base.Base.getStaticBaseAddress = &Thunk_getStaticBaseAddress;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_CLASS_HANDLE,
+            byte,
+            CORINFO_CONST_LOOKUP*,
+            byte> thunk_getStaticBaseAddress = &Thunk_getStaticBaseAddress;
+        *(nint*)(void*)(&vtable->Base.Base.getStaticBaseAddress) = (nint)thunk_getStaticBaseAddress;
         vtable->Base.Base.getClassSize = &Thunk_getClassSize;
         vtable->Base.Base.getHeapClassSize = &Thunk_getHeapClassSize;
         vtable->Base.Base.canAllocateOnStack = &Thunk_canAllocateOnStack;
-        vtable->Base.Base.getClassAlignmentRequirement = &Thunk_getClassAlignmentRequirement;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_CLASS_HANDLE,
+            byte,
+            int> thunk_getClassAlignmentRequirement = &Thunk_getClassAlignmentRequirement;
+        *(nint*)(void*)(&vtable->Base.Base.getClassAlignmentRequirement) = (nint)thunk_getClassAlignmentRequirement;
         vtable->Base.Base.getClassGClayout = &Thunk_getClassGClayout;
         vtable->Base.Base.getClassNumInstanceFields = &Thunk_getClassNumInstanceFields;
         vtable->Base.Base.getFieldInClass = &Thunk_getFieldInClass;
         vtable->Base.Base.getTypeLayout = &Thunk_getTypeLayout;
-        vtable->Base.Base.checkMethodModifier = &Thunk_checkMethodModifier;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_METHOD_HANDLE,
+            byte*,
+            byte,
+            byte> thunk_checkMethodModifier = &Thunk_checkMethodModifier;
+        *(nint*)(void*)(&vtable->Base.Base.checkMethodModifier) = (nint)thunk_checkMethodModifier;
         vtable->Base.Base.getNewHelper = &Thunk_getNewHelper;
         vtable->Base.Base.getNewArrHelper = &Thunk_getNewArrHelper;
-        vtable->Base.Base.getCastingHelper = &Thunk_getCastingHelper;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_RESOLVED_TOKEN*,
+            byte,
+            CorInfoHelpFunc> thunk_getCastingHelper = &Thunk_getCastingHelper;
+        *(nint*)(void*)(&vtable->Base.Base.getCastingHelper) = (nint)thunk_getCastingHelper;
         vtable->Base.Base.getSharedCCtorHelper = &Thunk_getSharedCCtorHelper;
         vtable->Base.Base.getTypeForBox = &Thunk_getTypeForBox;
         vtable->Base.Base.getBoxHelper = &Thunk_getBoxHelper;
@@ -124,7 +162,12 @@ public sealed unsafe partial class WrapICorJitInfo
         vtable->Base.Base.getFieldType = &Thunk_getFieldType;
         vtable->Base.Base.getFieldOffset = &Thunk_getFieldOffset;
         vtable->Base.Base.getFieldInfo = &Thunk_getFieldInfo;
-        vtable->Base.Base.getThreadLocalFieldInfo = &Thunk_getThreadLocalFieldInfo;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_FIELD_HANDLE,
+            byte,
+            int> thunk_getThreadLocalFieldInfo = &Thunk_getThreadLocalFieldInfo;
+        *(nint*)(void*)(&vtable->Base.Base.getThreadLocalFieldInfo) = (nint)thunk_getThreadLocalFieldInfo;
         vtable->Base.Base.getThreadLocalStaticBlocksInfo = &Thunk_getThreadLocalStaticBlocksInfo;
         vtable->Base.Base.getThreadLocalStaticInfo_NativeAOT = &Thunk_getThreadLocalStaticInfo_NativeAOT;
         vtable->Base.Base.isFieldStatic = &Thunk_isFieldStatic;
@@ -148,7 +191,15 @@ public sealed unsafe partial class WrapICorJitInfo
         vtable->Base.Base.getEEInfo = &Thunk_getEEInfo;
         vtable->Base.Base.getAsyncInfo = &Thunk_getAsyncInfo;
         vtable->Base.Base.getAwaitReturnCall = &Thunk_getAwaitReturnCall;
-        vtable->Base.Base.getAwaitAwaiterInContinuationCall = &Thunk_getAwaitAwaiterInContinuationCall;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_METHOD_HANDLE,
+            CORINFO_RESOLVED_TOKEN*,
+            byte,
+            CORINFO_CONTEXT_HANDLE*,
+            CORINFO_LOOKUP*,
+            CORINFO_METHOD_HANDLE> thunk_getAwaitAwaiterInContinuationCall = &Thunk_getAwaitAwaiterInContinuationCall;
+        *(nint*)(void*)(&vtable->Base.Base.getAwaitAwaiterInContinuationCall) = (nint)thunk_getAwaitAwaiterInContinuationCall;
         vtable->Base.Base.getMethodDefFromMethod = &Thunk_getMethodDefFromMethod;
         vtable->Base.Base.printMethodName = &Thunk_printMethodName;
         vtable->Base.Base.getMethodNameFromMetadata = &Thunk_getMethodNameFromMetadata;
@@ -163,19 +214,40 @@ public sealed unsafe partial class WrapICorJitInfo
         vtable->Base.getAddrOfCaptureThreadGlobal = &Thunk_getAddrOfCaptureThreadGlobal;
         vtable->Base.getHelperFtn = &Thunk_getHelperFtn;
         vtable->Base.getFunctionEntryPoint = &Thunk_getFunctionEntryPoint;
-        vtable->Base.getFunctionFixedEntryPoint = &Thunk_getFunctionFixedEntryPoint;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_METHOD_HANDLE,
+            byte,
+            CORINFO_CONST_LOOKUP*,
+            void> thunk_getFunctionFixedEntryPoint = &Thunk_getFunctionFixedEntryPoint;
+        *(nint*)(void*)(&vtable->Base.getFunctionFixedEntryPoint) = (nint)thunk_getFunctionFixedEntryPoint;
         vtable->Base.embedModuleHandle = &Thunk_embedModuleHandle;
         vtable->Base.embedClassHandle = &Thunk_embedClassHandle;
         vtable->Base.embedMethodHandle = &Thunk_embedMethodHandle;
         vtable->Base.embedFieldHandle = &Thunk_embedFieldHandle;
-        vtable->Base.embedGenericHandle = &Thunk_embedGenericHandle;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_RESOLVED_TOKEN*,
+            byte,
+            CORINFO_METHOD_HANDLE,
+            CORINFO_GENERICHANDLE_RESULT*,
+            void> thunk_embedGenericHandle = &Thunk_embedGenericHandle;
+        *(nint*)(void*)(&vtable->Base.embedGenericHandle) = (nint)thunk_embedGenericHandle;
         vtable->Base.getLocationOfThisType = &Thunk_getLocationOfThisType;
         vtable->Base.getAddressOfPInvokeTarget = &Thunk_getAddressOfPInvokeTarget;
         vtable->Base.GetCookieForInterpreterCalliSig = &Thunk_GetCookieForInterpreterCalliSig;
         vtable->Base.getJustMyCodeHandle = &Thunk_getJustMyCodeHandle;
         vtable->Base.GetProfilingHandle = &Thunk_GetProfilingHandle;
         vtable->Base.getCallInfo = &Thunk_getCallInfo;
-        vtable->Base.getStaticFieldContent = &Thunk_getStaticFieldContent;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_FIELD_HANDLE,
+            byte*,
+            int,
+            int,
+            byte,
+            byte> thunk_getStaticFieldContent = &Thunk_getStaticFieldContent;
+        *(nint*)(void*)(&vtable->Base.getStaticFieldContent) = (nint)thunk_getStaticFieldContent;
         vtable->Base.getObjectContent = &Thunk_getObjectContent;
         vtable->Base.getStaticFieldCurrentClass = &Thunk_getStaticFieldCurrentClass;
         vtable->Base.getVarArgsHandle = &Thunk_getVarArgsHandle;
@@ -187,11 +259,28 @@ public sealed unsafe partial class WrapICorJitInfo
         vtable->Base.getTailCallHelpers = &Thunk_getTailCallHelpers;
         vtable->Base.getContinuationType = &Thunk_getContinuationType;
         vtable->Base.getAsyncResumptionStub = &Thunk_getAsyncResumptionStub;
-        vtable->Base.convertPInvokeCalliToCall = &Thunk_convertPInvokeCalliToCall;
-        vtable->Base.notifyInstructionSetUsage = &Thunk_notifyInstructionSetUsage;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_RESOLVED_TOKEN*,
+            byte,
+            byte> thunk_convertPInvokeCalliToCall = &Thunk_convertPInvokeCalliToCall;
+        *(nint*)(void*)(&vtable->Base.convertPInvokeCalliToCall) = (nint)thunk_convertPInvokeCalliToCall;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            CORINFO_InstructionSet,
+            byte,
+            byte,
+            byte> thunk_notifyInstructionSetUsage = &Thunk_notifyInstructionSetUsage;
+        *(nint*)(void*)(&vtable->Base.notifyInstructionSetUsage) = (nint)thunk_notifyInstructionSetUsage;
         vtable->Base.updateEntryPointForTailCall = &Thunk_updateEntryPointForTailCall;
         vtable->allocMem = &Thunk_allocMem;
-        vtable->reserveUnwindInfo = &Thunk_reserveUnwindInfo;
+        delegate* unmanaged[MemberFunction]<
+            ICorJitInfo*,
+            byte,
+            byte,
+            int,
+            void> thunk_reserveUnwindInfo = &Thunk_reserveUnwindInfo;
+        *(nint*)(void*)(&vtable->reserveUnwindInfo) = (nint)thunk_reserveUnwindInfo;
         vtable->allocUnwindInfo = &Thunk_allocUnwindInfo;
         vtable->allocGCInfo = &Thunk_allocGCInfo;
         vtable->setEHcount = &Thunk_setEHcount;
@@ -403,11 +492,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte Thunk_canTailCall(ICorJitInfo* self, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE declaredCalleeHnd, CORINFO_METHOD_HANDLE exactCalleeHnd, bool fIsTailPrefix)
+    private static byte Thunk_canTailCall(ICorJitInfo* self, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE declaredCalleeHnd, CORINFO_METHOD_HANDLE exactCalleeHnd, byte fIsTailPrefix)
     {
         try
         {
-            return GetWrapper(self).canTailCall(callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix) ? (byte)1 : (byte)0;
+            return GetWrapper(self).canTailCall(callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix != 0) ? (byte)1 : (byte)0;
         }
         catch (Exception exception)
         {
@@ -417,11 +506,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void Thunk_reportTailCallDecision(ICorJitInfo* self, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
+    private static void Thunk_reportTailCallDecision(ICorJitInfo* self, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, byte fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
     {
         try
         {
-            GetWrapper(self).reportTailCallDecision(callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason);
+            GetWrapper(self).reportTailCallDecision(callerHnd, calleeHnd, fIsTailPrefix != 0, tailCallResult, reason);
         }
         catch (Exception exception)
         {
@@ -935,11 +1024,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte Thunk_getStaticBaseAddress(ICorJitInfo* self, CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr)
+    private static byte Thunk_getStaticBaseAddress(ICorJitInfo* self, CORINFO_CLASS_HANDLE cls, byte isGc, CORINFO_CONST_LOOKUP* addr)
     {
         try
         {
-            return GetWrapper(self).getStaticBaseAddress(cls, isGc, addr) ? (byte)1 : (byte)0;
+            return GetWrapper(self).getStaticBaseAddress(cls, isGc != 0, addr) ? (byte)1 : (byte)0;
         }
         catch (Exception exception)
         {
@@ -991,11 +1080,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static int Thunk_getClassAlignmentRequirement(ICorJitInfo* self, CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint)
+    private static int Thunk_getClassAlignmentRequirement(ICorJitInfo* self, CORINFO_CLASS_HANDLE cls, byte fDoubleAlignHint)
     {
         try
         {
-            return GetWrapper(self).getClassAlignmentRequirement(cls, fDoubleAlignHint);
+            return GetWrapper(self).getClassAlignmentRequirement(cls, fDoubleAlignHint != 0);
         }
         catch (Exception exception)
         {
@@ -1061,11 +1150,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte Thunk_checkMethodModifier(ICorJitInfo* self, CORINFO_METHOD_HANDLE hMethod, byte* modifier, bool fOptional)
+    private static byte Thunk_checkMethodModifier(ICorJitInfo* self, CORINFO_METHOD_HANDLE hMethod, byte* modifier, byte fOptional)
     {
         try
         {
-            return GetWrapper(self).checkMethodModifier(hMethod, modifier, fOptional) ? (byte)1 : (byte)0;
+            return GetWrapper(self).checkMethodModifier(hMethod, modifier, fOptional != 0) ? (byte)1 : (byte)0;
         }
         catch (Exception exception)
         {
@@ -1103,11 +1192,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static CorInfoHelpFunc Thunk_getCastingHelper(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing)
+    private static CorInfoHelpFunc Thunk_getCastingHelper(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* pResolvedToken, byte fThrowing)
     {
         try
         {
-            return GetWrapper(self).getCastingHelper(pResolvedToken, fThrowing);
+            return GetWrapper(self).getCastingHelper(pResolvedToken, fThrowing != 0);
         }
         catch (Exception exception)
         {
@@ -1607,11 +1696,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static int Thunk_getThreadLocalFieldInfo(ICorJitInfo* self, CORINFO_FIELD_HANDLE field, bool isGCType)
+    private static int Thunk_getThreadLocalFieldInfo(ICorJitInfo* self, CORINFO_FIELD_HANDLE field, byte isGCType)
     {
         try
         {
-            return GetWrapper(self).getThreadLocalFieldInfo(field, isGCType);
+            return GetWrapper(self).getThreadLocalFieldInfo(field, isGCType != 0);
         }
         catch (Exception exception)
         {
@@ -1943,11 +2032,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static CORINFO_METHOD_HANDLE Thunk_getAwaitAwaiterInContinuationCall(ICorJitInfo* self, CORINFO_METHOD_HANDLE callerHandle, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isUnsafe, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
+    private static CORINFO_METHOD_HANDLE Thunk_getAwaitAwaiterInContinuationCall(ICorJitInfo* self, CORINFO_METHOD_HANDLE callerHandle, CORINFO_RESOLVED_TOKEN* pResolvedToken, byte isUnsafe, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
     {
         try
         {
-            return GetWrapper(self).getAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+            return GetWrapper(self).getAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe != 0, contextHandle, instArg);
         }
         catch (Exception exception)
         {
@@ -2153,11 +2242,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void Thunk_getFunctionFixedEntryPoint(ICorJitInfo* self, CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult)
+    private static void Thunk_getFunctionFixedEntryPoint(ICorJitInfo* self, CORINFO_METHOD_HANDLE ftn, byte isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult)
     {
         try
         {
-            GetWrapper(self).getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
+            GetWrapper(self).getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer != 0, pResult);
         }
         catch (Exception exception)
         {
@@ -2223,11 +2312,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void Thunk_embedGenericHandle(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fEmbedParent, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
+    private static void Thunk_embedGenericHandle(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* pResolvedToken, byte fEmbedParent, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
     {
         try
         {
-            GetWrapper(self).embedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
+            GetWrapper(self).embedGenericHandle(pResolvedToken, fEmbedParent != 0, callerHandle, pResult);
         }
         catch (Exception exception)
         {
@@ -2321,11 +2410,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte Thunk_getStaticFieldContent(ICorJitInfo* self, CORINFO_FIELD_HANDLE field, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+    private static byte Thunk_getStaticFieldContent(ICorJitInfo* self, CORINFO_FIELD_HANDLE field, byte* buffer, int bufferSize, int valueOffset, byte ignoreMovableObjects)
     {
         try
         {
-            return GetWrapper(self).getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects) ? (byte)1 : (byte)0;
+            return GetWrapper(self).getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects != 0) ? (byte)1 : (byte)0;
         }
         catch (Exception exception)
         {
@@ -2489,11 +2578,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte Thunk_convertPInvokeCalliToCall(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
+    private static byte Thunk_convertPInvokeCalliToCall(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* pResolvedToken, byte fMustConvert)
     {
         try
         {
-            return GetWrapper(self).convertPInvokeCalliToCall(pResolvedToken, fMustConvert) ? (byte)1 : (byte)0;
+            return GetWrapper(self).convertPInvokeCalliToCall(pResolvedToken, fMustConvert != 0) ? (byte)1 : (byte)0;
         }
         catch (Exception exception)
         {
@@ -2503,7 +2592,7 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte Thunk_notifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSet nativeInstructionSet, bool supportEnabled, bool preserveNegativeDependency)
+    private static byte Thunk_notifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSet nativeInstructionSet, byte supportEnabled, byte preserveNegativeDependency)
     {
         try
         {
@@ -2513,7 +2602,7 @@ public sealed unsafe partial class WrapICorJitInfo
                 return default;
             }
 
-            return GetWrapper(self).notifyInstructionSetUsage(instructionSet, supportEnabled, preserveNegativeDependency) ? (byte)1 : (byte)0;
+            return GetWrapper(self).notifyInstructionSetUsage(instructionSet, supportEnabled != 0, preserveNegativeDependency != 0) ? (byte)1 : (byte)0;
         }
         catch (Exception exception)
         {
@@ -2551,11 +2640,11 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void Thunk_reserveUnwindInfo(ICorJitInfo* self, bool isFunclet, bool isColdCode, int unwindSize)
+    private static void Thunk_reserveUnwindInfo(ICorJitInfo* self, byte isFunclet, byte isColdCode, int unwindSize)
     {
         try
         {
-            GetWrapper(self).reserveUnwindInfo(isFunclet, isColdCode, unwindSize);
+            GetWrapper(self).reserveUnwindInfo(isFunclet != 0, isColdCode != 0, unwindSize);
         }
         catch (Exception exception)
         {
