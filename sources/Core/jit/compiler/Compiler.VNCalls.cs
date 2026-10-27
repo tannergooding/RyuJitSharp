@@ -727,8 +727,8 @@ public partial class Compiler
 
         var pure = helper.IsPure;
         var allocation = helper.IsAllocator;
-        var modHeap = helper.MutatesHeap;
         var mayRunCctor = helper.MayRunCctor;
+        var modHeap = helper.MutatesHeap || mayRunCctor;
         var exceptions = ValueNumStore.VNPForEmptyExcSet();
 
         if (!helper.NoThrow)
@@ -857,10 +857,6 @@ public partial class Compiler
         else if (pure || allocation)
         {
             var vnf = fgValueNumberJitHelperMethodVNFunc(helper);
-            if (mayRunCctor && ((call.Flags & GTF_CALL_HOISTABLE) == 0))
-            {
-                modHeap = true;
-            }
             if (allocation && (call.Args.FindWellKnownArg(WellKnownArg.StackArrayLocal) is not null))
             {
                 if (vnf is VNF_JitNewArr)

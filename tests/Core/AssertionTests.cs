@@ -2173,6 +2173,42 @@ internal static unsafe class AssertionTests
     }
 
     [Test]
+    public static void GlobalAssertionTableGrowsOnDemandAndStopsAtItsMaximum()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+
+            var firstVN = store.VNForExpr(null, TYP_INT);
+            var first = compiler.optAddAssertion(AssertionDsc.CreateConstantBound(
+                compiler, VNFunc.VNF_GE, firstVN, store.VNZeroForType(TYP_INT)));
+            compiler.optCreateComplementaryAssertion(first);
+
+            for (var index = 0; index < 510; index++)
+            {
+                var vn = store.VNForExpr(null, TYP_INT);
+                var assertion = AssertionDsc.CreateConstantBound(
+                    compiler, VNFunc.VNF_GE, vn, store.VNZeroForType(TYP_INT));
+                Assert.That(compiler.optAddAssertion(assertion), Is.EqualTo(index + 3));
+            }
+
+            Assert.That(compiler.AssertionCount, Is.EqualTo(512));
+            Assert.That(compiler.optFindComplementary(first), Is.EqualTo(2));
+            Assert.That(compiler.optAddAssertion(AssertionDsc.CreateConstantBound(
+                compiler, VNFunc.VNF_GE, store.VNForExpr(null, TYP_INT), store.VNZeroForType(TYP_INT))), Is.Zero);
+            Assert.That(compiler.AssertionCount, Is.EqualTo(512));
+
+            compiler.optAssertionTraitsInit(compiler.AssertionCount);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var active = BitOps.MakeEmpty(traits);
+            BitOps.AddElemD(traits, active, compiler.AssertionCount - 1);
+            Assert.That(BitOps.Count(traits, active), Is.EqualTo((nint)1));
+            Assert.That(compiler.optGetAssertion(compiler.AssertionCount).Op1.VN,
+                Is.Not.EqualTo(ValueNumStore.NoVN));
+        }, local: false);
+    }
+
+    [Test]
     public static void LocalInsertionDeduplicatesAtCapacityAndResetsCopyDependencies()
     {
         WithCompiler(compiler => {

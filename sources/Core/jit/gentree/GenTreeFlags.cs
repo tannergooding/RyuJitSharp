@@ -169,7 +169,10 @@ public enum GenTreeFlags
     /// <summary>GT_CALL -- caller pop arguments?</summary>
     GTF_CALL_POP_ARGS = 1 << 26,
 
-    /// <summary>GT_CALL -- call is hoistable</summary>
+    /// <summary>
+    /// GT_CALL -- call is hoistable; any cctor it runs may run earlier, but the
+    /// call may still modify the heap.
+    /// </summary>
     GTF_CALL_HOISTABLE = 1 << 25,
 
     /// <summary>GT_CALL -- call is tls_get_addr</summary>

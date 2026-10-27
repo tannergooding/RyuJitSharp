@@ -209,7 +209,7 @@ internal static unsafe class ValueNumCallTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void CctorHelperMutatesHeapUnlessHoistable(bool hoistable)
+    public static void CctorHelperMutatesHeapEvenWhenHoistable(bool hoistable)
     {
         WithStore((compiler, store) =>
         {
@@ -223,7 +223,8 @@ internal static unsafe class ValueNumCallTests
                 Argument(compiler, store, TYP_I_IMPL, store.VNForHandle(123, GTF_ICON_CLASS_HDL))));
 
             var modHeap = compiler.fgValueNumberHelperCall(call);
-            Assert.That(modHeap, Is.EqualTo(CORINFO_HELP_GET_GCSTATIC_BASE.MutatesHeap || !hoistable));
+            Assert.That(modHeap, Is.EqualTo(CORINFO_HELP_GET_GCSTATIC_BASE.MutatesHeap ||
+                CORINFO_HELP_GET_GCSTATIC_BASE.MayRunCctor));
             var app = new VNFuncApp();
             Assert.That(store.GetVNFunc(store.VNNormalValue(call._vnPair.Liberal), ref app), Is.True);
             Assert.That(app.Func, Is.EqualTo(VNF_GetGcstaticBase));

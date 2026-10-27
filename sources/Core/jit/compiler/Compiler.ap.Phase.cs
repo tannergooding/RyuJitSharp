@@ -199,6 +199,8 @@ public partial class Compiler
             madeChanges |= optCreateJumpTableImpliedAssertions(switchBlock);
         }
 
+        optAssertionTraitsInit(optAssertionCount == 0 ? (AssertionIndex)1 : optAssertionCount);
+
         if (optAssertionCount == 0)
         {
             // Range analysis and CSE share these sets even when AP found no facts.

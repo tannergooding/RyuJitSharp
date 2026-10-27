@@ -117,6 +117,8 @@ public partial class Compiler
 
     protected AssertionIndex optMaxAssertionCount;
 
+    protected AssertionIndex optAssertionTabCapacity;
+
     protected bool optCrossBlockLocalAssertionProp;
 
     protected int optAssertionOverflow;

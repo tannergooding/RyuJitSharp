@@ -191,17 +191,19 @@ public partial class Compiler
                 optMaxAssertionCount = 64;
             }
 
+            optAssertionTabCapacity = optMaxAssertionCount;
             optAssertionDep = [];
             _ = optAssertionDep.EnsureCapacity(Math.Max(1, lvaCount));
         }
         else
         {
-            optMaxAssertionCount = (AssertionIndex)Math.Max(64, Math.Min(256, (lvaTrackedCount + (3 * fgBBcount) + 48) >> 2));
-            optComplementaryAssertionMap = new AssertionIndex[optMaxAssertionCount + 1];
+            optMaxAssertionCount = 512;
+            optAssertionTabCapacity = 64;
+            optComplementaryAssertionMap = new AssertionIndex[optAssertionTabCapacity + 1];
         }
 
-        optAssertionTabPrivate = new AssertionDsc[optMaxAssertionCount];
-        optAssertionTraitsInit(optMaxAssertionCount);
+        optAssertionTabPrivate = new AssertionDsc[optAssertionTabCapacity];
+        optAssertionTraitsInit(optAssertionTabCapacity);
         optAssertionCount = 0;
         optAssertionOverflow = 0;
         optAssertionPropagated = false;
@@ -435,6 +437,22 @@ public partial class Compiler
         {
             optAssertionOverflow++;
             return NO_ASSERTION_INDEX;
+        }
+
+        if (optAssertionCount == optAssertionTabCapacity)
+        {
+            assert(!optLocalAssertionProp);
+            var newCapacity = (AssertionIndex)Math.Min(2u * optAssertionTabCapacity, (uint)optMaxAssertionCount);
+
+            var newTable = new AssertionDsc[newCapacity];
+            Array.Copy(optAssertionTabPrivate, newTable, optAssertionCount);
+            optAssertionTabPrivate = newTable;
+
+            var newComplementaryMap = new AssertionIndex[newCapacity + 1];
+            Array.Copy(optComplementaryAssertionMap, newComplementaryMap, optAssertionTabCapacity + 1);
+            optComplementaryAssertionMap = newComplementaryMap;
+
+            optAssertionTabCapacity = newCapacity;
         }
 
         // Immutable descriptors can be shared without changing native value-copy semantics.
