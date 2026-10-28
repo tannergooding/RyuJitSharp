@@ -197,5 +197,6 @@ public enum ReadyToRunInstructionSet
 
     READYTORUN_INSTRUCTION_Fp16 = 95,
 
-    READYTORUN_INSTRUCTION_RelaxedSimd = 96,
+    READYTORUN_INSTRUCTION_SvePmull128 = 96,
+    READYTORUN_INSTRUCTION_RelaxedSimd = 97,
 }

@@ -9304,6 +9304,12 @@ public partial struct HWIntrinsicInfo
         HW_Category_SIMD, // NI_Sve2_VectorTableLookupExtension
         HW_Category_SIMD, // NI_Sve2_Xor
         HW_Category_ShiftRightByImmediate, // NI_Sve2_XorRotateRight
+        HW_Category_SIMD, // NI_SveAes_Decrypt
+        HW_Category_SIMD, // NI_SveAes_Encrypt
+        HW_Category_SIMD, // NI_SveAes_InverseMixColumns
+        HW_Category_SIMD, // NI_SveAes_MixColumns
+        HW_Category_SIMD, // NI_SvePmull128_PolynomialMultiplyWideningEven
+        HW_Category_SIMD, // NI_SvePmull128_PolynomialMultiplyWideningOdd
         HW_Category_SIMD, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
         HW_Category_SIMD, // NI_SveSm4_Encode
         HW_Category_SIMD, // NI_SveSm4_KeyUpdate
@@ -10516,6 +10522,12 @@ public partial struct HWIntrinsicInfo
         HW_Flag_Scalable | HW_Flag_HasRMWSemantics, // NI_Sve2_VectorTableLookupExtension
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_HasRMWSemantics, // NI_Sve2_Xor
         HW_Flag_Scalable | HW_Flag_HasRMWSemantics | HW_Flag_HasImmediateOperand, // NI_Sve2_XorRotateRight
+        HW_Flag_Scalable | HW_Flag_HasRMWSemantics, // NI_SveAes_Decrypt
+        HW_Flag_Scalable | HW_Flag_HasRMWSemantics, // NI_SveAes_Encrypt
+        HW_Flag_Scalable | HW_Flag_HasRMWSemantics, // NI_SveAes_InverseMixColumns
+        HW_Flag_Scalable | HW_Flag_HasRMWSemantics, // NI_SveAes_MixColumns
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen, // NI_SvePmull128_PolynomialMultiplyWideningEven
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen, // NI_SvePmull128_PolynomialMultiplyWideningOdd
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
         HW_Flag_Scalable | HW_Flag_HasRMWSemantics, // NI_SveSm4_Encode
         HW_Flag_Scalable, // NI_SveSm4_KeyUpdate
@@ -11728,6 +11740,12 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_VectorTableLookupExtension
         unchecked((byte)(-1)), // NI_Sve2_Xor
         unchecked((byte)(-1)), // NI_Sve2_XorRotateRight
+        unchecked((byte)(-1)), // NI_SveAes_Decrypt
+        unchecked((byte)(-1)), // NI_SveAes_Encrypt
+        unchecked((byte)(-1)), // NI_SveAes_InverseMixColumns
+        unchecked((byte)(-1)), // NI_SveAes_MixColumns
+        unchecked((byte)(-1)), // NI_SvePmull128_PolynomialMultiplyWideningEven
+        unchecked((byte)(-1)), // NI_SvePmull128_PolynomialMultiplyWideningOdd
         unchecked((byte)(-1)), // NI_SveSha3_BitwiseRotateLeftBy1AndXor
         unchecked((byte)(-1)), // NI_SveSm4_Encode
         unchecked((byte)(-1)), // NI_SveSm4_KeyUpdate
@@ -12940,6 +12958,12 @@ public partial struct HWIntrinsicInfo
         896, 896, 896, 896, 896, 896, 896, 896, 896, 896, // NI_Sve2_VectorTableLookupExtension
         914, 914, 914, 914, 914, 914, 914, 914, 0, 0, // NI_Sve2_Xor
         941, 941, 941, 941, 941, 941, 941, 941, 0, 0, // NI_Sve2_XorRotateRight
+        0, 934, 0, 0, 0, 0, 0, 0, 0, 0, // NI_SveAes_Decrypt
+        0, 935, 0, 0, 0, 0, 0, 0, 0, 0, // NI_SveAes_Encrypt
+        0, 937, 0, 0, 0, 0, 0, 0, 0, 0, // NI_SveAes_InverseMixColumns
+        0, 938, 0, 0, 0, 0, 0, 0, 0, 0, // NI_SveAes_MixColumns
+        0, 0, 0, 0, 0, 0, 0, 741, 0, 0, // NI_SvePmull128_PolynomialMultiplyWideningEven
+        0, 0, 0, 0, 0, 0, 0, 742, 0, 0, // NI_SvePmull128_PolynomialMultiplyWideningOdd
         0, 0, 0, 0, 0, 0, 939, 939, 0, 0, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
         0, 0, 0, 0, 0, 936, 0, 0, 0, 0, // NI_SveSm4_Encode
         0, 0, 0, 0, 0, 940, 0, 0, 0, 0, // NI_SveSm4_KeyUpdate
@@ -14152,6 +14176,12 @@ public partial struct HWIntrinsicInfo
         InstructionSet_Sve2, // NI_Sve2_VectorTableLookupExtension
         InstructionSet_Sve2, // NI_Sve2_Xor
         InstructionSet_Sve2, // NI_Sve2_XorRotateRight
+        InstructionSet_SveAes, // NI_SveAes_Decrypt
+        InstructionSet_SveAes, // NI_SveAes_Encrypt
+        InstructionSet_SveAes, // NI_SveAes_InverseMixColumns
+        InstructionSet_SveAes, // NI_SveAes_MixColumns
+        InstructionSet_SvePmull128, // NI_SvePmull128_PolynomialMultiplyWideningEven
+        InstructionSet_SvePmull128, // NI_SvePmull128_PolynomialMultiplyWideningOdd
         InstructionSet_SveSha3, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
         InstructionSet_SveSm4, // NI_SveSm4_Encode
         InstructionSet_SveSm4, // NI_SveSm4_KeyUpdate
@@ -15364,6 +15394,12 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_VectorTableLookupExtension
         unchecked((byte)(-1)), // NI_Sve2_Xor
         unchecked((byte)(-1)), // NI_Sve2_XorRotateRight
+        unchecked((byte)(-1)), // NI_SveAes_Decrypt
+        unchecked((byte)(-1)), // NI_SveAes_Encrypt
+        unchecked((byte)(-1)), // NI_SveAes_InverseMixColumns
+        unchecked((byte)(-1)), // NI_SveAes_MixColumns
+        unchecked((byte)(-1)), // NI_SvePmull128_PolynomialMultiplyWideningEven
+        unchecked((byte)(-1)), // NI_SvePmull128_PolynomialMultiplyWideningOdd
         unchecked((byte)(-1)), // NI_SveSha3_BitwiseRotateLeftBy1AndXor
         unchecked((byte)(-1)), // NI_SveSm4_Encode
         unchecked((byte)(-1)), // NI_SveSm4_KeyUpdate
@@ -17548,6 +17584,12 @@ public partial struct HWIntrinsicInfo
         8981, 26, // NI_Sve2_VectorTableLookupExtension
         9008, 3, // NI_Sve2_Xor
         13311, 14, // NI_Sve2_XorRotateRight
+        12469, 7, // NI_SveAes_Decrypt
+        12477, 7, // NI_SveAes_Encrypt
+        12485, 17, // NI_SveAes_InverseMixColumns
+        12503, 10, // NI_SveAes_MixColumns
+        23970, 30, // NI_SvePmull128_PolynomialMultiplyWideningEven
+        24001, 29, // NI_SvePmull128_PolynomialMultiplyWideningOdd
         13284, 26, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
         13326, 6, // NI_SveSm4_Encode
         13333, 9, // NI_SveSm4_KeyUpdate
@@ -18760,6 +18802,12 @@ public partial struct HWIntrinsicInfo
         3, // NI_Sve2_VectorTableLookupExtension
         3, // NI_Sve2_Xor
         3, // NI_Sve2_XorRotateRight
+        2, // NI_SveAes_Decrypt
+        2, // NI_SveAes_Encrypt
+        1, // NI_SveAes_InverseMixColumns
+        1, // NI_SveAes_MixColumns
+        2, // NI_SvePmull128_PolynomialMultiplyWideningEven
+        2, // NI_SvePmull128_PolynomialMultiplyWideningOdd
         2, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
         2, // NI_SveSm4_Encode
         2, // NI_SveSm4_KeyUpdate
@@ -19972,6 +20020,12 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_VectorTableLookupExtension
         unchecked((byte)(-1)), // NI_Sve2_Xor
         unchecked((byte)(-1)), // NI_Sve2_XorRotateRight
+        unchecked((byte)(-1)), // NI_SveAes_Decrypt
+        unchecked((byte)(-1)), // NI_SveAes_Encrypt
+        unchecked((byte)(-1)), // NI_SveAes_InverseMixColumns
+        unchecked((byte)(-1)), // NI_SveAes_MixColumns
+        unchecked((byte)(-1)), // NI_SvePmull128_PolynomialMultiplyWideningEven
+        unchecked((byte)(-1)), // NI_SvePmull128_PolynomialMultiplyWideningOdd
         unchecked((byte)(-1)), // NI_SveSha3_BitwiseRotateLeftBy1AndXor
         unchecked((byte)(-1)), // NI_SveSm4_Encode
         unchecked((byte)(-1)), // NI_SveSm4_KeyUpdate
@@ -23112,6 +23166,7 @@ public partial struct HWIntrinsicInfo
         65535, 65535, // InstructionSet_Sha3
         65535, 65535, // InstructionSet_Sm4
         65535, 65535, // InstructionSet_SveAes
+        65535, 65535, // InstructionSet_SvePmull128
         65535, 65535, // InstructionSet_SveSha3
         65535, 65535, // InstructionSet_SveSm4
         65535, 65535, // InstructionSet_Cssc
@@ -23129,6 +23184,7 @@ public partial struct HWIntrinsicInfo
         65535, 65535, // InstructionSet_Sha3_Arm64
         65535, 65535, // InstructionSet_Sm4_Arm64
         65535, 65535, // InstructionSet_SveAes_Arm64
+        65535, 65535, // InstructionSet_SvePmull128_Arm64
         65535, 65535, // InstructionSet_SveSha3_Arm64
         65535, 65535, // InstructionSet_SveSm4_Arm64
         65535, 65535, // InstructionSet_RiscV64Base
@@ -23208,9 +23264,10 @@ public partial struct HWIntrinsicInfo
         977, 1179, // InstructionSet_Sve2
         664, 667, // InstructionSet_Sha3
         668, 669, // InstructionSet_Sm4
-        65535, 65535, // InstructionSet_SveAes
-        1180, 1180, // InstructionSet_SveSha3
-        1181, 1182, // InstructionSet_SveSm4
+        1180, 1183, // InstructionSet_SveAes
+        1184, 1185, // InstructionSet_SvePmull128
+        1186, 1186, // InstructionSet_SveSha3
+        1187, 1188, // InstructionSet_SveSm4
         65535, 65535, // InstructionSet_Cssc
         610, 616, // InstructionSet_ArmBase_Arm64
         418, 600, // InstructionSet_AdvSimd_Arm64
@@ -23226,6 +23283,7 @@ public partial struct HWIntrinsicInfo
         65535, 65535, // InstructionSet_Sha3_Arm64
         65535, 65535, // InstructionSet_Sm4_Arm64
         65535, 65535, // InstructionSet_SveAes_Arm64
+        65535, 65535, // InstructionSet_SvePmull128_Arm64
         65535, 65535, // InstructionSet_SveSha3_Arm64
         65535, 65535, // InstructionSet_SveSm4_Arm64
         65535, 65535, // InstructionSet_RiscV64Base
@@ -23306,6 +23364,7 @@ public partial struct HWIntrinsicInfo
         65535, 65535, // InstructionSet_Sha3
         65535, 65535, // InstructionSet_Sm4
         65535, 65535, // InstructionSet_SveAes
+        65535, 65535, // InstructionSet_SvePmull128
         65535, 65535, // InstructionSet_SveSha3
         65535, 65535, // InstructionSet_SveSm4
         65535, 65535, // InstructionSet_Cssc
@@ -23323,6 +23382,7 @@ public partial struct HWIntrinsicInfo
         65535, 65535, // InstructionSet_Sha3_Arm64
         65535, 65535, // InstructionSet_Sm4_Arm64
         65535, 65535, // InstructionSet_SveAes_Arm64
+        65535, 65535, // InstructionSet_SvePmull128_Arm64
         65535, 65535, // InstructionSet_SveSha3_Arm64
         65535, 65535, // InstructionSet_SveSm4_Arm64
         65535, 65535, // InstructionSet_RiscV64Base

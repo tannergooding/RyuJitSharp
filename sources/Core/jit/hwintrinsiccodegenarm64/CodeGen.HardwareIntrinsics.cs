@@ -1883,6 +1883,13 @@ public sealed partial class CodeGen
                     Emitter.emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                     break;
                 }
+                case NI_SvePmull128_PolynomialMultiplyWideningEven:
+                case NI_SvePmull128_PolynomialMultiplyWideningOdd:
+                {
+                    opt = INS_OPTS_SCALABLE_Q;
+                    Emitter.emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                    break;
+                }
                 case NI_Sve2_BitwiseClearXor:
                 case NI_Sve2_Xor:
                 {

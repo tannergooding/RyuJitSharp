@@ -54,6 +54,16 @@ internal static class Arm64InstructionSetLookupTests
             Is.EqualTo(ManagedInstructionSet.InstructionSet_AdvSimd));
     }
 
+    [Test]
+    public static void SvePmull128ClassNameMapsToItsInstructionSet()
+    {
+        var compiler = NewCompiler();
+
+        Assert.That(
+            LookupInstructionSet(compiler, "SvePmull128"u8),
+            Is.EqualTo(ManagedInstructionSet.InstructionSet_SvePmull128));
+    }
+
     [TestCase("AdvSimd", ManagedInstructionSet.InstructionSet_AdvSimd_Arm64)]
     [TestCase("Aes", ManagedInstructionSet.InstructionSet_Aes_Arm64)]
     [TestCase("ArmBase", ManagedInstructionSet.InstructionSet_ArmBase_Arm64)]
@@ -67,6 +77,7 @@ internal static class Arm64InstructionSetLookupTests
     [TestCase("Sha3", ManagedInstructionSet.InstructionSet_Sha3_Arm64)]
     [TestCase("Sm4", ManagedInstructionSet.InstructionSet_Sm4_Arm64)]
     [TestCase("SveAes", ManagedInstructionSet.InstructionSet_SveAes_Arm64)]
+    [TestCase("SvePmull128", ManagedInstructionSet.InstructionSet_SvePmull128_Arm64)]
     [TestCase("SveSha3", ManagedInstructionSet.InstructionSet_SveSha3_Arm64)]
     [TestCase("SveSm4", ManagedInstructionSet.InstructionSet_SveSm4_Arm64)]
     public static void NestedArm64ClassNamesMapEverySupportedInstructionSet(

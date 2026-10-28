@@ -61,6 +61,7 @@ public sealed partial class Lowering
                     }
                     node.SetOp(1, nestedFirst);
                     node.SetOp(2, nestedSecond);
+                    nestedSecond.IsContained = false;
                     BlockRange().Remove(first);
                     BlockRange().Remove(second);
                     skipReplacement = true;

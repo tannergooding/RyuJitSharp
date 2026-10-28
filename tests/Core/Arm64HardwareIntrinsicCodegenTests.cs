@@ -222,6 +222,29 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
         });
     }
 
+    [TestCase(NI_SvePmull128_PolynomialMultiplyWideningEven, INS_sve_pmullb)]
+    [TestCase(NI_SvePmull128_PolynomialMultiplyWideningOdd, INS_sve_pmullt)]
+    public static void Pmull128UsesScalableQEmission(NamedIntrinsic intrinsic, instruction expected)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, intrinsic, TYP_ULONG, 0,
+                Operand(REG_ARM64_V1, TYP_SIMD_ARM64), Operand(REG_ARM64_V2, TYP_SIMD_ARM64)) {
+                RegNum = REG_ARM64_V0
+            };
+            EnableIsa(compiler, node);
+            codeGen.genHWIntrinsic(node);
+
+            var id = SingleDescriptor(codeGen);
+            Assert.That(id.idIns(), Is.EqualTo(expected));
+            Assert.That(id.idOpSize(), Is.EqualTo(EA_SCALABLE));
+            Assert.That(id.idInsOpt(), Is.EqualTo(INS_OPTS_SCALABLE_Q));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_V0));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(id.idReg3(), Is.EqualTo(REG_ARM64_V2));
+        });
+    }
+
     [TestCase(NI_Sve_Load2xVectorAndUnzip, INS_sve_ld2w, REG_ARM64_V30)]
     [TestCase(NI_Sve_Load3xVectorAndUnzip, INS_sve_ld3w, REG_ARM64_V29)]
     [TestCase(NI_Sve_Load4xVectorAndUnzip, INS_sve_ld4w, REG_ARM64_V28)]

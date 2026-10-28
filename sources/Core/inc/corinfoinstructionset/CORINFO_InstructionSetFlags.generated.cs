@@ -164,6 +164,11 @@ public partial struct CORINFO_InstructionSetFlags
                 AddInstructionSet(InstructionSet_SveAes_Arm64);
             }
 
+            if (HasInstructionSet(InstructionSet_SvePmull128))
+            {
+                AddInstructionSet(InstructionSet_SvePmull128_Arm64);
+            }
+
             if (HasInstructionSet(InstructionSet_SveSha3))
             {
                 AddInstructionSet(InstructionSet_SveSha3_Arm64);

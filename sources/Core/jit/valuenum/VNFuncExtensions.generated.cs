@@ -2193,6 +2193,12 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_Sve2_VectorTableLookupExtension
         (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_Sve2_Xor
         (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_Sve2_XorRotateRight
+        (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_SveAes_Decrypt
+        (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_SveAes_Encrypt
+        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_SveAes_InverseMixColumns
+        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_SveAes_MixColumns
+        (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_SvePmull128_PolynomialMultiplyWideningEven
+        (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_SvePmull128_PolynomialMultiplyWideningOdd
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_SveSha3_BitwiseRotateLeftBy1AndXor
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_SveSm4_Encode
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_SveSm4_KeyUpdate

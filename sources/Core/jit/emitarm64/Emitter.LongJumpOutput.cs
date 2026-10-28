@@ -88,6 +88,7 @@ public partial class Emitter
                     ins = INS_adrp;
                     fmt = IF_ARM64_DI_1E;
                     dst = emitOutputShortAddressArm64Core(dst, ins, fmt, relPageAddr, addrReg);
+                    emitGCregDeadUpd(addrReg, dst);
 
                     var imm12 = unchecked((nint)dataAddr) & 0xFFF;
                     assert(isValidUimm(imm12, 12));

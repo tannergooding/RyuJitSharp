@@ -804,8 +804,10 @@ public sealed partial class LinearScan
         var recentRefPosition = assignedInterval.recentRefPosition;
         if (recentRefPosition is not null)
         {
-            assert(!isRefPositionActive(recentRefPosition, refLocation));
-            return true;
+            var isActive = isRefPositionActive(recentRefPosition, refLocation);
+            var isHome = isHomeReg(regRecord);
+            assert(!(isActive && isHome));
+            return !(isActive && isHome);
         }
 
         assert(assignedInterval.isLocalVar);

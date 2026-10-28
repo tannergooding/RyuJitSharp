@@ -99,6 +99,7 @@ public partial class Emitter
             // Use the reserved register for the large frame displacement without
             // consuming the caller's temporary-register hint.
             assert(isValidSimm20(unchecked((imm + 0x800) >> 12)));
+            assert(reg1 != reservedReg);
             emitIns_R_I(INS_lui, EA_PTRSIZE, reservedReg, unchecked((imm + 0x800) >> 12));
             emitIns_R_R_R(INS_add, EA_PTRSIZE, reservedReg, reservedReg, reg2);
 

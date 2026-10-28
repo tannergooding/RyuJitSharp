@@ -469,6 +469,10 @@ public partial class Emitter
                     {
                         assert(id.idIsBound());
                         dst = emitOutputLJ(ig, dst, id);
+                        if (fmt == IF_ARM64_LARGEADR)
+                        {
+                            emitGCregDeadUpd(id.idReg1(), odst + sizeof(uint));
+                        }
                     }
                     sz = (nuint)DescriptorSizes.Jump;
                     break;

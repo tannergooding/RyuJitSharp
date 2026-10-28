@@ -23813,6 +23813,11 @@ public partial class Compiler
                 return InstructionSet_SveAes;
             }
 
+            if (NameEquals(className, "SvePmull128"u8))
+            {
+                return InstructionSet_SvePmull128;
+            }
+
             if (NameEquals(className, "SveSha3"u8))
             {
                 return InstructionSet_SveSha3;
@@ -23939,6 +23944,7 @@ public partial class Compiler
             InstructionSet_Sha3 => InstructionSet_Sha3_Arm64,
             InstructionSet_Sm4 => InstructionSet_Sm4_Arm64,
             InstructionSet_SveAes => InstructionSet_SveAes_Arm64,
+            InstructionSet_SvePmull128 => InstructionSet_SvePmull128_Arm64,
             InstructionSet_SveSha3 => InstructionSet_SveSha3_Arm64,
             InstructionSet_SveSm4 => InstructionSet_SveSm4_Arm64,
             _ => InstructionSet_NONE,

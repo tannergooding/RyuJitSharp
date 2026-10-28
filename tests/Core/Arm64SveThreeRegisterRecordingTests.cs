@@ -399,6 +399,29 @@ internal static unsafe class Arm64SveThreeRegisterRecordingTests
         });
     }
 
+    [TestCase(INS_sve_aesd)]
+    [TestCase(INS_sve_aese)]
+    public static void DestructiveBinaryAesCopiesSecondSourceBeforeRecordingOperation(instruction ins)
+    {
+        WithEmitter(emitter =>
+        {
+            var id = Record(emitter,
+                () => emitter.emitInsSve_R_R_R(
+                    ins, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V31, INS_OPTS_SCALABLE_B),
+                expectedSize: 8);
+            var instructions = CurrentInstructions(emitter)
+                ?? throw new AssertionException("No descriptor buffer was prepared.");
+
+            Assert.That(instructions, Has.Count.EqualTo(2));
+            Assert.That(instructions[0].idIns(), Is.EqualTo(INS_sve_mov));
+            Assert.That(instructions[0].idReg1(), Is.EqualTo(REG_ARM64_V0));
+            Assert.That(instructions[0].idReg2(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(id.idIns(), Is.EqualTo(ins));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_V0));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_ARM64_V31));
+        });
+    }
+
     [TestCase(INS_sve_ext, INS_OPTS_SCALABLE_D, IF_ARM64_SVE_BQ_2B, false)]
     [TestCase(INS_sve_ext, INS_OPTS_SCALABLE_B, IF_ARM64_SVE_BQ_2B, true)]
     [TestCase(INS_sve_sri, INS_OPTS_SCALABLE_D, IF_ARM64_SVE_FT_2A, true)]
@@ -732,7 +755,7 @@ internal static unsafe class Arm64SveThreeRegisterRecordingTests
         });
     }
 
-    private static Emitter.instrDesc Record(Emitter emitter, Action record)
+    private static Emitter.instrDesc Record(Emitter emitter, Action record, int expectedSize = 4)
     {
         if (TestConfiguration.IsDebug)
         {
@@ -745,7 +768,7 @@ internal static unsafe class Arm64SveThreeRegisterRecordingTests
             record();
         }
 
-        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+        Assert.That(GroupSize(emitter), Is.EqualTo(expectedSize));
         var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
         Assert.That(id.idCodeSize(), Is.EqualTo(4u));
 

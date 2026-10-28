@@ -198,6 +198,35 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [Test]
+    public static void SpilledIntegralConstantUsesRaWhileLargeStoreAddressUsesReservedRegister()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeStackRecorderLocal(compiler, codeGen, framePointerBased: false, stackOffset: 2048);
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD_RISCV64);
+            var value = compiler.gtNewIconNode(TYP_LONG, 7);
+            value.IsContained = true;
+            var store = new GenTreeLclVar(TYP_LONG, 0, value) { RegNum = REG_RISCV64_NA };
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = CurrentInstructionGroupSize(codeGen.Emitter);
+
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForStoreLclVarRiscV64(store));
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, RiscVRecorderDebugBoundary, initialCount, initialSize);
+
+            var emitted = RecordedInstructions(codeGen.Emitter).Skip(initialCount).ToArray();
+            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_addi));
+            Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_RISCV64_RA));
+            Assert.That(emitted[0].idSmallCns(), Is.EqualTo(7));
+            Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_sd));
+            Assert.That(emitted[^1].idReg1(), Is.EqualTo(REG_RISCV64_RA));
+            Assert.That(emitted[^1].idReg2(), Is.EqualTo(REG_OPT_RSVD_RISCV64));
+        });
+    }
+
     [TestCase(INS_ld, 8, false, 32)]
     [TestCase(INS_lw, 16, true, 32)]
     [TestCase(INS_lbu, 2048, false, 32)]
@@ -2549,6 +2578,51 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(TYP_INT, true, INS_srliw, false)]
+    [TestCase(TYP_LONG, true, INS_srli, false)]
+    [TestCase(TYP_INT, false, INS_slli, true)]
+    [TestCase(TYP_LONG, false, INS_slli, false)]
+    public static void SmallCastOverflowCheckUsesSourceWidthAndComparison(
+        var_types sourceType, bool fromUnsigned, instruction expectedFirst, bool expectsSubw)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compDbgCode = true;
+            var source = new GenTreePhysReg(REG_A0, sourceType) { RegNum = REG_A0 };
+            var cast = new GenTreeCast(TYP_INT, source, fromUnsigned, TYP_BYTE)
+            {
+                RegNum = REG_A1,
+                Flags = GTF_OVERFLOW | (fromUnsigned ? GTF_UNSIGNED : GTF_EMPTY),
+            };
+            var desc = new CodeGen.GenIntCastDesc(cast);
+            Assert.That(desc.Check, Is.EqualTo(CodeGen.GenIntCastDesc.CheckKind.CHECK_SMALL_INT_RANGE));
+            codeGen.InternalRegisters.Add(cast,
+                regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
+
+            var emitter = codeGen.Emitter;
+            var initialCount = CurrentInstructionBuffer(emitter)?.Count
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(
+                () => EmitSmallCastOverflowCheck(codeGen, cast, in desc, REG_A0));
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, RiscVRecorderDebugBoundary, initialCount, initialSize);
+
+            var emitted = RecordedInstructions(emitter).Skip(initialCount).ToArray();
+            Assert.That(emitted[0].idIns(), Is.EqualTo(expectedFirst));
+            if (expectsSubw)
+            {
+                Assert.That(emitted[2].idIns(), Is.EqualTo(INS_subw));
+            }
+
+            var branchIndex = fromUnsigned ? 1 : expectsSubw ? 3 : 2;
+            Assert.That(emitted[branchIndex].idIns(), Is.EqualTo(INS_beq));
+            Assert.That(emitted[branchIndex].idReg1(), Is.EqualTo(REG_A2));
+            Assert.That(emitted[branchIndex].idReg2(),
+                Is.EqualTo(fromUnsigned || expectsSubw ? REG_RISCV64_R0 : REG_A0));
+        });
+    }
+
     [TestCase(GT_ADD, INS_addi, 17, false, 17)]
     [TestCase(GT_ADD, INS_addi, 17, true, 17)]
     [TestCase(GT_SUB, INS_sub, 17, false, -17)]
@@ -3090,6 +3164,10 @@ internal static unsafe class RiscVCodeGenPortTests
             return exception;
         }
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genIntCastOverflowCheckRiscV64")]
+    private static extern void EmitSmallCastOverflowCheck(
+        CodeGen codeGen, GenTreeCast cast, in CodeGen.GenIntCastDesc desc, regNumber register);
 
     private static void AssertFatalJitFailure(
         FatalJitException? failure,
