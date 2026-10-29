@@ -92,18 +92,11 @@ internal sealed partial class FgWasm
 
                     if (matches && addCodeDscMap.TryGetValue(key, out var add) && add.acdUsed)
                     {
-                        global::RyuJitSharp.BasicBlock __jitExceptionResult409;
-                        var __jitExceptionCoalesceLeft410 = add.acdDstBlk;
-                        if (__jitExceptionCoalesceLeft410 != null)
-                        {
-                            __jitExceptionResult409 = __jitExceptionCoalesceLeft410;
-                        }
-                        else
+                        var destination = add.acdDstBlk;
+                        if (destination is null)
                         {
                             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UsedAddCodeDescriptorHasNoDestinationBlock);
-                            __jitExceptionResult409 = default;
                         }
-                        var destination = __jitExceptionResult409;
 
                         if (compiler.bbIsInSameFunclet(block, destination) && !Visit(destination))
                         {
@@ -146,18 +139,11 @@ internal sealed partial class FgWasm
             {
                 if (block.isBBCallFinallyPair)
                 {
-                    global::RyuJitSharp.BasicBlock __jitExceptionResult411;
-                    var __jitExceptionCoalesceLeft412 = block.Next;
-                    if (__jitExceptionCoalesceLeft412 != null)
-                    {
-                        __jitExceptionResult411 = __jitExceptionCoalesceLeft412;
-                    }
-                    else
+                    var successor = block.Next;
+                    if (successor is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresAFollowingBlock);
-                        __jitExceptionResult411 = default;
                     }
-                    var successor = __jitExceptionResult411;
                     if (!Visit(successor))
                     {
                         return BasicBlockVisit.Abort;
@@ -170,18 +156,11 @@ internal sealed partial class FgWasm
             case BBJ_CALLFINALLYRET:
             case BBJ_ALWAYS:
             {
-                global::RyuJitSharp.BasicBlock __jitExceptionResult413;
-                var __jitExceptionCoalesceLeft414 = block.Target;
-                if (__jitExceptionCoalesceLeft414 != null)
-                {
-                    __jitExceptionResult413 = __jitExceptionCoalesceLeft414;
-                }
-                else
+                var successor = block.Target;
+                if (successor is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnconditionalWasmBranchRequiresATarget);
-                    __jitExceptionResult413 = default;
                 }
-                var successor = __jitExceptionResult413;
                 if (!Visit(successor))
                 {
                     return BasicBlockVisit.Abort;
@@ -192,30 +171,16 @@ internal sealed partial class FgWasm
 
             case BBJ_COND:
             {
-                global::RyuJitSharp.BasicBlock __jitExceptionResult415;
-                var __jitExceptionCoalesceLeft416 = block.TrueTarget;
-                if (__jitExceptionCoalesceLeft416 != null)
-                {
-                    __jitExceptionResult415 = __jitExceptionCoalesceLeft416;
-                }
-                else
+                var trueTarget = block.TrueTarget;
+                if (trueTarget is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConditionalWasmBranchRequiresATrueTarget);
-                    __jitExceptionResult415 = default;
                 }
-                var trueTarget = __jitExceptionResult415;
-                global::RyuJitSharp.BasicBlock __jitExceptionResult417;
-                var __jitExceptionCoalesceLeft418 = block.FalseTarget;
-                if (__jitExceptionCoalesceLeft418 != null)
-                {
-                    __jitExceptionResult417 = __jitExceptionCoalesceLeft418;
-                }
-                else
+                var falseTarget = block.FalseTarget;
+                if (falseTarget is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConditionalWasmBranchRequiresAFalseTarget);
-                    __jitExceptionResult417 = default;
                 }
-                var falseTarget = __jitExceptionResult417;
 
                 if (block.TrueEdge == block.FalseEdge)
                 {
@@ -309,18 +274,11 @@ internal sealed partial class FgWasm
             entryBlocks.Add(ehDsc.ebdHndBeg);
             if (ehDsc.HasFilter)
             {
-                global::RyuJitSharp.BasicBlock __jitExceptionResult419;
-                var __jitExceptionCoalesceLeft420 = ehDsc.ebdFilter;
-                if (__jitExceptionCoalesceLeft420 != null)
-                {
-                    __jitExceptionResult419 = __jitExceptionCoalesceLeft420;
-                }
-                else
+                var filter = ehDsc.ebdFilter;
+                if (filter is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EHFilterEntryRequiresAFilterBlock);
-                    __jitExceptionResult419 = default;
                 }
-                var filter = __jitExceptionResult419;
                 JITDUMP($"{FMT_BB(filter.bbNum)} is filter entry\n");
                 entryBlocks.Add(filter);
             }
@@ -361,18 +319,11 @@ internal sealed partial class FgWasm
             }
         }
 
-        global::RyuJitSharp.BasicBlock __jitExceptionResult421;
-        var __jitExceptionCoalesceLeft422 = compiler.fgFirstBB;
-        if (__jitExceptionCoalesceLeft422 != null)
-        {
-            __jitExceptionResult421 = __jitExceptionCoalesceLeft422;
-        }
-        else
+        var firstBlock = compiler.fgFirstBB;
+        if (firstBlock is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmDFSRequiresAMethodEntryBlock);
-            __jitExceptionResult421 = default;
         }
-        var firstBlock = __jitExceptionResult421;
         JITDUMP($"{FMT_BB(firstBlock.bbNum)} is method entry\n");
         entryBlocks.Add(firstBlock);
 

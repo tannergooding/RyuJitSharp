@@ -303,18 +303,11 @@ public sealed partial class Lowering
                 return;
             }
 
-            global::RyuJitSharp.ICodeGen __jitExceptionResult471;
-            var __jitExceptionCoalesceLeft472 = compiler.codeGen;
-            if (__jitExceptionCoalesceLeft472 != null)
-            {
-                __jitExceptionResult471 = __jitExceptionCoalesceLeft472;
-            }
-            else
+            var codeGen = compiler.codeGen;
+            if (codeGen is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StoreCoalescingRequiresCodeGenerationState);
-                __jitExceptionResult471 = default;
             }
-            var codeGen = __jitExceptionResult471;
             assert(!codeGen.GCInfo.gcIsWriteBarrierStoreIndNode(store.AsStoreInd()));
             assert(!codeGen.GCInfo.gcIsWriteBarrierStoreIndNode(previousStore.AsStoreInd()));
             BlockRange().Remove(previous.RangeStart, previous.RangeEnd);

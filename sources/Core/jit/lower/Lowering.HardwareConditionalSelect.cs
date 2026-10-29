@@ -94,18 +94,11 @@ public sealed partial class Lowering
                 condition = conditionUse.Def();
             }
 
-            global::RyuJitSharp.GenTree __jitExceptionResult100;
-            var __jitExceptionCoalesceLeft101 = compiler.gtClone(condition);
-            if (__jitExceptionCoalesceLeft101 != null)
-            {
-                __jitExceptionResult100 = __jitExceptionCoalesceLeft101;
-            }
-            else
+            var copy = compiler.gtClone(condition);
+            if (copy is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConditionalSelectMaskLocalCouldNotBeCloned);
-                __jitExceptionResult100 = default;
             }
-            var copy = __jitExceptionResult100;
             var truePart = compiler.gtNewSimdBinOpNode(GT_AND,
                 simdType, condition, selectTrue, simdBaseType, simdSize);
             var falsePart = compiler.gtNewSimdBinOpNode(GT_AND_NOT,

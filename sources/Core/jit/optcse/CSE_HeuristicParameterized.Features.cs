@@ -115,18 +115,11 @@ public partial class CSE_HeuristicParameterized
         var adjustment = -Math.Log(deMinimis);
         var pressure = m_registerPressure > m_addCSEcount
             ? m_registerPressure - m_addCSEcount : 0;
-        global::System.Collections.Generic.List<double> __jitExceptionResult120;
-        var __jitExceptionCoalesceLeft121 = m_localWeights;
-        if (__jitExceptionCoalesceLeft121 != null)
-        {
-            __jitExceptionResult120 = __jitExceptionCoalesceLeft121;
-        }
-        else
+        var weights = m_localWeights;
+        if (weights is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSELocalWeightsHaveNotBeenCaptured);
-            __jitExceptionResult120 = default;
         }
-        var weights = __jitExceptionResult120;
         if (pressure < weights.Count)
         {
             spillAtWeight = weights[checked((int)pressure)];

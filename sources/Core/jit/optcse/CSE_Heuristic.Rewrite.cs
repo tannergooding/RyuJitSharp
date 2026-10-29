@@ -315,18 +315,11 @@ public abstract partial class CSE_HeuristicCommon
     {
         ssaBuilder.InsertUse(use);
 
-        global::RyuJitSharp.GenTreeLclVar __jitExceptionResult518;
-        var __jitExceptionCoalesceLeft519 = use.Tree;
-        if (__jitExceptionCoalesceLeft519 != null)
-        {
-            __jitExceptionResult518 = __jitExceptionCoalesceLeft519;
-        }
-        else
+        var local = use.Tree;
+        if (local is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSESSAUseNeedsALocalTree);
-            __jitExceptionResult518 = default;
         }
-        var local = __jitExceptionResult518;
         assert(local.HasSsaName);
 
         ref var localDescriptor = ref m_compiler.lvaGetDesc(local.LclNum);

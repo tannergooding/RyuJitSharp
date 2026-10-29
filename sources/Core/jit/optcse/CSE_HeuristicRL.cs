@@ -111,18 +111,11 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
         base.DumpMetrics();
         if (m_updateParameters)
         {
-            global::System.Collections.Generic.List<string> __jitExceptionResult529;
-            var __jitExceptionCoalesceLeft530 = Features;
-            if (__jitExceptionCoalesceLeft530 != null)
-            {
-                __jitExceptionResult529 = __jitExceptionCoalesceLeft530;
-            }
-            else
+            var features = Features;
+            if (features is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RLCSEFeatureMetricsHaveNotBeenInitialized);
-                __jitExceptionResult529 = default;
             }
-            var features = __jitExceptionResult529;
             jitprintf(" updatedparams ");
             for (var index = 0; index < NumParameters; index++)
             {
@@ -142,30 +135,16 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
         }
         else if (!m_greedy)
         {
-            global::System.Collections.Generic.List<double> __jitExceptionResult531;
-            var __jitExceptionCoalesceLeft532 = BaseLikelihoods;
-            if (__jitExceptionCoalesceLeft532 != null)
-            {
-                __jitExceptionResult531 = __jitExceptionCoalesceLeft532;
-            }
-            else
+            var baseLikelihoods = BaseLikelihoods;
+            if (baseLikelihoods is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RLCSEBaseLikelihoodsHaveNotBeenInitialized);
-                __jitExceptionResult531 = default;
             }
-            var baseLikelihoods = __jitExceptionResult531;
-            global::System.Collections.Generic.List<double> __jitExceptionResult533;
-            var __jitExceptionCoalesceLeft534 = Likelihoods;
-            if (__jitExceptionCoalesceLeft534 != null)
-            {
-                __jitExceptionResult533 = __jitExceptionCoalesceLeft534;
-            }
-            else
+            var likelihoods = Likelihoods;
+            if (likelihoods is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RLCSELikelihoodsHaveNotBeenInitialized);
-                __jitExceptionResult533 = default;
             }
-            var likelihoods = __jitExceptionResult533;
             jitprintf(" likelihoods ");
             var first = true;
             foreach (var likelihood in likelihoods)
@@ -208,30 +187,16 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
 
     private void SoftmaxPolicy()
     {
-        global::System.Collections.Generic.List<double> __jitExceptionResult535;
-        var __jitExceptionCoalesceLeft536 = BaseLikelihoods;
-        if (__jitExceptionCoalesceLeft536 != null)
-        {
-            __jitExceptionResult535 = __jitExceptionCoalesceLeft536;
-        }
-        else
+        var baseLikelihoods = BaseLikelihoods;
+        if (baseLikelihoods is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RLCSEBaseLikelihoodsHaveNotBeenInitialized);
-            __jitExceptionResult535 = default;
         }
-        var baseLikelihoods = __jitExceptionResult535;
-        global::System.Collections.Generic.List<double> __jitExceptionResult537;
-        var __jitExceptionCoalesceLeft538 = Likelihoods;
-        if (__jitExceptionCoalesceLeft538 != null)
-        {
-            __jitExceptionResult537 = __jitExceptionCoalesceLeft538;
-        }
-        else
+        var likelihoods = Likelihoods;
+        if (likelihoods is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RLCSELikelihoodsHaveNotBeenInitialized);
-            __jitExceptionResult537 = default;
         }
-        var likelihoods = __jitExceptionResult537;
         if (m_verbose)
         {
             jitprintf("RL using softmax policy\n");

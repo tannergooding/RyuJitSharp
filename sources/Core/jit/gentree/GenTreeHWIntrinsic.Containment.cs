@@ -76,18 +76,11 @@ public sealed partial class GenTreeHWIntrinsic
 
         var id = HWIntrinsicId;
         var ins = HWIntrinsicInfo.lookupIns(id, SimdBaseType, compiler);
-        global::RyuJitSharp.ICodeGen __jitExceptionResult425;
-        var __jitExceptionCoalesceLeft426 = compiler.codeGen;
-        if (__jitExceptionCoalesceLeft426 != null)
-        {
-            __jitExceptionResult425 = __jitExceptionCoalesceLeft426;
-        }
-        else
+        var codeGen = compiler.codeGen;
+        if (codeGen is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CodeGenerationIsNotInitialized);
-            __jitExceptionResult425 = default;
         }
-        var codeGen = __jitExceptionResult425;
         if (!codeGen.Emitter.IsEvexEncodableInstruction(ins))
         {
             return false;

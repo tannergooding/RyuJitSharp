@@ -31,21 +31,17 @@ internal sealed partial class FgWasm
         return number;
     }
 
-    internal FlowGraphDfsTree GetDfsTree() {
-    global::RyuJitSharp.FlowGraphDfsTree __jitExceptionReturnResult403;
-    var __jitExceptionCoalesceLeft404 = _dfsTree;
-    if (__jitExceptionCoalesceLeft404 != null)
+    internal FlowGraphDfsTree GetDfsTree()
     {
-        __jitExceptionReturnResult403 = __jitExceptionCoalesceLeft404;
-    }
-    else
-    {
-        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmSCCAnalysisRequiresADFSTree);
-        __jitExceptionReturnResult403 = default;
+        var dfsTree = _dfsTree;
+        if (dfsTree is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmSCCAnalysisRequiresADFSTree);
+        }
+
+        return dfsTree;
     }
 
-    return __jitExceptionReturnResult403;
-}
     internal void SetDfsAndTraits(FlowGraphDfsTree dfsTree)
     {
         assert(_dfsTree is null);
@@ -53,21 +49,17 @@ internal sealed partial class FgWasm
         _traits = dfsTree.PostOrderTraits();
     }
 
-    internal BitVecTraits GetTraits() {
-    global::RyuJitSharp.BitVecTraits __jitExceptionReturnResult405;
-    var __jitExceptionCoalesceLeft406 = _traits;
-    if (__jitExceptionCoalesceLeft406 != null)
+    internal BitVecTraits GetTraits()
     {
-        __jitExceptionReturnResult405 = __jitExceptionCoalesceLeft406;
-    }
-    else
-    {
-        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmSCCAnalysisRequiresPostorderTraits);
-        __jitExceptionReturnResult405 = default;
+        var traits = _traits;
+        if (traits is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmSCCAnalysisRequiresPostorderTraits);
+        }
+
+        return traits;
     }
 
-    return __jitExceptionReturnResult405;
-}
     internal void WasmFindSccs(ArrayStack<Scc> sccs)
     {
         var dfsTree = GetDfsTree();
@@ -170,18 +162,11 @@ internal sealed partial class FgWasm
 
         if (block.isBBCallFinallyPairTail)
         {
-            global::RyuJitSharp.BasicBlock __jitExceptionResult407;
-            var __jitExceptionCoalesceLeft408 = block.Prev;
-            if (__jitExceptionCoalesceLeft408 != null)
-            {
-                __jitExceptionResult407 = __jitExceptionCoalesceLeft408;
-            }
-            else
+            var callFinally = block.Prev;
+            if (callFinally is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairTailRequiresItsCallFinallyBlock);
-                __jitExceptionResult407 = default;
             }
-            var callFinally = __jitExceptionResult407;
             AssignBlockToScc(callFinally, root, subset, sccs, map);
 
             return;

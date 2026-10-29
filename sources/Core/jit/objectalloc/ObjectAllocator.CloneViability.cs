@@ -47,18 +47,11 @@ public sealed partial class ObjectAllocator
         var sizeConfig = JitConfig.JitCloneLoopsSizeLimit;
         var sizeLimit = sizeConfig >= 0 ? (uint)sizeConfig : uint.MaxValue;
         var size = 0u;
-        global::System.Collections.Generic.List<global::RyuJitSharp.BasicBlock> __jitExceptionResult514;
-        var __jitExceptionCoalesceLeft515 = info.BlocksToClone;
-        if (__jitExceptionCoalesceLeft515 != null)
-        {
-            __jitExceptionResult514 = __jitExceptionCoalesceLeft515;
-        }
-        else
+        var blocksToClone = info.BlocksToClone;
+        if (blocksToClone is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CloneExtentWasNotComputed);
-            __jitExceptionResult514 = default;
         }
-        var blocksToClone = __jitExceptionResult514;
 
         foreach (var block in blocksToClone)
         {

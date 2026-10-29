@@ -148,18 +148,11 @@ public sealed class hashBvIterator
                 return;
             }
 
-            global::RyuJitSharp.hashBv __jitExceptionResult427;
-            var __jitExceptionCoalesceLeft428 = bv;
-            if (__jitExceptionCoalesceLeft428 != null)
-            {
-                __jitExceptionResult427 = __jitExceptionCoalesceLeft428;
-            }
-            else
+            var bitVector = bv;
+            if (bitVector is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.IteratorIsNotInitialized);
-                __jitExceptionResult427 = default;
             }
-            var bitVector = __jitExceptionResult427;
             currNode = bitVector.nodeArr[unchecked((int)hashtable_index)];
         }
 

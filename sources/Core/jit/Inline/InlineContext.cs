@@ -91,18 +91,13 @@ public sealed partial class InlineContext
     {
         get
         {
-            global::System.Collections.BitArray __jitExceptionReturnResult429;
-            var __jitExceptionCoalesceLeft430 = GetDebugData().ILInstsSet;
-            if (__jitExceptionCoalesceLeft430 != null)
-            {
-                __jitExceptionReturnResult429 = __jitExceptionCoalesceLeft430;
-            }
-            else
+            var instructionSet = GetDebugData().ILInstsSet;
+            if (instructionSet is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineInstructionStateHasNotBeenInitialized);
-                __jitExceptionReturnResult429 = default;
             }
-            return __jitExceptionReturnResult429;
+
+            return instructionSet;
         }
 
         set
