@@ -180,31 +180,17 @@ public partial class Compiler
                 {
                     var local = tree.AsLclVarCommon();
                     ref var varDsc = ref lvaGetDesc(local.LclNum);
-                    bool __jitExceptionResult271;
-                    bool __jitExceptionShortCircuitLeft272;
-                    __jitExceptionShortCircuitLeft272 = varDsc.lvTracked;
-                    if (__jitExceptionShortCircuitLeft272)
+                    var isRefLocalCandidate = false;
+                    if (varDsc.lvTracked)
                     {
-                        var __jitExceptionArgument273 = this;
-                        nint[] __jitExceptionArgument274;
-                        var __jitExceptionCoalesceLeft275 = m_wasmGCRefCandidates;
-                        if (__jitExceptionCoalesceLeft275 != null)
-                        {
-                            __jitExceptionArgument274 = __jitExceptionCoalesceLeft275;
-                        }
-                        else
+                        var candidates = m_wasmGCRefCandidates;
+                        if (candidates is null)
                         {
                             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmGCRefCandidatesWereNotComputed);
-                            __jitExceptionArgument274 = default;
                         }
 
-                        __jitExceptionResult271 = VarSetOps.IsMember(__jitExceptionArgument273, __jitExceptionArgument274, varDsc._varIndex);
+                        isRefLocalCandidate = VarSetOps.IsMember(this, candidates, varDsc._varIndex);
                     }
-                    else
-                    {
-                        __jitExceptionResult271 = false;
-                    }
-                    var isRefLocalCandidate = __jitExceptionResult271;
 
                     // Non-candidate locals have a pinned stack home; candidate reads may still need spilling.
                     if (!varDsc.IsAddressExposed && !isRefLocalCandidate)

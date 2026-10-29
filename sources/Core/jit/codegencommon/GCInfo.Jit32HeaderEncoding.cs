@@ -1112,18 +1112,12 @@ public partial struct GCInfo
 
     internal static byte EncodeHeaderFirst(in InfoHdr header, out InfoHdr state, ref int more, ref int cached)
     {
-        int[] __jitExceptionResult32;
-        var __jitExceptionCoalesceLeft33 = Volatile.Read(ref s_infoHdrLookup);
-        if (__jitExceptionCoalesceLeft33 != null)
-        {
-            __jitExceptionResult32 = __jitExceptionCoalesceLeft33;
-        }
-        else
+        var lookup = Volatile.Read(ref s_infoHdrLookup);
+        if (lookup is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JIT32GCEncoderLookupTableHasNotBeenInitialized);
-            __jitExceptionResult32 = default;
         }
-        var lookup = __jitExceptionResult32;
+
         var index = cached;
 
         if (index != NO_CACHED_HEADER &&

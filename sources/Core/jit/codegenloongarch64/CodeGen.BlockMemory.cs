@@ -104,18 +104,12 @@ public sealed partial class CodeGen
             var addrMode = dstAddr.AsAddrMode();
             assert(!addrMode.HasIndex);
 
-            global::RyuJitSharp.GenTree __jitExceptionResult0;
-            var __jitExceptionCoalesceLeft1 = addrMode.BaseAddress;
-            if (__jitExceptionCoalesceLeft1 != null)
-            {
-                __jitExceptionResult0 = __jitExceptionCoalesceLeft1;
-            }
-            else
+            var baseAddress = addrMode.BaseAddress;
+            if (baseAddress is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockCopyDestinationAddressModeRequiresABase);
-                __jitExceptionResult0 = default;
             }
-            var baseAddress = __jitExceptionResult0;
+
             dstAddrBaseReg = genConsumeReg(baseAddress);
             dstOffset = addrMode.Offset;
         }
@@ -151,18 +145,12 @@ public sealed partial class CodeGen
             else if (srcAddr.Oper.IsAddrMode)
             {
                 var addrMode = srcAddr.AsAddrMode();
-                global::RyuJitSharp.GenTree __jitExceptionResult2;
-                var __jitExceptionCoalesceLeft3 = addrMode.BaseAddress;
-                if (__jitExceptionCoalesceLeft3 != null)
-                {
-                    __jitExceptionResult2 = __jitExceptionCoalesceLeft3;
-                }
-                else
+                var baseAddress = addrMode.BaseAddress;
+                if (baseAddress is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockCopySourceAddressModeRequiresABase);
-                    __jitExceptionResult2 = default;
                 }
-                var baseAddress = __jitExceptionResult2;
+
                 srcAddrBaseReg = genConsumeReg(baseAddress);
                 srcOffset = addrMode.Offset;
             }

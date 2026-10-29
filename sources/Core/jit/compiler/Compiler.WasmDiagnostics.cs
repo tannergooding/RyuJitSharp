@@ -17,18 +17,12 @@ public partial class Compiler
             return;
         }
 
-        global::System.Collections.Generic.List<global::RyuJitSharp.WasmInterval> __jitExceptionResult72;
-        var __jitExceptionCoalesceLeft73 = fgWasmIntervals;
-        if (__jitExceptionCoalesceLeft73 != null)
-        {
-            __jitExceptionResult72 = __jitExceptionCoalesceLeft73;
-        }
-        else
+        var intervals = fgWasmIntervals;
+        if (intervals is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmControlFlowIntervalsAreNotAvailableForDiagnostics);
-            __jitExceptionResult72 = default;
         }
-        var intervals = __jitExceptionResult72;
+
         var activeIntervals = new ArrayStack<WasmInterval>();
         var wasmCursor = 0;
         JITDUMP("\ndigraph WASM {\n");
@@ -94,18 +88,12 @@ public partial class Compiler
             {
                 if (block.isBBCallFinallyPair)
                 {
-                    global::RyuJitSharp.BasicBlock __jitExceptionResult74;
-                    var __jitExceptionCoalesceLeft75 = block.Next;
-                    if (__jitExceptionCoalesceLeft75 != null)
-                    {
-                        __jitExceptionResult74 = __jitExceptionCoalesceLeft75;
-                    }
-                    else
+                    var next = block.Next;
+                    if (next is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PairedWasmCallFinallyBlockHasNoFollowingBlock);
-                        __jitExceptionResult74 = default;
                     }
-                    var next = __jitExceptionResult74;
+
                     JITDUMP($"   {FMT_BB(block.bbNum)} -> {FMT_BB(next.bbNum)} [style=dotted];\n");
                 }
             }

@@ -24,45 +24,44 @@ public sealed partial class CodeGen
             GetEmitter().emitIns(INS_i64_extend_u_i32);
         }
 
-        global::RyuJitSharp.instruction __jitExceptionResult44;
+        instruction ins;
         switch (treeNode.Oper, treeNode.Type)
         {
             case (GT_LSH, TYP_INT):
-                __jitExceptionResult44 = INS_i32_shl;
+                ins = INS_i32_shl;
                 break;
             case (GT_LSH, TYP_LONG):
-                __jitExceptionResult44 = INS_i64_shl;
+                ins = INS_i64_shl;
                 break;
             case (GT_RSH, TYP_INT):
-                __jitExceptionResult44 = INS_i32_shr_s;
+                ins = INS_i32_shr_s;
                 break;
             case (GT_RSH, TYP_LONG):
-                __jitExceptionResult44 = INS_i64_shr_s;
+                ins = INS_i64_shr_s;
                 break;
             case (GT_RSZ, TYP_INT):
-                __jitExceptionResult44 = INS_i32_shr_u;
+                ins = INS_i32_shr_u;
                 break;
             case (GT_RSZ, TYP_LONG):
-                __jitExceptionResult44 = INS_i64_shr_u;
+                ins = INS_i64_shr_u;
                 break;
             case (GT_ROL, TYP_INT):
-                __jitExceptionResult44 = INS_i32_rotl;
+                ins = INS_i32_rotl;
                 break;
             case (GT_ROL, TYP_LONG):
-                __jitExceptionResult44 = INS_i64_rotl;
+                ins = INS_i64_rotl;
                 break;
             case (GT_ROR, TYP_INT):
-                __jitExceptionResult44 = INS_i32_rotr;
+                ins = INS_i32_rotr;
                 break;
             case (GT_ROR, TYP_LONG):
-                __jitExceptionResult44 = INS_i64_rotr;
+                ins = INS_i64_rotr;
                 break;
             default:
                 JitExceptionHelpers.ThrowUnreachableException();
-                __jitExceptionResult44 = default;
+                ins = default;
                 break;
         }
-        var ins = __jitExceptionResult44;
 
         GetEmitter().emitIns(ins);
         WasmProduceReg(treeNode);

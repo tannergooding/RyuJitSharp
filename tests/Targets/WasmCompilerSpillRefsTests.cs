@@ -131,6 +131,82 @@ internal static unsafe class WasmCompilerSpillRefsTests
 
     [TestCase(false)]
     [TestCase(true)]
+    public static void TrackedReferenceSpillsOnlyWhenItIsAGCRefCandidate(bool isCandidate)
+    {
+        WithCompiler(TYP_REF, compiler =>
+        {
+            ref var local = ref compiler.lvaGetDesc(0);
+            local.lvTracked = true;
+            local._varIndex = 0;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaTrackedToVarNum = [0];
+
+            var candidates = VarSetOps.MakeEmpty(compiler);
+            if (isCandidate)
+            {
+                VarSetOps.AddElemD(compiler, candidates, 0);
+            }
+            compiler.m_wasmGCRefCandidates = candidates;
+
+            var block = new BasicBlock(null, null) { Kind = BBJ_THROW };
+            block.MakeLir(null, null);
+            var definition = compiler.gtNewLclVarNode(TYP_REF, 0);
+            var call = new GenTreeCall(TYP_VOID);
+            var use = compiler.gtNewStoreLclVarNode(0, definition);
+            block.InsertAtEnd(definition);
+            block.InsertAtEnd(call);
+            block.InsertAtEnd(use);
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+
+            var status = compiler.fgWasmSpillRefs();
+            Assert.That(status, Is.EqualTo(isCandidate
+                ? PhaseStatus.MODIFIED_EVERYTHING
+                : PhaseStatus.MODIFIED_NOTHING));
+
+            if (isCandidate)
+            {
+                Assert.That(compiler.lvaCount, Is.EqualTo(2));
+                var spill = definition.Next as GenTreeLclVar
+                    ?? throw new AssertionException("The candidate reference was not spilled.");
+                var reload = spill.Next as GenTreeLclVar
+                    ?? throw new AssertionException("The candidate spill was not reloaded.");
+                Assert.That(spill.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+                Assert.That(spill.LclNum, Is.EqualTo(1));
+                Assert.That(reload.Oper, Is.EqualTo(GT_LCL_VAR));
+                Assert.That(reload.LclNum, Is.EqualTo(1));
+                Assert.That(use.Data, Is.SameAs(reload));
+            }
+            else
+            {
+                Assert.That(compiler.lvaCount, Is.EqualTo(1));
+                Assert.That(use.Data, Is.SameAs(definition));
+            }
+        });
+    }
+
+    [Test]
+    public static void TrackedReferenceRequiresComputedGCRefCandidates()
+    {
+        WithCompiler(TYP_REF, compiler =>
+        {
+            ref var local = ref compiler.lvaGetDesc(0);
+            local.lvTracked = true;
+            local._varIndex = 0;
+
+            var block = new BasicBlock(null, null) { Kind = BBJ_THROW };
+            block.MakeLir(null, null);
+            block.InsertAtEnd(compiler.gtNewLclVarNode(TYP_REF, 0));
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+
+            _ = Assert.Throws<InvalidOperationException>(() => compiler.fgWasmSpillRefs());
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
     public static void GCRefCandidateDependsOnSafepointLiveness(bool liveAcrossSafepoint)
     {
         WithCompiler(TYP_REF, compiler =>

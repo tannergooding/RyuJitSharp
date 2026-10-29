@@ -205,33 +205,32 @@ public partial class Compiler
         assert(vnStore is not null);
         var oper = tree.Oper;
         assert(oper is GT_ADD or GT_SUB or GT_MUL);
-        global::RyuJitSharp.VNFunc __jitExceptionResult266;
+        VNFunc vnf;
         switch (oper, tree.AsOp().IsUnsigned)
         {
             case (GT_ADD, false):
-                __jitExceptionResult266 = VNF_ADD_OVF;
+                vnf = VNF_ADD_OVF;
                 break;
             case (GT_SUB, false):
-                __jitExceptionResult266 = VNF_SUB_OVF;
+                vnf = VNF_SUB_OVF;
                 break;
             case (GT_MUL, false):
-                __jitExceptionResult266 = VNF_MUL_OVF;
+                vnf = VNF_MUL_OVF;
                 break;
             case (GT_ADD, true):
-                __jitExceptionResult266 = VNF_ADD_UN_OVF;
+                vnf = VNF_ADD_UN_OVF;
                 break;
             case (GT_SUB, true):
-                __jitExceptionResult266 = VNF_SUB_UN_OVF;
+                vnf = VNF_SUB_UN_OVF;
                 break;
             case (GT_MUL, true):
-                __jitExceptionResult266 = VNF_MUL_UN_OVF;
+                vnf = VNF_MUL_UN_OVF;
                 break;
             default:
                 JitExceptionHelpers.ThrowUnreachableException();
-                __jitExceptionResult266 = default;
+                vnf = default;
                 break;
         }
-        var vnf = __jitExceptionResult266;
         _ = vnf;
 
         for (var kind = VNK_Liberal; kind <= VNK_Conservative; kind++)

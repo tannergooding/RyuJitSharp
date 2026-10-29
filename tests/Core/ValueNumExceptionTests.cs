@@ -308,8 +308,11 @@ internal static unsafe class ValueNumExceptionTests
     }
 
     [TestCase(GT_ADD, false, VNF_ADD_OVF)]
+    [TestCase(GT_ADD, true, VNF_ADD_UN_OVF)]
+    [TestCase(GT_SUB, false, VNF_SUB_OVF)]
     [TestCase(GT_SUB, true, VNF_SUB_UN_OVF)]
     [TestCase(GT_MUL, false, VNF_MUL_OVF)]
+    [TestCase(GT_MUL, true, VNF_MUL_UN_OVF)]
     public static void OverflowSkipsIdentityAndAddsExceptionToSymbolicResult(
         genTreeOps oper, bool unsigned, VNFunc func)
     {

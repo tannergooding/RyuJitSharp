@@ -74,16 +74,13 @@ public partial class Compiler
                     }
                 }
 
-                var __jitExceptionCoalesceLeft196 = block.Next;
-                if (__jitExceptionCoalesceLeft196 != null)
-                {
-                    block = __jitExceptionCoalesceLeft196;
-                }
-                else
+                var next = block.Next;
+                if (next is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TryRegionEndedPrematurely);
-                    block = default;
                 }
+
+                block = next;
             }
         }
 

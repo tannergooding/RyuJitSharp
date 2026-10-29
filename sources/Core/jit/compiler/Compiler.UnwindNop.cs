@@ -251,18 +251,12 @@ public partial class Compiler
 
             if (funcHasColdSection)
             {
-                global::RyuJitSharp.UnwindInfo __jitExceptionResult249;
-                var __jitExceptionCoalesceLeft250 = coldUnwindInfo;
-                if (__jitExceptionCoalesceLeft250 != null)
-                {
-                    __jitExceptionResult249 = __jitExceptionCoalesceLeft250;
-                }
-                else
+                var coldInfo = coldUnwindInfo;
+                if (coldInfo is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ColdUnwindInformationWasNotInitialized);
-                    __jitExceptionResult249 = default;
                 }
-                var coldInfo = __jitExceptionResult249;
+
                 coldInfo.Split();
                 coldInfo.Reserve(isFunclet, false);
             }
@@ -289,18 +283,12 @@ public partial class Compiler
 
             if (funcHasColdSection)
             {
-                global::RyuJitSharp.UnwindInfo __jitExceptionResult251;
-                var __jitExceptionCoalesceLeft252 = func.uwiCold;
-                if (__jitExceptionCoalesceLeft252 != null)
-                {
-                    __jitExceptionResult251 = __jitExceptionCoalesceLeft252;
-                }
-                else
+                var coldUnwindInfo = func.uwiCold;
+                if (coldUnwindInfo is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ColdUnwindInformationWasNotInitialized);
-                    __jitExceptionResult251 = default;
                 }
-                var coldUnwindInfo = __jitExceptionResult251;
+
                 coldUnwindInfo.Split();
                 coldUnwindInfo.Reserve(isFunclet, false);
             }

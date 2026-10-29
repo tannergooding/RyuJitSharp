@@ -2095,6 +2095,52 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+    [TestCase(true, FatalJitErrorCode.BlockCopyDestinationAddressModeRequiresABase)]
+    [TestCase(false, FatalJitErrorCode.BlockCopySourceAddressModeRequiresABase)]
+    public static void BlockCopyAddressModeRequiresBase(
+        bool missingDestinationBase, FatalJitErrorCode expectedErrorCode)
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var address = new GenTreeAddrMode(
+                TYP_BYREF, Register(compiler, TYP_BYREF, REG_S0), null, 0, 8)
+            {
+                IsContained = true,
+                BaseAddress = null,
+            };
+
+            GenTree destination;
+            GenTree source;
+            if (missingDestinationBase)
+            {
+                destination = address;
+                source = new GenTreeIntCon(TYP_INT, 0)
+                {
+                    IsContained = true,
+                };
+            }
+            else
+            {
+                destination = Register(compiler, TYP_BYREF, REG_S0);
+                source = new GenTreeIndir(GT_IND, TYP_STRUCT, address)
+                {
+                    IsContained = true,
+                };
+            }
+
+            var block = new GenTreeBlk(TYP_STRUCT, destination, source, new ClassLayout(8))
+            {
+                _kind = GenTreeBlk.BlkOpKindUnroll,
+            };
+            var failure = Assert.Throws<InvalidOperationException>(() => codeGen.genCodeForCpBlkUnroll(block));
+
+            Assert.That(failure?.Message,
+                Is.EqualTo(FatalJitException.GetOptionalFailureMessage(expectedErrorCode)));
+        });
+    }
+
     [Test]
     public static void IndirectStorePreservesVolatileBarrierBeforeTargetRecording()
     {

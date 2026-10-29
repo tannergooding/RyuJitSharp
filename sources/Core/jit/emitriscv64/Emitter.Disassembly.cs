@@ -129,18 +129,12 @@ public partial class Emitter
 
     private void emitDispImmediateRiscV64(nint immediate, bool newLine = true, uint regBase = (uint)REG_RISCV64_ZERO)
     {
-        global::RyuJitSharp.Compiler __jitExceptionResult343;
-        var __jitExceptionCoalesceLeft344 = _compiler;
-        if (__jitExceptionCoalesceLeft344 != null)
-        {
-            __jitExceptionResult343 = __jitExceptionCoalesceLeft344;
-        }
-        else
+        var compiler = _compiler;
+        if (compiler is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
-            __jitExceptionResult343 = default;
         }
-        var compiler = __jitExceptionResult343;
+
         if (compiler.opts.disDiffable && (regBase != (uint)REG_RISCV64_FP) && (regBase != (uint)REG_RISCV64_SP))
         {
             jitprintf("0xD1FFAB1E");
@@ -164,18 +158,12 @@ public partial class Emitter
     private unsafe void emitDispInsNameRiscV64(
         uint code, byte* addr, bool doffs, uint insOffset, instrDesc? id, insGroup? ig)
     {
-        global::RyuJitSharp.Compiler __jitExceptionResult345;
-        var __jitExceptionCoalesceLeft346 = _compiler;
-        if (__jitExceptionCoalesceLeft346 != null)
-        {
-            __jitExceptionResult345 = __jitExceptionCoalesceLeft346;
-        }
-        else
+        var compiler = _compiler;
+        if (compiler is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
-            __jitExceptionResult345 = default;
         }
-        var compiler = __jitExceptionResult345;
+
         emitDispInsAddr(addr - writeableOffset);
         emitDispInsOffs(insOffset, doffs);
 
@@ -260,25 +248,13 @@ public partial class Emitter
                 var funct3 = (code >> 12) & 0x7;
                 var rs1 = (code >> 15) & 0x1f;
                 var rs2 = (code >> 20) & 0x1f;
-                bool __jitExceptionCondition347;
-                bool __jitExceptionOperand348;
-                var __jitExceptionArgument349 = funct3;
-                var __jitExceptionArgument350 = rs1;
-                var __jitExceptionArgument351 = rs2;
-                global::RyuJitSharp.Emitter.instrDesc __jitExceptionArgument352;
-                var __jitExceptionCoalesceLeft353 = id;
-                if (__jitExceptionCoalesceLeft353 != null)
-                {
-                    __jitExceptionArgument352 = __jitExceptionCoalesceLeft353;
-                }
-                else
+                var branchId = id;
+                if (branchId is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVBranchDisassemblyRequiresAnInstructionDescriptor);
-                    __jitExceptionArgument352 = default;
                 }
-                __jitExceptionOperand348 = emitDispBranchRiscV64(__jitExceptionArgument349, __jitExceptionArgument350, __jitExceptionArgument351, __jitExceptionArgument352, ig, addr == null);
-                __jitExceptionCondition347 = !__jitExceptionOperand348;
-                if (__jitExceptionCondition347)
+
+                if (!emitDispBranchRiscV64(funct3, rs1, rs2, branchId, ig, addr == null))
                 {
                     emitDispIllegalInstructionRiscV64(code);
                 }
@@ -805,18 +781,12 @@ public partial class Emitter
             jitprintf($"{mnemonic,-15}");
             if (id?.idIsBound() == true)
             {
-                global::RyuJitSharp.insGroup __jitExceptionResult354;
-                var __jitExceptionCoalesceLeft355 = id.RiscVIGlabel;
-                if (__jitExceptionCoalesceLeft355 != null)
-                {
-                    __jitExceptionResult354 = __jitExceptionCoalesceLeft355;
-                }
-                else
+                var target = id.RiscVIGlabel;
+                if (target is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BoundRISCVJumpRequiresAnInstructionGroup);
-                    __jitExceptionResult354 = default;
                 }
-                var target = __jitExceptionResult354;
+
                 emitPrintLabel(target);
             }
             else if (noAddress && (immediate == 0))
@@ -855,18 +825,12 @@ public partial class Emitter
             return;
         }
 
-        global::RyuJitSharp.Compiler __jitExceptionResult356;
-        var __jitExceptionCoalesceLeft357 = _compiler;
-        if (__jitExceptionCoalesceLeft357 != null)
-        {
-            __jitExceptionResult356 = __jitExceptionCoalesceLeft357;
-        }
-        else
+        var compiler = _compiler;
+        if (compiler is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
-            __jitExceptionResult356 = default;
         }
-        var compiler = __jitExceptionResult356;
+
         var methodName = compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)debugInfo.idMemCookie);
         jitprintf($"\t\t// {methodName}");
     }
@@ -1284,35 +1248,23 @@ public partial class Emitter
     {
         if (Configuration.DEBUG)
         {
-            global::RyuJitSharp.Compiler __jitExceptionResult358;
-            var __jitExceptionCoalesceLeft359 = _compiler;
-            if (__jitExceptionCoalesceLeft359 != null)
-            {
-                __jitExceptionResult358 = __jitExceptionCoalesceLeft359;
-            }
-            else
+            var compiler = _compiler;
+            if (compiler is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
-                __jitExceptionResult358 = default;
             }
-            var compiler = __jitExceptionResult358;
+
             if (!compiler.verbose)
             {
                 return;
             }
 
-            global::RyuJitSharp.Emitter.instrDescDebugInfo __jitExceptionResult360;
-            var __jitExceptionCoalesceLeft361 = id.idDebugOnlyInfo();
-            if (__jitExceptionCoalesceLeft361 != null)
-            {
-                __jitExceptionResult360 = __jitExceptionCoalesceLeft361;
-            }
-            else
+            var debugInfo = id.idDebugOnlyInfo();
+            if (debugInfo is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVInstructionDisassemblyRequiresDebugDescriptorInfo);
-                __jitExceptionResult360 = default;
             }
-            var debugInfo = __jitExceptionResult360;
+
             jitprintf($"IN{debugInfo.idNum:x4}: ");
         }
     }
@@ -1403,18 +1355,12 @@ public partial class Emitter
         }
 
         emitDispInsInstrNumRiscV64(id);
-        global::RyuJitSharp.Compiler __jitExceptionResult362;
-        var __jitExceptionCoalesceLeft363 = _compiler;
-        if (__jitExceptionCoalesceLeft363 != null)
-        {
-            __jitExceptionResult362 = __jitExceptionCoalesceLeft363;
-        }
-        else
+        var compiler = _compiler;
+        if (compiler is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
-            __jitExceptionResult362 = default;
         }
-        var compiler = __jitExceptionResult362;
+
         var printLoadImmediate = (id.idInsOpt() == INS_OPTS_RISCV64_I) && !compiler.opts.disDiffable;
         var instructionBytes = code + writeableOffset;
         nuint instructionSize;

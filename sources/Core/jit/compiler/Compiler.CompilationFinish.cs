@@ -219,18 +219,11 @@ public partial class Compiler
 
         var data = GetDebugData();
 
-        global::System.Threading.Lock __jitExceptionResult124;
-        var __jitExceptionCoalesceLeft125 = DebugData.LoopHoistStatsData.s_loopHoistStatsLock;
-        if (__jitExceptionCoalesceLeft125 != null)
-        {
-            __jitExceptionResult124 = __jitExceptionCoalesceLeft125;
-        }
-        else
+        var gate = DebugData.LoopHoistStatsData.s_loopHoistStatsLock;
+        if (gate is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopHoistStatisticsLockIsUnavailable);
-            __jitExceptionResult124 = default;
         }
-        var gate = __jitExceptionResult124;
 
         lock (gate)
         {

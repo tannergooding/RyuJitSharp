@@ -536,6 +536,71 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
+    [TestCase(GT_LSH, TYP_INT, INS_i32_shl)]
+    [TestCase(GT_LSH, TYP_LONG, INS_i64_shl)]
+    [TestCase(GT_RSH, TYP_INT, INS_i32_shr_s)]
+    [TestCase(GT_RSH, TYP_LONG, INS_i64_shr_s)]
+    [TestCase(GT_RSZ, TYP_INT, INS_i32_shr_u)]
+    [TestCase(GT_RSZ, TYP_LONG, INS_i64_shr_u)]
+    [TestCase(GT_ROL, TYP_INT, INS_i32_rotl)]
+    [TestCase(GT_ROL, TYP_LONG, INS_i64_rotl)]
+    [TestCase(GT_ROR, TYP_INT, INS_i32_rotr)]
+    [TestCase(GT_ROR, TYP_LONG, INS_i64_rotr)]
+    public static void ShiftAndRotateUseMatchingWasmInstruction(
+        genTreeOps oper, var_types type, instruction expectedInstruction)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var descriptors = CurrentDescriptors(emitter)
+                ?? throw new AssertionException("Missing Wasm instruction descriptors.");
+            var firstDescriptor = descriptors.Count;
+            var valueInstruction = type is TYP_INT ? INS_i32_const : INS_i64_const;
+
+            emitter.emitIns_I(valueInstruction, type.EmitSize, 7);
+            emitter.emitIns_I(INS_i32_const, EA_4BYTE, 1);
+
+            var value = compiler.gtNewIconNode(type, 7);
+            value.IsContained = true;
+            var amount = compiler.gtNewIconNode(TYP_INT, 1);
+            amount.IsContained = true;
+            var shift = new GenTreeOp(oper, type, value, amount) { RegNum = Globals.REG_NA };
+
+            codeGen.genCodeForShiftWasm(shift);
+
+            var expected = new List<instruction> { valueInstruction, INS_i32_const };
+            if (type is TYP_LONG)
+            {
+                expected.Add(INS_i64_extend_u_i32);
+            }
+            expected.Add(expectedInstruction);
+
+            var actual = new instruction[descriptors.Count - firstDescriptor];
+            for (var index = 0; index < actual.Length; index++)
+            {
+                actual[index] = descriptors[firstDescriptor + index].idIns();
+            }
+
+            Assert.That(actual, Is.EqualTo(expected));
+        });
+    }
+
+    [Test]
+    public static void UnsupportedShiftTypeRemainsUnreachable()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var value = compiler.gtNewIconNode(TYP_INT, 1);
+            value.IsContained = true;
+            var amount = compiler.gtNewIconNode(TYP_INT, 1);
+            amount.IsContained = true;
+            var shift = new GenTreeOp(GT_LSH, TYP_SIMD16, value, amount) { RegNum = Globals.REG_NA };
+
+            _ = Assert.Throws<System.Diagnostics.UnreachableException>(
+                () => codeGen.genCodeForShiftWasm(shift));
+        });
+    }
+
     [Test]
     public static void NativeAotTryIntervalsEmitPlainBlocks()
     {

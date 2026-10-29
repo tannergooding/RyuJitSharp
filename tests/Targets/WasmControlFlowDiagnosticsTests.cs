@@ -40,6 +40,34 @@ internal static unsafe class WasmControlFlowDiagnosticsTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void VerboseDumpRequiresIntervals(bool dumpDot)
+    {
+        WithCompiler(compiler => {
+            compiler.fgWasmIntervals = null;
+            Action dump = dumpDot ? compiler.fgDumpWasmControlFlowDot : compiler.fgDumpWasmControlFlow;
+
+            var failure = Assert.Throws<InvalidOperationException>(() => Capture(compiler, dump));
+
+            Assert.That(failure, Is.Not.Null);
+        });
+    }
+
+    [Test]
+    public static void DotDumpUsesThePairedCallFinallyContinuation()
+    {
+        WithCompiler(compiler => {
+            var blocks = NewBlocks(compiler, BBJ_CALLFINALLY, BBJ_CALLFINALLYRET, BBJ_RETURN);
+            blocks[1].TargetEdge = compiler.fgAddRefPred(blocks[2], blocks[1]);
+
+            var output = Capture(compiler, compiler.fgDumpWasmControlFlowDot);
+
+            Assert.That(output, Does.Contain("BB01 -> BB02 [style=dotted];"));
+            Assert.That(blocks[0].isBBCallFinallyPair, Is.True);
+        });
+    }
+
     [Test]
     public static void LoopBackedgeBindsToStartAndClosesAtMethodEnd()
     {

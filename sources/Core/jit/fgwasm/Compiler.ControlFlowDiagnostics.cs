@@ -18,18 +18,12 @@ public partial class Compiler
             return;
         }
 
-        global::System.Collections.Generic.List<global::RyuJitSharp.WasmInterval> __jitExceptionResult76;
-        var __jitExceptionCoalesceLeft77 = fgWasmIntervals;
-        if (__jitExceptionCoalesceLeft77 != null)
-        {
-            __jitExceptionResult76 = __jitExceptionCoalesceLeft77;
-        }
-        else
+        var intervals = fgWasmIntervals;
+        if (intervals is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmControlFlowIntervalsAreNotAvailableForDiagnostics);
-            __jitExceptionResult76 = default;
         }
-        var intervals = __jitExceptionResult76;
+
         var activeIntervals = new ArrayStack<WasmInterval>();
         var wasmCursor = 0;
 

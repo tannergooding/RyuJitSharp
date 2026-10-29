@@ -55,34 +55,19 @@ public ref struct Arm32Classifier
 
         uint alignment = 4;
 
-        bool __jitExceptionCondition2;
-        bool __jitExceptionShortCircuitLeft3;
-        __jitExceptionShortCircuitLeft3 = type is TYP_LONG or TYP_DOUBLE;
-        if (__jitExceptionShortCircuitLeft3)
+        var requiresDoubleAlignment = type is TYP_LONG or TYP_DOUBLE;
+        if (type is TYP_STRUCT)
         {
-            __jitExceptionCondition2 = true;
-        }
-        else
-        {
-            bool __jitExceptionShortCircuitLeft4;
-            __jitExceptionShortCircuitLeft4 = type is TYP_STRUCT;
-            if (__jitExceptionShortCircuitLeft4)
+            var layout = structLayout;
+            if (layout is null)
             {
-                var layout = structLayout;
-                if (layout is null)
-                {
-                    JitExceptionHelpers.ThrowArgumentNullException(FatalJitArgument.StructLayout);
-                }
+                JitExceptionHelpers.ThrowArgumentNullException(FatalJitArgument.StructLayout);
+            }
 
-                __jitExceptionCondition2 =
-                    comp.eeGetClassAlignmentRequirement(layout.ClassHandle) == 8;
-            }
-            else
-            {
-                __jitExceptionCondition2 = false;
-            }
+            requiresDoubleAlignment = comp.eeGetClassAlignmentRequirement(layout.ClassHandle) == 8;
         }
-        if (__jitExceptionCondition2)
+
+        if (requiresDoubleAlignment)
         {
             alignment = 8;
             _nextIntReg = roundUp(_nextIntReg, 2);

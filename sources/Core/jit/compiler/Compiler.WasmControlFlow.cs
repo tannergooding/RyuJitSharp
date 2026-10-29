@@ -425,18 +425,12 @@ public partial class Compiler
             }
             else
             {
-                global::RyuJitSharp.BasicBlock __jitExceptionResult267;
-                var __jitExceptionCoalesceLeft268 = lastBlock;
-                if (__jitExceptionCoalesceLeft268 != null)
-                {
-                    __jitExceptionResult267 = __jitExceptionCoalesceLeft268;
-                }
-                else
+                var previousBlock = lastBlock;
+                if (previousBlock is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmBlockReorderingRequiresAPrecedingBlock);
-                    __jitExceptionResult267 = default;
                 }
-                var previousBlock = __jitExceptionResult267;
+
                 fgUnlinkBlock(block);
                 fgInsertBBafter(previousBlock, block);
 
@@ -466,18 +460,12 @@ public partial class Compiler
                         $"Reversing condition in {FMT_BB(block.bbNum)} to allow fall through to " +
                         $"{FMT_BB(block.TrueTarget.bbNum)}\n");
 
-                    global::RyuJitSharp.GenTree __jitExceptionResult269;
-                    var __jitExceptionCoalesceLeft270 = block.LastLIRNode;
-                    if (__jitExceptionCoalesceLeft270 != null)
-                    {
-                        __jitExceptionResult269 = __jitExceptionCoalesceLeft270;
-                    }
-                    else
+                    var test = block.LastLIRNode;
+                    if (test is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConditionalWasmBlockRequiresAFinalLIRNode);
-                        __jitExceptionResult269 = default;
                     }
-                    var test = __jitExceptionResult269;
+
                     assert(test.Oper is GT_JTRUE);
                     var conditional = test.AsUnOp();
                     var condition = gtReverseCond(conditional.Op1);

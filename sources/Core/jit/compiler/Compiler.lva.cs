@@ -2479,21 +2479,20 @@ public partial class Compiler
         {
             assert(lvaIsOSRLocal(varNum));
             var vectorLength = getRuntimeVectorTByteLength();
-            int __jitExceptionResult223;
+            int size;
             switch (varType)
             {
                 case TYP_SIMD_ARM64:
-                    __jitExceptionResult223 = unchecked((int)vectorLength);
+                    size = unchecked((int)vectorLength);
                     break;
                 case TYP_MASK:
-                    __jitExceptionResult223 = unchecked((int)(vectorLength / 8));
+                    size = unchecked((int)(vectorLength / 8));
                     break;
                 default:
                     JitExceptionHelpers.ThrowUnreachableException();
-                    __jitExceptionResult223 = default;
+                    size = default;
                     break;
             }
-            var size = __jitExceptionResult223;
             assert(size != 0);
             return size;
         }

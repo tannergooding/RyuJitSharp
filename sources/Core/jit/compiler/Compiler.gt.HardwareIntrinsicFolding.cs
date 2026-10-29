@@ -184,16 +184,13 @@ public partial class Compiler
                 else if (Configuration.TARGET_ARM64)
                 {
                     assert(op.Oper.IsHWIntrinsic && op.AsHWIntrinsic().HWIntrinsicId == NI_Sve_ConversionTrueMask);
-                    var __jitExceptionCoalesceLeft219 = op2;
-                    if (__jitExceptionCoalesceLeft219 != null)
-                    {
-                        op = __jitExceptionCoalesceLeft219;
-                    }
-                    else
+                    var vector = op2;
+                    if (vector is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException();
-                        op = default;
                     }
+
+                    op = vector;
                     tryHandle = op.Oper.IsHWIntrinsic;
                 }
 

@@ -167,23 +167,22 @@ public partial class Compiler
     );
             return;
         }
-
         assert(varTypeHasUnknownSize(temp.tdTempType));
-        int __jitExceptionResult248;
+        int offset;
         switch (temp.tdTempType)
         {
             case TYP_SIMD_ARM64:
-                __jitExceptionResult248 = unchecked((int)unkSizeFrame.AllocVector(this));
+                offset = unchecked((int)unkSizeFrame.AllocVector(this));
                 break;
             case TYP_MASK:
-                __jitExceptionResult248 = unchecked((int)unkSizeFrame.AllocMask(this));
+                offset = unchecked((int)unkSizeFrame.AllocMask(this));
                 break;
             default:
                 JitExceptionHelpers.ThrowUnreachableException();
-                __jitExceptionResult248 = default;
+                offset = default;
                 break;
         }
-        var offset = __jitExceptionResult248;
+
         assert(offset >= 0);
         temp.tdTempOffs = offset;
     }

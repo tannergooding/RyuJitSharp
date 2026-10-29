@@ -164,18 +164,12 @@ public partial struct GCInfo
             }
             else
             {
-                byte[] __jitExceptionResult34;
-                var __jitExceptionCoalesceLeft35 = _topArray;
-                if (__jitExceptionCoalesceLeft35 != null)
-                {
-                    __jitExceptionResult34 = __jitExceptionCoalesceLeft35;
-                }
-                else
+                var topArray = _topArray;
+                if (topArray is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PendingArgumentStackIsMissingItsOverflowStorage);
-                    __jitExceptionResult34 = default;
                 }
-                var topArray = __jitExceptionResult34;
+
                 topArray[checked((int)(_depth - PasMaskBits))] = (byte)gcType;
                 if (gcType != GCT_NONE)
                 {
@@ -191,18 +185,12 @@ public partial struct GCInfo
             assert(_depth >= count);
             while ((_depth > PasMaskBits) && (count != 0))
             {
-                byte[] __jitExceptionResult36;
-                var __jitExceptionCoalesceLeft37 = _topArray;
-                if (__jitExceptionCoalesceLeft37 != null)
-                {
-                    __jitExceptionResult36 = __jitExceptionCoalesceLeft37;
-                }
-                else
+                var topArray = _topArray;
+                if (topArray is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PendingArgumentStackIsMissingItsOverflowStorage);
-                    __jitExceptionResult36 = default;
                 }
-                var topArray = __jitExceptionResult36;
+
                 var topIndex = _depth - PasMaskBits - 1;
                 if ((GCtype)topArray[checked((int)topIndex)] != GCT_NONE)
                 {
@@ -238,18 +226,12 @@ public partial struct GCInfo
             for (var currentPosition = _depth; (currentPosition > PasMaskBits) && (gcCount != 0);
                 currentPosition--)
             {
-                byte[] __jitExceptionResult38;
-                var __jitExceptionCoalesceLeft39 = _topArray;
-                if (__jitExceptionCoalesceLeft39 != null)
-                {
-                    __jitExceptionResult38 = __jitExceptionCoalesceLeft39;
-                }
-                else
+                var topArray = _topArray;
+                if (topArray is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PendingArgumentStackIsMissingItsOverflowStorage);
-                    __jitExceptionResult38 = default;
                 }
-                var topArray = __jitExceptionResult38;
+
                 var currentIndex = currentPosition - PasMaskBits - 1;
                 if ((GCtype)topArray[checked((int)currentIndex)] != GCT_NONE)
                 {
@@ -313,18 +295,12 @@ public partial struct GCInfo
             var index = iterator == PasEnumStart ? _depth : iterator;
             for (; index > PasMaskBits; index--)
             {
-                byte[] __jitExceptionResult40;
-                var __jitExceptionCoalesceLeft41 = _topArray;
-                if (__jitExceptionCoalesceLeft41 != null)
-                {
-                    __jitExceptionResult40 = __jitExceptionCoalesceLeft41;
-                }
-                else
+                var topArray = _topArray;
+                if (topArray is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PendingArgumentStackIsMissingItsOverflowStorage);
-                    __jitExceptionResult40 = default;
                 }
-                var topArray = __jitExceptionResult40;
+
                 var argument = (GCtype)topArray[checked((int)(index - PasMaskBits - 1))];
                 if (argument != GCT_NONE)
                 {
@@ -494,18 +470,12 @@ public partial struct GCInfo
                 }
                 else if ((variable.Type == TYP_STRUCT) && variable.lvOnFrame && variable.HasGCPtr)
                 {
-                    global::RyuJitSharp.ClassLayout __jitExceptionResult42;
-                    var __jitExceptionCoalesceLeft43 = variable.Layout;
-                    if (__jitExceptionCoalesceLeft43 != null)
-                    {
-                        __jitExceptionResult42 = __jitExceptionCoalesceLeft43;
-                    }
-                    else
+                    var layout = variable.Layout;
+                    if (layout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalOnTheFrameMustHaveALayout);
-                        __jitExceptionResult42 = default;
                     }
-                    var layout = __jitExceptionResult42;
+
                     for (var slot = 0; slot < layout.SlotCount; slot++)
                     {
                         if (!layout.IsGCPtr(slot))
