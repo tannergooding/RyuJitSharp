@@ -77,18 +77,11 @@ public partial class Compiler
                 return compiler.gtNewIndir(type, GrabAddress(offset, compiler), GetIndirFlags(type));
             }
 
-            global::RyuJitSharp.GenTreeLclVarCommon __jitExceptionResult541;
-            var __jitExceptionCoalesceLeft542 = _local;
-            if (__jitExceptionCoalesceLeft542 != null)
-            {
-                __jitExceptionResult541 = __jitExceptionCoalesceLeft542;
-            }
-            else
+            var local = _local;
+            if (local is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocationWasNotInitialized);
-                __jitExceptionResult541 = default;
             }
-            var local = __jitExceptionResult541;
             var fieldLocal = FindRegularlyPromotedField(offset, compiler);
             if ((fieldLocal != BAD_VAR_NUM) && (compiler.lvaGetDesc(fieldLocal).Type == type))
             {
@@ -109,18 +102,11 @@ public partial class Compiler
                     source, GetIndirFlags(type));
             }
 
-            global::RyuJitSharp.GenTreeLclVarCommon __jitExceptionResult543;
-            var __jitExceptionCoalesceLeft544 = _local;
-            if (__jitExceptionCoalesceLeft544 != null)
-            {
-                __jitExceptionResult543 = __jitExceptionCoalesceLeft544;
-            }
-            else
+            var local = _local;
+            if (local is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocationWasNotInitialized);
-                __jitExceptionResult543 = default;
             }
-            var local = __jitExceptionResult543;
             var fieldLocal = FindRegularlyPromotedField(offset, compiler);
             if ((fieldLocal != BAD_VAR_NUM) && (compiler.lvaGetDesc(fieldLocal).Type == type))
             {

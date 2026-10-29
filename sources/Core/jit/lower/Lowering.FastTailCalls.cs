@@ -78,18 +78,11 @@ public sealed partial class Lowering
                     }
 
                     JITDUMP($"PUTARG_STK [{put.TreeId:D6}] overwrites [{overwrittenStart:D6}..{overwrittenEnd:D6}); parameter V{callerArgLclNum:D3} lives in [{argStart:D6}..{argEnd:D6}); may need defensive copies\n");
-                    global::RyuJitSharp.GenTree __jitExceptionResult94;
-                    var __jitExceptionCoalesceLeft95 = put.Next;
-                    if (__jitExceptionCoalesceLeft95 != null)
-                    {
-                        __jitExceptionResult94 = __jitExceptionCoalesceLeft95;
-                    }
-                    else
+                    var lookForUsesFrom = put.Next;
+                    if (lookForUsesFrom is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StackArgumentMustPrecedeTheTailCall);
-                        __jitExceptionResult94 = default;
                     }
-                    var lookForUsesFrom = __jitExceptionResult94;
                     if ((overwrittenStart != argStart) || (put.Op1.Oper is GT_FIELD_LIST))
                     {
                         JITDUMP("Non-atomic copy may be self-interfering. Expanding search...\n");
@@ -114,18 +107,11 @@ public sealed partial class Lowering
             startNonGCNode = new GenTree(GT_START_NONGC, TYP_VOID);
             BlockRange().InsertBefore(firstPutargStk, startNonGCNode);
 
-            global::RyuJitSharp.BasicBlock __jitExceptionResult96;
-            var __jitExceptionCoalesceLeft97 = compiler.compCurBB;
-            if (__jitExceptionCoalesceLeft97 != null)
-            {
-                __jitExceptionResult96 = __jitExceptionCoalesceLeft97;
-            }
-            else
+            var currentBlock = compiler.compCurBB;
+            if (currentBlock is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FastTailcallLoweringRequiresACurrentBlock);
-                __jitExceptionResult96 = default;
             }
-            var currentBlock = __jitExceptionResult96;
             if ((compiler.fgBBcount == 1) && !currentBlock.HasFlag(BBF_GC_SAFE_POINT))
             {
                 assert(compiler.fgFirstBB == currentBlock);
@@ -146,18 +132,11 @@ public sealed partial class Lowering
     {
         GenTree? result = null;
         Visit(node);
-        global::RyuJitSharp.GenTree __jitExceptionReturnResult459;
-        var __jitExceptionCoalesceLeft460 = result;
-        if (__jitExceptionCoalesceLeft460 != null)
-        {
-            __jitExceptionReturnResult459 = __jitExceptionCoalesceLeft460;
-        }
-        else
+        if (result is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StackArgumentHasNoOperand);
-            __jitExceptionReturnResult459 = default;
         }
-        return __jitExceptionReturnResult459;
+        return result;
 
         void Visit(GenTree current)
         {
@@ -179,23 +158,15 @@ public sealed partial class Lowering
         var tmpLclNum = BAD_VAR_NUM;
         for (var treeNode = lookForUsesStart; treeNode != callNode;)
         {
+            if (treeNode.Oper.IsLocal || (treeNode.Oper is GT_LCL_ADDR))
             {
-                {
-                    if (!treeNode.Oper.IsLocal && (treeNode.Oper is not GT_LCL_ADDR))
-                    {
-                        goto __jitExceptionForIncrement461;
-                    }
-
                     var local = treeNode.AsLclVarCommon();
-                    if (local.LclNum != lclNum)
+                    if (local.LclNum == lclNum)
                     {
-                        goto __jitExceptionForIncrement461;
-                    }
-
-                    if (tmpLclNum == BAD_VAR_NUM)
-                    {
-                        tmpLclNum = compiler.lvaGrabTemp(true, "Fast tail call lowering is creating a new local variable");
-                        ref var callerArgDsc = ref compiler.lvaGetDesc(lclNum);
+                        if (tmpLclNum == BAD_VAR_NUM)
+                        {
+                            tmpLclNum = compiler.lvaGrabTemp(true, "Fast tail call lowering is creating a new local variable");
+                            ref var callerArgDsc = ref compiler.lvaGetDesc(lclNum);
                         var tmpType = callerArgDsc.Type.ActualType;
                         ref var tmpDsc = ref compiler.lvaGetDesc(tmpLclNum);
                         tmpDsc.Type = tmpType;
@@ -219,20 +190,12 @@ public sealed partial class Lowering
 
                         if (tmpType is TYP_STRUCT)
                         {
-                            var __jitExceptionReceiver463 = compiler;
-                            var __jitExceptionArgument464 = tmpLclNum;
-                            global::RyuJitSharp.ClassLayout __jitExceptionArgument465;
-                            var __jitExceptionCoalesceLeft466 = callerArgDsc.Layout;
-                            if (__jitExceptionCoalesceLeft466 != null)
-                            {
-                                __jitExceptionArgument465 = __jitExceptionCoalesceLeft466;
-                            }
-                            else
+                            var layout = callerArgDsc.Layout;
+                            if (layout is null)
                             {
                                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructParameterHasNoLayout);
-                                __jitExceptionArgument465 = default;
                             }
-                            __jitExceptionReceiver463.lvaSetStruct(__jitExceptionArgument464, __jitExceptionArgument465, unsafeValueClsCheck: false);
+                            compiler.lvaSetStruct(tmpLclNum, layout, unsafeValueClsCheck: false);
                         }
 
                         var store = compiler.gtNewStoreLclVarNode(tmpLclNum, value);
@@ -245,18 +208,12 @@ public sealed partial class Lowering
                 }
             }
 
-            __jitExceptionForIncrement461:
-                ;
-            var __jitExceptionCoalesceLeft462 = treeNode.Next;
-            if (__jitExceptionCoalesceLeft462 != null)
-            {
-                treeNode = __jitExceptionCoalesceLeft462;
-            }
-            else
+            var next = treeNode.Next;
+            if (next is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TailCallArgumentUseExtendsBeyondTheCall);
-                treeNode = default;
             }
+            treeNode = next;
         }
     }
 }

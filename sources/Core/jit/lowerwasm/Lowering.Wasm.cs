@@ -83,31 +83,20 @@ public sealed partial class Lowering
                 {
                     if ((previous is not null) && IsDataFlowRoot(previous))
                     {
-                        var __jitExceptionCoalesceLeft105 = StackifyTree(previous);
-                        if (__jitExceptionCoalesceLeft105 != null)
-                        {
-                            previous = __jitExceptionCoalesceLeft105;
-                        }
-                        else
+                        var stackifiedPrevious = StackifyTree(previous);
+                        if (stackifiedPrevious is null)
                         {
                             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmStackificationRootHasNoPrecedingNode);
-                            previous = default;
                         }
+                        previous = stackifiedPrevious;
                         continue;
                     }
 
-                    global::RyuJitSharp.GenTree __jitExceptionResult106;
-                    var __jitExceptionCoalesceLeft107 = previous;
-                    if (__jitExceptionCoalesceLeft107 != null)
-                    {
-                        __jitExceptionResult106 = __jitExceptionCoalesceLeft107;
-                    }
-                    else
+                    var insertionPoint = previous;
+                    if (insertionPoint is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmStackificationUseHasNoPrecedingNode);
-                        __jitExceptionResult106 = default;
                     }
-                    var insertionPoint = __jitExceptionResult106;
                     if (CanMoveForward(node, out var reason))
                     {
                         MoveForward(node, insertionPoint, reason);
@@ -128,18 +117,11 @@ public sealed partial class Lowering
                 lastStackified = node;
             }
 
-            global::RyuJitSharp.GenTree __jitExceptionResult108;
-            var __jitExceptionCoalesceLeft109 = lastStackified;
-            if (__jitExceptionCoalesceLeft109 != null)
-            {
-                __jitExceptionResult108 = __jitExceptionCoalesceLeft109;
-            }
-            else
+            var lastNode = lastStackified;
+            if (lastNode is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmStackificationDidNotProcessANode);
-                __jitExceptionResult108 = default;
             }
-            var lastNode = __jitExceptionResult108;
             return lastNode.Prev;
         }
 
@@ -176,18 +158,11 @@ public sealed partial class Lowering
         private void MoveForward(GenTree node, GenTree previous, string reason)
         {
             JITDUMP($"Stackifier moving [{node.TreeId:D6}] after [{previous.TreeId:D6}]: {reason}\n");
-            global::RyuJitSharp.GenTree __jitExceptionResult476;
-            var __jitExceptionCoalesceLeft477 = previous.Next;
-            if (__jitExceptionCoalesceLeft477 != null)
-            {
-                __jitExceptionResult476 = __jitExceptionCoalesceLeft477;
-            }
-            else
+            var endExclusive = previous.Next;
+            if (endExclusive is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmStackifierMoveRequiresAnExclusiveRangeEndpoint);
-                __jitExceptionResult476 = default;
             }
-            var endExclusive = __jitExceptionResult476;
             assert(_lowering.IsInvariantInRange(node, endExclusive));
             _lowering.BlockRange().Remove(node);
             _lowering.BlockRange().InsertAfter(previous, node);
@@ -270,18 +245,11 @@ public sealed partial class Lowering
             {
                 while (_inUseTemps[typeIndex] is not null)
                 {
-                    global::RyuJitSharp.Lowering.Temporary __jitExceptionResult110;
-                    var __jitExceptionCoalesceLeft111 = Remove(ref _inUseTemps[typeIndex]);
-                    if (__jitExceptionCoalesceLeft111 != null)
-                    {
-                        __jitExceptionResult110 = __jitExceptionCoalesceLeft111;
-                    }
-                    else
+                    var temporary = Remove(ref _inUseTemps[typeIndex]);
+                    if (temporary is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StackifierTemporaryDisappearedWhileInUse);
-                        __jitExceptionResult110 = default;
                     }
-                    var temporary = __jitExceptionResult110;
                     assert(temporary.LocalNumber >= _minimumTempLocalNumber);
                     Append(ref _availableTemps[typeIndex], temporary);
                     JITDUMP($"Temporary V{temporary.LocalNumber:D2} is now available\n");

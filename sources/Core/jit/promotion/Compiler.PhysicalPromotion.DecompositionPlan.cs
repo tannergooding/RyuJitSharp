@@ -466,19 +466,11 @@ public partial class Compiler
             var indirAccess = store.Oper is GT_STORE_BLK ? dstAccess : srcAccess;
             if (store.Oper is GT_STORE_BLK)
             {
-                var __jitExceptionReceiver545 = dstAccess;
-                global::RyuJitSharp.GenTree __jitExceptionArgument546;
-                var __jitExceptionCoalesceLeft547 = address;
-                if (__jitExceptionCoalesceLeft547 != null)
-                {
-                    __jitExceptionArgument546 = __jitExceptionCoalesceLeft547;
-                }
-                else
+                if (address is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockStoreRequiresAnAddress);
-                    __jitExceptionArgument546 = default;
                 }
-                __jitExceptionReceiver545.InitializeIndir(__jitExceptionArgument546, baseOffset, baseFields, flags, addressUses);
+                dstAccess.InitializeIndir(address, baseOffset, baseFields, flags, addressUses);
             }
             else
             {
@@ -487,19 +479,11 @@ public partial class Compiler
 
             if (source.Oper is GT_BLK)
             {
-                var __jitExceptionReceiver548 = srcAccess;
-                global::RyuJitSharp.GenTree __jitExceptionArgument549;
-                var __jitExceptionCoalesceLeft550 = address;
-                if (__jitExceptionCoalesceLeft550 != null)
-                {
-                    __jitExceptionArgument549 = __jitExceptionCoalesceLeft550;
-                }
-                else
+                if (address is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockReadRequiresAnAddress);
-                    __jitExceptionArgument549 = default;
                 }
-                __jitExceptionReceiver548.InitializeIndir(__jitExceptionArgument549, baseOffset, baseFields, flags, addressUses);
+                srcAccess.InitializeIndir(address, baseOffset, baseFields, flags, addressUses);
             }
             else
             {

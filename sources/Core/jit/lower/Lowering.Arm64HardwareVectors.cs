@@ -133,18 +133,11 @@ public sealed partial class Lowering
                 node.SetOp(1, comparison);
                 _ = ReplaceWithLclVar(new LIR.Use(BlockRange(), ref node.GetOpRef(1), node));
                 var value = node.GetOp(1);
-                global::RyuJitSharp.GenTree __jitExceptionResult80;
-                var __jitExceptionCoalesceLeft81 = CompilerInstance.gtClone(value);
-                if (__jitExceptionCoalesceLeft81 != null)
-                {
-                    __jitExceptionResult80 = __jitExceptionCoalesceLeft81;
-                }
-                else
+                var clone = CompilerInstance.gtClone(value);
+                if (clone is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ARM64ComparisonLocalCouldNotBeCloned);
-                    __jitExceptionResult80 = default;
                 }
-                var clone = __jitExceptionResult80;
                 BlockRange().InsertAfter(value, clone);
                 comparison = CompilerInstance.gtNewSimdHWIntrinsicNode(simdType, NI_AdvSimd_Arm64_MaxPairwise,
                     TYP_UINT, size, value, clone);
@@ -158,21 +151,27 @@ public sealed partial class Lowering
         }
         else
         {
-            global::RyuJitSharp.NamedIntrinsic __jitExceptionResult440;
+            NamedIntrinsic id;
             switch (baseType)
             {
                 case TYP_BYTE or TYP_UBYTE or TYP_SHORT or TYP_USHORT or TYP_INT or TYP_UINT or TYP_FLOAT:
-                    __jitExceptionResult440 = NI_AdvSimd_CompareEqual;
+                {
+                    id = NI_AdvSimd_CompareEqual;
                     break;
+                }
+
                 case TYP_LONG or TYP_ULONG or TYP_DOUBLE:
-                    __jitExceptionResult440 = size == 8 ? NI_AdvSimd_Arm64_CompareEqualScalar : NI_AdvSimd_Arm64_CompareEqual;
+                {
+                    id = size == 8 ? NI_AdvSimd_Arm64_CompareEqualScalar : NI_AdvSimd_Arm64_CompareEqual;
                     break;
+                }
+
                 default:
+                {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedARM64VectorComparisonBaseTypeArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? baseType : default));
-                    __jitExceptionResult440 = default;
-                    break;
+                    return default;
+                }
             }
-            var id = __jitExceptionResult440;
             comparison = CompilerInstance.gtNewSimdHWIntrinsicNode(simdType, id, baseType, size, first, second);
             BlockRange().InsertBefore(node, comparison);
             _ = LowerNode(comparison);
@@ -182,18 +181,11 @@ public sealed partial class Lowering
                 node.SetOp(1, comparison);
                 _ = ReplaceWithLclVar(new LIR.Use(BlockRange(), ref node.GetOpRef(1), node));
                 var value = node.GetOp(1);
-                global::RyuJitSharp.GenTree __jitExceptionResult82;
-                var __jitExceptionCoalesceLeft83 = CompilerInstance.gtClone(value);
-                if (__jitExceptionCoalesceLeft83 != null)
-                {
-                    __jitExceptionResult82 = __jitExceptionCoalesceLeft83;
-                }
-                else
+                var clone = CompilerInstance.gtClone(value);
+                if (clone is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ARM64ComparisonLocalCouldNotBeCloned);
-                    __jitExceptionResult82 = default;
                 }
-                var clone = __jitExceptionResult82;
                 BlockRange().InsertAfter(value, clone);
                 comparison = CompilerInstance.gtNewSimdHWIntrinsicNode(simdType, NI_AdvSimd_Arm64_MinPairwise,
                     TYP_UINT, size, value, clone);
@@ -248,18 +240,11 @@ public sealed partial class Lowering
             node.SetOp(1, current);
             _ = ReplaceWithLclVar(new LIR.Use(BlockRange(), ref node.GetOpRef(1), node));
             current = node.GetOp(1);
-            global::RyuJitSharp.GenTree __jitExceptionResult84;
-            var __jitExceptionCoalesceLeft85 = CompilerInstance.gtClone(current);
-            if (__jitExceptionCoalesceLeft85 != null)
-            {
-                __jitExceptionResult84 = __jitExceptionCoalesceLeft85;
-            }
-            else
+            var duplicate = CompilerInstance.gtClone(current);
+            if (duplicate is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ARM64DotProductLocalCouldNotBeCloned);
-                __jitExceptionResult84 = default;
             }
-            var duplicate = __jitExceptionResult84;
             BlockRange().InsertAfter(current, duplicate);
             return duplicate;
         }

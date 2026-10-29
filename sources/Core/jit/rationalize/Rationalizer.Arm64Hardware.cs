@@ -86,28 +86,17 @@ public sealed partial class Rationalizer
         {
             LIR.Use.MakeDummyUse(BlockRange, operand, out var use);
             _ = use.ReplaceWithLclVar(CompilerInstance);
-            var __jitExceptionCoalesceLeft632 = use.Def();
-            if (__jitExceptionCoalesceLeft632 != null)
-            {
-                operand = __jitExceptionCoalesceLeft632;
-            }
-            else
+            var definition = use.Def();
+            if (definition is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SpilledReductionOperandHasNoDefinition);
-                operand = default;
             }
-            global::RyuJitSharp.GenTree __jitExceptionResult633;
-            var __jitExceptionCoalesceLeft634 = CompilerInstance.gtClone(operand);
-            if (__jitExceptionCoalesceLeft634 != null)
-            {
-                __jitExceptionResult633 = __jitExceptionCoalesceLeft634;
-            }
-            else
+            operand = definition;
+            var second = CompilerInstance.gtClone(operand);
+            if (second is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FailedToCloneReductionOperand);
-                __jitExceptionResult633 = default;
             }
-            var second = __jitExceptionResult633;
             BlockRange.InsertAfter(operand, second);
             var pair = CompilerInstance.gtNewSimdHWIntrinsicNode(TYP_SIMD8, pairwise, baseType, size, operand, second);
             BlockRange.InsertAfter(second, pair);
@@ -341,28 +330,17 @@ public sealed partial class Rationalizer
         {
             LIR.Use.MakeDummyUse(BlockRange, value, out var dummy);
             _ = dummy.ReplaceWithLclVar(CompilerInstance);
-            var __jitExceptionCoalesceLeft635 = dummy.Def();
-            if (__jitExceptionCoalesceLeft635 != null)
-            {
-                value = __jitExceptionCoalesceLeft635;
-            }
-            else
+            var definition = dummy.Def();
+            if (definition is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SpilledVectorOperandHasNoDefinition);
-                value = default;
             }
-            global::RyuJitSharp.GenTree __jitExceptionResult636;
-            var __jitExceptionCoalesceLeft637 = CompilerInstance.gtClone(value);
-            if (__jitExceptionCoalesceLeft637 != null)
-            {
-                __jitExceptionResult636 = __jitExceptionCoalesceLeft637;
-            }
-            else
+            value = definition;
+            var other = CompilerInstance.gtClone(value);
+            if (other is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FailedToCloneVectorOperand);
-                __jitExceptionResult636 = default;
             }
-            var other = __jitExceptionResult636;
             BlockRange.InsertAfter(value, other);
 
             var upper = CompilerInstance.gtNewSimdHWIntrinsicNode(vectorType,
@@ -386,28 +364,17 @@ public sealed partial class Rationalizer
             {
                 LIR.Use.MakeDummyUse(BlockRange, value, out var dummy);
                 _ = dummy.ReplaceWithLclVar(CompilerInstance);
-                var __jitExceptionCoalesceLeft638 = dummy.Def();
-                if (__jitExceptionCoalesceLeft638 != null)
-                {
-                    value = __jitExceptionCoalesceLeft638;
-                }
-                else
+                var definition = dummy.Def();
+                if (definition is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SpilledVectorOperandHasNoDefinition);
-                    value = default;
                 }
-                global::RyuJitSharp.GenTree __jitExceptionResult639;
-                var __jitExceptionCoalesceLeft640 = CompilerInstance.gtClone(value);
-                if (__jitExceptionCoalesceLeft640 != null)
-                {
-                    __jitExceptionResult639 = __jitExceptionCoalesceLeft640;
-                }
-                else
+                value = definition;
+                var other = CompilerInstance.gtClone(value);
+                if (other is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FailedToCloneVectorOperand);
-                    __jitExceptionResult639 = default;
                 }
-                var other = __jitExceptionResult639;
                 BlockRange.InsertAfter(value, other);
                 value = CompilerInstance.gtNewSimdHWIntrinsicNode(TYP_SIMD8,
                     NI_AdvSimd_AddPairwise, baseType, size, value, other);

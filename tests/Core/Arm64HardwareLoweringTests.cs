@@ -282,6 +282,39 @@ internal static unsafe class Arm64HardwareLoweringTests
         });
     }
 
+    [TestCase(TYP_INT, (byte)16, NI_AdvSimd_CompareEqual)]
+    [TestCase(TYP_DOUBLE, (byte)8, NI_AdvSimd_Arm64_CompareEqualScalar)]
+    [TestCase(TYP_DOUBLE, (byte)16, NI_AdvSimd_Arm64_CompareEqual)]
+    public static void VectorEqualitySelectsTheNativeArm64Comparison(
+        var_types baseType, byte size, NamedIntrinsic expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var simdType = Compiler.GetSimdTypeForSize(size);
+            compiler.lvaTable[0].Type = simdType;
+            compiler.lvaTable[1].Type = simdType;
+            var first = compiler.gtNewLclvNode(simdType, 0);
+            var second = compiler.gtNewLclvNode(simdType, 1);
+            var equality = new GenTreeHWIntrinsic(TYP_INT, NI_Vector_op_Equality,
+                baseType, size, first, second);
+            var user = new GenTreeUnOp(GT_NEG, TYP_INT, equality) { IsUnusedValue = true };
+            Append(block, first, second, equality, user);
+
+            _ = LowerNode(lowering, equality);
+
+            var foundComparison = false;
+            for (var current = block.FirstNode; current is not null; current = current.Next)
+            {
+                if (current is GenTreeHWIntrinsic intrinsic && intrinsic.HWIntrinsicId == expected)
+                {
+                    foundComparison = true;
+                    break;
+                }
+            }
+
+            Assert.That(foundComparison, Is.True);
+        });
+    }
+
     [Test]
     public static void IntegerDotProductReducesVector64WithPairwiseAdd()
     {

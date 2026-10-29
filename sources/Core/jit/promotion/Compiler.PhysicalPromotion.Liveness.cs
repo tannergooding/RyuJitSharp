@@ -136,18 +136,12 @@ public partial class Compiler
 
         private BlockInfo GetBlockInfo(BasicBlock block)
         {
-            global::RyuJitSharp.Compiler.PhysicalPromotionLiveness.BlockInfo __jitExceptionReturnResult124;
-            var __jitExceptionCoalesceLeft125 = _blockInfo[block.bbNum];
-            if (__jitExceptionCoalesceLeft125 != null)
-            {
-                __jitExceptionReturnResult124 = __jitExceptionCoalesceLeft125;
-            }
-            else
+            var info = _blockInfo[block.bbNum];
+            if (info is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionLivenessHasNotInitializedThisBlock);
-                __jitExceptionReturnResult124 = default;
             }
-            return __jitExceptionReturnResult124;
+            return info;
         }
 
         private void ComputeUseDefSets()
@@ -263,9 +257,7 @@ public partial class Compiler
             var visitor = new DefinitionSizeVisitor(_compiler, local.AsLclVarCommon());
             var result = parent.VisitLogicalLocalDefs(_compiler, ref visitor);
             assert(result is GenTree.VisitResult.Abort);
-            bool __jitExceptionCondition126;
-            __jitExceptionCondition126 = visitor.Size >= 0;
-            if (__jitExceptionCondition126)
+            if (visitor.Size >= 0)
             {
                 return visitor.Size;
             }
@@ -291,18 +283,11 @@ public partial class Compiler
 
         private void InterBlockLiveness()
         {
-            global::RyuJitSharp.FlowGraphDfsTree __jitExceptionResult127;
-            var __jitExceptionCoalesceLeft128 = _compiler._dfsTree;
-            if (__jitExceptionCoalesceLeft128 != null)
-            {
-                __jitExceptionResult127 = __jitExceptionCoalesceLeft128;
-            }
-            else
+            var dfs = _compiler._dfsTree;
+            if (dfs is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionRequiresTheCurrentDFSTree);
-                __jitExceptionResult127 = default;
             }
-            var dfs = __jitExceptionResult127;
             bool changed;
             do
             {

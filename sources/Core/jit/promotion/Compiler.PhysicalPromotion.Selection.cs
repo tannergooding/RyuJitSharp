@@ -165,36 +165,22 @@ public partial class Compiler
         public weight_t CountReturnsWtd;
         public weight_t CountPassedAsRetbufWtd;
 
-        public int GetAccessSize() {
-    bool __jitExceptionCondition623;
-    __jitExceptionCondition623 = AccessType is TYP_STRUCT;
-    if (__jitExceptionCondition623)
-    {
-        int __jitExceptionReturnResult624;
-        int __jitExceptionOperand625;
-        uint __jitExceptionOperand626;
-        global::RyuJitSharp.ClassLayout __jitExceptionOperand627;
-        var __jitExceptionCoalesceLeft628 = Layout;
-        if (__jitExceptionCoalesceLeft628 != null)
+        public int GetAccessSize()
         {
-            __jitExceptionOperand627 = __jitExceptionCoalesceLeft628;
-        }
-        else
-        {
-            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructAccessRequiresLayout);
-            __jitExceptionOperand627 = default;
-        }
+            if (AccessType is TYP_STRUCT)
+            {
+                var layout = Layout;
+                if (layout is null)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructAccessRequiresLayout);
+                }
 
-        __jitExceptionOperand626 = __jitExceptionOperand627.Size;
-        __jitExceptionOperand625 = (int)__jitExceptionOperand626;
-        __jitExceptionReturnResult624 = checked(__jitExceptionOperand625);
-        return __jitExceptionReturnResult624;
-    }
-    else
-    {
-        return AccessType.Size;
-    }
-}
+                var size = (int)layout.Size;
+                return checked(size);
+            }
+
+            return AccessType.Size;
+        }
         public bool Overlaps(int otherStart, int otherSize)
         {
             return (Offset + GetAccessSize() > otherStart) &&
@@ -327,18 +313,12 @@ public partial class Compiler
             {
                 if (access.AccessType is TYP_STRUCT)
                 {
-                    global::RyuJitSharp.ClassLayout __jitExceptionResult139;
-                    var __jitExceptionCoalesceLeft140 = access.Layout;
-                    if (__jitExceptionCoalesceLeft140 != null)
-                    {
-                        __jitExceptionResult139 = __jitExceptionCoalesceLeft140;
-                    }
-                    else
+                    var layout = access.Layout;
+                    if (layout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructAccessRequiresLayout);
-                        __jitExceptionResult139 = default;
                     }
-                    var layout = __jitExceptionResult139;
+
                     jitprintf($"  [{access.Offset:D3}..{access.Offset + layout.Size:D3}) as " +
                         $"{layout.ClassName}\n");
                 }
@@ -540,18 +520,11 @@ public partial class Compiler
                                          int inducedCount, weight_t inducedCountWtd)
         {
             ref var local = ref compiler.lvaGetDesc(lclNum);
-            global::RyuJitSharp.ClassLayout __jitExceptionResult629;
-            var __jitExceptionCoalesceLeft630 = local.Layout;
-            if (__jitExceptionCoalesceLeft630 != null)
-            {
-                __jitExceptionResult629 = __jitExceptionCoalesceLeft630;
-            }
-            else
+            var layout = local.Layout;
+            if (layout is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CandidateRequiresStructLayout);
-                __jitExceptionResult629 = default;
             }
-            var layout = __jitExceptionResult629;
             var accessSize = access.AccessType.Size;
 
             if (layout.IntersectsGCPtr(access.Offset, accessSize))

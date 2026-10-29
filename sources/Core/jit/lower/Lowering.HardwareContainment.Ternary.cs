@@ -165,48 +165,72 @@ public sealed partial class Lowering
                         node.SetOp(1, node.GetOp(3));
                         node.SetOp(3, currentOp1);
 
-                        uint __jitExceptionResult469;
+                        uint toggleBit;
                         switch (simdBaseType.Size)
                         {
                             case 1:
-                                __jitExceptionResult469 = simdSize;
+                            {
+                                toggleBit = simdSize;
                                 break;
+                            }
+
                             case 2:
-                                __jitExceptionResult469 = simdSize / 2;
+                            {
+                                toggleBit = simdSize / 2;
                                 break;
+                            }
+
                             case 4:
-                                __jitExceptionResult469 = simdSize / 4;
+                            {
+                                toggleBit = simdSize / 4;
                                 break;
+                            }
+
                             case 8:
-                                __jitExceptionResult469 = simdSize / 8;
+                            {
+                                toggleBit = simdSize / 8;
                                 break;
+                            }
+
                             default:
+                            {
                                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidPermutationElementSize);
-                                __jitExceptionResult469 = default;
-                                break;
+                                return;
+                            }
                         }
-                        var toggleBit = __jitExceptionResult469;
-                        ulong __jitExceptionResult470;
+                        ulong repeatedToggle;
                         switch (simdBaseType.Size)
                         {
                             case 1:
-                                __jitExceptionResult470 = toggleBit * 0x0101010101010101UL;
+                            {
+                                repeatedToggle = toggleBit * 0x0101010101010101UL;
                                 break;
+                            }
+
                             case 2:
-                                __jitExceptionResult470 = toggleBit * 0x0001000100010001UL;
+                            {
+                                repeatedToggle = toggleBit * 0x0001000100010001UL;
                                 break;
+                            }
+
                             case 4:
-                                __jitExceptionResult470 = toggleBit * 0x0000000100000001UL;
+                            {
+                                repeatedToggle = toggleBit * 0x0000000100000001UL;
                                 break;
+                            }
+
                             case 8:
-                                __jitExceptionResult470 = toggleBit;
+                            {
+                                repeatedToggle = toggleBit;
                                 break;
+                            }
+
                             default:
+                            {
                                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidPermutationElementSize);
-                                __jitExceptionResult470 = default;
-                                break;
+                                return;
+                            }
                         }
-                        var repeatedToggle = __jitExceptionResult470;
                         ref var indices = ref op2.AsVecCon().SimdVal;
                         for (var i = 0; i < (simdSize / 8); i++)
                         {

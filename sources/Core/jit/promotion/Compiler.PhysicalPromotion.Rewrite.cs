@@ -53,53 +53,35 @@ public partial class Compiler
         private BasicBlock CurrentBlock {
     get
     {
-        global::RyuJitSharp.BasicBlock __jitExceptionReturnResult129;
-        var __jitExceptionCoalesceLeft130 = _currentBlock;
-        if (__jitExceptionCoalesceLeft130 != null)
-        {
-            __jitExceptionReturnResult129 = __jitExceptionCoalesceLeft130;
-        }
-        else
+        var currentBlock = _currentBlock;
+        if (currentBlock is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotStartedABlock);
-            __jitExceptionReturnResult129 = default;
         }
 
-        return __jitExceptionReturnResult129;
+        return currentBlock;
     }
 }        private Statement CurrentStatement {
     get
     {
-        global::RyuJitSharp.Statement __jitExceptionReturnResult131;
-        var __jitExceptionCoalesceLeft132 = _currentStatement;
-        if (__jitExceptionCoalesceLeft132 != null)
-        {
-            __jitExceptionReturnResult131 = __jitExceptionCoalesceLeft132;
-        }
-        else
+        var currentStatement = _currentStatement;
+        if (currentStatement is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotStartedAStatement);
-            __jitExceptionReturnResult131 = default;
         }
 
-        return __jitExceptionReturnResult131;
+        return currentStatement;
     }
 }        private BitVecTraits ReadBackTraits {
     get
     {
-        global::RyuJitSharp.BitVecTraits __jitExceptionReturnResult133;
-        var __jitExceptionCoalesceLeft134 = _readBackTraits;
-        if (__jitExceptionCoalesceLeft134 != null)
-        {
-            __jitExceptionReturnResult133 = __jitExceptionCoalesceLeft134;
-        }
-        else
+        var readBackTraits = _readBackTraits;
+        if (readBackTraits is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotPreparedReadbacks);
-            __jitExceptionReturnResult133 = default;
         }
 
-        return __jitExceptionReturnResult133;
+        return readBackTraits;
     }
 }
         public Statement? StartBlock(BasicBlock block)
@@ -407,18 +389,11 @@ public partial class Compiler
                 return;
             }
 
-            global::RyuJitSharp.Statement __jitExceptionResult594;
-            var __jitExceptionCoalesceLeft595 = CurrentStatement.PrevStmt;
-            if (__jitExceptionCoalesceLeft595 != null)
-            {
-                __jitExceptionResult594 = __jitExceptionCoalesceLeft595;
-            }
-            else
+            var previous = CurrentStatement.PrevStmt;
+            if (previous is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NonFirstStatementMustHaveAPredecessor);
-                __jitExceptionResult594 = default;
             }
-            var previous = __jitExceptionResult594;
             var previousRoot = previous.RootNode;
             if (previousRoot.Oper.IsLocalStore && (previousRoot.AsLclVarCommon().LclNum == local))
             {
