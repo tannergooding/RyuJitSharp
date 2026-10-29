@@ -17,18 +17,11 @@ public partial class Emitter
     {
         unchecked
         {
-            global::RyuJitSharp.Compiler __jitExceptionResult305;
-            var __jitExceptionCoalesceLeft306 = _compiler;
-            if (__jitExceptionCoalesceLeft306 != null)
-            {
-                __jitExceptionResult305 = __jitExceptionCoalesceLeft306;
-            }
-            else
+            var compiler = _compiler;
+            if (compiler is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
-                __jitExceptionResult305 = default;
             }
-            var compiler = __jitExceptionResult305;
             var dst = *dp;
             var originalDst = dst;
             uint code = 0;
@@ -928,30 +921,20 @@ public partial class Emitter
                 }
                 else
                 {
-                    global::RyuJitSharp.var_types __jitExceptionResult307;
-                    bool __jitExceptionCondition308;
-                    __jitExceptionCondition308 = varNum >= 0;
-                    if (__jitExceptionCondition308)
+                    var_types variableType;
+                    if (varNum >= 0)
                     {
-                        __jitExceptionResult307 = compiler.lvaTable[varNum].Type;
+                        variableType = compiler.lvaTable[varNum].Type;
                     }
                     else
                     {
-                        global::RyuJitSharp.TempDsc __jitExceptionOperand309;
-                        var __jitExceptionCoalesceLeft310 = codeGen.RegSet.tmpFindNum(varNum);
-                        if (__jitExceptionCoalesceLeft310 != null)
-                        {
-                            __jitExceptionOperand309 = __jitExceptionCoalesceLeft310;
-                        }
-                        else
+                        var temporary = codeGen.RegSet.tmpFindNum(varNum);
+                        if (temporary is null)
                         {
                             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SpillTemporaryMustExist);
-                            __jitExceptionOperand309 = default;
                         }
-
-                        __jitExceptionResult307 = __jitExceptionOperand309.tdTempType;
+                        variableType = temporary.tdTempType;
                     }
-                    var variableType = __jitExceptionResult307;
                     if (variableType is TYP_REF or TYP_BYREF)
                     {
                         emitGCvarDeadUpd(addressOffset + (int)offset, dst,
@@ -969,35 +952,19 @@ public partial class Emitter
                     var displayOffsets = compiler.dspGCtbls || !compiler.opts.disDiffable;
                     emitDispInsArm32(id, false, displayOffsets, true, emitCurCodeOffs(originalDst), *dp, (nuint)(dst - *dp), ig);
                 }
-                bool __jitExceptionCondition311;
-                bool __jitExceptionShortCircuitLeft312;
-                __jitExceptionShortCircuitLeft312 = compiler.compDebugBreak;
-                if (__jitExceptionShortCircuitLeft312)
+                if (compiler.compDebugBreak)
                 {
-                    var __jitExceptionOperand313 = (uint)JitConfig.JitBreakEmitOutputInstr;
-                    uint __jitExceptionOperand314;
-                    global::RyuJitSharp.Emitter.instrDescDebugInfo __jitExceptionOperand315;
-                    var __jitExceptionCoalesceLeft316 = id.idDebugOnlyInfo();
-                    if (__jitExceptionCoalesceLeft316 != null)
-                    {
-                        __jitExceptionOperand315 = __jitExceptionCoalesceLeft316;
-                    }
-                    else
+                    var debugBreakInstruction = (uint)JitConfig.JitBreakEmitOutputInstr;
+                    var debugInfo = id.idDebugOnlyInfo();
+                    if (debugInfo is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InstructionDebugInformationMustExist);
-                        __jitExceptionOperand315 = default;
                     }
 
-                    __jitExceptionOperand314 = __jitExceptionOperand315.idNum;
-                    __jitExceptionCondition311 = __jitExceptionOperand313 == __jitExceptionOperand314;
-                }
-                else
-                {
-                    __jitExceptionCondition311 = false;
-                }
-                if (__jitExceptionCondition311)
-                {
-                    assert(false, "!\"JitBreakEmitOutputInstr reached\"");
+                    if (debugBreakInstruction == debugInfo.idNum)
+                    {
+                        assert(false, "!\"JitBreakEmitOutputInstr reached\"");
+                    }
                 }
                 if (compiler.verbose || compiler.disasmWithGC)
                 {
@@ -1020,18 +987,11 @@ public partial class Emitter
     private unsafe void emitOutputCallGCArm32(instrDesc id, VARSET_TP gcVars, regMaskTP gcRefRegisters,
         regMaskTP byRefRegisters, byte* callStart, byte* dst, byte callInstructionSize)
     {
-        global::RyuJitSharp.Compiler __jitExceptionResult317;
-        var __jitExceptionCoalesceLeft318 = _compiler;
-        if (__jitExceptionCoalesceLeft318 != null)
-        {
-            __jitExceptionResult317 = __jitExceptionCoalesceLeft318;
-        }
-        else
+        var compiler = _compiler;
+        if (compiler is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
-            __jitExceptionResult317 = default;
         }
-        var compiler = __jitExceptionResult317;
         _ = compiler;
         emitUpdateLiveGCvars(gcVars, callStart);
         if (Configuration.DEBUG && (compiler.verbose || compiler.disasmWithGC))

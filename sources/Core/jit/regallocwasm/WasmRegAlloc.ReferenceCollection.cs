@@ -12,18 +12,12 @@ public sealed partial class WasmRegAlloc
 {
     private BasicBlock CurrentRange()
     {
-        global::RyuJitSharp.BasicBlock __jitExceptionReturnResult644;
-        var __jitExceptionCoalesceLeft645 = _currentBlock;
-        if (__jitExceptionCoalesceLeft645 != null)
-        {
-            __jitExceptionReturnResult644 = __jitExceptionCoalesceLeft645;
-        }
-        else
+        var currentBlock = _currentBlock;
+        if (currentBlock is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmRegisterAllocationHasNoCurrentBlock);
-            __jitExceptionReturnResult644 = default;
         }
-        return __jitExceptionReturnResult644;
+        return currentBlock;
     }
 
     private void IdentifyCandidates()
@@ -51,31 +45,17 @@ public sealed partial class WasmRegAlloc
             // Only GC refs proven not to be live across safepoints can live in Wasm locals.
             if (varTypeIsGC(local.Type))
             {
-                bool __jitExceptionResult646;
-                bool __jitExceptionShortCircuitLeft647;
-                __jitExceptionShortCircuitLeft647 = local.lvTracked;
-                if (__jitExceptionShortCircuitLeft647)
+                var isRefLocalCandidate = false;
+                if (local.lvTracked)
                 {
-                    var __jitExceptionArgument648 = _compiler;
-                    nint[] __jitExceptionArgument649;
-                    var __jitExceptionCoalesceLeft650 = _compiler.m_wasmGCRefCandidates;
-                    if (__jitExceptionCoalesceLeft650 != null)
-                    {
-                        __jitExceptionArgument649 = __jitExceptionCoalesceLeft650;
-                    }
-                    else
+                    var compiler = _compiler;
+                    var candidates = compiler.m_wasmGCRefCandidates;
+                    if (candidates is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmGCRefCandidatesWereNotComputed);
-                        __jitExceptionArgument649 = default;
                     }
-
-                    __jitExceptionResult646 = VarSetOps.IsMember(__jitExceptionArgument648, __jitExceptionArgument649, local._varIndex);
+                    isRefLocalCandidate = VarSetOps.IsMember(compiler, candidates, local._varIndex);
                 }
-                else
-                {
-                    __jitExceptionResult646 = false;
-                }
-                var isRefLocalCandidate = __jitExceptionResult646;
                 if (!isRefLocalCandidate)
                 {
                     _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.WasmGCVisibility);
@@ -417,18 +397,11 @@ public sealed partial class WasmRegAlloc
 
     private void CollectReferencesForIndir(GenTreeIndir node)
     {
-        global::RyuJitSharp.GenTree __jitExceptionResult651;
-        var __jitExceptionCoalesceLeft652 = node.Base;
-        if (__jitExceptionCoalesceLeft652 != null)
-        {
-            __jitExceptionResult651 = __jitExceptionCoalesceLeft652;
-        }
-        else
+        var baseNode = node.Base;
+        if (baseNode is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmIndirectionsRequireABaseAddress);
-            __jitExceptionResult651 = default;
         }
-        var baseNode = __jitExceptionResult651;
         ConsumeTemporaryRegForOperand(baseNode, "indirection address");
 
         if (node.Oper is GT_STOREIND && node.Type is TYP_SIMD12)
@@ -552,19 +525,11 @@ public sealed partial class WasmRegAlloc
         var indirectFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
         if (isStruct)
         {
-            global::RyuJitSharp.ClassLayout __jitExceptionResult653;
-            var __jitExceptionCoalesceLeft654 = layout;
-            if (__jitExceptionCoalesceLeft654 != null)
-            {
-                __jitExceptionResult653 = __jitExceptionCoalesceLeft654;
-            }
-            else
+            if (layout is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmStructStoresRequireALocalLayout);
-                __jitExceptionResult653 = default;
             }
-            var structLayout = __jitExceptionResult653;
-            store = _compiler.gtNewStoreBlkNode(localAddress, value, structLayout, indirectFlags);
+            store = _compiler.gtNewStoreBlkNode(localAddress, value, layout, indirectFlags);
         }
         else
         {
@@ -574,31 +539,17 @@ public sealed partial class WasmRegAlloc
         range.InsertBefore(nextNode, store);
 
         var storeRange = new LIR.ReadOnlyRange(store, store);
-        global::RyuJitSharp.Lowering __jitExceptionResult655;
-        var __jitExceptionCoalesceLeft656 = _compiler.LoweringPhase;
-        if (__jitExceptionCoalesceLeft656 != null)
-        {
-            __jitExceptionResult655 = __jitExceptionCoalesceLeft656;
-        }
-        else
+        var lowering = _compiler.LoweringPhase;
+        if (lowering is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmLocalStackStoresRequireAnActiveLoweringPhase);
-            __jitExceptionResult655 = default;
         }
-        var lowering = __jitExceptionResult655;
-        var __jitExceptionReceiver657 = lowering;
-        global::RyuJitSharp.BasicBlock __jitExceptionArgument658;
-        var __jitExceptionCoalesceLeft659 = _currentBlock;
-        if (__jitExceptionCoalesceLeft659 != null)
-        {
-            __jitExceptionArgument658 = __jitExceptionCoalesceLeft659;
-        }
-        else
+        var currentBlock = _currentBlock;
+        if (currentBlock is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmRegisterAllocationHasNoCurrentBlock);
-            __jitExceptionArgument658 = default;
         }
-        __jitExceptionReceiver657.LowerRange(__jitExceptionArgument658, storeRange);
+        lowering.LowerRange(currentBlock, storeRange);
 
         if ((store.Oper is GT_STOREIND) && (store.Type is TYP_SIMD12))
         {

@@ -62,27 +62,16 @@ public partial class Compiler
                         continue;
                     }
 
-                    var __jitExceptionReceiver596 = replacer;
-                    var __jitExceptionArgument597 = local.LclNum;
-                    var __jitExceptionArgument598 = local.LclOffs;
-                    int __jitExceptionArgument599;
-                    int __jitExceptionOperand600;
-                    uint __jitExceptionOperand601;
-                    global::RyuJitSharp.ClassLayout __jitExceptionOperand602;
-                    var __jitExceptionCoalesceLeft603 = local.GetLayout(replacer._compiler);
-                    if (__jitExceptionCoalesceLeft603 != null)
-                    {
-                        __jitExceptionOperand602 = __jitExceptionCoalesceLeft603;
-                    }
-                    else
+                    var localNumber = local.LclNum;
+                    var localOffset = local.LclOffs;
+                    var layout = local.GetLayout(replacer._compiler);
+                    if (layout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructArgumentNeedsALayout);
-                        __jitExceptionOperand602 = default;
                     }
-                    __jitExceptionOperand601 = __jitExceptionOperand602.Size;
-                    __jitExceptionOperand600 = (int)__jitExceptionOperand601;
-                    __jitExceptionArgument599 = checked(__jitExceptionOperand600);
-                    __jitExceptionReceiver596.WriteBackBeforeCurrentStatement(__jitExceptionArgument597, __jitExceptionArgument598, __jitExceptionArgument599);
+                    var size = (int)layout.Size;
+                    var checkedSize = checked(size);
+                    replacer.WriteBackBeforeCurrentStatement(localNumber, localOffset, checkedSize);
                 }
             }
 
@@ -198,18 +187,11 @@ public partial class Compiler
                 return;
             }
 
-            global::RyuJitSharp.CallArg __jitExceptionResult135;
-            var __jitExceptionCoalesceLeft136 = call.Args.RetBufferArg;
-            if (__jitExceptionCoalesceLeft136 != null)
-            {
-                __jitExceptionResult135 = __jitExceptionCoalesceLeft136;
-            }
-            else
+            var argument = call.Args.RetBufferArg;
+            if (argument is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.OptimizedRetbufferCallNeedsARetbufferArgument);
-                __jitExceptionResult135 = default;
             }
-            var argument = __jitExceptionResult135;
             var retBuffer = argument.Node.AsLclVarCommon();
             var size = checked((int)_compiler.typGetObjLayout(call.RetClsHnd).Size);
             MarkForReadBack(retBuffer, size, "used as retbuf");
@@ -223,27 +205,16 @@ public partial class Compiler
                 return null;
             }
 
-            int __jitExceptionResult604;
-            int __jitExceptionOperand605;
-            uint __jitExceptionOperand606;
-            global::RyuJitSharp.ClassLayout __jitExceptionOperand607;
-            var __jitExceptionCoalesceLeft608 = local.GetLayout(_compiler);
-            if (__jitExceptionCoalesceLeft608 != null)
-            {
-                __jitExceptionOperand607 = __jitExceptionCoalesceLeft608;
-            }
-            else
+            var layout = local.GetLayout(_compiler);
+            if (layout is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalNeedsALayout);
-                __jitExceptionOperand607 = default;
             }
-            __jitExceptionOperand606 = __jitExceptionOperand607.Size;
-            __jitExceptionOperand605 = (int)__jitExceptionOperand606;
-            __jitExceptionResult604 = checked(__jitExceptionOperand605);
-            var size = __jitExceptionResult604;
+            var size = (int)layout.Size;
+            var checkedSize = checked(size);
             var start = local.LclOffs;
-            if (aggregate.Unpromoted.Intersects(new SegmentList.Segment(start, start + size)) ||
-                !aggregate.OverlappingReplacements(start, size, out var first, out var end))
+            if (aggregate.Unpromoted.Intersects(new SegmentList.Segment(start, start + checkedSize)) ||
+                !aggregate.OverlappingReplacements(start, checkedSize, out var first, out var end))
             {
                 return null;
             }
@@ -363,52 +334,28 @@ public partial class Compiler
 
                 if (Configuration.DEBUG)
                 {
-                    string __jitExceptionArgument609;
-                    var __jitExceptionOperand610 = $"Processing struct use [{local.TreeId:D6}] of V{local.LclNum:D2}.";
-                    string __jitExceptionOperand611;
-                    var __jitExceptionOperand612 = local.LclOffs;
-                    uint __jitExceptionOperand613;
-                    var __jitExceptionOperand614 = local.LclOffs;
-                    uint __jitExceptionOperand615;
-                    global::RyuJitSharp.ClassLayout __jitExceptionOperand616;
-                    var __jitExceptionCoalesceLeft617 = local.GetLayout(_compiler);
-                    if (__jitExceptionCoalesceLeft617 != null)
-                    {
-                        __jitExceptionOperand616 = __jitExceptionCoalesceLeft617;
-                    }
-                    else
+                    var message = $"Processing struct use [{local.TreeId:D6}] of V{local.LclNum:D2}.";
+                    var start = local.LclOffs;
+                    var endOffset = local.LclOffs;
+                    var layout = local.GetLayout(_compiler);
+                    if (layout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructUseNeedsALayout);
-                        __jitExceptionOperand616 = default;
                     }
 
-                    __jitExceptionOperand615 = __jitExceptionOperand616.Size;
-                    __jitExceptionOperand613 = __jitExceptionOperand614 + __jitExceptionOperand615;
-                    __jitExceptionOperand611 = $"[{__jitExceptionOperand612:D3}..{__jitExceptionOperand613:D3})\n";
-                    __jitExceptionArgument609 = __jitExceptionOperand610 + __jitExceptionOperand611;
-                    JITDUMP(__jitExceptionArgument609);
+                    var end = endOffset + layout.Size;
+                    JITDUMP(message + $"[{start:D3}..{end:D3})\n");
                 }
                 if (!ReplaceStructLocal(ref use, effectiveUser, local))
                 {
-                    int __jitExceptionResult618;
-                    int __jitExceptionOperand619;
-                    uint __jitExceptionOperand620;
-                    global::RyuJitSharp.ClassLayout __jitExceptionOperand621;
-                    var __jitExceptionCoalesceLeft622 = local.GetLayout(_compiler);
-                    if (__jitExceptionCoalesceLeft622 != null)
-                    {
-                        __jitExceptionOperand621 = __jitExceptionCoalesceLeft622;
-                    }
-                    else
+                    var layout = local.GetLayout(_compiler);
+                    if (layout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructUseNeedsALayout);
-                        __jitExceptionOperand621 = default;
                     }
-                    __jitExceptionOperand620 = __jitExceptionOperand621.Size;
-                    __jitExceptionOperand619 = (int)__jitExceptionOperand620;
-                    __jitExceptionResult618 = checked(__jitExceptionOperand619);
-                    var size = __jitExceptionResult618;
-                    WriteBackBeforeUse(ref use, local.LclNum, local.LclOffs, size);
+                    var size = (int)layout.Size;
+                    var checkedSize = checked(size);
+                    WriteBackBeforeUse(ref use, local.LclNum, local.LclOffs, checkedSize);
                     if (IsPromotedStructLocalDying(local))
                     {
                         local.Flags |= GTF_VAR_DEATH;
@@ -469,18 +416,11 @@ public partial class Compiler
                 return false;
             }
 
-            global::RyuJitSharp.Compiler.PhysicalPromotionAggregateInfo __jitExceptionResult137;
-            var __jitExceptionCoalesceLeft138 = _aggregates.Lookup(local.LclNum);
-            if (__jitExceptionCoalesceLeft138 != null)
-            {
-                __jitExceptionResult137 = __jitExceptionCoalesceLeft138;
-            }
-            else
+            var aggregate = _aggregates.Lookup(local.LclNum);
+            if (aggregate is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.DyingPromotedLocalNeedsAggregateInformation);
-                __jitExceptionResult137 = default;
             }
-            var aggregate = __jitExceptionResult137;
             foreach (var replacement in aggregate.Replacements)
             {
                 if (replacement.NeedsReadBack)

@@ -228,18 +228,11 @@ public sealed class IncrementalSsaBuilder
 
     private bool FindReachingDefInSameStatement(UseDefLocation use, out UseDefLocation def)
     {
-        global::RyuJitSharp.GenTreeLclVar __jitExceptionResult693;
-        var __jitExceptionCoalesceLeft694 = use.Tree;
-        if (__jitExceptionCoalesceLeft694 != null)
-        {
-            __jitExceptionResult693 = __jitExceptionCoalesceLeft694;
-        }
-        else
+        var useTree = use.Tree;
+        if (useTree is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSAStatementUseHasNoTree);
-            __jitExceptionResult693 = default;
         }
-        var useTree = __jitExceptionResult693;
         for (var tree = useTree.Prev; tree is not null; tree = tree.Prev)
         {
             if ((tree.Oper is GT_STORE_LCL_VAR) && (tree.AsLclVar().LclNum == _lclNum))
@@ -302,18 +295,11 @@ public sealed class IncrementalSsaBuilder
             jitprintf($"  {_defs.Count} defs:");
             foreach (var def in _defs)
             {
-                global::RyuJitSharp.GenTreeLclVar __jitExceptionResult695;
-                var __jitExceptionCoalesceLeft696 = def.Tree;
-                if (__jitExceptionCoalesceLeft696 != null)
-                {
-                    __jitExceptionResult695 = __jitExceptionCoalesceLeft696;
-                }
-                else
+                var tree = def.Tree;
+                if (tree is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSADefinitionHasNoTree);
-                    __jitExceptionResult695 = default;
                 }
-                var tree = __jitExceptionResult695;
                 jitprintf($" [{tree.TreeId:D6}]");
             }
             jitprintf("\n");
@@ -324,35 +310,21 @@ public sealed class IncrementalSsaBuilder
         {
             JITDUMP("  Single-def local; putting into SSA directly\n");
             var def = _defs[0];
-            global::RyuJitSharp.GenTreeLclVar __jitExceptionResult697;
-            var __jitExceptionCoalesceLeft698 = def.Tree;
-            if (__jitExceptionCoalesceLeft698 != null)
-            {
-                __jitExceptionResult697 = __jitExceptionCoalesceLeft698;
-            }
-            else
+            var tree = def.Tree;
+            if (tree is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSADefinitionHasNoTree);
-                __jitExceptionResult697 = default;
             }
-            var tree = __jitExceptionResult697;
             var ssaNum = descriptor.lvPerSsaData.AllocSsaNum();
             descriptor.GetPerSsaData(ssaNum) = new LclSsaVarDsc(def.Block, tree);
             tree.SsaNum = ssaNum;
             JITDUMP($"  [{tree.TreeId:D6}] d:{ssaNum}\n");
             descriptor.lvInSsa = true;
-            global::RyuJitSharp.ValueNumStore __jitExceptionResult149;
-            var __jitExceptionCoalesceLeft150 = _compiler.vnStore;
-            if (__jitExceptionCoalesceLeft150 != null)
-            {
-                __jitExceptionResult149 = __jitExceptionCoalesceLeft150;
-            }
-            else
+            var vnStore = _compiler.vnStore;
+            if (vnStore is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSAInsertionRequiresValueNumbering);
-                __jitExceptionResult149 = default;
             }
-            var vnStore = __jitExceptionResult149;
             descriptor.GetPerSsaData(ssaNum)._vnPair = vnStore.VNPNormalPair(tree.Data._vnPair);
             if (Configuration.DEBUG)
             {
@@ -387,18 +359,11 @@ public sealed class IncrementalSsaBuilder
             return false;
         }
 
-        global::RyuJitSharp.ValueNumStore __jitExceptionResult151;
-        var __jitExceptionCoalesceLeft152 = _compiler.vnStore;
-        if (__jitExceptionCoalesceLeft152 != null)
-        {
-            __jitExceptionResult151 = __jitExceptionCoalesceLeft152;
-        }
-        else
+        var valueNumbers = _compiler.vnStore;
+        if (valueNumbers is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSAInsertionRequiresValueNumbering);
-            __jitExceptionResult151 = default;
         }
-        var valueNumbers = __jitExceptionResult151;
         foreach (var def in _defs)
         {
             if (dfsTree.Contains(def.Block))
@@ -406,18 +371,11 @@ public sealed class IncrementalSsaBuilder
                 BitVecOps.AddElemD(_poTraits, _defBlocks, def.Block.bbPostorderNum);
             }
 
-            global::RyuJitSharp.GenTreeLclVar __jitExceptionResult699;
-            var __jitExceptionCoalesceLeft700 = def.Tree;
-            if (__jitExceptionCoalesceLeft700 != null)
-            {
-                __jitExceptionResult699 = __jitExceptionCoalesceLeft700;
-            }
-            else
+            var tree = def.Tree;
+            if (tree is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSADefinitionHasNoTree);
-                __jitExceptionResult699 = default;
             }
-            var tree = __jitExceptionResult699;
             var ssaNum = descriptor.lvPerSsaData.AllocSsaNum();
             ref var ssaDesc = ref descriptor.GetPerSsaData(ssaNum);
             ssaDesc = new LclSsaVarDsc(def.Block, tree);
@@ -441,18 +399,11 @@ public sealed class IncrementalSsaBuilder
             assert(_finalizedDefs);
         }
 
-        global::RyuJitSharp.GenTreeLclVar __jitExceptionResult701;
-        var __jitExceptionCoalesceLeft702 = use.Tree;
-        if (__jitExceptionCoalesceLeft702 != null)
-        {
-            __jitExceptionResult701 = __jitExceptionCoalesceLeft702;
-        }
-        else
+        var useTree = use.Tree;
+        if (useTree is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSAUseHasNoTree);
-            __jitExceptionResult701 = default;
         }
-        var useTree = __jitExceptionResult701;
         JITDUMP($"Inserting use [{useTree.TreeId:D6}] into SSA\n");
 
         UseDefLocation reachingDef;
@@ -462,35 +413,21 @@ public sealed class IncrementalSsaBuilder
         }
         else
         {
-            global::RyuJitSharp.FlowGraphDfsTree __jitExceptionResult153;
-            var __jitExceptionCoalesceLeft154 = _compiler._dfsTree;
-            if (__jitExceptionCoalesceLeft154 != null)
-            {
-                __jitExceptionResult153 = __jitExceptionCoalesceLeft154;
-            }
-            else
+            var dfsTree = _compiler._dfsTree;
+            if (dfsTree is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSADFSTreeIsNotAvailable);
-                __jitExceptionResult153 = default;
             }
-            var dfsTree = __jitExceptionResult153;
             if (!dfsTree.Contains(use.Block))
             {
                 reachingDef = _defs[0];
                 if (Configuration.DEBUG)
                 {
-                    global::RyuJitSharp.GenTreeLclVar __jitExceptionResult155;
-                    var __jitExceptionCoalesceLeft156 = reachingDef.Tree;
-                    if (__jitExceptionCoalesceLeft156 != null)
-                    {
-                        __jitExceptionResult155 = __jitExceptionCoalesceLeft156;
-                    }
-                    else
+                    var unreachableDefTree = reachingDef.Tree;
+                    if (unreachableDefTree is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSADefinitionHasNoTree);
-                        __jitExceptionResult155 = default;
                     }
-                    var unreachableDefTree = __jitExceptionResult155;
                     JITDUMP($"  Use is in unreachable block {FMT_BB(use.Block.bbNum)}, using first def " +
                         $"[{unreachableDefTree.TreeId:D6}] in {FMT_BB(reachingDef.Block.bbNum)}\n");
                 }
@@ -501,18 +438,11 @@ public sealed class IncrementalSsaBuilder
             }
         }
 
-        global::RyuJitSharp.GenTreeLclVar __jitExceptionResult157;
-        var __jitExceptionCoalesceLeft158 = reachingDef.Tree;
-        if (__jitExceptionCoalesceLeft158 != null)
-        {
-            __jitExceptionResult157 = __jitExceptionCoalesceLeft158;
-        }
-        else
+        var reachingTree = reachingDef.Tree;
+        if (reachingTree is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSAUseHasNoReachingDefinition);
-            __jitExceptionResult157 = default;
         }
-        var reachingTree = __jitExceptionResult157;
         JITDUMP($"  Reaching def is [{reachingTree.TreeId:D6}] d:{reachingTree.SsaNum}\n");
         useTree.SsaNum = reachingTree.SsaNum;
         _liveInBuilder.MarkLiveInBackwards(_lclNum, use, reachingDef);

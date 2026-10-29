@@ -98,18 +98,11 @@ public partial class Compiler
             }
 
             var deaths = _liveness.GetDeathsForStructLocal(local);
-            global::RyuJitSharp.Compiler.PhysicalPromotionAggregateInfo __jitExceptionResult122;
-            var __jitExceptionCoalesceLeft123 = _aggregates.Lookup(local.LclNum);
-            if (__jitExceptionCoalesceLeft123 != null)
-            {
-                __jitExceptionResult122 = __jitExceptionCoalesceLeft123;
-            }
-            else
+            var aggregate = _aggregates.Lookup(local.LclNum);
+            if (aggregate is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ReplacementMustBelongToAPromotedAggregate);
-                __jitExceptionResult122 = default;
             }
-            var aggregate = __jitExceptionResult122;
             var index = aggregate.Replacements.IndexOf(replacement);
             assert(index >= 0);
             return deaths.IsReplacementDying(index) ? " (last use)" : "";
@@ -267,27 +260,14 @@ public partial class Compiler
                 if (dstInvolves)
                 {
                     var start = dstLocal!.LclOffs;
-                    int __jitExceptionResult566;
-                    var __jitExceptionOperand567 = start;
-                    int __jitExceptionOperand568;
-                    int __jitExceptionOperand569;
-                    uint __jitExceptionOperand570;
-                    global::RyuJitSharp.ClassLayout __jitExceptionOperand571;
-                    var __jitExceptionCoalesceLeft572 = dstLocal.GetLayout(_compiler);
-                    if (__jitExceptionCoalesceLeft572 != null)
-                    {
-                        __jitExceptionOperand571 = __jitExceptionCoalesceLeft572;
-                    }
-                    else
+                    var layout = dstLocal.GetLayout(_compiler);
+                    if (layout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalRequiresALayout);
-                        __jitExceptionOperand571 = default;
                     }
-                    __jitExceptionOperand570 = __jitExceptionOperand571.Size;
-                    __jitExceptionOperand569 = (int)__jitExceptionOperand570;
-                    __jitExceptionOperand568 = checked(__jitExceptionOperand569);
-                    __jitExceptionResult566 = __jitExceptionOperand567 + __jitExceptionOperand568;
-                    var end = __jitExceptionResult566;
+                    var size = (int)layout.Size;
+                    var checkedSize = checked(size);
+                    var end = start + checkedSize;
                     if (dstAggregate!.Replacements[dstFirst].Offset < start)
                     {
                         var replacement = dstAggregate.Replacements[dstFirst++];
@@ -324,27 +304,14 @@ public partial class Compiler
                 if (srcInvolves)
                 {
                     var start = srcLocal!.LclOffs;
-                    int __jitExceptionResult573;
-                    var __jitExceptionOperand574 = start;
-                    int __jitExceptionOperand575;
-                    int __jitExceptionOperand576;
-                    uint __jitExceptionOperand577;
-                    global::RyuJitSharp.ClassLayout __jitExceptionOperand578;
-                    var __jitExceptionCoalesceLeft579 = srcLocal.GetLayout(_compiler);
-                    if (__jitExceptionCoalesceLeft579 != null)
-                    {
-                        __jitExceptionOperand578 = __jitExceptionCoalesceLeft579;
-                    }
-                    else
+                    var layout = srcLocal.GetLayout(_compiler);
+                    if (layout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalRequiresALayout);
-                        __jitExceptionOperand578 = default;
                     }
-                    __jitExceptionOperand577 = __jitExceptionOperand578.Size;
-                    __jitExceptionOperand576 = (int)__jitExceptionOperand577;
-                    __jitExceptionOperand575 = checked(__jitExceptionOperand576);
-                    __jitExceptionResult573 = __jitExceptionOperand574 + __jitExceptionOperand575;
-                    var end = __jitExceptionResult573;
+                    var size = (int)layout.Size;
+                    var checkedSize = checked(size);
+                    var end = start + checkedSize;
                     if (srcAggregate!.Replacements[srcFirst].Offset < start)
                     {
                         var replacement = srcAggregate.Replacements[srcFirst++];
@@ -392,50 +359,26 @@ public partial class Compiler
                 {
                     var local = store.Data.AsLclVarCommon();
                     ref var data = ref store.DataRef;
-                    ref var __jitExceptionReference580 = ref data;
-                    var __jitExceptionArgument581 = local.LclNum;
-                    var __jitExceptionArgument582 = local.LclOffs;
-                    int __jitExceptionArgument583;
-                    int __jitExceptionOperand584;
-                    uint __jitExceptionOperand585;
-                    global::RyuJitSharp.ClassLayout __jitExceptionOperand586;
-                    var __jitExceptionCoalesceLeft587 = local.GetLayout(_compiler);
-                    if (__jitExceptionCoalesceLeft587 != null)
-                    {
-                        __jitExceptionOperand586 = __jitExceptionCoalesceLeft587;
-                    }
-                    else
+                    var layout = local.GetLayout(_compiler);
+                    if (layout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalRequiresALayout);
-                        __jitExceptionOperand586 = default;
                     }
-                    __jitExceptionOperand585 = __jitExceptionOperand586.Size;
-                    __jitExceptionOperand584 = (int)__jitExceptionOperand585;
-                    __jitExceptionArgument583 = checked(__jitExceptionOperand584);
-                    WriteBackBeforeUse(ref __jitExceptionReference580, __jitExceptionArgument581, __jitExceptionArgument582, __jitExceptionArgument583);
+                    var size = (int)layout.Size;
+                    var checkedSize = checked(size);
+                    WriteBackBeforeUse(ref data, local.LclNum, local.LclOffs, checkedSize);
                 }
 
                 if (dstLocal is not null)
                 {
-                    var __jitExceptionArgument588 = dstLocal;
-                    int __jitExceptionArgument589;
-                    int __jitExceptionOperand590;
-                    uint __jitExceptionOperand591;
-                    global::RyuJitSharp.ClassLayout __jitExceptionOperand592;
-                    var __jitExceptionCoalesceLeft593 = dstLocal.GetLayout(_compiler);
-                    if (__jitExceptionCoalesceLeft593 != null)
-                    {
-                        __jitExceptionOperand592 = __jitExceptionCoalesceLeft593;
-                    }
-                    else
+                    var layout = dstLocal.GetLayout(_compiler);
+                    if (layout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalRequiresALayout);
-                        __jitExceptionOperand592 = default;
                     }
-                    __jitExceptionOperand591 = __jitExceptionOperand592.Size;
-                    __jitExceptionOperand590 = (int)__jitExceptionOperand591;
-                    __jitExceptionArgument589 = checked(__jitExceptionOperand590);
-                    MarkForReadBack(__jitExceptionArgument588, __jitExceptionArgument589, "cannot decompose store");
+                    var size = (int)layout.Size;
+                    var checkedSize = checked(size);
+                    MarkForReadBack(dstLocal, checkedSize, "cannot decompose store");
                 }
             }
         }
