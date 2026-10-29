@@ -351,10 +351,6 @@ internal static class FuncInfoDscMetadataTests
     [Test]
     public static void UnwindReadRequiresStateOwnedByTheDescriptor()
     {
-        Assume.That(
-            Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64,
-            "This test requires ARM, LoongArch64, or RISC-V64.");
-
         FuncInfoDsc descriptor = default;
         var exception = Assert.Throws<InvalidOperationException>(() => _ = descriptor.GetUnwindInfo());
         Assert.That(exception, Is.Not.Null);

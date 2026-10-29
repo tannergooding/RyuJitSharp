@@ -86,18 +86,13 @@ public partial struct FuncInfoDsc
 
     public readonly UnwindInfo GetUnwindInfo()
     {
-        global::RyuJitSharp.UnwindInfo __jitExceptionReturnResult278;
-        var __jitExceptionCoalesceLeft279 = uwi;
-        if (__jitExceptionCoalesceLeft279 != null)
-        {
-            __jitExceptionReturnResult278 = __jitExceptionCoalesceLeft279;
-        }
-        else
+        var unwindInfo = uwi;
+        if (unwindInfo is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindInformationHasNotBeenInitialized);
-            __jitExceptionReturnResult278 = default;
         }
-        return __jitExceptionReturnResult278;
+
+        return unwindInfo;
     }
 
     public UnwindInfo? uwiCold;

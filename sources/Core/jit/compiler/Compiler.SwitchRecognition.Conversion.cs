@@ -32,18 +32,12 @@ public partial class Compiler
             return false;
         }
 
-        global::RyuJitSharp.GenTree __jitExceptionResult236;
-        var __jitExceptionCoalesceLeft237 = variableNode;
-        if (__jitExceptionCoalesceLeft237 != null)
-        {
-            __jitExceptionResult236 = __jitExceptionCoalesceLeft237;
-        }
-        else
+        var switchValue = variableNode;
+        if (switchValue is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException();
-            __jitExceptionResult236 = default;
         }
-        var switchValue = __jitExceptionResult236;
+
         var values = new nint[SwitchMaxDistance];
         values[0] = constant;
         var count = 1;
@@ -145,30 +139,18 @@ public partial class Compiler
         var isTest = IsSwitchConstantTestCondBlock(last, false, out var blockIfTrue,
             out var blockIfFalse, out _, out _, out _);
         assert(isTest);
-        global::RyuJitSharp.BasicBlock __jitExceptionResult238;
-        var __jitExceptionCoalesceLeft239 = blockIfTrue;
-        if (__jitExceptionCoalesceLeft239 != null)
-        {
-            __jitExceptionResult238 = __jitExceptionCoalesceLeft239;
-        }
-        else
+        var trueTarget = blockIfTrue;
+        if (trueTarget is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException();
-            __jitExceptionResult238 = default;
         }
-        var trueTarget = __jitExceptionResult238;
-        global::RyuJitSharp.BasicBlock __jitExceptionResult240;
-        var __jitExceptionCoalesceLeft241 = blockIfFalse;
-        if (__jitExceptionCoalesceLeft241 != null)
-        {
-            __jitExceptionResult240 = __jitExceptionCoalesceLeft241;
-        }
-        else
+
+        var falseTarget = blockIfFalse;
+        if (falseTarget is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException();
-            __jitExceptionResult240 = default;
         }
-        var falseTarget = __jitExceptionResult240;
+
         assert(SkipSwitchFallthroughBlocks(firstBlock.TrueTarget) ==
             SkipSwitchFallthroughBlocks(trueTarget));
         var trueEdge = firstBlock.TrueEdge;

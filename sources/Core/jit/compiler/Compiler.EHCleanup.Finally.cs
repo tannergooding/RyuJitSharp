@@ -106,34 +106,22 @@ public partial class Compiler
                 var end = lastCallFinally.Next;
                 while (current != end)
                 {
-                    global::RyuJitSharp.BasicBlock __jitExceptionResult139;
-                    var __jitExceptionCoalesceLeft140 = current;
-                    if (__jitExceptionCoalesceLeft140 != null)
-                    {
-                        __jitExceptionResult139 = __jitExceptionCoalesceLeft140;
-                    }
-                    else
+                    var callBlock = current;
+                    if (callBlock is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyRangeEndedPrematurely);
-                        __jitExceptionResult139 = default;
                     }
-                    var callBlock = __jitExceptionResult139;
+
                     var next = callBlock.Next;
                     if ((callBlock.Kind is BBJ_CALLFINALLY) && (callBlock.Target == firstBlock))
                     {
                         noway_assert(callBlock.isBBCallFinallyPair);
-                        global::RyuJitSharp.BasicBlock __jitExceptionResult141;
-                        var __jitExceptionCoalesceLeft142 = callBlock.Next;
-                        if (__jitExceptionCoalesceLeft142 != null)
-                        {
-                            __jitExceptionResult141 = __jitExceptionCoalesceLeft142;
-                        }
-                        else
+                        var leave = callBlock.Next;
+                        if (leave is null)
                         {
                             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresItsLeaveBlock);
-                            __jitExceptionResult141 = default;
                         }
-                        var leave = __jitExceptionResult141;
+
                         var continuation = fgGetFinallyContinuation(leave);
                         JITDUMP($"Modifying callfinally {FMT_BB(callBlock.bbNum)} leave " +
                             $"{FMT_BB(leave.bbNum)} finally {FMT_BB(firstBlock.bbNum)} " +
@@ -191,16 +179,13 @@ public partial class Compiler
                     }
                 }
 
-                var __jitExceptionCoalesceLeft144 = block.Next;
-                if (__jitExceptionCoalesceLeft144 != null)
-                {
-                    block = __jitExceptionCoalesceLeft144;
-                }
-                else
+                var next = block.Next;
+                if (next is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TryRegionEndedPrematurely);
-                    block = default;
                 }
+
+                block = next;
             }
 
             fgUpdateACDsBeforeEHTableEntryRemoval(xtnum);

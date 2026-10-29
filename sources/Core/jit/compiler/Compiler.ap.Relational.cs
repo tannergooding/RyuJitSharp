@@ -163,28 +163,20 @@ public partial class Compiler
                 return new(new(LimitType.Unknown));
             }
 
-            global::RyuJitSharp.GenTree __jitExceptionOperand47;
-            var __jitExceptionCoalesceLeft48 = defStore.Data;
-            if (__jitExceptionCoalesceLeft48 != null)
-            {
-                __jitExceptionOperand47 = __jitExceptionCoalesceLeft48;
-            }
-            else
+            var operand = defStore.Data;
+            if (operand is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSAStoreHasNoValue);
-                __jitExceptionOperand47 = default;
             }
-            tree = __jitExceptionOperand47.EffectiveVal;
-            var __jitExceptionCoalesceLeft49 = definition.Block;
-            if (__jitExceptionCoalesceLeft49 != null)
-            {
-                block = __jitExceptionCoalesceLeft49;
-            }
-            else
+
+            tree = operand.EffectiveVal;
+            var definingBlock = definition.Block;
+            if (definingBlock is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSAStoreHasNoDefiningBlock2);
-                block = default;
             }
+
+            block = definingBlock;
         }
 
         if ((tree.Oper is not GT_SUB) || (tree.Type is not TYP_INT) ||

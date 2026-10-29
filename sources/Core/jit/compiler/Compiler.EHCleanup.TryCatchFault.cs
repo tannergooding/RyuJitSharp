@@ -92,16 +92,13 @@ public partial class Compiler
                     }
                 }
 
-                var __jitExceptionCoalesceLeft146 = block.Next;
-                if (__jitExceptionCoalesceLeft146 != null)
-                {
-                    block = __jitExceptionCoalesceLeft146;
-                }
-                else
+                var next = block.Next;
+                if (next is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TryRegionEndedPrematurely);
-                    block = default;
                 }
+
+                block = next;
             }
 
             if (canThrow)
@@ -134,16 +131,13 @@ public partial class Compiler
                     }
                 }
 
-                var __jitExceptionCoalesceLeft148 = block.Next;
-                if (__jitExceptionCoalesceLeft148 != null)
-                {
-                    block = __jitExceptionCoalesceLeft148;
-                }
-                else
+                var next = block.Next;
+                if (next is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.HandlerRegionEndedPrematurely);
-                    block = default;
                 }
+
+                block = next;
             }
 
             if (handlerEnclosesTry)
@@ -176,16 +170,13 @@ public partial class Compiler
                     }
                 }
 
-                var __jitExceptionCoalesceLeft150 = block.Next;
-                if (__jitExceptionCoalesceLeft150 != null)
-                {
-                    block = __jitExceptionCoalesceLeft150;
-                }
-                else
+                var next = block.Next;
+                if (next is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TryRegionEndedPrematurely);
-                    block = default;
                 }
+
+                block = next;
             }
 
             if (clause.HasFilter)

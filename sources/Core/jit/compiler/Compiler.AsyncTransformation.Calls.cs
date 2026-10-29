@@ -56,18 +56,11 @@ public partial class Compiler
             if ((call.Type is not TYP_VOID) && !call.IsUnusedValue)
             {
                 assert(retbufArg is null);
-                global::RyuJitSharp.GenTree __jitExceptionResult80;
-                var __jitExceptionCoalesceLeft81 = call.Next;
-                if (__jitExceptionCoalesceLeft81 != null)
-                {
-                    __jitExceptionResult80 = __jitExceptionCoalesceLeft81;
-                }
-                else
+                var next = call.Next;
+                if (next is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncCallResultHasNoUse);
-                    __jitExceptionResult80 = default;
                 }
-                var next = __jitExceptionResult80;
 
                 // Keep an existing local store unless EH requires the old value after resumption.
                 if (!next.Oper.IsLocalStore || (next.AsLclVarCommon().Data != call) ||
@@ -110,18 +103,12 @@ public partial class Compiler
                     analyses?.Update(next);
                 }
 
-                global::RyuJitSharp.GenTree __jitExceptionResult82;
-                var __jitExceptionCoalesceLeft83 = call.Next;
-                if (__jitExceptionCoalesceLeft83 != null)
-                {
-                    __jitExceptionResult82 = __jitExceptionCoalesceLeft83;
-                }
-                else
+                var callStore = call.Next;
+                if (callStore is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncCallResultHasNoLocalStore);
-                    __jitExceptionResult82 = default;
                 }
-                var callStore = __jitExceptionResult82;
+
                 assert(callStore.Oper.IsLocalStore && callStore.AsLclVarCommon().Data == call);
                 definition.DefinitionNode = callStore.AsLclVarCommon();
                 definition.InsertAfter = callStore;
@@ -146,18 +133,12 @@ public partial class Compiler
             };
             var storeContinuation =
                 _compiler.gtNewStoreLclVarNode(GetReturnedContinuationVar(), continuationArg);
-            global::RyuJitSharp.GenTree __jitExceptionResult10;
-            var __jitExceptionCoalesceLeft11 = definition.InsertAfter;
-            if (__jitExceptionCoalesceLeft11 != null)
-            {
-                __jitExceptionResult10 = __jitExceptionCoalesceLeft11;
-            }
-            else
+            var insertAfter = definition.InsertAfter;
+            if (insertAfter is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncCallHasNoInsertionPoint);
-                __jitExceptionResult10 = default;
             }
-            var insertAfter = __jitExceptionResult10;
+
             block.InsertAfter(insertAfter, continuationArg);
             block.InsertAfter(continuationArg, storeContinuation);
 

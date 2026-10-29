@@ -13,10 +13,21 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class FlowGraphRegionDumpTests
 {
+    private const string FlowGraphDumpSwitch = "RyuJitSharp.DUMP_FLOWGRAPHS";
+    private static bool s_originalFlowGraphDumpEnabled;
+
     [SetUp]
-    public static void RequireFlowGraphDumpConfiguration()
+    public static void EnableFlowGraphDumpConfiguration()
     {
-        Assume.That(Configuration.DUMP_FLOWGRAPHS, "Flowgraph dump support is disabled.");
+        _ = AppContext.TryGetSwitch(FlowGraphDumpSwitch, out s_originalFlowGraphDumpEnabled);
+        AppContext.SetSwitch(FlowGraphDumpSwitch, true);
+        Assert.That(Configuration.DUMP_FLOWGRAPHS, Is.True);
+    }
+
+    [TearDown]
+    public static void RestoreFlowGraphDumpConfiguration()
+    {
+        AppContext.SetSwitch(FlowGraphDumpSwitch, s_originalFlowGraphDumpEnabled);
     }
 
     [Test]

@@ -15,18 +15,12 @@ public partial class Compiler
         private unsafe void CreateResumptionSwitch(GenTreeLclVarCommon? commonResumedDef)
         {
             _compiler.fgCreateNewInitBB();
-            global::RyuJitSharp.BasicBlock __jitExceptionResult24;
-            var __jitExceptionCoalesceLeft25 = _compiler.fgFirstBB;
-            if (__jitExceptionCoalesceLeft25 != null)
-            {
-                __jitExceptionResult24 = __jitExceptionCoalesceLeft25;
-            }
-            else
+            var entry = _compiler.fgFirstBB;
+            if (entry is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncMethodHasNoEntryBlock);
-                __jitExceptionResult24 = default;
             }
-            var entry = __jitExceptionResult24;
+
             var continuation = _compiler.gtNewLclvNode(TYP_REF, _compiler.lvaAsyncContinuationArg);
             var nullValue = _compiler.gtNewNull();
             var nonNull = _compiler.gtNewBinaryNode(GT_NE, TYP_INT, continuation, nullValue);

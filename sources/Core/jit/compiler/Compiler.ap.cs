@@ -697,48 +697,48 @@ public partial class Compiler
             }
         }
 
-        string __jitExceptionArgument46;
+        string separator;
         switch (assertion.Kind)
         {
             case OAK_EQUAL:
-                __jitExceptionArgument46 = " == ";
+                separator = " == ";
                 break;
             case OAK_NOT_EQUAL:
-                __jitExceptionArgument46 = " != ";
+                separator = " != ";
                 break;
             case OAK_LT:
-                __jitExceptionArgument46 = " < ";
+                separator = " < ";
                 break;
             case OAK_LT_UN:
-                __jitExceptionArgument46 = " u< ";
+                separator = " u< ";
                 break;
             case OAK_LE:
-                __jitExceptionArgument46 = " <= ";
+                separator = " <= ";
                 break;
             case OAK_LE_UN:
-                __jitExceptionArgument46 = " u<= ";
+                separator = " u<= ";
                 break;
             case OAK_GT:
-                __jitExceptionArgument46 = " > ";
+                separator = " > ";
                 break;
             case OAK_GT_UN:
-                __jitExceptionArgument46 = " u> ";
+                separator = " u> ";
                 break;
             case OAK_GE:
-                __jitExceptionArgument46 = " >= ";
+                separator = " >= ";
                 break;
             case OAK_GE_UN:
-                __jitExceptionArgument46 = " u>= ";
+                separator = " u>= ";
                 break;
             case OAK_SUBRANGE:
-                __jitExceptionArgument46 = " in ";
+                separator = " in ";
                 break;
             default:
                 JitExceptionHelpers.ThrowUnreachableException();
-                __jitExceptionArgument46 = default;
+                separator = default;
                 break;
         }
-        jitprintf(__jitExceptionArgument46);
+        jitprintf(separator);
 
         switch (assertion.Op2.Kind)
         {

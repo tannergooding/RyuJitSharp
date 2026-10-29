@@ -143,18 +143,12 @@ public partial class Compiler
             _compiler.fgInvalidateDfsTree();
             if (_compiler.opts.OptimizationDisabled)
             {
-                int[] __jitExceptionResult26;
-                var __jitExceptionCoalesceLeft27 = _compiler.lvaTrackedToVarNum;
-                if (__jitExceptionCoalesceLeft27 != null)
-                {
-                    __jitExceptionResult26 = __jitExceptionCoalesceLeft27;
-                }
-                else
+                var trackedToVar = _compiler.lvaTrackedToVarNum;
+                if (trackedToVar is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncLivenessHasNoTrackedLocalMapping);
-                    __jitExceptionResult26 = default;
                 }
-                var trackedToVar = __jitExceptionResult26;
+
                 for (var i = 0; i < _compiler.lvaTrackedCount; i++)
                 {
                     _compiler.lvaGetDesc(trackedToVar[i]).lvTracked = false;

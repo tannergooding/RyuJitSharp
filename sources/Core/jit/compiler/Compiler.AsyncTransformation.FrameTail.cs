@@ -29,18 +29,12 @@ public partial class Compiler
                 return null;
             }
 
-            global::System.Collections.Generic.List<global::RyuJitSharp.ContinuationContextHandling> __jitExceptionResult28;
-            var __jitExceptionCoalesceLeft29 = call.GetAsyncInfo().InlineFrameContextHandling;
-            if (__jitExceptionCoalesceLeft29 != null)
-            {
-                __jitExceptionResult28 = __jitExceptionCoalesceLeft29;
-            }
-            else
+            var handling = call.GetAsyncInfo().InlineFrameContextHandling;
+            if (handling is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlinedAsyncFrameHasNoContextHandling);
-                __jitExceptionResult28 = default;
             }
-            var handling = __jitExceptionResult28;
+
             if ((frameResumed is null) || (handling.Count != enclosing))
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlinedAsyncFrameContextChainIsInconsistent);
@@ -58,18 +52,12 @@ public partial class Compiler
 
                 foreach (var kind in kinds)
                 {
-                    global::RyuJitSharp.CallArg __jitExceptionResult30;
-                    var __jitExceptionCoalesceLeft31 = call.Args.FindWellKnownArg(kind);
-                    if (__jitExceptionCoalesceLeft31 != null)
-                    {
-                        __jitExceptionResult30 = __jitExceptionCoalesceLeft31;
-                    }
-                    else
+                    var argument = call.Args.FindWellKnownArg(kind);
+                    if (argument is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlinedAsyncFrameIsMissingAContextArgument);
-                        __jitExceptionResult30 = default;
                     }
-                    var argument = __jitExceptionResult30;
+
                     values.Add(TakeAsyncArgument(callBlock, call, argument));
                 }
             }
@@ -79,18 +67,12 @@ public partial class Compiler
                 CreateSharedReturnBB();
             }
 
-            global::RyuJitSharp.BasicBlock __jitExceptionResult32;
-            var __jitExceptionCoalesceLeft33 = _sharedReturnBB;
-            if (__jitExceptionCoalesceLeft33 != null)
-            {
-                __jitExceptionResult32 = __jitExceptionCoalesceLeft33;
-            }
-            else
+            var sharedReturn = _sharedReturnBB;
+            if (sharedReturn is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlinedFrameTailRequiresAReturnBlock);
-                __jitExceptionResult32 = default;
             }
-            var sharedReturn = __jitExceptionResult32;
+
             var tail = _compiler.fgNewBBbefore(BBJ_ALWAYS, sharedReturn, false);
             tail.bbSetRunRarely();
             tail.clearTryIndex();
@@ -146,24 +128,23 @@ public partial class Compiler
                     var frameHandling = handling[i];
                     var captureContext = frameHandling is
                         ContinuationContextHandling.ContinueOnCapturedContext;
-                    global::RyuJitSharp.CORINFO_METHOD_STRUCT_* __jitExceptionResult103;
+                    CORINFO_METHOD_HANDLE captureMethod;
                     switch (frameHandling)
                     {
                         case ContinuationContextHandling.ContinueOnCapturedContext:
-                            __jitExceptionResult103 = asyncInfo.captureInlinedFrameTransitionWithContinuationContextMethHnd;
+                            captureMethod = asyncInfo.captureInlinedFrameTransitionWithContinuationContextMethHnd;
                             break;
                         case ContinuationContextHandling.ContinueOnThreadPool:
-                            __jitExceptionResult103 = asyncInfo.captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
+                            captureMethod = asyncInfo.captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
                             break;
                         case ContinuationContextHandling.None:
-                            __jitExceptionResult103 = asyncInfo.captureInlinedFrameTransitionNoContinuationContextMethHnd;
+                            captureMethod = asyncInfo.captureInlinedFrameTransitionNoContinuationContextMethHnd;
                             break;
                         default:
                             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnrecognizedInlineFrameContextHandling);
-                            __jitExceptionResult103 = default;
+                            captureMethod = default;
                             break;
                     }
-                    var captureMethod = __jitExceptionResult103;
                     var capture = _compiler.gtNewUserCallNode(TYP_VOID, captureMethod);
                     _ = capture.Args.PushFront(NewCallArg.CreateForPrimitive(
                         ContinuationMemberAddress(layout,

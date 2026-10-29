@@ -166,30 +166,17 @@ public partial class Compiler
                 }
             }
             _mutatedVarsIn = CreateSets(compiler);
-            global::RyuJitSharp.BasicBlock __jitExceptionResult78;
-            var __jitExceptionCoalesceLeft79 = compiler.fgFirstBB;
-            if (__jitExceptionCoalesceLeft79 != null)
-            {
-                __jitExceptionResult78 = __jitExceptionCoalesceLeft79;
-            }
-            else
+            var firstBlock = compiler.fgFirstBB;
+            if (firstBlock is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncAnalysisRequiresAnEntryBlock);
-                __jitExceptionResult78 = default;
             }
-            var firstBlock = __jitExceptionResult78;
-            int[] __jitExceptionResult4;
-            var __jitExceptionCoalesceLeft5 = compiler.lvaTrackedToVarNum;
-            if (__jitExceptionCoalesceLeft5 != null)
-            {
-                __jitExceptionResult4 = __jitExceptionCoalesceLeft5;
-            }
-            else
+
+            var trackedToVar = compiler.lvaTrackedToVarNum;
+            if (trackedToVar is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncAnalysisRequiresTrackedLocals);
-                __jitExceptionResult4 = default;
             }
-            var trackedToVar = __jitExceptionResult4;
 
             for (var i = 0; i < compiler.lvaTrackedCount; i++)
             {
@@ -380,18 +367,12 @@ public partial class Compiler
     {
         public static string PrintVarSet(Compiler compiler, VARSET_TP set)
         {
-            int[] __jitExceptionResult6;
-            var __jitExceptionCoalesceLeft7 = compiler.lvaTrackedToVarNum;
-            if (__jitExceptionCoalesceLeft7 != null)
-            {
-                __jitExceptionResult6 = __jitExceptionCoalesceLeft7;
-            }
-            else
+            var trackedToVar = compiler.lvaTrackedToVarNum;
+            if (trackedToVar is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncAnalysisRequiresTrackedLocals);
-                __jitExceptionResult6 = default;
             }
-            var trackedToVar = __jitExceptionResult6;
+
             var result = new StringBuilder();
             for (var index = 0; index < compiler.lvaTrackedCount; index++)
             {
@@ -496,18 +477,12 @@ public partial class Compiler
 
             if ((descriptor.Type is TYP_STRUCT) || descriptor.IsImplicitByRef)
             {
-                global::RyuJitSharp.ClassLayout __jitExceptionResult8;
-                var __jitExceptionCoalesceLeft9 = descriptor.Layout;
-                if (__jitExceptionCoalesceLeft9 != null)
-                {
-                    __jitExceptionResult8 = __jitExceptionCoalesceLeft9;
-                }
-                else
+                var layout = descriptor.Layout;
+                if (layout is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalHasNoLayout);
-                    __jitExceptionResult8 = default;
                 }
-                var layout = __jitExceptionResult8;
+
                 if (layout.HasGCByRef() || layout.IsStackOnly(_compiler))
                 {
                     // Byref-like structs cannot be captured even when they contain no byrefs.

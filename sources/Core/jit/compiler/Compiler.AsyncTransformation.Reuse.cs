@@ -107,18 +107,12 @@ public partial class Compiler
 
             if (definition.DefinitionNode is not null)
             {
-                global::RyuJitSharp.GenTreeLclVarCommon __jitExceptionResult42;
-                var __jitExceptionCoalesceLeft43 = state.CallDefInfo.DefinitionNode;
-                if (__jitExceptionCoalesceLeft43 != null)
-                {
-                    __jitExceptionResult42 = __jitExceptionCoalesceLeft43;
-                }
-                else
+                var priorDefinition = state.CallDefInfo.DefinitionNode;
+                if (priorDefinition is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ReusableStateLacksItsReturnDefinition);
-                    __jitExceptionResult42 = default;
                 }
-                var priorDefinition = __jitExceptionResult42;
+
                 if (!EqualLocalDefinitions(definition.DefinitionNode, priorDefinition))
                 {
                     JITDUMP($"    No; disagreement on return value destination " +

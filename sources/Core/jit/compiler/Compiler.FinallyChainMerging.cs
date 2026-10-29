@@ -83,18 +83,12 @@ public partial class Compiler
                         {
                             assert(block.isEmpty());
                             callFinallyCount++;
-                            global::RyuJitSharp.BasicBlock __jitExceptionResult167;
-                            var __jitExceptionCoalesceLeft168 = block.Next;
-                            if (__jitExceptionCoalesceLeft168 != null)
-                            {
-                                __jitExceptionResult167 = __jitExceptionCoalesceLeft168;
-                            }
-                            else
+                            var leave = block.Next;
+                            if (leave is null)
                             {
                                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresItsLeaveBlock);
-                                __jitExceptionResult167 = default;
                             }
-                            var leave = __jitExceptionResult167;
+
                             var continuation = fgGetFinallyContinuation(leave);
                             _ = continuationMap.TryAdd(continuation, block);
                         }
@@ -106,16 +100,13 @@ public partial class Compiler
                     }
                 }
 
-                var __jitExceptionCoalesceLeft166 = block.Next;
-                if (__jitExceptionCoalesceLeft166 != null)
-                {
-                    block = __jitExceptionCoalesceLeft166;
-                }
-                else
+                var next = block.Next;
+                if (next is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyRangeEndedPrematurely);
-                    block = default;
                 }
+
+                block = next;
             }
 
             JITDUMP($"EH#{xtnum} has {callFinallyCount} callfinallys, {continuationMap.Count} continuations\n");
@@ -139,16 +130,13 @@ public partial class Compiler
                     }
                 }
 
-                var __jitExceptionCoalesceLeft170 = block.Next;
-                if (__jitExceptionCoalesceLeft170 != null)
-                {
-                    block = __jitExceptionCoalesceLeft170;
-                }
-                else
+                var next = block.Next;
+                if (next is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyRangeEndedPrematurely);
-                    block = default;
                 }
+
+                block = next;
             }
         }
 
@@ -190,18 +178,12 @@ public partial class Compiler
             return false;
         }
 
-        global::RyuJitSharp.BasicBlock __jitExceptionResult171;
-        var __jitExceptionCoalesceLeft172 = callFinally.Next;
-        if (__jitExceptionCoalesceLeft172 != null)
-        {
-            __jitExceptionResult171 = __jitExceptionCoalesceLeft172;
-        }
-        else
+        var leave = callFinally.Next;
+        if (leave is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresItsLeaveBlock);
-            __jitExceptionResult171 = default;
         }
-        var leave = __jitExceptionResult171;
+
         var continuation = fgGetFinallyContinuation(leave);
         var canonical = continuationMap.GetValue(continuation);
         assert(canonical is not null);

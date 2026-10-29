@@ -19,8 +19,10 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class AssertionArithmeticTests
 {
     [TestCase(GT_ADD, false, true)]
+    [TestCase(GT_ADD, true, true)]
     [TestCase(GT_SUB, false, true)]
     [TestCase(GT_MUL, false, true)]
+    [TestCase(GT_MUL, true, true)]
     [TestCase(GT_SUB, true, false)]
     public static void CheckedArithmeticClearsOverflowOnlyForProvedRange(
         genTreeOps oper, bool unsigned, bool expected)

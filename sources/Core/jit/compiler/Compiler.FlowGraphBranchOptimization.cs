@@ -173,18 +173,12 @@ public partial class Compiler
         assert(newStmtList is not null);
         if (lastStmt is not null)
         {
-            global::RyuJitSharp.Statement __jitExceptionResult197;
-            var __jitExceptionCoalesceLeft198 = bJump.FirstStmt;
-            if (__jitExceptionCoalesceLeft198 != null)
-            {
-                __jitExceptionResult197 = __jitExceptionCoalesceLeft198;
-            }
-            else
+            var firstStmt = bJump.FirstStmt;
+            if (firstStmt is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockWithALastStatementMustHaveAFirstStatement);
-                __jitExceptionResult197 = default;
             }
-            var firstStmt = __jitExceptionResult197;
+
             firstStmt.PrevStmt = newLastStmt;
             lastStmt.NextStmt = newStmtList;
             newStmtList.PrevStmt = lastStmt;
