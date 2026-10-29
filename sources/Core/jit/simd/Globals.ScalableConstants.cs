@@ -66,24 +66,23 @@ public static partial class Globals
         result.BaseType = baseType;
         result.Kind = SimdScalableRepeated;
         result.Step.u64[0] = 0;
-        ref var __jitExceptionTarget673 = ref result.Index.u64[0];
         switch (baseType.Size)
         {
             case 1:
-                __jitExceptionTarget673 = byte.MaxValue;
+                result.Index.u64[0] = byte.MaxValue;
                 break;
             case 2:
-                __jitExceptionTarget673 = ushort.MaxValue;
+                result.Index.u64[0] = ushort.MaxValue;
                 break;
             case 4:
-                __jitExceptionTarget673 = uint.MaxValue;
+                result.Index.u64[0] = uint.MaxValue;
                 break;
             case 8:
-                __jitExceptionTarget673 = ulong.MaxValue;
+                result.Index.u64[0] = ulong.MaxValue;
                 break;
             default:
                 JitExceptionHelpers.ThrowUnreachableException();
-                __jitExceptionTarget673 = default;
+                result.Index.u64[0] = default;
                 break;
         }
 

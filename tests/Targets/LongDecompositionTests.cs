@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
@@ -204,6 +205,50 @@ internal sealed unsafe class LongDecompositionTests
             };
             Assert.That(EvaluateShiftRange(block, result), Is.EqualTo(expected));
             Assert.That(block.Any(node => node.Oper is GT_CALL), Is.False);
+            CheckLir(compiler, block);
+        });
+    }
+
+    [TestCase(GT_LSH, CorInfoHelpFunc.CORINFO_HELP_LLSH)]
+    [TestCase(GT_RSH, CorInfoHelpFunc.CORINFO_HELP_LRSH)]
+    [TestCase(GT_RSZ, CorInfoHelpFunc.CORINFO_HELP_LRSZ)]
+    public static void VariableShiftsUseTheExpectedHelperAndArgumentOrder(
+        genTreeOps oper,
+        CorInfoHelpFunc expectedHelper)
+    {
+        WithLowering((compiler, block, lowering) =>
+        {
+            compiler.lvaTable = [
+                new LclVarDsc { Type = TYP_INT },
+                new LclVarDsc { Type = TYP_INT },
+                new LclVarDsc { Type = TYP_INT },
+            ];
+            compiler.lvaCount = 3;
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getEEInfo = &GetEEInfo;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+
+            var low = compiler.gtNewLclvNode(TYP_INT, 0);
+            var high = compiler.gtNewLclvNode(TYP_INT, 1);
+            var shiftCount = compiler.gtNewLclvNode(TYP_INT, 2);
+            var longValue = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
+            var shift = compiler.gtNewBinaryNode(oper, TYP_LONG, longValue, shiftCount);
+            shift.IsUnusedValue = true;
+            block.InsertAtEnd(low);
+            block.InsertAtEnd(high);
+            block.InsertAtEnd(shiftCount);
+            block.InsertAtEnd(shift);
+            block.InsertAtEnd(longValue);
+
+            s_decompose(compiler, lowering, block);
+
+            var call = block.Single(node => node.Oper is GT_CALL).AsCall();
+            Assert.That(call.HelperNum, Is.EqualTo(expectedHelper));
+            Assert.That(call.Args.CountArgs(), Is.EqualTo(3));
+            Assert.That(call.Args.GetArgByIndex(0)?.WellKnownArg, Is.EqualTo(WellKnownArg.ShiftLow));
+            Assert.That(call.Args.GetArgByIndex(1)?.WellKnownArg, Is.EqualTo(WellKnownArg.ShiftHigh));
+            Assert.That(call.Args.GetArgByIndex(2)?.Node.Type, Is.EqualTo(TYP_INT));
             CheckLir(compiler, block);
         });
     }
@@ -746,6 +791,12 @@ if (TestConfiguration.IsDebug)
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetEEInfo(ICorJitInfo* jitInfo, CORINFO_EE_INFO* info)
+    {
+        *info = default;
+    }
 
     private static void WithLowering(Action<Compiler, BasicBlock, Lowering> action)
     {

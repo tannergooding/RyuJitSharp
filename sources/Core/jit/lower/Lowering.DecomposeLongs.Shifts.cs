@@ -213,24 +213,23 @@ public sealed partial class Lowering
             Range().Remove(gtLong);
             Range().Remove(loOp1);
             Range().Remove(hiOp1);
-            global::RyuJitSharp.CorInfoHelpFunc __jitExceptionResult458;
+            CorInfoHelpFunc helper;
             switch (oper)
             {
                 case GT_LSH:
-                    __jitExceptionResult458 = CORINFO_HELP_LLSH;
+                    helper = CORINFO_HELP_LLSH;
                     break;
                 case GT_RSH:
-                    __jitExceptionResult458 = CORINFO_HELP_LRSH;
+                    helper = CORINFO_HELP_LRSH;
                     break;
                 case GT_RSZ:
-                    __jitExceptionResult458 = CORINFO_HELP_LRSZ;
+                    helper = CORINFO_HELP_LRSZ;
                     break;
                 default:
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedLongShiftOperator);
-                    __jitExceptionResult458 = default;
+                    helper = default;
                     break;
             }
-            var helper = __jitExceptionResult458;
             var call = _compiler.gtNewHelperCallNode(TYP_LONG, helper);
             var loArg = NewCallArg.CreateForPrimitive(loOp1).WithWellKnownArg(WellKnownArg.ShiftLow);
             var hiArg = NewCallArg.CreateForPrimitive(hiOp1).WithWellKnownArg(WellKnownArg.ShiftHigh);

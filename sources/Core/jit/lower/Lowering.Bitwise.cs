@@ -66,24 +66,23 @@ public sealed partial class Lowering
             return null;
         }
 
-        global::RyuJitSharp.genTreeOps __jitExceptionResult443;
+        genTreeOps newOper;
         switch (binOp.Oper)
         {
             case GT_OR:
-                __jitExceptionResult443 = GT_BIT_SET;
+                newOper = GT_BIT_SET;
                 break;
             case GT_XOR:
-                __jitExceptionResult443 = GT_BIT_INVERT;
+                newOper = GT_BIT_INVERT;
                 break;
             case GT_AND:
-                __jitExceptionResult443 = GT_BIT_CLEAR;
+                newOper = GT_BIT_CLEAR;
                 break;
             default:
                 JitExceptionHelpers.ThrowInvalidOperationException();
-                __jitExceptionResult443 = default;
+                newOper = default;
                 break;
         }
-        var newOper = __jitExceptionResult443;
 
         JITDUMP($"Lower: optimize {binOp.Oper.Name}(X, {(notNode is not null ? "NOT(LSH(1, Y))" : "LSH(1, Y)")})\n");
         DISPNODE(binOp);

@@ -50,18 +50,11 @@ public partial class Emitter
         id.idOpSize(EA_PTRSIZE);
         id.idReg1(reg);
 
-        global::RyuJitSharp.Compiler __jitExceptionResult335;
-        var __jitExceptionCoalesceLeft336 = _compiler;
-        if (__jitExceptionCoalesceLeft336 != null)
-        {
-            __jitExceptionResult335 = __jitExceptionCoalesceLeft336;
-        }
-        else
+        var compiler = _compiler;
+        if (compiler is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
-            __jitExceptionResult335 = default;
         }
-        var compiler = __jitExceptionResult335;
         assert(compiler.compCurBB is not null);
         if (Configuration.DEBUG && (compiler.compCurBB.Kind == BBJ_EHCATCHRET))
         {

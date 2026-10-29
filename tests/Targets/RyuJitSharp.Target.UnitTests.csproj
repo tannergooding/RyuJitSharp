@@ -192,6 +192,7 @@
     <Compile Include="..\Core\RiscVZeroOperandInstructionTests.cs" Link="RiscVZeroOperandInstructionTests.cs" />
     <Compile Include="..\Core\RiscVCodeGenRegisterTransferTests.cs" Link="RiscVCodeGenRegisterTransferTests.cs" />
     <Compile Include="..\Core\RiscVLocalFieldCodeGenTests.cs" Link="RiscVLocalFieldCodeGenTests.cs" />
+    <Compile Include="..\Core\BitwiseLoweringTests.cs" Link="BitwiseLoweringTests.cs" />
     <Compile Include="..\Core\RiscVLoweringPortTests.cs" Link="RiscVLoweringPortTests.cs" />
     <Compile Include="..\Core\RiscVEmitterFlagsOverloadTests.cs" Link="RiscVEmitterFlagsOverloadTests.cs" />
   </ItemGroup>
