@@ -63,79 +63,149 @@ public sealed partial class ValueNumStore
             {
                 assert(TypeOfVN(argument) == type);
                 var value = GetConstantDouble(argument);
-                double __jitExceptionResult725;
+                double doubleResult;
                 switch (intrinsic)
                 {
                     case NI_System_Math_Abs:
-                        __jitExceptionResult725 = Math.Abs(value);
+                    {
+                        doubleResult = Math.Abs(value);
                         break;
+                    }
+
                     case NI_System_Math_Acos:
-                        __jitExceptionResult725 = Math.Acos(value);
+                    {
+                        doubleResult = Math.Acos(value);
                         break;
+                    }
+
                     case NI_System_Math_Acosh:
-                        __jitExceptionResult725 = Math.Acosh(value);
+                    {
+                        doubleResult = Math.Acosh(value);
                         break;
+                    }
+
                     case NI_System_Math_Asin:
-                        __jitExceptionResult725 = Math.Asin(value);
+                    {
+                        doubleResult = Math.Asin(value);
                         break;
+                    }
+
                     case NI_System_Math_Asinh:
-                        __jitExceptionResult725 = Math.Asinh(value);
+                    {
+                        doubleResult = Math.Asinh(value);
                         break;
+                    }
+
                     case NI_System_Math_Atan:
-                        __jitExceptionResult725 = Math.Atan(value);
+                    {
+                        doubleResult = Math.Atan(value);
                         break;
+                    }
+
                     case NI_System_Math_Atanh:
-                        __jitExceptionResult725 = Math.Atanh(value);
+                    {
+                        doubleResult = Math.Atanh(value);
                         break;
+                    }
+
                     case NI_System_Math_Cbrt:
-                        __jitExceptionResult725 = Math.Cbrt(value);
+                    {
+                        doubleResult = Math.Cbrt(value);
                         break;
+                    }
+
                     case NI_System_Math_Ceiling:
-                        __jitExceptionResult725 = Math.Ceiling(value);
+                    {
+                        doubleResult = Math.Ceiling(value);
                         break;
+                    }
+
                     case NI_System_Math_Cos:
-                        __jitExceptionResult725 = Math.Cos(value);
+                    {
+                        doubleResult = Math.Cos(value);
                         break;
+                    }
+
                     case NI_System_Math_Cosh:
-                        __jitExceptionResult725 = Math.Cosh(value);
+                    {
+                        doubleResult = Math.Cosh(value);
                         break;
+                    }
+
                     case NI_System_Math_Exp:
-                        __jitExceptionResult725 = Math.Exp(value);
+                    {
+                        doubleResult = Math.Exp(value);
                         break;
+                    }
+
                     case NI_System_Math_Floor:
-                        __jitExceptionResult725 = Math.Floor(value);
+                    {
+                        doubleResult = Math.Floor(value);
                         break;
+                    }
+
                     case NI_System_Math_Log:
-                        __jitExceptionResult725 = Math.Log(value);
+                    {
+                        doubleResult = Math.Log(value);
                         break;
+                    }
+
                     case NI_System_Math_Log2:
-                        __jitExceptionResult725 = Math.Log2(value);
+                    {
+                        doubleResult = Math.Log2(value);
                         break;
+                    }
+
                     case NI_System_Math_Log10:
-                        __jitExceptionResult725 = Math.Log10(value);
+                    {
+                        doubleResult = Math.Log10(value);
                         break;
+                    }
+
                     case NI_System_Math_Sin:
-                        __jitExceptionResult725 = Math.Sin(value);
+                    {
+                        doubleResult = Math.Sin(value);
                         break;
+                    }
+
                     case NI_System_Math_Sinh:
-                        __jitExceptionResult725 = Math.Sinh(value);
+                    {
+                        doubleResult = Math.Sinh(value);
                         break;
+                    }
+
                     case NI_System_Math_Round:
-                        __jitExceptionResult725 = Math.Round(value);
+                    {
+                        doubleResult = Math.Round(value);
                         break;
+                    }
+
                     case NI_System_Math_Sqrt:
-                        __jitExceptionResult725 = Math.Sqrt(value);
+                    {
+                        doubleResult = Math.Sqrt(value);
                         break;
+                    }
+
                     case NI_System_Math_Tan:
-                        __jitExceptionResult725 = Math.Tan(value);
+                    {
+                        doubleResult = Math.Tan(value);
                         break;
+                    }
+
                     case NI_System_Math_Tanh:
-                        __jitExceptionResult725 = Math.Tanh(value);
+                    {
+                        doubleResult = Math.Tanh(value);
                         break;
+                    }
+
                     case NI_System_Math_Truncate:
-                        __jitExceptionResult725 = Math.Truncate(value);
+                    {
+                        doubleResult = Math.Truncate(value);
                         break;
+                    }
+
                     default:
+                    {
                         if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
                         {
                             JitExceptionHelpers.ThrowInvalidOperationException(
@@ -148,10 +218,9 @@ public sealed partial class ValueNumStore
                                 FatalJitErrorCode.UnsupportedDoubleMathIntrinsicArgument);
                         }
 
-                        __jitExceptionResult725 = default;
-                        break;
+                        return default;
+                    }
                 }
-                var doubleResult = __jitExceptionResult725;
                 return VNForDoubleCon(doubleResult);
             }
 
@@ -159,79 +228,149 @@ public sealed partial class ValueNumStore
             {
                 assert(TypeOfVN(argument) == type);
                 var value = GetConstantSingle(argument);
-                float __jitExceptionResult726;
+                float floatResult;
                 switch (intrinsic)
                 {
                     case NI_System_Math_Abs:
-                        __jitExceptionResult726 = MathF.Abs(value);
+                    {
+                        floatResult = MathF.Abs(value);
                         break;
+                    }
+
                     case NI_System_Math_Acos:
-                        __jitExceptionResult726 = MathF.Acos(value);
+                    {
+                        floatResult = MathF.Acos(value);
                         break;
+                    }
+
                     case NI_System_Math_Acosh:
-                        __jitExceptionResult726 = MathF.Acosh(value);
+                    {
+                        floatResult = MathF.Acosh(value);
                         break;
+                    }
+
                     case NI_System_Math_Asin:
-                        __jitExceptionResult726 = MathF.Asin(value);
+                    {
+                        floatResult = MathF.Asin(value);
                         break;
+                    }
+
                     case NI_System_Math_Asinh:
-                        __jitExceptionResult726 = MathF.Asinh(value);
+                    {
+                        floatResult = MathF.Asinh(value);
                         break;
+                    }
+
                     case NI_System_Math_Atan:
-                        __jitExceptionResult726 = MathF.Atan(value);
+                    {
+                        floatResult = MathF.Atan(value);
                         break;
+                    }
+
                     case NI_System_Math_Atanh:
-                        __jitExceptionResult726 = MathF.Atanh(value);
+                    {
+                        floatResult = MathF.Atanh(value);
                         break;
+                    }
+
                     case NI_System_Math_Cbrt:
-                        __jitExceptionResult726 = MathF.Cbrt(value);
+                    {
+                        floatResult = MathF.Cbrt(value);
                         break;
+                    }
+
                     case NI_System_Math_Ceiling:
-                        __jitExceptionResult726 = MathF.Ceiling(value);
+                    {
+                        floatResult = MathF.Ceiling(value);
                         break;
+                    }
+
                     case NI_System_Math_Cos:
-                        __jitExceptionResult726 = MathF.Cos(value);
+                    {
+                        floatResult = MathF.Cos(value);
                         break;
+                    }
+
                     case NI_System_Math_Cosh:
-                        __jitExceptionResult726 = MathF.Cosh(value);
+                    {
+                        floatResult = MathF.Cosh(value);
                         break;
+                    }
+
                     case NI_System_Math_Exp:
-                        __jitExceptionResult726 = MathF.Exp(value);
+                    {
+                        floatResult = MathF.Exp(value);
                         break;
+                    }
+
                     case NI_System_Math_Floor:
-                        __jitExceptionResult726 = MathF.Floor(value);
+                    {
+                        floatResult = MathF.Floor(value);
                         break;
+                    }
+
                     case NI_System_Math_Log:
-                        __jitExceptionResult726 = MathF.Log(value);
+                    {
+                        floatResult = MathF.Log(value);
                         break;
+                    }
+
                     case NI_System_Math_Log2:
-                        __jitExceptionResult726 = MathF.Log2(value);
+                    {
+                        floatResult = MathF.Log2(value);
                         break;
+                    }
+
                     case NI_System_Math_Log10:
-                        __jitExceptionResult726 = MathF.Log10(value);
+                    {
+                        floatResult = MathF.Log10(value);
                         break;
+                    }
+
                     case NI_System_Math_Sin:
-                        __jitExceptionResult726 = MathF.Sin(value);
+                    {
+                        floatResult = MathF.Sin(value);
                         break;
+                    }
+
                     case NI_System_Math_Sinh:
-                        __jitExceptionResult726 = MathF.Sinh(value);
+                    {
+                        floatResult = MathF.Sinh(value);
                         break;
+                    }
+
                     case NI_System_Math_Round:
-                        __jitExceptionResult726 = MathF.Round(value);
+                    {
+                        floatResult = MathF.Round(value);
                         break;
+                    }
+
                     case NI_System_Math_Sqrt:
-                        __jitExceptionResult726 = MathF.Sqrt(value);
+                    {
+                        floatResult = MathF.Sqrt(value);
                         break;
+                    }
+
                     case NI_System_Math_Tan:
-                        __jitExceptionResult726 = MathF.Tan(value);
+                    {
+                        floatResult = MathF.Tan(value);
                         break;
+                    }
+
                     case NI_System_Math_Tanh:
-                        __jitExceptionResult726 = MathF.Tanh(value);
+                    {
+                        floatResult = MathF.Tanh(value);
                         break;
+                    }
+
                     case NI_System_Math_Truncate:
-                        __jitExceptionResult726 = MathF.Truncate(value);
+                    {
+                        floatResult = MathF.Truncate(value);
                         break;
+                    }
+
                     default:
+                    {
                         if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
                         {
                             JitExceptionHelpers.ThrowInvalidOperationException(
@@ -244,10 +383,9 @@ public sealed partial class ValueNumStore
                                 FatalJitErrorCode.UnsupportedFloatMathIntrinsicArgument);
                         }
 
-                        __jitExceptionResult726 = default;
-                        break;
+                        return default;
+                    }
                 }
-                var floatResult = __jitExceptionResult726;
                 return VNForFloatCon(floatResult);
             }
 
@@ -335,97 +473,185 @@ public sealed partial class ValueNumStore
             ((type is TYP_INT or TYP_LONG) && (intrinsic is
                 NI_PRIMITIVE_LeadingZeroCount or NI_PRIMITIVE_TrailingZeroCount or NI_PRIMITIVE_PopCount)));
 
-        global::RyuJitSharp.VNFunc __jitExceptionResult727;
+        VNFunc func;
         switch (intrinsic)
         {
             case NI_System_Math_Abs:
-                __jitExceptionResult727 = VNF_Abs;
+            {
+                func = VNF_Abs;
                 break;
+            }
+
             case NI_System_Math_Acos:
-                __jitExceptionResult727 = VNF_Acos;
+            {
+                func = VNF_Acos;
                 break;
+            }
+
             case NI_System_Math_Acosh:
-                __jitExceptionResult727 = VNF_Acosh;
+            {
+                func = VNF_Acosh;
                 break;
+            }
+
             case NI_System_Math_Asin:
-                __jitExceptionResult727 = VNF_Asin;
+            {
+                func = VNF_Asin;
                 break;
+            }
+
             case NI_System_Math_Asinh:
-                __jitExceptionResult727 = VNF_Asinh;
+            {
+                func = VNF_Asinh;
                 break;
+            }
+
             case NI_System_Math_Atan:
-                __jitExceptionResult727 = VNF_Atan;
+            {
+                func = VNF_Atan;
                 break;
+            }
+
             case NI_System_Math_Atanh:
-                __jitExceptionResult727 = VNF_Atanh;
+            {
+                func = VNF_Atanh;
                 break;
+            }
+
             case NI_System_Math_Cbrt:
-                __jitExceptionResult727 = VNF_Cbrt;
+            {
+                func = VNF_Cbrt;
                 break;
+            }
+
             case NI_System_Math_Ceiling:
-                __jitExceptionResult727 = VNF_Ceiling;
+            {
+                func = VNF_Ceiling;
                 break;
+            }
+
             case NI_System_Math_Cos:
-                __jitExceptionResult727 = VNF_Cos;
+            {
+                func = VNF_Cos;
                 break;
+            }
+
             case NI_System_Math_Cosh:
-                __jitExceptionResult727 = VNF_Cosh;
+            {
+                func = VNF_Cosh;
                 break;
+            }
+
             case NI_System_Math_Exp:
-                __jitExceptionResult727 = VNF_Exp;
+            {
+                func = VNF_Exp;
                 break;
+            }
+
             case NI_System_Math_Floor:
-                __jitExceptionResult727 = VNF_Floor;
+            {
+                func = VNF_Floor;
                 break;
+            }
+
             case NI_System_Math_ILogB:
-                __jitExceptionResult727 = VNF_ILogB;
+            {
+                func = VNF_ILogB;
                 break;
+            }
+
             case NI_System_Math_Log:
-                __jitExceptionResult727 = VNF_Log;
+            {
+                func = VNF_Log;
                 break;
+            }
+
             case NI_System_Math_Log2:
-                __jitExceptionResult727 = VNF_Log2;
+            {
+                func = VNF_Log2;
                 break;
+            }
+
             case NI_System_Math_Log10:
-                __jitExceptionResult727 = VNF_Log10;
+            {
+                func = VNF_Log10;
                 break;
+            }
+
             case NI_System_Math_Round when type is TYP_DOUBLE:
-                __jitExceptionResult727 = VNF_RoundDouble;
+            {
+                func = VNF_RoundDouble;
                 break;
+            }
+
             case NI_System_Math_Round when type is TYP_INT:
-                __jitExceptionResult727 = VNF_RoundInt32;
+            {
+                func = VNF_RoundInt32;
                 break;
+            }
+
             case NI_System_Math_Round when type is TYP_FLOAT:
-                __jitExceptionResult727 = VNF_RoundSingle;
+            {
+                func = VNF_RoundSingle;
                 break;
+            }
+
             case NI_System_Math_Sin:
-                __jitExceptionResult727 = VNF_Sin;
+            {
+                func = VNF_Sin;
                 break;
+            }
+
             case NI_System_Math_Sinh:
-                __jitExceptionResult727 = VNF_Sinh;
+            {
+                func = VNF_Sinh;
                 break;
+            }
+
             case NI_System_Math_Sqrt:
-                __jitExceptionResult727 = VNF_Sqrt;
+            {
+                func = VNF_Sqrt;
                 break;
+            }
+
             case NI_System_Math_Tan:
-                __jitExceptionResult727 = VNF_Tan;
+            {
+                func = VNF_Tan;
                 break;
+            }
+
             case NI_System_Math_Tanh:
-                __jitExceptionResult727 = VNF_Tanh;
+            {
+                func = VNF_Tanh;
                 break;
+            }
+
             case NI_System_Math_Truncate:
-                __jitExceptionResult727 = VNF_Truncate;
+            {
+                func = VNF_Truncate;
                 break;
+            }
+
             case NI_PRIMITIVE_LeadingZeroCount:
-                __jitExceptionResult727 = VNF_LeadingZeroCount;
+            {
+                func = VNF_LeadingZeroCount;
                 break;
+            }
+
             case NI_PRIMITIVE_TrailingZeroCount:
-                __jitExceptionResult727 = VNF_TrailingZeroCount;
+            {
+                func = VNF_TrailingZeroCount;
                 break;
+            }
+
             case NI_PRIMITIVE_PopCount:
-                __jitExceptionResult727 = VNF_PopCount;
+            {
+                func = VNF_PopCount;
                 break;
+            }
+
             default:
+            {
                 if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(
@@ -438,10 +664,9 @@ public sealed partial class ValueNumStore
                         FatalJitErrorCode.UnsupportedUnaryMathIntrinsicArgument);
                 }
 
-                __jitExceptionResult727 = default;
-                break;
+                return default;
+            }
         }
-        var func = __jitExceptionResult727;
 
         return VNForFunc(type, func, argument);
     }
@@ -460,24 +685,37 @@ public sealed partial class ValueNumStore
                 assert((TypeOfVN(left) == type) && (TypeOfVN(right) == type));
                 var leftDouble = GetConstantDouble(left);
                 var rightDouble = GetConstantDouble(right);
-                double __jitExceptionResult728;
+                double result;
                 switch (intrinsic)
                 {
                     case NI_System_Math_Atan2:
-                        __jitExceptionResult728 = Math.Atan2(leftDouble, rightDouble);
+                    {
+                        result = Math.Atan2(leftDouble, rightDouble);
                         break;
+                    }
+
                     // Match the ARM CRT subnormal fixup: https://github.com/dotnet/runtime/issues/12139.
                     case // Match the ARM CRT subnormal fixup: https://github.com/dotnet/runtime/issues/12139.
                     NI_System_Math_Pow:
-                        __jitExceptionResult728 = (Configuration.TARGET_ARM || Configuration.TARGET_ARM64) && (rightDouble == 1.0) ? leftDouble : Math.Pow(leftDouble, rightDouble);
+                    {
+                        result = (Configuration.TARGET_ARM || Configuration.TARGET_ARM64) && (rightDouble == 1.0) ? leftDouble : Math.Pow(leftDouble, rightDouble);
                         break;
+                    }
+
                     case NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM:
-                        __jitExceptionResult728 = EvaluateMathMinMaxNative(leftDouble, rightDouble, true);
+                    {
+                        result = EvaluateMathMinMaxNative(leftDouble, rightDouble, true);
                         break;
+                    }
+
                     case NI_System_Math_MinNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM:
-                        __jitExceptionResult728 = EvaluateMathMinMaxNative(leftDouble, rightDouble, false);
+                    {
+                        result = EvaluateMathMinMaxNative(leftDouble, rightDouble, false);
                         break;
+                    }
+
                     default:
+                    {
                         if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
                         {
                             JitExceptionHelpers.ThrowInvalidOperationException(
@@ -490,10 +728,9 @@ public sealed partial class ValueNumStore
                                 FatalJitErrorCode.UnsupportedBinaryDoubleIntrinsicArgument);
                         }
 
-                        __jitExceptionResult728 = default;
-                        break;
+                        return default;
+                    }
                 }
-                var result = __jitExceptionResult728;
                 return VNForDoubleCon(result);
             }
 
@@ -502,22 +739,35 @@ public sealed partial class ValueNumStore
                 assert((TypeOfVN(left) == type) && (TypeOfVN(right) == type));
                 var leftSingle = GetConstantSingle(left);
                 var rightSingle = GetConstantSingle(right);
-                float __jitExceptionResult729;
+                float result;
                 switch (intrinsic)
                 {
                     case NI_System_Math_Atan2:
-                        __jitExceptionResult729 = MathF.Atan2(leftSingle, rightSingle);
+                    {
+                        result = MathF.Atan2(leftSingle, rightSingle);
                         break;
+                    }
+
                     case NI_System_Math_Pow:
-                        __jitExceptionResult729 = (Configuration.TARGET_ARM || Configuration.TARGET_ARM64) && (rightSingle == 1.0f) ? leftSingle : MathF.Pow(leftSingle, rightSingle);
+                    {
+                        result = (Configuration.TARGET_ARM || Configuration.TARGET_ARM64) && (rightSingle == 1.0f) ? leftSingle : MathF.Pow(leftSingle, rightSingle);
                         break;
+                    }
+
                     case NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM:
-                        __jitExceptionResult729 = EvaluateMathMinMaxNative(leftSingle, rightSingle, true);
+                    {
+                        result = EvaluateMathMinMaxNative(leftSingle, rightSingle, true);
                         break;
+                    }
+
                     case NI_System_Math_MinNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM:
-                        __jitExceptionResult729 = EvaluateMathMinMaxNative(leftSingle, rightSingle, false);
+                    {
+                        result = EvaluateMathMinMaxNative(leftSingle, rightSingle, false);
                         break;
+                    }
+
                     default:
+                    {
                         if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
                         {
                             JitExceptionHelpers.ThrowInvalidOperationException(
@@ -530,10 +780,9 @@ public sealed partial class ValueNumStore
                                 FatalJitErrorCode.UnsupportedBinaryFloatIntrinsicArgument);
                         }
 
-                        __jitExceptionResult729 = default;
-                        break;
+                        return default;
+                    }
                 }
-                var result = __jitExceptionResult729;
                 return VNForFloatCon(result);
             }
 
@@ -542,27 +791,39 @@ public sealed partial class ValueNumStore
                 assert((TypeOfVN(left) == type) && (TypeOfVN(right) == type));
                 var leftValue = GetConstantInt64(left);
                 var rightValue = GetConstantInt64(right);
-                long __jitExceptionResult730;
+                long integerResult;
                 switch (intrinsic)
                 {
                     case NI_System_Math_Min:
-                        __jitExceptionResult730 = leftValue < rightValue ? leftValue : rightValue;
+                    {
+                        integerResult = leftValue < rightValue ? leftValue : rightValue;
                         break;
+                    }
+
                     case NI_System_Math_Max:
-                        __jitExceptionResult730 = leftValue > rightValue ? leftValue : rightValue;
+                    {
+                        integerResult = leftValue > rightValue ? leftValue : rightValue;
                         break;
+                    }
+
                     case NI_System_Math_MinUnsigned:
-                        __jitExceptionResult730 = unchecked((ulong)leftValue) < unchecked((ulong)rightValue) ? leftValue : rightValue;
+                    {
+                        integerResult = unchecked((ulong)leftValue) < unchecked((ulong)rightValue) ? leftValue : rightValue;
                         break;
+                    }
+
                     case NI_System_Math_MaxUnsigned:
-                        __jitExceptionResult730 = unchecked((ulong)leftValue) > unchecked((ulong)rightValue) ? leftValue : rightValue;
+                    {
+                        integerResult = unchecked((ulong)leftValue) > unchecked((ulong)rightValue) ? leftValue : rightValue;
                         break;
+                    }
+
                     default:
+                    {
                         JitExceptionHelpers.ThrowUnreachableException();
-                        __jitExceptionResult730 = default;
-                        break;
+                        return default;
+                    }
                 }
-                var integerResult = __jitExceptionResult730;
 
                 return type is TYP_LONG or TYP_ULONG
                     ? VNForLongCon(integerResult)
@@ -572,40 +833,71 @@ public sealed partial class ValueNumStore
             JitExceptionHelpers.ThrowUnreachableException();
         }
 
-        global::RyuJitSharp.VNFunc __jitExceptionResult731;
+        VNFunc func;
         switch (intrinsic)
         {
             case NI_System_Math_Atan2:
-                __jitExceptionResult731 = VNF_Atan2;
+            {
+                func = VNF_Atan2;
                 break;
+            }
+
             case NI_System_Math_Max when Configuration.TARGET_RISCV64:
-                __jitExceptionResult731 = VNF_MaxInt;
+            {
+                func = VNF_MaxInt;
                 break;
+            }
+
             case NI_System_Math_MaxUnsigned when Configuration.TARGET_RISCV64:
-                __jitExceptionResult731 = VNF_MaxInt_UN;
+            {
+                func = VNF_MaxInt_UN;
                 break;
+            }
+
             case NI_System_Math_Min when Configuration.TARGET_RISCV64:
-                __jitExceptionResult731 = VNF_MinInt;
+            {
+                func = VNF_MinInt;
                 break;
+            }
+
             case NI_System_Math_MinUnsigned when Configuration.TARGET_RISCV64:
-                __jitExceptionResult731 = VNF_MinInt_UN;
+            {
+                func = VNF_MinInt_UN;
                 break;
+            }
+
             case NI_System_Math_MaxNative when Configuration.TARGET_WASM:
-                __jitExceptionResult731 = VNF_Max;
+            {
+                func = VNF_Max;
                 break;
+            }
+
             case NI_System_Math_MinNative when Configuration.TARGET_WASM:
-                __jitExceptionResult731 = VNF_Min;
+            {
+                func = VNF_Min;
                 break;
+            }
+
             case NI_System_Math_MaxNative when Configuration.TARGET_RISCV64:
-                __jitExceptionResult731 = VNF_MaxNumber;
+            {
+                func = VNF_MaxNumber;
                 break;
+            }
+
             case NI_System_Math_MinNative when Configuration.TARGET_RISCV64:
-                __jitExceptionResult731 = VNF_MinNumber;
+            {
+                func = VNF_MinNumber;
                 break;
+            }
+
             case NI_System_Math_Pow:
-                __jitExceptionResult731 = VNF_Pow;
+            {
+                func = VNF_Pow;
                 break;
+            }
+
             default:
+            {
                 if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(
@@ -618,10 +910,9 @@ public sealed partial class ValueNumStore
                         FatalJitErrorCode.UnsupportedBinaryMathIntrinsicArgument);
                 }
 
-                __jitExceptionResult731 = default;
-                break;
+                return default;
+            }
         }
-        var func = __jitExceptionResult731;
         return VNForFunc(type, func, left, right);
     }
 
