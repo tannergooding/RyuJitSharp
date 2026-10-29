@@ -133,6 +133,32 @@ internal static class PortingCorpus
             return 24;
         }
 
+        if ((CriticalEdgeJoin(4) != 12) || (CriticalEdgeJoin(3) != 14) || (CriticalEdgeJoin(-2) != -6))
+        {
+            return 25;
+        }
+
+        if ((NestedLoopExits(3) != 13) || (NestedLoopExits(4) != 24))
+        {
+            return 26;
+        }
+
+        if ((NestedExceptionFlow(2) != 11) || (NestedExceptionFlow(3) != 24))
+        {
+            return 27;
+        }
+
+        if ((SwitchSuccessors(4) != 14) || (SwitchSuccessors(5) != 25) ||
+            (SwitchSuccessors(6) != 36) || (SwitchSuccessors(7) != 47))
+        {
+            return 28;
+        }
+
+        if ((CriticalEdgeRegisterPressure(-1) != 66) || (CriticalEdgeRegisterPressure(1) != 180))
+        {
+            return 29;
+        }
+
         return 0;
     }
 
@@ -341,6 +367,140 @@ internal static class PortingCorpus
     {
         return Add(value, 1) + Add(value, 2) + Add(value, 3) + Add(value, 4) +
             Add(value, 5) + Add(value, 6) + Add(value, 7) + Add(value, 8);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int CriticalEdgeJoin(int value)
+    {
+        var result = value * 2;
+        if ((value & 1) == 0)
+        {
+            goto Join;
+        }
+
+        result += 5;
+
+    Join:
+        return result + value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int CriticalEdgeRegisterPressure(int value)
+    {
+        var first = value + 1;
+        var second = value + 2;
+        var third = value + 3;
+        var fourth = value + 4;
+        var fifth = value + 5;
+        var sixth = value + 6;
+        var seventh = value + 7;
+        var eighth = value + 8;
+        var ninth = value + 9;
+        var tenth = value + 10;
+        var eleventh = value + 11;
+        var twelfth = value + 12;
+
+        var sum = 0;
+        if (value < 0)
+        {
+            goto Join;
+        }
+
+        sum = Add(first, second) + Add(third, fourth) + Add(fifth, sixth) +
+            Add(seventh, eighth) + Add(ninth, tenth) + Add(eleventh, twelfth);
+
+    Join:
+        return sum + first + second + third + fourth + fifth + sixth +
+            seventh + eighth + ninth + tenth + eleventh + twelfth;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int NestedLoopExits(int count)
+    {
+        var sum = 0;
+        for (var outer = 0; outer < count; outer++)
+        {
+            for (var inner = 0; inner < 5; inner++)
+            {
+                if (inner == outer)
+                {
+                    continue;
+                }
+
+                if (inner > (outer + 1))
+                {
+                    break;
+                }
+
+                sum += inner + 1;
+            }
+        }
+
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int NestedExceptionFlow(int value)
+    {
+        var sum = value;
+        try
+        {
+            sum += 4;
+            try
+            {
+                if ((value & 1) == 0)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                sum *= 2;
+            }
+            finally
+            {
+                sum += 3;
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            sum -= 5;
+        }
+        finally
+        {
+            sum += 7;
+        }
+
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int SwitchSuccessors(int value)
+    {
+        var result = value;
+        switch (value & 3)
+        {
+            case 0:
+            {
+                result += 10;
+                break;
+            }
+            case 1:
+            {
+                result += 20;
+                break;
+            }
+            case 2:
+            {
+                result += 30;
+                break;
+            }
+            default:
+            {
+                result += 40;
+                break;
+            }
+        }
+
+        return result;
     }
 
     private struct Triple

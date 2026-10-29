@@ -324,6 +324,14 @@ array allocation, length-based iteration, and variable-indexed loads and stores.
 instance/array/closed-generic field accesses and calls to the same no-inline
 callee within one method. `Main` checks their results; this is a focused
 metadata-reuse cohort, not a broad application workload.
+`CriticalEdgeJoin` uses an explicit branch to merge values from a critical edge.
+`CriticalEdgeRegisterPressure` keeps twelve values live across several calls
+and a critical-edge join.
+`NestedLoopExits` exercises nested loops with both `continue` and `break`,
+`NestedExceptionFlow` keeps a local live across nested catch/finally regions,
+and `SwitchSuccessors` exercises four regular successors. `Main` checks each
+case; these additions broaden control-flow/EH visitation coverage without
+claiming general compiler coverage.
 It is a standalone fixture, not a compiler coverage claim.
 
 Use `scripts\porting\Invoke-PortingCorpus.ps1` with `-CoreRoot`, `-Corpus`,
