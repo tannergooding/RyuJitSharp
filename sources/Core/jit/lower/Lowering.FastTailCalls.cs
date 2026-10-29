@@ -160,13 +160,13 @@ public sealed partial class Lowering
         {
             if (treeNode.Oper.IsLocal || (treeNode.Oper is GT_LCL_ADDR))
             {
-                    var local = treeNode.AsLclVarCommon();
-                    if (local.LclNum == lclNum)
+                var local = treeNode.AsLclVarCommon();
+                if (local.LclNum == lclNum)
+                {
+                    if (tmpLclNum == BAD_VAR_NUM)
                     {
-                        if (tmpLclNum == BAD_VAR_NUM)
-                        {
-                            tmpLclNum = compiler.lvaGrabTemp(true, "Fast tail call lowering is creating a new local variable");
-                            ref var callerArgDsc = ref compiler.lvaGetDesc(lclNum);
+                        tmpLclNum = compiler.lvaGrabTemp(true, "Fast tail call lowering is creating a new local variable");
+                        ref var callerArgDsc = ref compiler.lvaGetDesc(lclNum);
                         var tmpType = callerArgDsc.Type.ActualType;
                         ref var tmpDsc = ref compiler.lvaGetDesc(tmpLclNum);
                         tmpDsc.Type = tmpType;
