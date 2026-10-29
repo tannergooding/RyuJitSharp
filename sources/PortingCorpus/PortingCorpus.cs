@@ -159,6 +159,28 @@ internal static class PortingCorpus
             return 29;
         }
 
+        if ((LoopExitWithPreheaderJoin(4) != 10) ||
+            (LoopExitWithPreheaderJoin(2) != 5) ||
+            (LoopExitWithPreheaderJoin(-3) != 0))
+        {
+            return 30;
+        }
+
+        if ((MultipleLoopExitEdges(6) != 30) || (MultipleLoopExitEdges(5) != 11))
+        {
+            return 31;
+        }
+
+        if ((NestedLoopSharedExit(3) != 23) || (NestedLoopSharedExit(2) != 22))
+        {
+            return 32;
+        }
+
+        if ((DisjointLoops(6) != 21) || (DisjointLoops(5) != 15))
+        {
+            return 33;
+        }
+
         return 0;
     }
 
@@ -434,6 +456,95 @@ internal static class PortingCorpus
 
                 sum += inner + 1;
             }
+        }
+
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int LoopExitWithPreheaderJoin(int count)
+    {
+        var sum = 0;
+        if (count < 0)
+        {
+            sum = -count;
+            goto Exit;
+        }
+
+        var index = 0;
+        while (index < count)
+        {
+            sum += index + 1;
+            if (index == 2)
+            {
+                goto Exit;
+            }
+
+            index++;
+        }
+
+    Exit:
+        return sum + count;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int MultipleLoopExitEdges(int count)
+    {
+        var result = 0;
+        for (var index = 0; index < count; index++)
+        {
+            if (((count & 1) != 0) && (index == 1))
+            {
+                result += 10;
+                break;
+            }
+
+            if (((count & 1) == 0) && (index == 4))
+            {
+                result += 20;
+                break;
+            }
+
+            result += index + 1;
+        }
+
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int NestedLoopSharedExit(int rows)
+    {
+        var total = 0;
+        for (var row = 0; row < rows; row++)
+        {
+            for (var column = 0; column < 5; column++)
+            {
+                if ((row >= 1) && (column >= 2))
+                {
+                    goto Exit;
+                }
+
+                total += row + column + 1;
+            }
+        }
+
+    Exit:
+        return total + rows;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int DisjointLoops(int count)
+    {
+        var sum = 0;
+        var split = count / 2;
+        for (var index = 0; index < split; index++)
+        {
+            sum += index + 1;
+        }
+
+        for (var index = split; index < count; index++)
+        {
+            sum += index + 1;
         }
 
         return sum;

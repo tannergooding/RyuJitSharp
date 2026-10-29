@@ -332,6 +332,11 @@ and a critical-edge join.
 and `SwitchSuccessors` exercises four regular successors. `Main` checks each
 case; these additions broaden control-flow/EH visitation coverage without
 claiming general compiler coverage.
+`LoopExitWithPreheaderJoin` joins an alternate preheader path with a loop exit,
+`MultipleLoopExitEdges` provides distinct break sites, `NestedLoopSharedExit`
+uses a shared exit from nested loops, and `DisjointLoops` keeps two counted
+loops in one method. `Main` checks each result to broaden natural-loop and
+exit-canonicalization coverage.
 It is a standalone fixture, not a compiler coverage claim.
 
 Use `scripts\porting\Invoke-PortingCorpus.ps1` with `-CoreRoot`, `-Corpus`,
