@@ -15,21 +15,20 @@ public partial class Emitter
         public bool isPlacedAfterJmp;
 
         public override int NativeLogicalSize {
-    get
-    {
-        bool __jitExceptionCondition291;
-        __jitExceptionCondition291 = Configuration.TARGET_XARCH || Configuration.TARGET_ARM64;
-        if (__jitExceptionCondition291)
-        {
-            return DescriptorSizes.Align;
+            get
+            {
+                if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
+                {
+                    return DescriptorSizes.Align;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.AlignDescriptorSizeIsNotYetPortedForThisTarget);
+                    return default;
+                }
+            }
         }
-        else
-        {
-            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.AlignDescriptorSizeIsNotYetPortedForThisTarget);
-            return default;
-        }
-    }
-}
+
         public void idSetXarchCodeSize(uint size)
         {
             if (!Configuration.TARGET_XARCH)

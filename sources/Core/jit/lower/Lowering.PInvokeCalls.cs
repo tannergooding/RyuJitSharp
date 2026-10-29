@@ -65,16 +65,12 @@ public sealed partial class Lowering
             assert(control is not null);
             var range = BlockRange().GetTreeRange(control, out var isClosed);
             assert(isClosed);
-            var __jitExceptionCoalesceLeft474 = range.FirstNode;
-            if (__jitExceptionCoalesceLeft474 != null)
-            {
-                insertionPoint = __jitExceptionCoalesceLeft474;
-            }
-            else
+            var firstNode = range.FirstNode;
+            if (firstNode is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.IndirectPInvokeTargetIsNotInLIR);
-                insertionPoint = default;
             }
+            insertionPoint = firstNode;
         }
 
         ref var frameInfo = ref compiler.eeGetEEInfo().inlinedCallFrameInfo;

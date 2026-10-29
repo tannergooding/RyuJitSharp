@@ -35,31 +35,15 @@ public partial class Emitter
         assert(gcType != GCT_NONE);
         if (Configuration.DEBUG)
         {
-            bool __jitExceptionArgument298;
-            bool __jitExceptionShortCircuitLeft299;
-            __jitExceptionShortCircuitLeft299 = !isThis;
-            if (__jitExceptionShortCircuitLeft299)
+            if (isThis)
             {
-                __jitExceptionArgument298 = true;
-            }
-            else
-            {
-                global::RyuJitSharp.Compiler __jitExceptionReceiver300;
-                var __jitExceptionCoalesceLeft301 = _compiler;
-                if (__jitExceptionCoalesceLeft301 != null)
-                {
-                    __jitExceptionReceiver300 = __jitExceptionCoalesceLeft301;
-                }
-                else
+                var compiler = _compiler;
+                if (compiler is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
-                    __jitExceptionReceiver300 = default;
                 }
-
-                __jitExceptionArgument298 = __jitExceptionReceiver300.lvaKeepAliveAndReportThis();
+                assert(compiler.lvaKeepAliveAndReportThis());
             }
-
-            assert(__jitExceptionArgument298);
         }
         assert(emitFullGCinfo);
         assert((new regMaskTP(emitThisGCrefRegs | emitThisByrefRegs) & mask).IsEmpty);

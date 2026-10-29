@@ -277,24 +277,22 @@ public partial class Emitter
         }
         else
         {
-            string __jitExceptionResult304;
+            string format;
             switch (precision)
             {
                 case 1:
-                    __jitExceptionResult304 = "F1";
+                    format = "F1";
                     break;
                 case 2:
-                    __jitExceptionResult304 = "F2";
+                    format = "F2";
                     break;
                 case 3:
-                    __jitExceptionResult304 = "F3";
+                    format = "F3";
                     break;
                 default:
                     JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitArgument.Precision);
-                    __jitExceptionResult304 = default;
-                    break;
+                    return;
             }
-            var format = __jitExceptionResult304;
 
             output.Write(value.ToString(format, CultureInfo.InvariantCulture).PadLeft(width));
         }

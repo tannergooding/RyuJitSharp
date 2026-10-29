@@ -58,18 +58,11 @@ public partial class Emitter
                     emitIGisInProlog(emitCurIG) &&
                     reg2 == TargetRuntimeMetadata.FirstIntegerArgumentRegister)
                 {
-                    global::RyuJitSharp.Compiler __jitExceptionResult302;
-                    var __jitExceptionCoalesceLeft303 = _compiler;
-                    if (__jitExceptionCoalesceLeft303 != null)
-                    {
-                        __jitExceptionResult302 = __jitExceptionCoalesceLeft303;
-                    }
-                    else
+                    var compiler = _compiler;
+                    if (compiler is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
-                        __jitExceptionResult302 = default;
                     }
-                    var compiler = __jitExceptionResult302;
                     assert(compiler.lvaIsOriginalThisArg(0));
                     assert(compiler.lvaTable[0].lvRegister);
                     assert(compiler.lvaTable[0].RegNum == reg1);

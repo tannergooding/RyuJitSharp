@@ -74,16 +74,12 @@ public sealed partial class Lowering
                 var firstUse = new LIR.Use(BlockRange(), ref node.GetOpRef(1), node);
                 _ = ReplaceWithLclVar(firstUse);
                 first = node.GetOp(1);
-                var __jitExceptionCoalesceLeft98 = CompilerInstance.gtClone(first);
-                if (__jitExceptionCoalesceLeft98 != null)
-                {
-                    second = __jitExceptionCoalesceLeft98;
-                }
-                else
+                var clonedFirst = CompilerInstance.gtClone(first);
+                if (clonedFirst is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PTESTLocalCouldNotBeCloned);
-                    second = default;
                 }
+                second = clonedFirst;
                 BlockRange().InsertAfter(first, second);
                 node.SetOp(2, second);
             }

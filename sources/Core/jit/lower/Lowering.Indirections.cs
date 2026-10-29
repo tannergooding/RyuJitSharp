@@ -241,16 +241,12 @@ public sealed partial class Lowering
                 var addressToReuse = node.Addr;
                 if (foldable is not null)
                 {
-                    var __jitExceptionCoalesceLeft102 = foldable.BaseAddress;
-                    if (__jitExceptionCoalesceLeft102 != null)
-                    {
-                        addressToReuse = __jitExceptionCoalesceLeft102;
-                    }
-                    else
+                    var baseAddress = foldable.BaseAddress;
+                    if (baseAddress is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FoldableWasmAddressIsMissingItsBase);
-                        addressToReuse = default;
                     }
+                    addressToReuse = baseAddress;
                 }
 
                 SetMultiplyUsed(

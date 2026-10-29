@@ -195,20 +195,20 @@ internal partial struct LocalAddressVisitor
             _consumed = true;
         }
 
-        internal readonly bool IsConsumed {
-    get
-    {
-        bool __jitExceptionCondition439;
-        __jitExceptionCondition439 = Configuration.DEBUG;
-        if (__jitExceptionCondition439)
+        internal readonly bool IsConsumed
         {
-            return _consumed;
-        }
-        else
-        {
-            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConsumptionStateIsOnlyAvailableInDebugBuilds);
-            return default;
+            get
+            {
+                if (Configuration.DEBUG)
+                {
+                    return _consumed;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConsumptionStateIsOnlyAvailableInDebugBuilds);
+                    return default;
+                }
+            }
         }
     }
-}    }
 }
