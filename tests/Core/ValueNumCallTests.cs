@@ -23,6 +23,8 @@ internal static unsafe class ValueNumCallTests
     [TestCase(CORINFO_HELP_NEWARR_1_PTR, VNF_JitNewArr)]
     [TestCase(CORINFO_HELP_CHKCASTINTERFACE, VNF_CastClass)]
     [TestCase(CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR, VNF_GetdynamicGcthreadstaticBaseNoctor)]
+    [TestCase(CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED, VNF_GetdynamicGcthreadstaticBaseOptimized)]
+    [TestCase(CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED, VNF_GetdynamicNongcthreadstaticBaseOptimized)]
     [TestCase(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, VNF_ReadyToRunVirtualFuncPtr)]
     public static void HelperMappingPreservesNativeFunction(CorInfoHelpFunc helper, VNFunc expected)
     {

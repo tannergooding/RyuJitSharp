@@ -549,6 +549,14 @@ public partial class Compiler
             {
                 return VNF_GetdynamicNongcthreadstaticBase;
             }
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            {
+                return VNF_GetdynamicGcthreadstaticBaseOptimized;
+            }
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
+            {
+                return VNF_GetdynamicNongcthreadstaticBaseOptimized;
+            }
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
             {
                 return VNF_GetdynamicGcthreadstaticBaseNoctor;
@@ -800,6 +808,8 @@ public partial class Compiler
                 }
                 case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+                case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+                case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
                 case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
                 {

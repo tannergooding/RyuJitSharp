@@ -213,6 +213,129 @@ internal static unsafe class Arm64HardwareLoweringTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SvePredicateBitwiseClearLowersMaskAndZeroOperands(bool useZeroOperand)
+    {
+        Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS, "Masked hardware intrinsics are unavailable.");
+
+        WithLowering((compiler, lowering, block) => {
+            var first = useZeroOperand
+                ? (GenTree)new GenTreeVecCon(TYP_SIMD16)
+                : compiler.gtNewSimdTrueMaskNode(TYP_INT);
+            var secondMask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, false);
+            var secondVector = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, secondMask, TYP_INT, 16);
+            var not = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Sve_Not, TYP_INT, 16, secondVector);
+            var and = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Sve_And, TYP_INT, 16, first, not);
+            var user = new GenTreeUnOp(GT_NEG, TYP_SIMD16, and) { IsUnusedValue = true };
+            Append(block, first, secondMask, secondVector, not, and, user);
+
+            _ = LowerNode(lowering, and);
+
+            Assert.That(and.HWIntrinsicId, Is.EqualTo(NI_Sve_BitwiseClear_Predicates));
+            Assert.That(and.Type, Is.EqualTo(TYP_MASK));
+            Assert.That(varTypeIsMask(and.GetOp(1).Type), Is.True);
+            Assert.That(and.GetOp(2), Is.SameAs(secondMask));
+            var loweredMask = and.GetOp(1).AsMskCon();
+            Assert.That(useZeroOperand ? loweredMask.IsZero : loweredMask.IsTrue(TYP_INT), Is.True);
+            var convertToVector = user.Op1.AsHWIntrinsic();
+            Assert.That(convertToVector.HWIntrinsicId, Is.EqualTo(NI_Sve_ConvertMaskToVector));
+            Assert.That(convertToVector.GetOp(1), Is.SameAs(and));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
+        });
+    }
+
+    [Test]
+    public static void SvePredicateBitwiseClearKeepsSameWidthMaskResult()
+    {
+        Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS, "Masked hardware intrinsics are unavailable.");
+
+        WithLowering((compiler, lowering, block) => {
+            var firstMask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, true);
+            var secondMask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, false);
+            var first = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, firstMask, TYP_INT, 16);
+            var second = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, secondMask, TYP_INT, 16);
+            var not = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Sve_Not, TYP_INT, 16, second);
+            var and = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Sve_And, TYP_INT, 16, first, not);
+            var trueMask = compiler.gtNewSimdTrueMaskNode(TYP_INT);
+            var toMask = new GenTreeHWIntrinsic(TYP_MASK, NI_Sve_ConvertVectorToMask, TYP_INT, 16, trueMask, and)
+            {
+                IsUnusedValue = true,
+            };
+            Append(block, firstMask, secondMask, first, second, not, and, trueMask, toMask);
+
+            _ = LowerNode(lowering, and);
+
+            Assert.That(and.HWIntrinsicId, Is.EqualTo(NI_Sve_BitwiseClear_Predicates));
+            Assert.That(and.Type, Is.EqualTo(TYP_MASK));
+            Assert.That(toMask.GetOp(2), Is.SameAs(and));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
+        });
+    }
+
+    [Test]
+    public static void SvePredicateBitwiseClearPreservesVectorWhenMaskElementWidthsDiffer()
+    {
+        Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS, "Masked hardware intrinsics are unavailable.");
+
+        WithLowering((compiler, lowering, block) => {
+            var firstMask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, true);
+            var secondMask = compiler.gtNewMskConNode(TYP_MASK, TYP_BYTE, false);
+            var first = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, firstMask, TYP_INT, 16);
+            var second = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, secondMask, TYP_BYTE, 16);
+            var not = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Sve_Not, TYP_BYTE, 16, second);
+            var and = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Sve_And, TYP_INT, 16, first, not)
+            {
+                IsUnusedValue = true,
+            };
+            Append(block, firstMask, secondMask, first, second, not, and);
+
+            _ = LowerNode(lowering, and);
+
+            Assert.That(and.HWIntrinsicId, Is.EqualTo(NI_AdvSimd_BitwiseClear));
+            Assert.That(and.Type, Is.EqualTo(TYP_SIMD16));
+            Assert.That(and.GetOp(1), Is.SameAs(first));
+            Assert.That(and.GetOp(2), Is.SameAs(second));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
+        });
+    }
+
+    [Test]
+    public static void SveVectorToMaskOfMaskLowersToItsPredicateOperand()
+    {
+        Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS, "Masked hardware intrinsics are unavailable.");
+
+        WithLowering((compiler, lowering, block) => {
+            var trueMask = compiler.gtNewSimdTrueMaskNode(TYP_INT);
+            var mask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, false);
+            var conversion = new GenTreeHWIntrinsic(TYP_MASK, NI_Sve_ConvertVectorToMask, TYP_INT, 16,
+                trueMask, mask)
+            {
+                IsUnusedValue = true,
+            };
+            Append(block, trueMask, mask, conversion);
+
+            _ = LowerNode(lowering, conversion);
+
+            Assert.That(conversion.Next, Is.Null);
+            Assert.That(block.LastNode, Is.SameAs(mask));
+            Assert.That(mask.IsUnusedValue, Is.True);
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
+        });
+    }
+
     [Test]
     public static void EmbeddedMaskOperationWrapsItsLiveResult()
     {

@@ -4751,7 +4751,6 @@ public partial class Compiler
                 else
                 {
                     instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
-                    info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(exactMethodHandle);
                 }
             }
             else
@@ -4798,7 +4797,6 @@ public partial class Compiler
                 else
                 {
                     instParam = gtNewIconEmbClsHndNode(exactClassHandle);
-                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(exactClassHandle);
                 }
             }
             else
@@ -12812,6 +12810,10 @@ public partial class Compiler
 
                 isHoistable = !fieldInfo.helper.MayRunCctor || ((info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT) is not 0);
                 op1 = gtNewHelperCallNode(type, fieldInfo.helper, op1);
+                if (isHoistable)
+                {
+                    op1.Flags |= GTF_CALL_HOISTABLE;
+                }
 
                 if (IsStaticHelperEligibleForExpansion(op1))
                 {
@@ -12828,6 +12830,7 @@ public partial class Compiler
                 if (!Configuration.FEATURE_READYTORUN || !IsAot)
                 {
                     if (fieldInfo.helper is CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
+                                         or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED
                                          or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2
                                          or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT)
                     {
@@ -12835,7 +12838,8 @@ public partial class Compiler
                     }
                     else
                     {
-                        assert(fieldInfo.helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
+                        assert(fieldInfo.helper is CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
+                            or CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED);
                         typeIndex = info.compCompHnd->getThreadLocalFieldInfo(resolvedToken.hField, isGCType: true);
                     }
                 }
@@ -14353,21 +14357,18 @@ public partial class Compiler
             {
                 case CORINFO_HELPER_ARG_TYPE_Field:
                 {
-                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(info.compCompHnd->getFieldClass(helperArg.fieldHandle));
                     currentArg = gtNewIconEmbFldHndNode(helperArg.fieldHandle);
                     break;
                 }
 
                 case CORINFO_HELPER_ARG_TYPE_Method:
                 {
-                    info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(helperArg.methodHandle);
                     currentArg = gtNewIconEmbMethHndNode(helperArg.methodHandle);
                     break;
                 }
 
                 case CORINFO_HELPER_ARG_TYPE_Class:
                 {
-                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(helperArg.classHandle);
                     currentArg = gtNewIconEmbClsHndNode(helperArg.classHandle);
                     break;
                 }
@@ -16162,8 +16163,7 @@ public partial class Compiler
         // We will iterate and pop the args in reverse order as we sometimes need
         // to spill some args. However, we need signature information and the
         // JIT-EE interface only allows us to iterate the signature forwards. We
-        // will collect the needed information here and at the same time notify the
-        // EE that the signature types need to be loaded.
+        // will collect the needed information here.
         var sigArg = sigInfo.args;
         var hasSecretStubArgument = false;
 
@@ -16196,37 +16196,7 @@ public partial class Compiler
                 hasSecretStubArgument = true;
             }
 
-            if (corType is not CORINFO_TYPE_CLASS and not CORINFO_TYPE_BYREF and not CORINFO_TYPE_PTR)
-            {
-                CORINFO_CLASS_HANDLE argRealClass;
-
-                fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
-                {
-                    argRealClass = info.compCompHnd->getArgClass(pSigInfo, sigArg);
-                }
-
-                if (argRealClass is not null)
-                {
-                    // Make sure that all valuetypes (including enums) that we push are loaded.
-                    // This is to guarantee that if a GC is triggered from the prestub of this methods,
-                    // all valuetypes in the method signature are already loaded.
-                    // We need to be able to find the size of the valuetypes, but we cannot
-                    // do a class-load from within GC.
-                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(argRealClass);
-                }
-            }
-
             sigArg = info.compCompHnd->getArgNext(sigArg);
-        }
-
-        if ((sigInfo.retTypeSigClass is not null) && (sigInfo.retType is not CORINFO_TYPE_CLASS and not CORINFO_TYPE_BYREF and not CORINFO_TYPE_PTR))
-        {
-            // Make sure that all valuetypes (including enums) that we push are loaded.
-            // This is to guarantee that if a GC is triggered from the prestub of this methods,
-            // all valuetypes in the method signature are already loaded.
-            // We need to be able to find the size of the valuetypes, but we cannot
-            // do a class-load from within GC.
-            info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(sigInfo.retTypeSigClass);
         }
 
         // Now create the arguments in reverse.

@@ -66,8 +66,9 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
-    [Test]
-    public static void FrameIdentityInstructionRecordsMethodRelocation()
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void FrameIdentityInstructionRecordsRuntimeSpecificRelocationTarget(bool nativeAot)
     {
         WithEmitter((compiler, emitter) =>
         {
@@ -80,6 +81,7 @@ internal static unsafe class WasmEmitterOutputTests
 
             var method = (CORINFO_METHOD_STRUCT_*)0x1234;
             compiler.info.compMethodHnd = method;
+            ConfigureAddressModel(compiler, nativeAot);
             compiler.info.compMatchedVM = true;
             emitter.emitCmpHandle = &callbacks.JitInfo;
 
@@ -100,7 +102,7 @@ internal static unsafe class WasmEmitterOutputTests
             Assert.That(callbacks.Relocations, Is.EqualTo(1));
             Assert.That((nuint)callbacks.Location, Is.EqualTo((nuint)(destination + 1)));
             Assert.That((nuint)callbacks.WritableLocation, Is.EqualTo((nuint)(buffer + 11)));
-            Assert.That((nuint)callbacks.Target, Is.EqualTo((nuint)method));
+            Assert.That((nuint)callbacks.Target, Is.EqualTo(nativeAot ? (nuint)buffer : (nuint)method));
             Assert.That(callbacks.RelocationType, Is.EqualTo(CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB));
             Assert.That(callbacks.AdditionalDelta, Is.Zero);
             Assert.That(new ReadOnlySpan<byte>(buffer + 11, 5).ToArray(),
@@ -408,6 +410,63 @@ internal static unsafe class WasmEmitterOutputTests
 
             Assert.That(actual, Is.EqualTo(expected));
             Assert.That(zeroed, Is.False);
+        });
+    }
+
+    [Test]
+    public static void NativeAotPrologEmitsFrameIdentity()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getWasmWellKnownGlobals = &GetWasmWellKnownGlobals;
+            var jitInfo = new ICorJitInfo { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            compiler.info.compMatchedVM = true;
+            ConfigureAddressModel(compiler, nativeAot: true);
+
+            compiler.lvaTable =
+            [
+                new LclVarDsc { Type = Globals.TYP_I_IMPL, lvOnFrame = true },
+                new LclVarDsc { Type = Globals.TYP_I_IMPL, lvOnFrame = true },
+                new LclVarDsc { Type = Globals.TYP_I_IMPL, lvOnFrame = true },
+            ];
+            compiler.lvaCount = 3;
+            compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+            compiler.lvaWasmSpArg = 0;
+            compiler.lvaWasmFunctionIndex = 1;
+            compiler.lvaWasmVirtualIP = 2;
+            compiler.lvaWasmResumeIP = Globals.BAD_VAR_NUM;
+            compiler.compFuncInfos =
+            [
+                new FuncInfoDsc
+                {
+                    funKind = FuncKind.FUNC_ROOT,
+                    funStackPointerReg = regNumberExtensions.MakeWasmReg(0, WasmValueType.I),
+                    funFramePointerReg = regNumberExtensions.MakeWasmReg(1, WasmValueType.I),
+                    needsUnwindableFrame = true,
+                },
+            ];
+            compiler.compFuncInfoCount = 1;
+            compiler.compCurrFuncIdx = 0;
+            compiler.fgFuncletsCreated = true;
+
+            var group = codeGen.Emitter.emitCurIG ??
+                throw new AssertionException("Missing current instruction group.");
+            group.igFlags |= InsGroupFlags.Prolog;
+
+            var zeroed = false;
+            codeGen.genAllocLclFrameWasm(0, Globals.REG_NA, ref zeroed, default);
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter) ??
+                throw new AssertionException("Missing Wasm instruction descriptors.");
+            var emittedFrameIdentity = false;
+            foreach (var descriptor in descriptors)
+            {
+                emittedFrameIdentity |= descriptor.idIns() == INS_i32_const_frameidentity;
+            }
+
+            Assert.That(emittedFrameIdentity, Is.True);
         });
     }
 

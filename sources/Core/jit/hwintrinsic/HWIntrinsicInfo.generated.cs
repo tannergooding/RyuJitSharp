@@ -12981,10 +12981,10 @@ public partial struct HWIntrinsicInfo
         779, 779, 781, 781, 782, 782, 780, 780, 782, 780, // NI_Sve_StoreAndZipx2
         783, 783, 785, 785, 786, 786, 784, 784, 786, 784, // NI_Sve_StoreAndZipx3
         787, 787, 789, 789, 790, 790, 788, 788, 790, 788, // NI_Sve_StoreAndZipx4
-        585, 585, 585, 585, 585, 585, 585, 585, 0, 0, // NI_Sve_And_Predicates
-        586, 586, 586, 586, 586, 586, 586, 586, 0, 0, // NI_Sve_BitwiseClear_Predicates
-        588, 588, 588, 588, 588, 588, 588, 588, 0, 0, // NI_Sve_Or_Predicates
-        587, 587, 587, 587, 587, 587, 587, 587, 0, 0, // NI_Sve_Xor_Predicates
+        585, 585, 585, 585, 585, 585, 585, 585, 585, 585, // NI_Sve_And_Predicates
+        586, 586, 586, 586, 586, 586, 586, 586, 586, 586, // NI_Sve_BitwiseClear_Predicates
+        588, 588, 588, 588, 588, 588, 588, 588, 588, 588, // NI_Sve_Or_Predicates
+        587, 587, 587, 587, 587, 587, 587, 587, 587, 587, // NI_Sve_Xor_Predicates
         729, 729, 729, 729, 729, 729, 729, 729, 729, 729, // NI_Sve_ConditionalSelect_Predicates
         615, 615, 615, 615, 615, 615, 615, 615, 615, 615, // NI_Sve_ZipHigh_Predicates
         614, 614, 614, 614, 614, 614, 614, 614, 614, 614, // NI_Sve_ZipLow_Predicates

@@ -832,8 +832,6 @@ public partial class Compiler
                 }
             }
 
-            var actualMethodRetTypeSigClass = sigInfo.retTypeSigClass;
-
             // Check for varargs
 
             if ((sigInfo.callConv & CORINFO_CALLCONV_MASK) is CORINFO_CALLCONV_VARARG or CORINFO_CALLCONV_NATIVEVARARG)
@@ -872,25 +870,6 @@ public partial class Compiler
                     var numArgsDef = sigInfo.numArgs;
                     compiler.eeGetCallSiteSig(resolvedToken.token, resolvedToken.tokenScope, resolvedToken.tokenContext, out otherSigInfo);
                     sigInfo = ref Unsafe.AsRef(in otherSigInfo);
-
-                    // For vararg calls we must be sure to load the return type of the
-                    // method actually being called, as well as the return types of the
-                    // specified in the vararg signature. With type equivalency, these types
-                    // may not be the same.
-                    if (sigInfo.retTypeSigClass != actualMethodRetTypeSigClass)
-                    {
-                        if ((actualMethodRetTypeSigClass is not null) && (sigInfo.retType is not CORINFO_TYPE_CLASS
-                                                                                         and not CORINFO_TYPE_BYREF
-                                                                                         and not CORINFO_TYPE_PTR))
-                        {
-                            // Make sure that all valuetypes (including enums) that we push are loaded.
-                            // This is to guarantee that if a GC is triggered from the prestub of this methods,
-                            // all valuetypes in the method signature are already loaded.
-                            // We need to be able to find the size of the valuetypes, but we cannot
-                            // do a class-load from within GC.
-                            compiler.info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(actualMethodRetTypeSigClass);
-                        }
-                    }
 
                     if (Configuration.DEBUG)
                     {

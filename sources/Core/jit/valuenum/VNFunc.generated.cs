@@ -283,6 +283,8 @@ public enum VNFunc
     VNF_GetNongcthreadstaticBaseNoctor,
     VNF_GetdynamicGcthreadstaticBase,
     VNF_GetdynamicNongcthreadstaticBase,
+    VNF_GetdynamicGcthreadstaticBaseOptimized,
+    VNF_GetdynamicNongcthreadstaticBaseOptimized,
     VNF_GetdynamicGcthreadstaticBaseNoctor,
     VNF_GetdynamicGcthreadstaticBaseNoctorOptimized,
     VNF_GetdynamicNongcthreadstaticBaseNoctor,

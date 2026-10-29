@@ -283,6 +283,8 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x24, // VNF_GetNongcthreadstaticBaseNoctor
         (ValueNumStore.VNFOpAttrib)0x24, // VNF_GetdynamicGcthreadstaticBase
         (ValueNumStore.VNFOpAttrib)0x24, // VNF_GetdynamicNongcthreadstaticBase
+        (ValueNumStore.VNFOpAttrib)0x24, // VNF_GetdynamicGcthreadstaticBaseOptimized
+        (ValueNumStore.VNFOpAttrib)0x24, // VNF_GetdynamicNongcthreadstaticBaseOptimized
         (ValueNumStore.VNFOpAttrib)0x24, // VNF_GetdynamicGcthreadstaticBaseNoctor
         (ValueNumStore.VNFOpAttrib)0x24, // VNF_GetdynamicGcthreadstaticBaseNoctorOptimized
         (ValueNumStore.VNFOpAttrib)0x24, // VNF_GetdynamicNongcthreadstaticBaseNoctor
@@ -2425,6 +2427,8 @@ public static partial class VNFuncExtensions
         ValueNumStore.SetValidationAttributes(attributes, VNF_GetNongcthreadstaticBaseNoctor, 1, false, true);
         ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicGcthreadstaticBase, 1, false, true);
         ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicNongcthreadstaticBase, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicGcthreadstaticBaseOptimized, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicNongcthreadstaticBaseOptimized, 1, false, true);
         ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicGcthreadstaticBaseNoctor, 1, false, true);
         ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicGcthreadstaticBaseNoctorOptimized, 1, false, true);
         ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicNongcthreadstaticBaseNoctor, 1, false, true);

@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "b386290257e35bddca7b2f8c453a0796915b29ff",
-    "targetObservedAt": "2026-10-28",
-    "reconciledCommit": "b386290257e35bddca7b2f8c453a0796915b29ff"
+    "targetCommit": "8ccc1569f5b5987ef17e54d769436aa7ecbd74ff",
+    "targetObservedAt": "2026-10-29",
+    "reconciledCommit": "8ccc1569f5b5987ef17e54d769436aa7ecbd74ff"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Resume full-runtime parity at the unresolved dynamic TLS input-ownership boundary. No exact-SHA native CoreRoot was available for this source refresh, so phase/codegen comparison remains unrun; source reconciliation does not establish full runtime parity. Preserve B526/B527, the accepted D015 diagnostic, and residual exact-pinned FullDump differences. The b386290257e35bddca7b2f8c453a0796915b29ff oracle refresh is reconciled. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Obtain an exact-SHA CoreRoot for 8ccc1569f5b5987ef17e54d769436aa7ecbd74ff and compare changed phase/codegen behavior; no matching binary set is available, so source reconciliation and unit tests do not establish full runtime parity. Resume at the unresolved dynamic TLS input-ownership boundary only when the EE allocation sequence is reproducible. Preserve B526/B527, the accepted D015 diagnostic, and residual exact-pinned FullDump differences. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": null,
     "dynamicTlsInputBoundary": {
@@ -1064,8 +1064,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "b386290257e35bddca7b2f8c453a0796915b29ff",
-    "reconciledCommit": "b386290257e35bddca7b2f8c453a0796915b29ff",
+    "targetInputCommit": "8ccc1569f5b5987ef17e54d769436aa7ecbd74ff",
+    "reconciledCommit": "8ccc1569f5b5987ef17e54d769436aa7ecbd74ff",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

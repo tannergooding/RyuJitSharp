@@ -69,6 +69,7 @@ public sealed partial class Lowering
                 var nestedId = nestedValue.AsHWIntrinsic().HWIntrinsicId;
                 if (nestedMask.IsTrueMask(node.SimdBaseType) &&
                     !HWIntrinsicInfo.IsReduceOperation(nestedId) &&
+                    (nestedId is not NI_Sve_CreateBreakPropagateMask) &&
                     (!HWIntrinsicInfo.IsZeroingMaskedOperation(nestedId) || falseValue.IsZeroForSelect))
                 {
                     LABELEDDISPTREERANGE("Removed nested conditionalselect (before)", BlockRange(), node);

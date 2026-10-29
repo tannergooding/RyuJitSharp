@@ -7,6 +7,139 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+    private GenTree ConvertSveMaskOperandToMask(GenTreeHWIntrinsic insertionPoint, GenTree operand)
+    {
+        if (varTypeIsMask(operand.Type))
+        {
+            return operand;
+        }
+
+        if (operand.IsConvertMaskToVector)
+        {
+            var mask = operand.AsHWIntrinsic().GetOp(1);
+            BlockRange().Remove(operand);
+            return mask;
+        }
+
+        if (operand.IsVectorZero)
+        {
+            var mask = CompilerInstance.gtNewSimdFalseMaskByteNode();
+            BlockRange().InsertBefore(insertionPoint, mask);
+            BlockRange().Remove(operand);
+            return mask;
+        }
+
+        unreached();
+        return default!;
+    }
+
+    private GenTree? TryLowerSveConvertVectorToMask(GenTreeHWIntrinsic node)
+    {
+        assert(node.HWIntrinsicId is NI_Sve_ConvertVectorToMask);
+        assert(node.Operands.Length == 2);
+
+        var mask = node.GetOp(2);
+        if (!varTypeIsMask(mask.Type))
+        {
+            return null;
+        }
+
+        var next = node.Next;
+        if (BlockRange().TryGetUse(node, out var use))
+        {
+            use.ReplaceWith(mask);
+        }
+        else
+        {
+            mask.IsUnusedValue = true;
+        }
+
+        BlockRange().Remove(node.GetOp(1));
+        BlockRange().Remove(node);
+        return next;
+    }
+
+    private bool TryLowerSvePredicateBitwiseClear(
+        GenTreeHWIntrinsic node, ref NamedIntrinsic intrinsicId, ref genTreeOps operation)
+    {
+        assert(operation is GT_AND);
+
+        var op1 = node.GetOp(1);
+        var op2 = node.GetOp(2);
+        GenTreeHWIntrinsic? notNode = null;
+        var nodeType = node.Type;
+        var simdSize = node.SimdSize;
+
+        void ConvertResultToVectorIfNeeded()
+        {
+            if (!BlockRange().TryGetUse(node, out var use))
+            {
+                return;
+            }
+
+            var user = use.User();
+            if ((user is GenTreeHWIntrinsic conversion) &&
+                (conversion.HWIntrinsicId is NI_Sve_ConvertVectorToMask) &&
+                (conversion.SimdBaseType.Size == node.SimdBaseType.Size))
+            {
+                return;
+            }
+
+            var vector = CompilerInstance.gtNewSimdCvtMaskToVectorNode(
+                nodeType, node, node.SimdBaseType, simdSize);
+            BlockRange().InsertAfter(node, vector);
+            use.ReplaceWith(vector);
+        }
+
+        if (op2.Oper.IsHWIntrinsic)
+        {
+            var op2Intrinsic = op2.AsHWIntrinsic();
+            var op2Operation = op2Intrinsic.GetOperForHWIntrinsicId(out var op2IsScalar);
+            if ((op2Operation is GT_NOT) && !op2IsScalar)
+            {
+                notNode = op2Intrinsic;
+                op2 = op2Intrinsic.GetOp(1);
+            }
+        }
+
+        if ((notNode is null) && op1.Oper.IsHWIntrinsic)
+        {
+            var op1Intrinsic = op1.AsHWIntrinsic();
+            var op1Operation = op1Intrinsic.GetOperForHWIntrinsicId(out var op1IsScalar);
+            if ((op1Operation is GT_NOT) && !op1IsScalar)
+            {
+                notNode = op1Intrinsic;
+                op1 = op1Intrinsic.GetOp(1);
+                (op1, op2) = (op2, op1);
+            }
+        }
+
+        if ((notNode is not null) && op1.IsSveMaskOperand && op2.IsSveMaskOperand)
+        {
+            var simdBaseTypeSize = node.SimdBaseType.Size;
+            if ((op1.IsConvertMaskToVector &&
+                 (op1.AsHWIntrinsic().SimdBaseType.Size != simdBaseTypeSize)) ||
+                (op2.IsConvertMaskToVector &&
+                 (op2.AsHWIntrinsic().SimdBaseType.Size != simdBaseTypeSize)))
+            {
+                return false;
+            }
+
+            op1 = ConvertSveMaskOperandToMask(node, op1);
+            op2 = ConvertSveMaskOperandToMask(node, op2);
+            BlockRange().Remove(notNode);
+
+            node.ResetHWIntrinsicId(NI_Sve_BitwiseClear_Predicates, op1, op2);
+            node.Type = TYP_MASK;
+            intrinsicId = NI_Sve_BitwiseClear_Predicates;
+            operation = GT_AND_NOT;
+            ConvertResultToVectorIfNeeded();
+            return true;
+        }
+
+        return false;
+    }
+
     private GenTree? LowerHWIntrinsicArm64(GenTreeHWIntrinsic node)
     {
         if (node.Type is TYP_SIMD12)
@@ -22,7 +155,9 @@ public sealed partial class Lowering
 
         var id = node.HWIntrinsicId;
         var operation = node.GetOperForHWIntrinsicId(out _);
-        if (operation is GT_AND or GT_OR)
+        var loweredSvePredicate = (operation is GT_AND) && Configuration.FEATURE_MASKED_HW_INTRINSICS &&
+            TryLowerSvePredicateBitwiseClear(node, ref id, ref operation);
+        if (!loweredSvePredicate && (operation is GT_AND or GT_OR))
         {
             assert(node.Type is TYP_SIMD8 or TYP_SIMD16);
             var transform = false;
@@ -62,6 +197,16 @@ public sealed partial class Lowering
 
         switch (id)
         {
+            case NI_Sve_ConvertVectorToMask when Configuration.FEATURE_MASKED_HW_INTRINSICS:
+            {
+                var next = TryLowerSveConvertVectorToMask(node);
+                if (next is not null)
+                {
+                    return next;
+                }
+                break;
+            }
+
             case NI_Vector_Create:
             case NI_Vector_CreateScalar:
             {
@@ -234,6 +379,13 @@ public sealed partial class Lowering
                 }
                 break;
             }
+        }
+
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS &&
+            (id is NI_Sve_And_Predicates or NI_Sve_BitwiseClear_Predicates))
+        {
+            ContainCheckHWIntrinsic(node);
+            return node.Next;
         }
 
         if (HWIntrinsicInfo.IsEmbeddedMaskedOperation(id))

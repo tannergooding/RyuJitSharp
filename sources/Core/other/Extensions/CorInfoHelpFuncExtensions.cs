@@ -115,6 +115,8 @@ public static class CorInfoHelpFuncExtensions
         IsPure | NonNullReturn | MayRunCctor,       // CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE
         IsPure | NonNullReturn | MayRunCctor,       // CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE
         IsPure | NonNullReturn | MayRunCctor,       // CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE
+        IsPure | NonNullReturn | MayRunCctor,       // CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED
+        IsPure | NonNullReturn | MayRunCctor,       // CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED
         IsPure | NonNullReturn,                     // CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR
         IsPure | NonNullReturn,                     // CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR
         IsPure | NonNullReturn,                     // CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR
@@ -314,6 +316,8 @@ public static class CorInfoHelpFuncExtensions
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE
+        ExceptionSetFlags.UnknownException,         // CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED
+        ExceptionSetFlags.UnknownException,         // CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED
         ExceptionSetFlags.None,                     // CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR
         ExceptionSetFlags.None,                     // CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR
         ExceptionSetFlags.None,                     // CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR

@@ -82,7 +82,10 @@ public partial class Emitter
             {
                 assert(_compiler is not null);
                 dst += emitOutputOpcode(dst, ins);
-                emitRecordRelocation(dst, _compiler.info.compMethodHnd, CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB);
+                var target = _compiler.IsNativeAot
+                    ? (void*)emitCodeBlock
+                    : (void*)_compiler.info.compMethodHnd;
+                emitRecordRelocation(dst, target, CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB);
                 dst += emitOutputPaddedReloc(dst);
                 break;
             }

@@ -2486,6 +2486,9 @@ public partial class GenTree
         (Configuration.TARGET_XARCH && IsHWIntrinsic(NI_AVX512_ConvertVectorToMask)) ||
         (Configuration.TARGET_ARM64 && IsHWIntrinsic(NI_Sve_ConvertVectorToMask));
 
+    public bool IsSveMaskOperand =>
+        Configuration.TARGET_ARM64 && (IsConvertMaskToVector || varTypeIsMask(Type) || IsVectorZero);
+
     public bool IsIconHandle() => _oper.IsCnsIntOrI && AsIntCon().IsIconHandle();
 
     public bool IsIconHandle(GenTreeFlags handleType)

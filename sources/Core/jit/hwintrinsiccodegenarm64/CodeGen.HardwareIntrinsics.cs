@@ -1158,6 +1158,14 @@ public sealed partial class CodeGen
                     Emitter.emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
                     break;
                 }
+                case NI_Sve_And_Predicates:
+                case NI_Sve_BitwiseClear_Predicates:
+                {
+                    assert(intrin.NumOperands == 2);
+                    Emitter.emitInsSve_R_R_R_R(ins, emitSize, targetReg, op1Reg, op1Reg, op2Reg,
+                        INS_OPTS_SCALABLE_B);
+                    break;
+                }
                 case NI_Sve_Count16BitElements:
                 case NI_Sve_Count32BitElements:
                 case NI_Sve_Count64BitElements:
