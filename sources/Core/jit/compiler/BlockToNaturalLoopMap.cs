@@ -9,6 +9,24 @@ namespace RyuJitSharp;
 
 public sealed class BlockToNaturalLoopMap
 {
+    private readonly struct AssignLoopIndexVisitor : IBasicBlockVisitor<AssignLoopIndexVisitor>
+    {
+        private readonly int[] _indices;
+        private readonly int _loopIndex;
+
+        public AssignLoopIndexVisitor(int[] indices, int loopIndex)
+        {
+            _indices = indices;
+            _loopIndex = loopIndex;
+        }
+
+        public readonly BasicBlockVisit Visit(BasicBlock block)
+        {
+            _indices[block.bbPostorderNum] = _loopIndex;
+            return BasicBlockVisit.Continue;
+        }
+    }
+
     private readonly FlowGraphNaturalLoops _loops;
     private readonly int[] _indices;
 
@@ -37,10 +55,8 @@ public sealed class BlockToNaturalLoopMap
         // Reverse postorder visits inner loops last, overwriting enclosing-loop indices.
         foreach (var loop in loops.InReversePostOrder())
         {
-            _ = loop.VisitLoopBlocks(block => {
-                indices[block.bbPostorderNum] = loop.Index;
-                return BasicBlockVisit.Continue;
-            });
+            var visitor = new AssignLoopIndexVisitor(indices, loop.Index);
+            _ = loop.VisitLoopBlocks(ref visitor);
         }
 
         return new(loops, indices);

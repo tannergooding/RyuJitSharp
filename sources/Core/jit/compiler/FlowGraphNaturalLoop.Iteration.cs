@@ -11,7 +11,7 @@ namespace RyuJitSharp;
 
 public sealed partial class FlowGraphNaturalLoop
 {
-    private struct DefVisitor : IGenTreeVisitor<DefVisitor>, ILocalDefVisitor
+    private struct DefVisitor : IGenTreeVisitor<DefVisitor>, ILocalDefVisitor, IBasicBlockVisitor<DefVisitor>
     {
         public static bool DoPreOrder => true;
 
@@ -41,22 +41,26 @@ public sealed partial class FlowGraphNaturalLoop
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
             => IGenTreeVisitor<DefVisitor>.WalkTree(ref this, ref use, user);
+
+        public BasicBlockVisit Visit(BasicBlock block)
+        {
+            foreach (var statement in block.Statements)
+            {
+                var tree = statement.RootNode;
+                if (WalkTree(ref tree, null) is WALK_ABORT)
+                {
+                    return BasicBlockVisit.Abort;
+                }
+            }
+
+            return BasicBlockVisit.Continue;
+        }
     }
 
     private bool VisitDefs(Func<int, GenTreeLclVarCommon, bool> visit)
     {
         var visitor = new DefVisitor(_dfsTree.GetCompiler(), visit);
-        return VisitLoopBlocks(block => {
-            foreach (var stmt in block.Statements)
-            {
-                var tree = stmt.RootNode;
-                if (visitor.WalkTree(ref tree, null) is WALK_ABORT)
-                {
-                    return BasicBlockVisit.Abort;
-                }
-            }
-            return BasicBlockVisit.Continue;
-        }) is BasicBlockVisit.Continue;
+        return VisitLoopBlocks(ref visitor) is BasicBlockVisit.Continue;
     }
 
     public bool HasDef(int lclNum)
