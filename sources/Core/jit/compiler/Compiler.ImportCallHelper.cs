@@ -2966,39 +2966,38 @@ public partial class Compiler
                             break;
                         }
 
-                        int __jitExceptionResult220;
+                        ushort halfBits;
                         switch (ni)
                         {
                             case NI_System_Half_get_MinValue:
-                                __jitExceptionResult220 = 0xFBFF;
+                                halfBits = BitConverter.HalfToUInt16Bits(Half.MinValue);
                                 break;
                             case NI_System_Half_get_MaxValue:
-                                __jitExceptionResult220 = 0x7BFF;
+                                halfBits = BitConverter.HalfToUInt16Bits(Half.MaxValue);
                                 break;
                             case NI_System_Half_get_Epsilon:
-                                __jitExceptionResult220 = 0x0001;
+                                halfBits = BitConverter.HalfToUInt16Bits(Half.Epsilon);
                                 break;
                             case NI_System_Half_get_NaN:
-                                __jitExceptionResult220 = 0xFE00;
+                                halfBits = BitConverter.HalfToUInt16Bits(Half.NaN);
                                 break;
                             case NI_System_Half_get_PositiveInfinity:
-                                __jitExceptionResult220 = 0x7C00;
+                                halfBits = BitConverter.HalfToUInt16Bits(Half.PositiveInfinity);
                                 break;
                             case NI_System_Half_get_NegativeInfinity:
-                                __jitExceptionResult220 = 0xFC00;
+                                halfBits = BitConverter.HalfToUInt16Bits(Half.NegativeInfinity);
                                 break;
                             case NI_System_Half_get_One:
-                                __jitExceptionResult220 = 0x3C00;
+                                halfBits = BitConverter.HalfToUInt16Bits(Half.One);
                                 break;
                             case NI_System_Half_get_Zero:
-                                __jitExceptionResult220 = 0x0000;
+                                halfBits = BitConverter.HalfToUInt16Bits(Half.Zero);
                                 break;
                             default:
                                 JitExceptionHelpers.ThrowUnreachableException();
-                                __jitExceptionResult220 = default;
+                                halfBits = default;
                                 break;
                         }
-                        var halfBits = __jitExceptionResult220;
 
                         if ((Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) ||
                             (Configuration.TARGET_ARM64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16)))
