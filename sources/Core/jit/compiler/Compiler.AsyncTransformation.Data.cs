@@ -63,18 +63,12 @@ public partial class Compiler
                 return;
             }
 
-            global::RyuJitSharp.ClassLayout __jitExceptionResult18;
-            var __jitExceptionCoalesceLeft19 = argument.SignatureLayout;
-            if (__jitExceptionCoalesceLeft19 != null)
-            {
-                __jitExceptionResult18 = __jitExceptionCoalesceLeft19;
-            }
-            else
+            var awaiterLayout = argument.SignatureLayout;
+            if (awaiterLayout is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncAwaiterHasNoSignatureLayout);
-                __jitExceptionResult18 = default;
             }
-            var awaiterLayout = __jitExceptionResult18;
+
             if (!_compiler.TryGetContinuationMemberIndex(
                 ContinuationMember.CustomAwaiterOfLayout(awaiterLayout), out var index) ||
                 (layout.ContinuationMemberOffsets[index] < 0))
@@ -171,20 +165,13 @@ public partial class Compiler
                 if (descriptor.IsImplicitByRef)
                 {
                     var address = _compiler.gtNewLclvNode(descriptor.Type, local.LclNum);
-                    var __jitExceptionReceiver94 = _compiler;
-                    var __jitExceptionArgument95 = address;
-                    global::RyuJitSharp.ClassLayout __jitExceptionArgument96;
-                    var __jitExceptionCoalesceLeft97 = descriptor.Layout;
-                    if (__jitExceptionCoalesceLeft97 != null)
-                    {
-                        __jitExceptionArgument96 = __jitExceptionCoalesceLeft97;
-                    }
-                    else
+                    var structLayout = descriptor.Layout;
+                    if (structLayout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImplicitByrefLocalHasNoLayout);
-                        __jitExceptionArgument96 = default;
                     }
-                    value = __jitExceptionReceiver94.gtNewLoadValueNode(__jitExceptionArgument95, __jitExceptionArgument96, GTF_IND_NONFAULTING);
+
+                    value = _compiler.gtNewLoadValueNode(address, structLayout, GTF_IND_NONFAULTING);
                 }
                 else
                 {
@@ -199,21 +186,13 @@ public partial class Compiler
                     var offsetNode = _compiler.gtNewIconNode(TYP_I_IMPL, offset);
                     var address = _compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF,
                         continuation, offsetNode);
-                    var __jitExceptionReceiver98 = _compiler;
-                    var __jitExceptionArgument99 = address;
-                    var __jitExceptionArgument100 = value;
-                    global::RyuJitSharp.ClassLayout __jitExceptionArgument101;
-                    var __jitExceptionCoalesceLeft102 = descriptor.Layout;
-                    if (__jitExceptionCoalesceLeft102 != null)
-                    {
-                        __jitExceptionArgument101 = __jitExceptionCoalesceLeft102;
-                    }
-                    else
+                    var structLayout = descriptor.Layout;
+                    if (structLayout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalHasNoLayout);
-                        __jitExceptionArgument101 = default;
                     }
-                    store = __jitExceptionReceiver98.gtNewStoreValueNode(__jitExceptionArgument99, __jitExceptionArgument100, __jitExceptionArgument101, flags);
+
+                    store = _compiler.gtNewStoreValueNode(address, value, structLayout, flags);
                 }
                 else
                 {
@@ -228,30 +207,18 @@ public partial class Compiler
         private void CreateDebugInfoForSuspensionPoint(
             AsyncContinuationLayout layout, AsyncContinuationLayoutBuilder subLayout)
         {
-            global::System.Collections.Generic.List<global::RyuJitSharp.ICorDebugInfo.AsyncContinuationVarInfo> __jitExceptionResult20;
-            var __jitExceptionCoalesceLeft21 = _compiler.compAsyncVars;
-            if (__jitExceptionCoalesceLeft21 != null)
-            {
-                __jitExceptionResult20 = __jitExceptionCoalesceLeft21;
-            }
-            else
+            var vars = _compiler.compAsyncVars;
+            if (vars is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncContinuationVariableListHasNotBeenCreated);
-                __jitExceptionResult20 = default;
             }
-            var vars = __jitExceptionResult20;
-            global::System.Collections.Generic.List<global::RyuJitSharp.ICorDebugInfo.AsyncSuspensionPoint> __jitExceptionResult22;
-            var __jitExceptionCoalesceLeft23 = _compiler.compSuspensionPoints;
-            if (__jitExceptionCoalesceLeft23 != null)
-            {
-                __jitExceptionResult22 = __jitExceptionCoalesceLeft23;
-            }
-            else
+
+            var points = _compiler.compSuspensionPoints;
+            if (points is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncSuspensionPointListHasNotBeenCreated);
-                __jitExceptionResult22 = default;
             }
-            var points = __jitExceptionResult22;
+
             var numLocals = 0;
 
             foreach (var local in layout.Locals)

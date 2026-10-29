@@ -165,38 +165,18 @@ public partial class Compiler
 
             JITDUMP($"    Call [{call.TreeId:D6}] has async contexts; will restore on suspension\n");
             var resumed = TakeAsyncArgument(callBlock, call, resumedArg);
-            global::RyuJitSharp.GenTree __jitExceptionResult84;
-            var __jitExceptionArgument85 = callBlock;
-            var __jitExceptionArgument86 = call;
-            global::RyuJitSharp.CallArg __jitExceptionArgument87;
-            var __jitExceptionCoalesceLeft88 = execArg;
-            if (__jitExceptionCoalesceLeft88 != null)
-            {
-                __jitExceptionArgument87 = __jitExceptionCoalesceLeft88;
-            }
-            else
+            if (execArg is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingAsyncExecutionContext);
-                __jitExceptionArgument87 = default;
             }
-            __jitExceptionResult84 = TakeAsyncArgument(__jitExceptionArgument85, __jitExceptionArgument86, __jitExceptionArgument87);
-            var exec = __jitExceptionResult84;
-            global::RyuJitSharp.GenTree __jitExceptionResult89;
-            var __jitExceptionArgument90 = callBlock;
-            var __jitExceptionArgument91 = call;
-            global::RyuJitSharp.CallArg __jitExceptionArgument92;
-            var __jitExceptionCoalesceLeft93 = syncArg;
-            if (__jitExceptionCoalesceLeft93 != null)
-            {
-                __jitExceptionArgument92 = __jitExceptionCoalesceLeft93;
-            }
-            else
+
+            var exec = TakeAsyncArgument(callBlock, call, execArg);
+            if (syncArg is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingAsyncSynchronizationContext);
-                __jitExceptionArgument92 = default;
             }
-            __jitExceptionResult89 = TakeAsyncArgument(__jitExceptionArgument90, __jitExceptionArgument91, __jitExceptionArgument92);
-            var sync = __jitExceptionResult89;
+
+            var sync = TakeAsyncArgument(callBlock, call, syncArg);
             if (IsKnownResumed(resumed))
             {
                 JITDUMP("    Frame is known to have resumed; skipping no-op restore on suspension\n");
@@ -303,42 +283,24 @@ public partial class Compiler
         {
             assert((helper is not SuspensionContextHelper.WithContinuationContext) ||
                 subLayout.NeedsContinuationContext);
-            global::RyuJitSharp.CallArg __jitExceptionResult12;
-            var __jitExceptionCoalesceLeft13 = call.Args.FindWellKnownArg(WellKnownArg.AsyncResumedUse);
-            if (__jitExceptionCoalesceLeft13 != null)
-            {
-                __jitExceptionResult12 = __jitExceptionCoalesceLeft13;
-            }
-            else
+            var resumedArg = call.Args.FindWellKnownArg(WellKnownArg.AsyncResumedUse);
+            if (resumedArg is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingAsyncResumedIndicator);
-                __jitExceptionResult12 = default;
             }
-            var resumedArg = __jitExceptionResult12;
-            global::RyuJitSharp.CallArg __jitExceptionResult14;
-            var __jitExceptionCoalesceLeft15 = call.Args.FindWellKnownArg(WellKnownArg.AsyncExecutionContext);
-            if (__jitExceptionCoalesceLeft15 != null)
-            {
-                __jitExceptionResult14 = __jitExceptionCoalesceLeft15;
-            }
-            else
+
+            var execArg = call.Args.FindWellKnownArg(WellKnownArg.AsyncExecutionContext);
+            if (execArg is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingAsyncExecutionContext);
-                __jitExceptionResult14 = default;
             }
-            var execArg = __jitExceptionResult14;
-            global::RyuJitSharp.CallArg __jitExceptionResult16;
-            var __jitExceptionCoalesceLeft17 = call.Args.FindWellKnownArg(WellKnownArg.AsyncSynchronizationContext);
-            if (__jitExceptionCoalesceLeft17 != null)
-            {
-                __jitExceptionResult16 = __jitExceptionCoalesceLeft17;
-            }
-            else
+
+            var syncArg = call.Args.FindWellKnownArg(WellKnownArg.AsyncSynchronizationContext);
+            if (syncArg is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingAsyncSynchronizationContext);
-                __jitExceptionResult16 = default;
             }
-            var syncArg = __jitExceptionResult16;
+
             var resumed = TakeAsyncArgument(callBlock, call, resumedArg);
             var exec = TakeAsyncArgument(callBlock, call, execArg, allowInvariant: false);
             var sync = TakeAsyncArgument(callBlock, call, syncArg, allowInvariant: false);

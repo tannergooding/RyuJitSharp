@@ -28,18 +28,12 @@ public partial class Compiler
             _compiler = compiler;
             _blockOrder = initialLayout;
             // The phase invalidates DFS after layout, so its postorder array can hold swap scratch.
-            global::RyuJitSharp.FlowGraphDfsTree __jitExceptionReceiver246;
-            var __jitExceptionCoalesceLeft247 = compiler._dfsTree;
-            if (__jitExceptionCoalesceLeft247 != null)
-            {
-                __jitExceptionReceiver246 = __jitExceptionCoalesceLeft247;
-            }
-            else
+            var dfsTree = compiler._dfsTree;
+            if (dfsTree is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ThreeOptLayoutRequiresTheDFSTree);
-                __jitExceptionReceiver246 = default;
             }
-            _tempOrder = __jitExceptionReceiver246.GetPostOrder();
+            _tempOrder = dfsTree.GetPostOrder();
             assert((_tempOrder.Length >= numHotBlocks) && !ReferenceEquals(initialLayout, _tempOrder));
             _numCandidateBlocks = numHotBlocks;
             _hasEH = hasEH;
@@ -409,17 +403,13 @@ public partial class Compiler
             if (_hasEH)
             {
                 lastHotBlocks = new BasicBlock[_compiler.compHndBBtabCount + 1];
-                ref var __jitExceptionTarget64 = ref lastHotBlocks[0];
-                var __jitExceptionCoalesceLeft65 = _compiler.fgFirstBB;
-                if (__jitExceptionCoalesceLeft65 != null)
-                {
-                    __jitExceptionTarget64 = __jitExceptionCoalesceLeft65;
-                }
-                else
+                var entryBlock = _compiler.fgFirstBB;
+                if (entryBlock is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LayoutRequiresAnEntryBlock);
-                    __jitExceptionTarget64 = default;
                 }
+                lastHotBlocks[0] = entryBlock;
+
                 foreach (var clause in new EHClauses(_compiler))
                 {
                     lastHotBlocks[clause.ebdTryBeg.bbTryIndex] = clause.ebdTryBeg;
@@ -455,16 +445,12 @@ public partial class Compiler
                     ? block : lastHotBlocks[blockToMove.bbTryIndex];
                 if (insertionPoint.isBBCallFinallyPair)
                 {
-                    var __jitExceptionCoalesceLeft66 = insertionPoint.Next;
-                    if (__jitExceptionCoalesceLeft66 != null)
-                    {
-                        insertionPoint = __jitExceptionCoalesceLeft66;
-                    }
-                    else
+                    var callFinallyTail = insertionPoint.Next;
+                    if (callFinallyTail is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyHeadMustHaveAPairedTail);
-                        insertionPoint = default;
                     }
+                    insertionPoint = callFinallyTail;
                     assert(blockToMove != insertionPoint);
                 }
 
@@ -475,18 +461,12 @@ public partial class Compiler
 
                 if (blockToMove.isBBCallFinallyPair)
                 {
-                    global::RyuJitSharp.BasicBlock __jitExceptionResult67;
-                    var __jitExceptionCoalesceLeft68 = blockToMove.Next;
-                    if (__jitExceptionCoalesceLeft68 != null)
-                    {
-                        __jitExceptionResult67 = __jitExceptionCoalesceLeft68;
-                    }
-                    else
+                    var callFinallyRet = blockToMove.Next;
+                    if (callFinallyRet is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyHeadMustHaveAPairedTail);
-                        __jitExceptionResult67 = default;
                     }
-                    var callFinallyRet = __jitExceptionResult67;
+
                     if (callFinallyRet != insertionPoint)
                     {
                         _compiler.fgUnlinkRange(blockToMove, callFinallyRet);
@@ -531,16 +511,12 @@ public partial class Compiler
 
                 if (insertionPoint.isBBCallFinallyPair)
                 {
-                    var __jitExceptionCoalesceLeft69 = insertionPoint.Next;
-                    if (__jitExceptionCoalesceLeft69 != null)
-                    {
-                        insertionPoint = __jitExceptionCoalesceLeft69;
-                    }
-                    else
+                    var callFinallyTail = insertionPoint.Next;
+                    if (callFinallyTail is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyHeadMustHaveAPairedTail);
-                        insertionPoint = default;
                     }
+                    insertionPoint = callFinallyTail;
                 }
                 if (insertionPoint.Next == tryBeg)
                 {
@@ -649,18 +625,12 @@ public partial class Compiler
                     target.bbPreorderNum = srcPos + 1;
                     if (target.isBBCallFinallyPair)
                     {
-                        global::RyuJitSharp.BasicBlock __jitExceptionResult70;
-                        var __jitExceptionCoalesceLeft71 = target.Next;
-                        if (__jitExceptionCoalesceLeft71 != null)
-                        {
-                            __jitExceptionResult70 = __jitExceptionCoalesceLeft71;
-                        }
-                        else
+                        var tail = target.Next;
+                        if (tail is null)
                         {
                             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyHeadMustHaveAPairedTail);
-                            __jitExceptionResult70 = default;
                         }
-                        var tail = __jitExceptionResult70;
+
                         _blockOrder[srcPos + 2] = tail;
                         tail.bbPreorderNum = srcPos + 2;
                     }

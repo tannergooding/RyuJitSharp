@@ -38,51 +38,27 @@ public partial class Compiler
                 continue;
             }
 
-            bool __jitExceptionCondition253;
-            bool __jitExceptionShortCircuitLeft254;
-            __jitExceptionShortCircuitLeft254 = compIsAsync;
-            if (__jitExceptionShortCircuitLeft254)
-            {
-                bool __jitExceptionShortCircuitLeft255;
-                __jitExceptionShortCircuitLeft255 = varDsc.Type is TYP_BYREF;
-                if (__jitExceptionShortCircuitLeft255)
-                {
-                    __jitExceptionCondition253 = true;
-                }
-                else
-                {
-                    bool __jitExceptionShortCircuitLeft256;
-                    __jitExceptionShortCircuitLeft256 = varDsc.Type is TYP_STRUCT;
-                    if (__jitExceptionShortCircuitLeft256)
-                    {
-                        global::RyuJitSharp.ClassLayout __jitExceptionReceiver257;
-                        var __jitExceptionCoalesceLeft258 = varDsc.Layout;
-                        if (__jitExceptionCoalesceLeft258 != null)
-                        {
-                            __jitExceptionReceiver257 = __jitExceptionCoalesceLeft258;
-                        }
-                        else
-                        {
-                            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalHasNoLayout2);
-                            __jitExceptionReceiver257 = default;
-                        }
-
-                        __jitExceptionCondition253 = __jitExceptionReceiver257.HasGCByRef();
-                    }
-                    else
-                    {
-                        __jitExceptionCondition253 = false;
-                    }
-                }
-            }
-            else
-            {
-                __jitExceptionCondition253 = false;
-            }
-            if (__jitExceptionCondition253)
+            if (compIsAsync)
             {
                 // A byref store may not be dead if it crosses a suspension point.
-                continue;
+                if (varDsc.Type is TYP_BYREF)
+                {
+                    continue;
+                }
+
+                if (varDsc.Type is TYP_STRUCT)
+                {
+                    var layout = varDsc.Layout;
+                    if (layout is null)
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalHasNoLayout2);
+                    }
+
+                    if (layout.HasGCByRef())
+                    {
+                        continue;
+                    }
+                }
             }
 
             for (var defIndex = 1; defIndex < defCount; defIndex++)
@@ -141,31 +117,21 @@ public partial class Compiler
 
                 assert(vnStore is not null);
                 var data = store.Data;
-                int __jitExceptionResult259;
-                bool __jitExceptionCondition260;
-                __jitExceptionCondition260 = (store.Type is TYP_STRUCT) && data.IsIntegralConst(0);
-                if (__jitExceptionCondition260)
+                int storeValue;
+                if ((store.Type is TYP_STRUCT) && data.IsIntegralConst(0))
                 {
-                    var __jitExceptionReceiver261 = vnStore;
-                    global::RyuJitSharp.ClassLayout __jitExceptionArgument262;
-                    var __jitExceptionCoalesceLeft263 = store.GetLayout(this);
-                    if (__jitExceptionCoalesceLeft263 != null)
-                    {
-                        __jitExceptionArgument262 = __jitExceptionCoalesceLeft263;
-                    }
-                    else
+                    var layout = store.GetLayout(this);
+                    if (layout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructStoreHasNoLayout);
-                        __jitExceptionArgument262 = default;
                     }
 
-                    __jitExceptionResult259 = __jitExceptionReceiver261.VNForZeroObj(__jitExceptionArgument262);
+                    storeValue = vnStore.VNForZeroObj(layout);
                 }
                 else
                 {
-                    __jitExceptionResult259 = data._vnPair.Conservative;
+                    storeValue = data._vnPair.Conservative;
                 }
-                var storeValue = __jitExceptionResult259;
 
                 if (oldStoreValue != storeValue)
                 {
@@ -176,18 +142,12 @@ public partial class Compiler
                 JITDUMP("Removed dead store:\n");
                 DISPTREE(store);
 
-                global::RyuJitSharp.BasicBlock __jitExceptionResult264;
-                var __jitExceptionCoalesceLeft265 = defDsc.Block;
-                if (__jitExceptionCoalesceLeft265 != null)
-                {
-                    __jitExceptionResult264 = __jitExceptionCoalesceLeft265;
-                }
-                else
+                var block = defDsc.Block;
+                if (block is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSAStoreHasNoDefiningBlock);
-                    __jitExceptionResult264 = default;
                 }
-                var block = __jitExceptionResult264;
+
                 optVNReplaceDeadStore(block, store);
                 // Native retags the def node as GT_COMMA; the managed descriptor cannot refer to that node type.
                 // This phase invalidates SSA, so clear the detached store while retaining its VN descriptor.

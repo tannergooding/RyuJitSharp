@@ -31,20 +31,13 @@ public partial class Compiler
                 GenTree value;
                 if ((descriptor.Type is TYP_STRUCT) || descriptor.IsImplicitByRef)
                 {
-                    var __jitExceptionReceiver104 = _compiler;
-                    var __jitExceptionArgument105 = address;
-                    global::RyuJitSharp.ClassLayout __jitExceptionArgument106;
-                    var __jitExceptionCoalesceLeft107 = descriptor.Layout;
-                    if (__jitExceptionCoalesceLeft107 != null)
-                    {
-                        __jitExceptionArgument106 = __jitExceptionCoalesceLeft107;
-                    }
-                    else
+                    var structLayout = descriptor.Layout;
+                    if (structLayout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalHasNoLayout);
-                        __jitExceptionArgument106 = default;
                     }
-                    value = __jitExceptionReceiver104.gtNewLoadValueNode(__jitExceptionArgument105, __jitExceptionArgument106, flags);
+
+                    value = _compiler.gtNewLoadValueNode(address, structLayout, flags);
                 }
                 else
                 {
@@ -55,21 +48,13 @@ public partial class Compiler
                 if (descriptor.IsImplicitByRef)
                 {
                     var baseAddress = _compiler.gtNewLclvNode(descriptor.Type, local.LclNum);
-                    var __jitExceptionReceiver108 = _compiler;
-                    var __jitExceptionArgument109 = baseAddress;
-                    var __jitExceptionArgument110 = value;
-                    global::RyuJitSharp.ClassLayout __jitExceptionArgument111;
-                    var __jitExceptionCoalesceLeft112 = descriptor.Layout;
-                    if (__jitExceptionCoalesceLeft112 != null)
-                    {
-                        __jitExceptionArgument111 = __jitExceptionCoalesceLeft112;
-                    }
-                    else
+                    var structLayout = descriptor.Layout;
+                    if (structLayout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImplicitByrefLocalHasNoLayout);
-                        __jitExceptionArgument111 = default;
                     }
-                    store = __jitExceptionReceiver108.gtNewStoreValueNode(__jitExceptionArgument109, __jitExceptionArgument110, __jitExceptionArgument111, GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
+
+                    store = _compiler.gtNewStoreValueNode(baseAddress, value, structLayout, GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
                 }
                 else
                 {
@@ -95,18 +80,12 @@ public partial class Compiler
                 return;
             }
 
-            global::RyuJitSharp.GenTreeLclVarCommon __jitExceptionResult34;
-            var __jitExceptionCoalesceLeft35 = _compiler.gtCallGetDefinedAsyncResumedLclAddr(call);
-            if (__jitExceptionCoalesceLeft35 != null)
-            {
-                __jitExceptionResult34 = __jitExceptionCoalesceLeft35;
-            }
-            else
+            var definition = _compiler.gtCallGetDefinedAsyncResumedLclAddr(call);
+            if (definition is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncResumedDefArgumentMustBeALocalAddress);
-                __jitExceptionResult34 = default;
             }
-            var definition = __jitExceptionResult34;
+
             assert(ReferenceEquals(argument.Node, definition));
             StoreResumedDef(definition, resumeBlock);
             callBlock.Remove(definition);
@@ -132,19 +111,13 @@ public partial class Compiler
 
             if (block.HasTerminator)
             {
-                var __jitExceptionReceiver113 = block;
-                global::RyuJitSharp.GenTree __jitExceptionArgument114;
-                var __jitExceptionCoalesceLeft115 = block.LastNode;
-                if (__jitExceptionCoalesceLeft115 != null)
-                {
-                    __jitExceptionArgument114 = __jitExceptionCoalesceLeft115;
-                }
-                else
+                var lastNode = block.LastNode;
+                if (lastNode is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TerminatorBlockIsEmpty);
-                    __jitExceptionArgument114 = default;
                 }
-                __jitExceptionReceiver113.InsertBefore(__jitExceptionArgument114, LIR.SeqTree(_compiler, store));
+
+                block.InsertBefore(lastNode, LIR.SeqTree(_compiler, store));
             }
             else
             {
@@ -220,18 +193,12 @@ public partial class Compiler
             var resultInfo = layout.FindReturn(_compiler, call);
             GenTree resultBase = _compiler.gtNewLclvNode(TYP_REF, _compiler.lvaAsyncContinuationArg);
             var offset = OFFSETOF__CORINFO_Continuation__data + resultInfo.Offset;
-            global::RyuJitSharp.GenTreeLclVarCommon __jitExceptionResult36;
-            var __jitExceptionCoalesceLeft37 = definition.DefinitionNode;
-            if (__jitExceptionCoalesceLeft37 != null)
-            {
-                __jitExceptionResult36 = __jitExceptionCoalesceLeft37;
-            }
-            else
+            var target = definition.DefinitionNode;
+            if (target is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncResultRequiresALocalDefinition);
-                __jitExceptionResult36 = default;
             }
-            var target = __jitExceptionResult36;
+
             ref var destination = ref _compiler.lvaGetDesc(target.LclNum);
             var flags = GTF_IND_NONFAULTING |
                 (resultInfo.HeapAlignment < resultInfo.Alignment ? GTF_IND_UNALIGNED : GTF_EMPTY);
@@ -240,18 +207,12 @@ public partial class Compiler
             {
                 if (_compiler.lvaGetPromotionType(in destination) is not PROMOTION_TYPE_INDEPENDENT)
                 {
-                    global::RyuJitSharp.ClassLayout __jitExceptionResult38;
-                    var __jitExceptionCoalesceLeft39 = resultInfo.Type.ReturnLayout;
-                    if (__jitExceptionCoalesceLeft39 != null)
-                    {
-                        __jitExceptionResult38 = __jitExceptionCoalesceLeft39;
-                    }
-                    else
+                    var structLayout = resultInfo.Type.ReturnLayout;
+                    if (structLayout is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructReturnHasNoLayout);
-                        __jitExceptionResult38 = default;
                     }
-                    var structLayout = __jitExceptionResult38;
+
                     var offsetNode = _compiler.gtNewIconNode(TYP_I_IMPL, offset);
                     var address = _compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, resultBase, offsetNode);
                     var value = _compiler.gtNewLoadValueNode(address, structLayout, flags);
@@ -324,18 +285,12 @@ public partial class Compiler
 
             if (result.Type.ReturnType is TYP_STRUCT)
             {
-                global::RyuJitSharp.ClassLayout __jitExceptionResult40;
-                var __jitExceptionCoalesceLeft41 = result.Type.ReturnLayout;
-                if (__jitExceptionCoalesceLeft41 != null)
-                {
-                    __jitExceptionResult40 = __jitExceptionCoalesceLeft41;
-                }
-                else
+                var structLayout = result.Type.ReturnLayout;
+                if (structLayout is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructReturnHasNoLayout);
-                    __jitExceptionResult40 = default;
                 }
-                var structLayout = __jitExceptionResult40;
+
                 if (structLayout.GCPtrCount == 0)
                 {
                     return;

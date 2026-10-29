@@ -123,16 +123,13 @@ public partial class Compiler
                     }
                 }
 
-                var __jitExceptionCoalesceLeft174 = block.Next;
-                if (__jitExceptionCoalesceLeft174 != null)
-                {
-                    block = __jitExceptionCoalesceLeft174;
-                }
-                else
+                var followingHandlerBlock = block.Next;
+                if (followingHandlerBlock is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyHandlerRangeEndedPrematurely);
-                    block = default;
                 }
+
+                block = followingHandlerBlock;
             }
 
             if (hasSwitch)
@@ -180,21 +177,15 @@ public partial class Compiler
                                 break;
                             }
 
-                            goto __jitExceptionForIncrement175;
+                            goto tryBlockIncrement;
                         }
 
-                        global::RyuJitSharp.BasicBlock __jitExceptionResult177;
-                        var __jitExceptionCoalesceLeft178 = jumpDest.Next;
-                        if (__jitExceptionCoalesceLeft178 != null)
-                        {
-                            __jitExceptionResult177 = __jitExceptionCoalesceLeft178;
-                        }
-                        else
+                        var leave = jumpDest.Next;
+                        if (leave is null)
                         {
                             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresItsLeaveBlock);
-                            __jitExceptionResult177 = default;
                         }
-                        var leave = __jitExceptionResult177;
+
                         var continuation = fgGetFinallyContinuation(leave);
                         var isUpdate = false;
                         if (normalCallFinally is null)
@@ -225,7 +216,7 @@ public partial class Compiler
                                     break;
                                 }
 
-                                goto __jitExceptionForIncrement175;
+                                goto tryBlockIncrement;
                             }
 
                             if (block.bbWeight <= currentWeight)
@@ -236,7 +227,7 @@ public partial class Compiler
                                     break;
                                 }
 
-                                goto __jitExceptionForIncrement175;
+                                goto tryBlockIncrement;
                             }
 
                             JITDUMP($"Preferring {FMT_BB(block.bbNum)} since " + $"{FMT_WT(block.bbWeight)} >  {FMT_WT(currentWeight)}\n");
@@ -261,18 +252,15 @@ public partial class Compiler
                     }
                 }
 
-                __jitExceptionForIncrement175:
+                tryBlockIncrement:
                     ;
-                var __jitExceptionCoalesceLeft176 = block.Prev;
-                if (__jitExceptionCoalesceLeft176 != null)
-                {
-                    block = __jitExceptionCoalesceLeft176;
-                }
-                else
+                var previousBlock = block.Prev;
+                if (previousBlock is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TryRegionEndedPrematurely);
-                    block = default;
                 }
+
+                block = previousBlock;
             }
 
             if (normalCallFinally is null || normalContinuation is null)
@@ -317,19 +305,13 @@ public partial class Compiler
                         }
                         else
                         {
-                            var __jitExceptionArgument181 = BBJ_ALWAYS;
-                            global::RyuJitSharp.BasicBlock __jitExceptionArgument182;
-                            var __jitExceptionCoalesceLeft183 = insertAfter;
-                            if (__jitExceptionCoalesceLeft183 != null)
-                            {
-                                __jitExceptionArgument182 = __jitExceptionCoalesceLeft183;
-                            }
-                            else
+                            var previousBlock = insertAfter;
+                            if (previousBlock is null)
                             {
                                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SubsequentCloneNeedsItsPredecessor);
-                                __jitExceptionArgument182 = default;
                             }
-                            newBlock = fgNewBBafter(__jitExceptionArgument181, __jitExceptionArgument182, extendRegion: true);
+
+                            newBlock = fgNewBBafter(BBJ_ALWAYS, previousBlock, extendRegion: true);
                         }
 
                         cloneBBCount++;
@@ -359,16 +341,13 @@ public partial class Compiler
                     }
                 }
 
-                var __jitExceptionCoalesceLeft180 = block.Next;
-                if (__jitExceptionCoalesceLeft180 != null)
-                {
-                    block = __jitExceptionCoalesceLeft180;
-                }
-                else
+                var followingSourceBlock = block.Next;
+                if (followingSourceBlock is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyHandlerRangeEndedPrematurely);
-                    block = default;
                 }
+
+                block = followingSourceBlock;
             }
 
             assert(cloneBBCount == regionBBCount);
@@ -384,18 +363,12 @@ public partial class Compiler
                         assert(!clone.HasInitializedTarget);
                         if (block.Kind is BBJ_EHFINALLYRET)
                         {
-                            global::RyuJitSharp.Statement __jitExceptionResult186;
-                            var __jitExceptionCoalesceLeft187 = clone.LastStmt;
-                            if (__jitExceptionCoalesceLeft187 != null)
-                            {
-                                __jitExceptionResult186 = __jitExceptionCoalesceLeft187;
-                            }
-                            else
+                            var ret = clone.LastStmt;
+                            if (ret is null)
                             {
                                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyReturnRequiresAStatement2);
-                                __jitExceptionResult186 = default;
                             }
-                            var ret = __jitExceptionResult186;
+
                             assert(ret.RootNode.Oper is GT_RETFILT);
                             fgRemoveStmt(clone, ret);
                             var edge = fgAddRefPred(normalContinuation, clone);
@@ -413,16 +386,13 @@ public partial class Compiler
                     }
                 }
 
-                var __jitExceptionCoalesceLeft185 = block.Next;
-                if (__jitExceptionCoalesceLeft185 != null)
-                {
-                    block = __jitExceptionCoalesceLeft185;
-                }
-                else
+                var followingTargetBlock = block.Next;
+                if (followingTargetBlock is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyHandlerRangeEndedPrematurely);
-                    block = default;
                 }
+
+                block = followingTargetBlock;
             }
 
             var firstClone = blockMap.GetValue(firstBlock);
@@ -435,18 +405,12 @@ public partial class Compiler
                 var next = call.Next;
                 if (call.isBBCallFinallyPair && (call.Target == firstBlock))
                 {
-                    global::RyuJitSharp.BasicBlock __jitExceptionResult188;
-                    var __jitExceptionCoalesceLeft189 = call.Next;
-                    if (__jitExceptionCoalesceLeft189 != null)
-                    {
-                        __jitExceptionResult188 = __jitExceptionCoalesceLeft189;
-                    }
-                    else
+                    var leave = call.Next;
+                    if (leave is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresItsLeaveBlock);
-                        __jitExceptionResult188 = default;
                     }
-                    var leave = __jitExceptionResult188;
+
                     var continuation = fgGetFinallyContinuation(leave);
                     if (continuation == normalContinuation)
                     {
@@ -477,16 +441,11 @@ public partial class Compiler
                 {
                     break;
                 }
-                var __jitExceptionCoalesceLeft190 = next;
-                if (__jitExceptionCoalesceLeft190 != null)
-                {
-                    call = __jitExceptionCoalesceLeft190;
-                }
-                else
+                if (next is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyRangeEndedPrematurely);
-                    call = default;
                 }
+                call = next;
             }
 
             if (retargetedAllCalls)
@@ -511,16 +470,13 @@ public partial class Compiler
                         }
                     }
 
-                    var __jitExceptionCoalesceLeft192 = block.Next;
-                    if (__jitExceptionCoalesceLeft192 != null)
-                    {
-                        block = __jitExceptionCoalesceLeft192;
-                    }
-                    else
+                    var followingFaultBlock = block.Next;
+                    if (followingFaultBlock is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyHandlerRangeEndedPrematurely);
-                        block = default;
                     }
+
+                    block = followingFaultBlock;
                 }
             }
             else
@@ -553,16 +509,13 @@ public partial class Compiler
                         }
                     }
 
-                    var __jitExceptionCoalesceLeft194 = block.Next;
-                    if (__jitExceptionCoalesceLeft194 != null)
-                    {
-                        block = __jitExceptionCoalesceLeft194;
-                    }
-                    else
+                    var followingProfileBlock = block.Next;
+                    if (followingProfileBlock is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyHandlerRangeEndedPrematurely);
-                        block = default;
                     }
+
+                    block = followingProfileBlock;
                 }
 
                 if (!retargetedAllCalls)

@@ -22451,37 +22451,24 @@ public partial class Compiler
 
                             if (Configuration.FEATURE_HW_INTRINSICS)
                             {
-                                global::System.ReadOnlySpan<byte> __jitExceptionResult56;
-                                bool __jitExceptionCondition57;
-                                __jitExceptionCondition57 = Configuration.TARGET_XARCH;
-                                if (__jitExceptionCondition57)
+                                ReadOnlySpan<byte> platformNamespaceName;
+                                if (Configuration.TARGET_XARCH)
                                 {
-                                    __jitExceptionResult56 = ".X86"u8;
+                                    platformNamespaceName = ".X86"u8;
+                                }
+                                else if (Configuration.TARGET_ARM64)
+                                {
+                                    platformNamespaceName = ".Arm"u8;
+                                }
+                                else if (Configuration.TARGET_WASM)
+                                {
+                                    platformNamespaceName = ".Wasm"u8;
                                 }
                                 else
                                 {
-                                    bool __jitExceptionCondition58;
-                                    __jitExceptionCondition58 = Configuration.TARGET_ARM64;
-                                    if (__jitExceptionCondition58)
-                                    {
-                                        __jitExceptionResult56 = ".Arm"u8;
-                                    }
-                                    else
-                                    {
-                                        bool __jitExceptionCondition59;
-                                        __jitExceptionCondition59 = Configuration.TARGET_WASM;
-                                        if (__jitExceptionCondition59)
-                                        {
-                                            __jitExceptionResult56 = ".Wasm"u8;
-                                        }
-                                        else
-                                        {
-                                            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.UnsupportedHardwareIntrinsicPlatform);
-                                            __jitExceptionResult56 = default;
-                                        }
-                                    }
+                                    JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.UnsupportedHardwareIntrinsicPlatform);
+                                    platformNamespaceName = default;
                                 }
-                                var platformNamespaceName = __jitExceptionResult56;
 
                                 var interfacePrefix = "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"u8;
 
@@ -23400,37 +23387,24 @@ public partial class Compiler
             }
             else
             {
-                global::System.ReadOnlySpan<byte> __jitExceptionResult60;
-                bool __jitExceptionCondition61;
-                __jitExceptionCondition61 = Configuration.TARGET_XARCH;
-                if (__jitExceptionCondition61)
+                ReadOnlySpan<byte> platformNamespaceName;
+                if (Configuration.TARGET_XARCH)
                 {
-                    __jitExceptionResult60 = "System.Runtime.Intrinsics.X86"u8;
+                    platformNamespaceName = "System.Runtime.Intrinsics.X86"u8;
+                }
+                else if (Configuration.TARGET_ARM64)
+                {
+                    platformNamespaceName = "System.Runtime.Intrinsics.Arm"u8;
+                }
+                else if (Configuration.TARGET_WASM)
+                {
+                    platformNamespaceName = "System.Runtime.Intrinsics.Wasm"u8;
                 }
                 else
                 {
-                    bool __jitExceptionCondition62;
-                    __jitExceptionCondition62 = Configuration.TARGET_ARM64;
-                    if (__jitExceptionCondition62)
-                    {
-                        __jitExceptionResult60 = "System.Runtime.Intrinsics.Arm"u8;
-                    }
-                    else
-                    {
-                        bool __jitExceptionCondition63;
-                        __jitExceptionCondition63 = Configuration.TARGET_WASM;
-                        if (__jitExceptionCondition63)
-                        {
-                            __jitExceptionResult60 = "System.Runtime.Intrinsics.Wasm"u8;
-                        }
-                        else
-                        {
-                            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.UnsupportedHardwareIntrinsicPlatform);
-                            __jitExceptionResult60 = default;
-                        }
-                    }
+                    JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.UnsupportedHardwareIntrinsicPlatform);
+                    platformNamespaceName = default;
                 }
-                var platformNamespaceName = __jitExceptionResult60;
 
                 if (!isXplatIntrinsic && !NameEquals(namespaceName, platformNamespaceName))
                 {

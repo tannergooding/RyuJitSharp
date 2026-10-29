@@ -97,18 +97,12 @@ public partial class Compiler
 
     public void gsUnionAssignGroups(int lclNum1, int lclNum2, GenTree reason)
     {
-        global::RyuJitSharp.Compiler.ShadowParamVarInfo[] __jitExceptionResult207;
-        var __jitExceptionCoalesceLeft208 = gsShadowVarInfo;
-        if (__jitExceptionCoalesceLeft208 != null)
-        {
-            __jitExceptionResult207 = __jitExceptionCoalesceLeft208;
-        }
-        else
+        var shadowInfo = gsShadowVarInfo;
+        if (shadowInfo is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GSShadowAnalysisRequiresALocalTable);
-            __jitExceptionResult207 = default;
         }
-        var shadowInfo = __jitExceptionResult207;
+
         var info1 = shadowInfo[lclNum1];
         var info2 = shadowInfo[lclNum2];
         var traits = new BitVecTraits(this, gsShadowVarInfoCount);
@@ -238,18 +232,11 @@ public partial class Compiler
         var hasOneVulnerable = false;
         var traits = new BitVecTraits(this, gsShadowVarInfoCount);
         var propagated = BitVecOps.MakeEmpty(traits);
-        global::RyuJitSharp.Compiler.ShadowParamVarInfo[] __jitExceptionResult209;
-        var __jitExceptionCoalesceLeft210 = gsShadowVarInfo;
-        if (__jitExceptionCoalesceLeft210 != null)
-        {
-            __jitExceptionResult209 = __jitExceptionCoalesceLeft210;
-        }
-        else
+        var shadowInfo = gsShadowVarInfo;
+        if (shadowInfo is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GSShadowAnalysisRequiresALocalTable);
-            __jitExceptionResult209 = default;
         }
-        var shadowInfo = __jitExceptionResult209;
 
         for (var lclNum = 0; lclNum < gsShadowVarInfoCount; lclNum++)
         {
@@ -289,18 +276,12 @@ public partial class Compiler
 
     public void gsParamsToShadows()
     {
-        global::RyuJitSharp.Compiler.ShadowParamVarInfo[] __jitExceptionResult211;
-        var __jitExceptionCoalesceLeft212 = gsShadowVarInfo;
-        if (__jitExceptionCoalesceLeft212 != null)
-        {
-            __jitExceptionResult211 = __jitExceptionCoalesceLeft212;
-        }
-        else
+        var shadowInfo = gsShadowVarInfo;
+        if (shadowInfo is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GSShadowCopiesRequireALocalTable);
-            __jitExceptionResult211 = default;
         }
-        var shadowInfo = __jitExceptionResult211;
+
         if (!gsCreateShadowingLocals())
         {
             return;
@@ -360,18 +341,11 @@ public partial class Compiler
     public bool gsCreateShadowingLocals()
     {
         var createdAny = false;
-        global::RyuJitSharp.Compiler.ShadowParamVarInfo[] __jitExceptionResult213;
-        var __jitExceptionCoalesceLeft214 = gsShadowVarInfo;
-        if (__jitExceptionCoalesceLeft214 != null)
-        {
-            __jitExceptionResult213 = __jitExceptionCoalesceLeft214;
-        }
-        else
+        var shadowInfo = gsShadowVarInfo;
+        if (shadowInfo is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GSShadowCopiesRequireALocalTable);
-            __jitExceptionResult213 = default;
         }
-        var shadowInfo = __jitExceptionResult213;
 
         for (var lclNum = 0; lclNum < gsShadowVarInfoCount; lclNum++)
         {
@@ -437,18 +411,12 @@ public partial class Compiler
             return;
         }
 
-        global::RyuJitSharp.Compiler.ShadowParamVarInfo[] __jitExceptionResult215;
-        var __jitExceptionCoalesceLeft216 = gsShadowVarInfo;
-        if (__jitExceptionCoalesceLeft216 != null)
-        {
-            __jitExceptionResult215 = __jitExceptionCoalesceLeft216;
-        }
-        else
+        var shadowInfo = gsShadowVarInfo;
+        if (shadowInfo is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GSShadowRewritingRequiresALocalTable);
-            __jitExceptionResult215 = default;
         }
-        var shadowInfo = __jitExceptionResult215;
+
         var shadowLclNum = shadowInfo[lclNum].ShadowCopy;
         if (shadowLclNum == BAD_VAR_NUM)
         {
@@ -492,18 +460,12 @@ public partial class Compiler
 
         var source = gtNewLclvNode(descriptor.Type, lclNum);
         var store = gtNewStoreLclVarNode(shadowLclNum, source);
-        global::RyuJitSharp.BasicBlock __jitExceptionResult217;
-        var __jitExceptionCoalesceLeft218 = fgFirstBB;
-        if (__jitExceptionCoalesceLeft218 != null)
-        {
-            __jitExceptionResult217 = __jitExceptionCoalesceLeft218;
-        }
-        else
+        var firstBlock = fgFirstBB;
+        if (firstBlock is null)
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GSShadowCopiesRequireAnEntryBlock);
-            __jitExceptionResult217 = default;
         }
-        var firstBlock = __jitExceptionResult217;
+
         firstBlock.InsertAtBeginning(LIR.SeqTree(this, store));
         JITDUMP($"Created shadow param copy for V{lclNum:D2} to V{shadowLclNum:D2}\n");
         DISPTREERANGE(firstBlock, store);

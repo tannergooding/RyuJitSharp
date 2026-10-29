@@ -39,18 +39,12 @@ public partial class Compiler
             }
             foreach (var state in _states)
             {
-                global::RyuJitSharp.CallArg __jitExceptionResult44;
-                var __jitExceptionCoalesceLeft45 = state.Call.Args.FindWellKnownArg(WellKnownArg.AsyncResumedDef);
-                if (__jitExceptionCoalesceLeft45 != null)
-                {
-                    __jitExceptionResult44 = __jitExceptionCoalesceLeft45;
-                }
-                else
+                var argument = state.Call.Args.FindWellKnownArg(WellKnownArg.AsyncResumedDef);
+                if (argument is null)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CommonResumedDefHasNoCallArgument);
-                    __jitExceptionResult44 = default;
                 }
-                var argument = __jitExceptionResult44;
+
                 state.CallBlock.Remove(argument.Node);
                 state.Call.Args.RemoveUnsafe(argument);
             }
@@ -62,18 +56,12 @@ public partial class Compiler
             SuspensionContextHelper helper, AsyncContinuationLayout layout,
             GenTree? invariantResumed, bool execMayVary, bool syncMayVary)
         {
-            global::RyuJitSharp.BasicBlock __jitExceptionResult46;
-            var __jitExceptionCoalesceLeft47 = _sharedReturnBB;
-            if (__jitExceptionCoalesceLeft47 != null)
-            {
-                __jitExceptionResult46 = __jitExceptionCoalesceLeft47;
-            }
-            else
+            var sharedReturn = _sharedReturnBB;
+            if (sharedReturn is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SharedContextHandlingRequiresAReturnBlock);
-                __jitExceptionResult46 = default;
             }
-            var sharedReturn = __jitExceptionResult46;
+
             var block = _compiler.fgNewBBbefore(BBJ_ALWAYS, sharedReturn, false);
             block.SetKindAndTargetEdge(BBJ_ALWAYS, _compiler.fgAddRefPred(sharedReturn, block));
             block.bbSetRunRarely();
@@ -175,18 +163,12 @@ public partial class Compiler
                         continue;
                     }
 
-                    global::RyuJitSharp.CallArg __jitExceptionResult48;
-                    var __jitExceptionCoalesceLeft49 = state.Call.Args.FindWellKnownArg(WellKnownArg.AsyncResumedUse);
-                    if (__jitExceptionCoalesceLeft49 != null)
-                    {
-                        __jitExceptionResult48 = __jitExceptionCoalesceLeft49;
-                    }
-                    else
+                    var resumedArg = state.Call.Args.FindWellKnownArg(WellKnownArg.AsyncResumedUse);
+                    if (resumedArg is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncStateHasNoResumedIndicator);
-                        __jitExceptionResult48 = default;
                     }
-                    var resumedArg = __jitExceptionResult48;
+
                     var resumed = resumedArg.Node;
                     if (resumed.IsInvariant || (resumed.Oper is GT_LCL_VAR))
                     {
@@ -204,30 +186,18 @@ public partial class Compiler
                         resumedMayVary = true;
                     }
 
-                    global::RyuJitSharp.CallArg __jitExceptionResult50;
-                    var __jitExceptionCoalesceLeft51 = state.Call.Args.FindWellKnownArg(WellKnownArg.AsyncExecutionContext);
-                    if (__jitExceptionCoalesceLeft51 != null)
-                    {
-                        __jitExceptionResult50 = __jitExceptionCoalesceLeft51;
-                    }
-                    else
+                    var exec = state.Call.Args.FindWellKnownArg(WellKnownArg.AsyncExecutionContext);
+                    if (exec is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncStateHasNoExecutionContext);
-                        __jitExceptionResult50 = default;
                     }
-                    var exec = __jitExceptionResult50;
-                    global::RyuJitSharp.CallArg __jitExceptionResult52;
-                    var __jitExceptionCoalesceLeft53 = state.Call.Args.FindWellKnownArg(WellKnownArg.AsyncSynchronizationContext);
-                    if (__jitExceptionCoalesceLeft53 != null)
-                    {
-                        __jitExceptionResult52 = __jitExceptionCoalesceLeft53;
-                    }
-                    else
+
+                    var sync = state.Call.Args.FindWellKnownArg(WellKnownArg.AsyncSynchronizationContext);
+                    if (sync is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncStateHasNoSynchronizationContext);
-                        __jitExceptionResult52 = default;
                     }
-                    var sync = __jitExceptionResult52;
+
                     execMayVary |= (exec.Node.Oper is not GT_LCL_VAR) ||
                         (exec.Node.AsLclVar().LclNum != _compiler.lvaAsyncExecutionContextVar);
                     syncMayVary |= (sync.Node.Oper is not GT_LCL_VAR) ||
@@ -268,18 +238,12 @@ public partial class Compiler
                 JITDUMP("\n");
             }
 
-            global::RyuJitSharp.AsyncContinuationLayout __jitExceptionReturnResult54;
-            var __jitExceptionCoalesceLeft55 = layout;
-            if (__jitExceptionCoalesceLeft55 != null)
-            {
-                __jitExceptionReturnResult54 = __jitExceptionCoalesceLeft55;
-            }
-            else
+            if (layout is null)
             {
                 JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NoAsyncStatesWereCreated);
-                __jitExceptionReturnResult54 = default;
             }
-            return __jitExceptionReturnResult54;
+
+            return layout;
         }
 
         private void CreateResumption(BasicBlock callBlock, GenTreeCall call,
