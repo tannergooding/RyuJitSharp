@@ -7,50 +7,8 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    // A local can be accessed through different machine types; these queries expose its normalized type.
-    public var_types lvaGetActualType(int lclNum)
-    {
-        return lvaTable[lclNum].Type.ActualType;
-    }
-
     public var_types lvaGetRealType(int lclNum)
     {
         return lvaTable[lclNum].Type;
-    }
-
-    // This conversion applies to incoming fixed varargs on Windows ARM and soft-float ARM.
-    public var_types mangleVarArgsType(var_types type)
-    {
-        if (Configuration.TARGET_ARMARCH)
-        {
-            var compUseSoftFP = opts.compUseSoftFP;
-            if (compUseSoftFP || (TargetOS.IsWindows && info.compIsVarArgs))
-            {
-                switch (type)
-                {
-                    case TYP_FLOAT:
-                    {
-                        return TYP_INT;
-                    }
-
-                    case TYP_DOUBLE:
-                    {
-                        return TYP_LONG;
-                    }
-
-                    default:
-                    {
-                        break;
-                    }
-                }
-
-                if (varTypeIsSimd(type))
-                {
-                    // Vectors should be considered like passing a struct.
-                    return TYP_STRUCT;
-                }
-            }
-        }
-        return type;
     }
 }

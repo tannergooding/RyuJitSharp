@@ -111,30 +111,6 @@ internal static unsafe class CompilerFrameHelperCompletionTests
         });
     }
 
-    [TestCase(false, 0, 0)]
-    [TestCase(false, 24, 24)]
-    [TestCase(true, -80, 0)]
-    [TestCase(true, -8, 72)]
-    public static void StackAndInitialStackGettersConvertTheLocalHome(bool framePointerBased, int offset, int expected)
-    {
-        Assume.That(Configuration.TARGET_AMD64);
-
-        CompilerFinalFrameLayoutTests.WithFrame((compiler, codeGen) =>
-        {
-            compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
-            compiler.compCalleeRegsPushed = 2;
-            compiler.compLclFrameSize = 64;
-            compiler.lvaTable[0].StackOffset = offset;
-            compiler.lvaTable[0].lvFramePointerBased = framePointerBased;
-            codeGen.resetFramePointerUsedWritePhase();
-            codeGen.IsFramePointerUsed = true;
-
-            Assert.That(codeGen.genSPtoFPdelta, Is.EqualTo(80));
-            Assert.That(compiler.lvaGetSPRelativeOffset(0), Is.EqualTo(expected));
-            Assert.That(compiler.lvaGetInitialSPRelativeOffset(0), Is.EqualTo(expected));
-        });
-    }
-
     [TestCase(false, 0u, 0)]
     [TestCase(false, 2147483648u, int.MinValue)]
     [TestCase(false, uint.MaxValue, -1)]

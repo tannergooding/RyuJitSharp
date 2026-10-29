@@ -7,24 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public int lvaGetSPRelativeOffset(int varNum)
-    {
-        assert(!compLocallocUsed);
-        assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
-        ref var descriptor = ref lvaGetDesc(varNum);
-        assert(descriptor.lvOnFrame);
-
-        var spRelativeOffset = descriptor.StackOffset;
-        if (descriptor.lvFramePointerBased)
-        {
-            assert(codeGen is not null);
-            spRelativeOffset += codeGen.genSPtoFPdelta;
-        }
-
-        assert(spRelativeOffset >= 0);
-        return spRelativeOffset;
-    }
-
     public unsafe int lvaGetCallerSPRelativeOffset(int varNum)
     {
         assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
@@ -55,15 +37,6 @@ public partial class Compiler
         }
 
         return offset;
-    }
-
-    public int lvaGetInitialSPRelativeOffset(int varNum)
-    {
-        assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
-        ref var descriptor = ref lvaGetDesc(varNum);
-        assert(descriptor.lvOnFrame);
-
-        return lvaToInitialSPRelativeOffset(unchecked((uint)descriptor.StackOffset), descriptor.lvFramePointerBased);
     }
 
     public int lvaToInitialSPRelativeOffset(uint offset, bool isFpBased)
