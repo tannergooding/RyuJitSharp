@@ -84,16 +84,12 @@ public sealed partial class Lowering
                 var addressToReuse = node.Addr;
                 if (foldable is not null)
                 {
-                    var __jitExceptionCoalesceLeft104 = foldable.BaseAddress;
-                    if (__jitExceptionCoalesceLeft104 != null)
-                    {
-                        addressToReuse = __jitExceptionCoalesceLeft104;
-                    }
-                    else
+                    var baseAddress = foldable.BaseAddress;
+                    if (baseAddress is null)
                     {
                         JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FoldableWasmAddressIsMissingItsBase);
-                        addressToReuse = default;
                     }
+                    addressToReuse = baseAddress;
                 }
 
                 SetMultiplyUsed(addressToReuse,
@@ -275,30 +271,35 @@ public sealed partial class Lowering
                         {
                             var ins = HWIntrinsicInfo.lookupIns(intrinsicId, baseType, compiler);
                             var tupleType = Emitter.insTupleTypeInfo(ins);
-                            int __jitExceptionResult475;
+                            int memSize;
                             switch (tupleType)
                             {
                                 case INS_TT_HALF:
-                                    __jitExceptionResult475 = simdSize / 2;
-                                    break;
                                 case INS_TT_HALF_MEM:
-                                    __jitExceptionResult475 = simdSize / 2;
+                                {
+                                    memSize = simdSize / 2;
                                     break;
+                                }
+
                                 case INS_TT_QUARTER:
-                                    __jitExceptionResult475 = simdSize / 4;
-                                    break;
                                 case INS_TT_QUARTER_MEM:
-                                    __jitExceptionResult475 = simdSize / 4;
+                                {
+                                    memSize = simdSize / 4;
                                     break;
+                                }
+
                                 case INS_TT_EIGHTH_MEM:
-                                    __jitExceptionResult475 = simdSize / 8;
+                                {
+                                    memSize = simdSize / 8;
                                     break;
+                                }
+
                                 default:
+                                {
                                     JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedTupleTypeForANarrowingConversion);
-                                    __jitExceptionResult475 = default;
-                                    break;
+                                    return;
+                                }
                             }
-                            var memSize = __jitExceptionResult475;
                             isContainable = node.Type.Size == memSize;
                             break;
                         }

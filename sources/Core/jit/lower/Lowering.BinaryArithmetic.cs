@@ -215,24 +215,33 @@ public sealed partial class Lowering
                     if (!op2.IsContained && BitOperations.IsPow2(bit) &&
                         ((op1.Type is not TYP_INT) || (BitOperations.Log2(bit) != 31)))
                     {
-                        global::RyuJitSharp.genTreeOps __jitExceptionResult441;
+                        genTreeOps singleBitOper;
                         switch (binOp.Oper)
                         {
                             case GT_OR:
-                                __jitExceptionResult441 = GT_BIT_SET;
+                            {
+                                singleBitOper = GT_BIT_SET;
                                 break;
+                            }
+
                             case GT_XOR:
-                                __jitExceptionResult441 = GT_BIT_INVERT;
+                            {
+                                singleBitOper = GT_BIT_INVERT;
                                 break;
+                            }
+
                             case GT_AND:
-                                __jitExceptionResult441 = GT_BIT_CLEAR;
+                            {
+                                singleBitOper = GT_BIT_CLEAR;
                                 break;
+                            }
+
                             default:
+                            {
                                 JitExceptionHelpers.ThrowInvalidOperationException();
-                                __jitExceptionResult441 = default;
-                                break;
+                                return default;
+                            }
                         }
-                        var singleBitOper = __jitExceptionResult441;
                         binOp.SetOper(singleBitOper);
                         bit = (uint)BitOperations.Log2(bit);
                         assert(bit >= 11);
@@ -289,24 +298,33 @@ public sealed partial class Lowering
                         (binOp.Op1, binOp.Op2) = (op1, op2);
                     }
 
-                    global::RyuJitSharp.genTreeOps __jitExceptionResult442;
+                    genTreeOps operNot;
                     switch (binOp.Oper)
                     {
                         case GT_AND:
-                            __jitExceptionResult442 = GT_AND_NOT;
+                        {
+                            operNot = GT_AND_NOT;
                             break;
+                        }
+
                         case GT_OR:
-                            __jitExceptionResult442 = GT_OR_NOT;
+                        {
+                            operNot = GT_OR_NOT;
                             break;
+                        }
+
                         case GT_XOR:
-                            __jitExceptionResult442 = GT_XOR_NOT;
+                        {
+                            operNot = GT_XOR_NOT;
                             break;
+                        }
+
                         default:
+                        {
                             JitExceptionHelpers.ThrowInvalidOperationException();
-                            __jitExceptionResult442 = default;
-                            break;
+                            return default;
+                        }
                     }
-                    var operNot = __jitExceptionResult442;
                     binOp.SetOper(operNot);
                 }
                 else if (binOp.Oper is GT_AND or GT_OR)

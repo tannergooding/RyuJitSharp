@@ -93,27 +93,39 @@ public sealed partial class Lowering
                 GenTree castResult;
                 if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
                 {
-                    global::RyuJitSharp.NamedIntrinsic __jitExceptionResult457;
+                    NamedIntrinsic intrinsic;
                     switch (dstType)
                     {
                         case TYP_INT:
-                            __jitExceptionResult457 = NI_AVX10v2_ConvertToInt32WithTruncatedSaturation;
+                        {
+                            intrinsic = NI_AVX10v2_ConvertToInt32WithTruncatedSaturation;
                             break;
+                        }
+
                         case TYP_UINT:
-                            __jitExceptionResult457 = NI_AVX10v2_ConvertToUInt32WithTruncatedSaturation;
+                        {
+                            intrinsic = NI_AVX10v2_ConvertToUInt32WithTruncatedSaturation;
                             break;
+                        }
+
                         case TYP_LONG:
-                            __jitExceptionResult457 = NI_AVX10v2_X64_ConvertToInt64WithTruncatedSaturation;
+                        {
+                            intrinsic = NI_AVX10v2_X64_ConvertToInt64WithTruncatedSaturation;
                             break;
+                        }
+
                         case TYP_ULONG:
-                            __jitExceptionResult457 = NI_AVX10v2_X64_ConvertToUInt64WithTruncatedSaturation;
+                        {
+                            intrinsic = NI_AVX10v2_X64_ConvertToUInt64WithTruncatedSaturation;
                             break;
+                        }
+
                         default:
+                        {
                             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedFloatingConversionDestination);
-                            __jitExceptionResult457 = default;
-                            break;
+                            return;
+                        }
                     }
-                    var intrinsic = __jitExceptionResult457;
                     castResult = compiler.gtNewSimdHWIntrinsicNode(dstType.ActualType, intrinsic, srcType, 16, castOp);
                     castRange.InsertAtEnd(castResult);
                 }

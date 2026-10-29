@@ -100,19 +100,29 @@ public sealed partial class Lowering
         }
 
         var simdType = cnsVec.Type;
-        global::RyuJitSharp.NamedIntrinsic __jitExceptionResult467;
+        NamedIntrinsic broadcastName;
         switch (simdType)
         {
             case TYP_SIMD16:
-                __jitExceptionResult467 = NI_AVX2_BroadcastScalarToVector128;
+            {
+                broadcastName = NI_AVX2_BroadcastScalarToVector128;
                 break;
+            }
+
             case TYP_SIMD32:
-                __jitExceptionResult467 = NI_AVX2_BroadcastScalarToVector256;
+            {
+                broadcastName = NI_AVX2_BroadcastScalarToVector256;
                 break;
+            }
+
             case TYP_SIMD64:
-                __jitExceptionResult467 = NI_AVX512_BroadcastScalarToVector512;
+            {
+                broadcastName = NI_AVX512_BroadcastScalarToVector512;
                 break;
+            }
+
             default:
+            {
                 if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(
@@ -125,27 +135,39 @@ public sealed partial class Lowering
                         FatalJitErrorCode.UnexpectedBroadcastSizeArgument);
                 }
 
-                __jitExceptionResult467 = default;
-                break;
+                return;
+            }
         }
-        var broadcastName = __jitExceptionResult467;
 
-        global::RyuJitSharp.GenTree __jitExceptionResult468;
+        GenTree constScalar;
         switch (broadcastType)
         {
             case TYP_FLOAT:
-                __jitExceptionResult468 = CompilerInstance.gtNewDconNode(TYP_FLOAT, cnsVec.SimdVal.f32[0]);
+            {
+                constScalar = CompilerInstance.gtNewDconNode(TYP_FLOAT, cnsVec.SimdVal.f32[0]);
                 break;
+            }
+
             case TYP_DOUBLE:
-                __jitExceptionResult468 = CompilerInstance.gtNewDconNode(TYP_DOUBLE, cnsVec.SimdVal.f64[0]);
+            {
+                constScalar = CompilerInstance.gtNewDconNode(TYP_DOUBLE, cnsVec.SimdVal.f64[0]);
                 break;
+            }
+
             case TYP_INT:
-                __jitExceptionResult468 = CompilerInstance.gtNewIconNode(TYP_INT, cnsVec.SimdVal.i32[0]);
+            {
+                constScalar = CompilerInstance.gtNewIconNode(TYP_INT, cnsVec.SimdVal.i32[0]);
                 break;
+            }
+
             case TYP_LONG:
-                __jitExceptionResult468 = CompilerInstance.gtNewLconNode(cnsVec.SimdVal.i64[0]);
+            {
+                constScalar = CompilerInstance.gtNewLconNode(cnsVec.SimdVal.i64[0]);
                 break;
+            }
+
             default:
+            {
                 if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
                 {
                     JitExceptionHelpers.ThrowInvalidOperationException(
@@ -158,10 +180,9 @@ public sealed partial class Lowering
                         FatalJitErrorCode.UnexpectedBroadcastTypeArgument);
                 }
 
-                __jitExceptionResult468 = default;
-                break;
+                return;
+            }
         }
-        var constScalar = __jitExceptionResult468;
 
         var broadcastNode = CompilerInstance.gtNewSimdHWIntrinsicNode(simdType, broadcastName,
             broadcastType, checked((byte)simdType.Size), constScalar);

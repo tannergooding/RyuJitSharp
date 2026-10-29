@@ -403,29 +403,45 @@ public sealed partial class ValueNumStore
                 {
                     // Reference storage uses the host pointer width, even for a cross-target JIT.
                     // Keep the width preflight rather than reading beyond an element on an invalid call.
-                    ReadOnlySpan<byte> __jitExceptionResult732;
+                    ReadOnlySpan<byte> storage;
                     switch (chunk.Type)
                     {
                         case TYP_REF or TYP_BYREF:
-                            __jitExceptionResult732 = MemoryMarshal.AsBytes(((nuint[])chunk.Defs).AsSpan(offset, 1));
+                        {
+                            storage = MemoryMarshal.AsBytes(((nuint[])chunk.Defs).AsSpan(offset, 1));
                             break;
+                        }
+
                         case TYP_INT:
-                            __jitExceptionResult732 = MemoryMarshal.AsBytes(((int[])chunk.Defs).AsSpan(offset, 1));
+                        {
+                            storage = MemoryMarshal.AsBytes(((int[])chunk.Defs).AsSpan(offset, 1));
                             break;
+                        }
+
                         case TYP_LONG:
-                            __jitExceptionResult732 = MemoryMarshal.AsBytes(((long[])chunk.Defs).AsSpan(offset, 1));
+                        {
+                            storage = MemoryMarshal.AsBytes(((long[])chunk.Defs).AsSpan(offset, 1));
                             break;
+                        }
+
                         case TYP_FLOAT:
-                            __jitExceptionResult732 = MemoryMarshal.AsBytes(((float[])chunk.Defs).AsSpan(offset, 1));
+                        {
+                            storage = MemoryMarshal.AsBytes(((float[])chunk.Defs).AsSpan(offset, 1));
                             break;
+                        }
+
                         case TYP_DOUBLE:
-                            __jitExceptionResult732 = MemoryMarshal.AsBytes(((double[])chunk.Defs).AsSpan(offset, 1));
+                        {
+                            storage = MemoryMarshal.AsBytes(((double[])chunk.Defs).AsSpan(offset, 1));
                             break;
+                        }
+
                         default:
+                        {
                             JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.UnsupportedValueNumberScalarStorageType);
                             return default;
+                        }
                     }
-                    var storage = __jitExceptionResult732;
                     assert(Unsafe.SizeOf<T>() == storage.Length);
                     if (Unsafe.SizeOf<T>() == storage.Length)
                     {

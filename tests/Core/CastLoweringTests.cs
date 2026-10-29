@@ -122,6 +122,31 @@ internal static unsafe class CastLoweringTests
         });
     }
 
+    [TestCase(var_types.TYP_FLOAT, var_types.TYP_INT, NamedIntrinsic.NI_AVX10v2_ConvertToInt32WithTruncatedSaturation)]
+    [TestCase(var_types.TYP_FLOAT, var_types.TYP_UINT, NamedIntrinsic.NI_AVX10v2_ConvertToUInt32WithTruncatedSaturation)]
+    [TestCase(var_types.TYP_DOUBLE, var_types.TYP_LONG, NamedIntrinsic.NI_AVX10v2_X64_ConvertToInt64WithTruncatedSaturation)]
+    [TestCase(var_types.TYP_DOUBLE, var_types.TYP_ULONG, NamedIntrinsic.NI_AVX10v2_X64_ConvertToUInt64WithTruncatedSaturation)]
+    public static void FloatingToIntegralUsesAvx10v2TruncatedSaturation(
+        var_types source, var_types destination, NamedIntrinsic expectedIntrinsic)
+    {
+        Assume.That(Configuration.TARGET_XARCH, "This case requires the XARCH target.");
+        WithCompiler(compiler => {
+            compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX10v2);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX10v2);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX10v2);
+            var value = compiler.gtNewDconNode(source, 123.5);
+            var cast = new GenTreeCast(destination, value, false, destination) { IsUnusedValue = true };
+            var lowering = CreateLowering(compiler, value, cast);
+
+            LowerCast(lowering, cast);
+
+            var result = LoweringBlock(lowering)?.LastNode as GenTreeHWIntrinsic
+                ?? throw new AssertionException("AVX10v2 conversion result missing.");
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(expectedIntrinsic));
+            Assert.That(result.Type, Is.EqualTo(destination.ActualType));
+        });
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerCast")]
     private static extern void LowerCast(Lowering lowering, GenTreeCast cast);
 

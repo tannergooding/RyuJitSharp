@@ -226,45 +226,75 @@ public sealed partial class RangeCheck
                         right = new(new(LimitType.Constant, amount - 33));
                     }
 
-                    global::RyuJitSharp.Range __jitExceptionResult631;
+                    Range computed;
                     switch (app.Func)
                     {
                         case VNF_ADD:
-                            __jitExceptionResult631 = RangeOps.Add(left, right);
+                        {
+                            computed = RangeOps.Add(left, right);
                             break;
+                        }
+
                         case VNF_MUL:
-                            __jitExceptionResult631 = RangeOps.Multiply(left, right);
+                        {
+                            computed = RangeOps.Multiply(left, right);
                             break;
+                        }
+
                         case VNF_SUB:
-                            __jitExceptionResult631 = RangeOps.Subtract(left, right);
+                        {
+                            computed = RangeOps.Subtract(left, right);
                             break;
+                        }
+
                         case VNF_AND:
-                            __jitExceptionResult631 = RangeOps.And(left, right);
+                        {
+                            computed = RangeOps.And(left, right);
                             break;
+                        }
+
                         case VNF_OR:
-                            __jitExceptionResult631 = RangeOps.Or(left, right);
+                        {
+                            computed = RangeOps.Or(left, right);
                             break;
+                        }
+
                         case VNF_LSH:
-                            __jitExceptionResult631 = RangeOps.ShiftLeft(left, right);
+                        {
+                            computed = RangeOps.ShiftLeft(left, right);
                             break;
+                        }
+
                         case VNF_RSH:
-                            __jitExceptionResult631 = RangeOps.ShiftRight(left, right, false);
+                        {
+                            computed = RangeOps.ShiftRight(left, right, false);
                             break;
+                        }
+
                         case VNF_RSZ:
-                            __jitExceptionResult631 = RangeOps.ShiftRight(left, right, true);
+                        {
+                            computed = RangeOps.ShiftRight(left, right, true);
                             break;
+                        }
+
                         case VNF_UMOD:
-                            __jitExceptionResult631 = RangeOps.UnsignedMod(left, right);
+                        {
+                            computed = RangeOps.UnsignedMod(left, right);
                             break;
+                        }
+
                         case VNF_UDIV:
-                            __jitExceptionResult631 = RangeOps.UnsignedDivide(left, right);
+                        {
+                            computed = RangeOps.UnsignedDivide(left, right);
                             break;
+                        }
+
                         default:
+                        {
                             JitExceptionHelpers.ThrowInvalidOperationException();
-                            __jitExceptionResult631 = default;
-                            break;
+                            return default;
+                        }
                     }
-                    var computed = __jitExceptionResult631;
                     result = computed.IsConstantRange() ? computed : result;
                     break;
                 }

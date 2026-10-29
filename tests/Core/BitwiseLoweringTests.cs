@@ -71,6 +71,63 @@ internal static unsafe class BitwiseLoweringTests
         });
     }
 
+    [TestCase(GT_OR, GT_BIT_SET, 1 << 11)]
+    [TestCase(GT_XOR, GT_BIT_INVERT, 1 << 11)]
+    [TestCase(GT_AND, GT_BIT_CLEAR, ~(1 << 11))]
+    public static void RiscVSingleBitOperationSelectionPreservesTheOperationMap(
+        genTreeOps oper, genTreeOps expected, int maskValue)
+    {
+        Assume.That(Configuration.TARGET_RISCV64, "This case requires the RISC-V target.");
+        WithCompiler((compiler, block, lowering) => {
+            EnableInstructionSet(compiler, ManagedInstructionSet.InstructionSet_Zbs);
+            compiler.lvaTable[0].Type = TYP_INT;
+            var value = compiler.gtNewLclvNode(TYP_INT, 0);
+            var mask = compiler.gtNewIconNode(TYP_INT, maskValue);
+            var binary = new GenTreeOp(oper, TYP_INT, value, mask);
+            var user = new GenTreeUnOp(GT_RETURN, TYP_VOID, binary);
+            foreach (var node in new GenTree[] { value, mask, binary, user })
+            {
+                block.InsertAtEnd(node);
+            }
+
+            Assert.That(LowerBinaryArithmetic(lowering, binary), Is.SameAs(user));
+            Assert.That(binary.Oper, Is.EqualTo(expected));
+            Assert.That(binary.Op1, Is.SameAs(value));
+            Assert.That(binary.Op2, Is.SameAs(mask));
+            Assert.That(mask.IntegralValue, Is.EqualTo(11));
+            Assert.That(mask.IsContained, Is.True);
+        });
+    }
+
+    [TestCase(GT_AND, GT_AND_NOT)]
+    [TestCase(GT_OR, GT_OR_NOT)]
+    [TestCase(GT_XOR, GT_XOR_NOT)]
+    public static void RiscVNegatedOperationSelectionPreservesTheOperationMap(
+        genTreeOps oper, genTreeOps expected)
+    {
+        Assume.That(Configuration.TARGET_RISCV64, "This case requires the RISC-V target.");
+        WithCompiler((compiler, block, lowering) => {
+            EnableInstructionSet(compiler, ManagedInstructionSet.InstructionSet_Zbb);
+            compiler.lvaTable[0].Type = TYP_INT;
+            compiler.lvaTable[1].Type = TYP_INT;
+            var value = compiler.gtNewLclvNode(TYP_INT, 0);
+            var operand = compiler.gtNewLclvNode(TYP_INT, 1);
+            var negated = new GenTreeUnOp(GT_NOT, TYP_INT, operand);
+            var binary = new GenTreeOp(oper, TYP_INT, value, negated);
+            var user = new GenTreeUnOp(GT_RETURN, TYP_VOID, binary);
+            foreach (var node in new GenTree[] { value, operand, negated, binary, user })
+            {
+                block.InsertAtEnd(node);
+            }
+
+            Assert.That(LowerBinaryArithmetic(lowering, binary), Is.SameAs(user));
+            Assert.That(binary.Oper, Is.EqualTo(expected));
+            Assert.That(binary.Op1, Is.SameAs(value));
+            Assert.That(binary.Op2, Is.SameAs(operand));
+            Assert.That(negated.Next, Is.Null);
+        });
+    }
+
     [Test]
     public static void NegatedSingleBitRetainsFlagSettingNot()
     {
@@ -226,11 +283,21 @@ internal static unsafe class BitwiseLoweringTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TryLowerBitwiseOpToBitOp")]
     private static extern GenTreeOp? TryLowerBitwiseOpToBitOp(Lowering lowering, GenTreeOp node);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerBinaryArithmetic")]
+    private static extern GenTree? LowerBinaryArithmetic(Lowering lowering, GenTreeOp node);
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TryLowerAndNegativeOne")]
     private static extern bool TryLowerAndNegativeOne(Lowering lowering, GenTreeOp node, out GenTree? nextNode);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);
+
+    private static void EnableInstructionSet(Compiler compiler, ManagedInstructionSet instructionSet)
+    {
+        compiler.opts.compSupportsISA.AddInstructionSet(instructionSet);
+        compiler.opts.compSupportsISAReported.AddInstructionSet(instructionSet);
+        compiler.opts.compSupportsISAExactly.AddInstructionSet(instructionSet);
+    }
 
     private static void WithCompiler(Action<Compiler, BasicBlock, Lowering> action)
     {
