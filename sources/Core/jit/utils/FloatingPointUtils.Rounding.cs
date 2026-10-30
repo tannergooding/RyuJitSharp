@@ -67,11 +67,6 @@ public static partial class FloatingPointUtils
         return MathF.CopySign((x + temp) - temp, x);
     }
 
-    public static double infinite_double()
-    {
-        return UInt64BitsToDouble(0x7FF0000000000000UL);
-    }
-
     public static bool isAllBitsSet(float val)
     {
         var bits = SingleToUInt32Bits(val);

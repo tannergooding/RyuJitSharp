@@ -10,21 +10,6 @@ namespace RyuJitSharp;
 
 public static partial class FloatingPointUtils
 {
-    public static double convertUInt64ToDouble(ulong uIntVal)
-    {
-        return (double)uIntVal;
-    }
-
-    public static float convertUInt64ToFloat(ulong u64)
-    {
-        return (float)u64;
-    }
-
-    public static ulong convertDoubleToUInt64(double d)
-    {
-        return unchecked((ulong)d);
-    }
-
     public static double convertToDouble(float value)
     {
         if ((RuntimeInformation.ProcessArchitecture == Architecture.RiscV64) && float.IsNaN(value))

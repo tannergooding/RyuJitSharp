@@ -903,7 +903,6 @@ internal static class FeatureConfigurationTests
             Assert.That(store.TypeOfVN(vn), Is.EqualTo(var_types.TYP_MASK));
             Assert.That(store.GetConstantSimdMask(vn), Is.EqualTo(value));
             Assert.That(store.VNForSimdMaskCon(value), Is.EqualTo(vn));
-            Assert.That(store.IsSimdMaskScalable(vn), Is.False);
 
             simdmask_t result = default;
             var allBits = simdmask_t.AllBitsSet(64);
@@ -1004,8 +1003,6 @@ internal static class FeatureConfigurationTests
 
             var structEncoding = store.EncodeBitCastType(TYP_STRUCT, new ValueSize(3));
             Assert.That(store.GetConstantInt32(structEncoding), Is.EqualTo(var_typesExtensions.NativeCount + 3));
-            Assert.That(store.DecodeBitCastType(structEncoding, out var size), Is.EqualTo(TYP_STRUCT));
-            Assert.That(size, Is.EqualTo(3U));
 
             var simdTypeVN = store.VNForSimdType(16, TYP_INT, TYP_MASK);
             var simdTypeApp = new VNFuncApp();

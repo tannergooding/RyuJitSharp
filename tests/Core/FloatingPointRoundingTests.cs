@@ -78,12 +78,6 @@ internal static class FloatingPointRoundingTests
     }
 
     [Test]
-    public static void DoubleInfinityHelperReturnsPositiveInfinityEncoding()
-    {
-        Assert.That(DoubleToUInt64Bits(FloatingPointUtils.infinite_double()), Is.EqualTo(0x7FF0000000000000UL));
-    }
-
-    [Test]
     public static void AllBitsSetRequiresEveryBitIncludingSignAndQuietBit()
     {
         Assert.That(FloatingPointUtils.isAllBitsSet(UInt32BitsToSingle(uint.MaxValue)), Is.True);

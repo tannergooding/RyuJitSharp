@@ -32,47 +32,13 @@ internal static class ScalarQueryTests
         Assert.That(isPow2(T.MaxValue), Is.False);
         Assert.That(isPow2(T.MinValue), Is.False);
         Assert.That(isPow2(T.One | (T.One << 1)), Is.False);
-        Assert.That(signum(T.Zero), Is.Zero);
-        Assert.That(signum(T.One), Is.EqualTo(1));
-        Assert.That(signum(T.MaxValue), Is.EqualTo(1));
-        Assert.That(signum(T.MinValue), Is.EqualTo(T.IsNegative(T.MinValue) ? -1 : 0));
-
         for (var position = 0; position < width; position++)
         {
             var value = T.One << position;
             var positive = !T.IsNegative(value);
 
             Assert.That(isPow2(value), Is.EqualTo(positive), $"{typeof(T)} bit {position}");
-            Assert.That(signum(value), Is.EqualTo(positive ? 1 : -1));
         }
-    }
-
-    [TestCase(0x00000000U, 0)]
-    [TestCase(0x00000001U, 1)]
-    [TestCase(0x00800000U, 1)]
-    [TestCase(0x3F800000U, 1)]
-    [TestCase(0x7F7FFFFFU, 1)]
-    [TestCase(0x7F800000U, 1)]
-    [TestCase(0x7FC12345U, 0)]
-    [TestCase(0x7F812345U, 0)]
-    public static void SingleSignumUsesOrderedComparison(uint bits, int expected)
-    {
-        Assert.That(signum(UInt32BitsToSingle(bits)), Is.EqualTo(expected));
-        Assert.That(signum(UInt32BitsToSingle(bits | 0x80000000U)), Is.EqualTo(-expected));
-    }
-
-    [TestCase(0x0000000000000000UL, 0)]
-    [TestCase(0x0000000000000001UL, 1)]
-    [TestCase(0x0010000000000000UL, 1)]
-    [TestCase(0x3FF0000000000000UL, 1)]
-    [TestCase(0x7FEFFFFFFFFFFFFFUL, 1)]
-    [TestCase(0x7FF0000000000000UL, 1)]
-    [TestCase(0x7FF8123456789ABCUL, 0)]
-    [TestCase(0x7FF0123456789ABCUL, 0)]
-    public static void DoubleSignumUsesOrderedComparison(ulong bits, int expected)
-    {
-        Assert.That(signum(UInt64BitsToDouble(bits)), Is.EqualTo(expected));
-        Assert.That(signum(UInt64BitsToDouble(bits | 0x8000000000000000UL)), Is.EqualTo(-expected));
     }
 
     [TestCase(2U, 32U)]

@@ -13,7 +13,7 @@ internal static class PhasedVarInitializationTests
     [TestCase(0, 1)]
     [TestCase(-1, 0)]
     [TestCase(int.MinValue, int.MaxValue)]
-    public static void InitializedIntegerCanBeOverriddenWithoutChangingPhase(int initial, int replacement)
+    public static void InitializedIntegerCanBeReassignedAfterResettingWritePhase(int initial, int replacement)
     {
         WithoutAssertions(() => CheckInitialized(initial, replacement));
     }
@@ -34,11 +34,14 @@ internal static class PhasedVarInitializationTests
             var value = new PhasedVar<object?>(null);
             Assert.That(value.Value, Is.Null);
 
-            value.OverrideAssign(first);
+            value.ResetWritePhase();
+            value.Value = first;
             Assert.That(value.Value, Is.SameAs(first));
-            value.OverrideAssign(second);
+            value.ResetWritePhase();
+            value.Value = second;
             Assert.That(value.Value, Is.SameAs(second));
-            value.OverrideAssign(null);
+            value.ResetWritePhase();
+            value.Value = null;
             Assert.That(value.Value, Is.Null);
             Assert.That(value.HasFinalValue, Is.True);
         });
@@ -48,7 +51,7 @@ internal static class PhasedVarInitializationTests
     [TestCase(-1)]
     [TestCase(int.MinValue)]
     [TestCase(int.MaxValue)]
-    public static void OverrideInitializesAnUnwrittenDefaultValue(int assigned)
+    public static void AssignInitializesAnUnwrittenDefaultValue(int assigned)
     {
         WithoutAssertions(() => {
             PhasedVar<int> value = default;
@@ -56,7 +59,7 @@ internal static class PhasedVarInitializationTests
             {
                 Assert.That(value.HasFinalValue, Is.False);
             }
-            value.OverrideAssign(assigned);
+            value.Value = assigned;
             if (IsDebug)
             {
                 Assert.That(value.HasFinalValue, Is.False);
@@ -72,14 +75,15 @@ internal static class PhasedVarInitializationTests
         WithoutAssertions(() => {
             var original = new PhasedVar<int>(7);
             var copy = original;
-            copy.OverrideAssign(9);
+            copy.Value = 9;
             Assert.That(copy.Value, Is.EqualTo(9));
             if (IsDebug)
             {
                 Assert.That(original.HasFinalValue, Is.False);
             }
             Assert.That(original.Value, Is.EqualTo(7));
-            original.OverrideAssign(11);
+            original.ResetWritePhase();
+            original.Value = 11;
             Assert.That(copy.Value, Is.EqualTo(9));
             Assert.That(original.Value, Is.EqualTo(11));
         });
@@ -96,7 +100,7 @@ internal static class PhasedVarInitializationTests
         Assert.That(value.HasFinalValue, Is.True);
         value.ResetWritePhase();
 
-        value.OverrideAssign(replacement);
+        value.Value = replacement;
         if (IsDebug)
         {
             Assert.That(value.HasFinalValue, Is.False);
@@ -104,8 +108,12 @@ internal static class PhasedVarInitializationTests
         Assert.That(value.Value, Is.EqualTo(replacement));
         Assert.That(value.HasFinalValue, Is.True);
 
-        value.OverrideAssign(initial);
-        Assert.That(value.HasFinalValue, Is.True);
+        value.ResetWritePhase();
+        value.Value = initial;
+        if (IsDebug)
+        {
+            Assert.That(value.HasFinalValue, Is.False);
+        }
         Assert.That(value.Value, Is.EqualTo(initial));
 
         value.ResetWritePhase();
@@ -113,7 +121,7 @@ internal static class PhasedVarInitializationTests
         {
             Assert.That(value.HasFinalValue, Is.False);
         }
-        value.OverrideAssign(replacement);
+        value.Value = replacement;
         if (IsDebug)
         {
             Assert.That(value.HasFinalValue, Is.False);

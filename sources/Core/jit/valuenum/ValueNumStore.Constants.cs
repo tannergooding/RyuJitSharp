@@ -200,11 +200,6 @@ public sealed partial class ValueNumStore
         return default;
     }
 
-    internal bool IsSimdMaskScalable(ValueNum vn)
-    {
-        return Configuration.TARGET_ARM64 && Arm64Data.IsScalableSimdMask(this, vn);
-    }
-
     public simdmask_t GetConstantSimdMask(ValueNum vn)
     {
         EnsureSimdSupported();

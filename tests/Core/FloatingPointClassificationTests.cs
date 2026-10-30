@@ -73,7 +73,7 @@ internal static class FloatingPointClassificationTests
         Assert.That(FloatingPointUtils.isNegative(value), Is.EqualTo(negative));
         Assert.That(FloatingPointUtils.isNaN(value), Is.EqualTo(nan));
         Assert.That(FloatingPointUtils.isNegativeZero(value), Is.EqualTo(negativeZero));
-        Assert.That(FloatingPointUtils.isPositiveZero(value), Is.EqualTo(positiveZero));
+        Assert.That((value == 0.0) && !double.IsNegative(value), Is.EqualTo(positiveZero));
         Assert.That(DoubleToUInt64Bits(value), Is.EqualTo(bits));
 
         var expectedBits = bits;

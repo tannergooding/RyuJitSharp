@@ -152,11 +152,6 @@ internal static unsafe class ValueNumPairOperationTests
             var cast = store.VNForCast(withException, TYP_BYTE, TYP_INT, hasOverflowCheck: true);
             Assert.That(store.VNNormalValue(cast), Is.EqualTo(source));
             Assert.That(store.VNExceptionSet(cast), Is.EqualTo(oldException));
-
-            var unique = store.VNUniqueWithExc(TYP_INT, oldException);
-            Assert.That(store.VNNormalValue(unique), Is.Not.EqualTo(source));
-            Assert.That(store.TypeOfVN(store.VNNormalValue(unique)), Is.EqualTo(TYP_INT));
-            Assert.That(store.VNExceptionSet(unique), Is.EqualTo(oldException));
         });
     }
 
@@ -174,12 +169,11 @@ internal static unsafe class ValueNumPairOperationTests
             Assert.That(store.GetVNFunc(nested, ref app), Is.True);
             Assert.That(app.Func, Is.EqualTo(VNF_BitCast));
             Assert.That(app.GetArg(0), Is.EqualTo(source));
-            Assert.That(store.DecodeBitCastType(app.GetArg(1), out var width), Is.EqualTo(TYP_LONG));
-            Assert.That(width, Is.EqualTo(8u));
+            Assert.That(store.GetConstantInt32(app.GetArg(1)),
+                Is.EqualTo(var_typesExtensions.ToNativeOrdinal(TYP_LONG)));
 
             var structType = store.EncodeBitCastType(TYP_STRUCT, new ValueSize(3));
-            Assert.That(store.DecodeBitCastType(structType, out width), Is.EqualTo(TYP_STRUCT));
-            Assert.That(width, Is.EqualTo(3u));
+            Assert.That(store.GetConstantInt32(structType), Is.EqualTo(var_typesExtensions.NativeCount + 3));
             var equal = store.VNPairForBitCast(new(source, source), TYP_FLOAT, new ValueSize(4));
             Assert.That(equal.BothEqual(), Is.True);
             Assert.That(equal.Liberal, Is.EqualTo(first));
@@ -214,17 +208,8 @@ internal static unsafe class ValueNumPairOperationTests
             Assert.That(store.VNPExceptionSet(unique), Is.EqualTo(exceptions));
             Assert.That(store.VNPUnionExcSet(unique, ValueNumStore.VNPForEmptyExcSet()), Is.EqualTo(exceptions));
 
-            var replaced = store.VNPMakeNormalUniquePair(unique);
-            store.VNPUnpackExc(replaced, out var replacedNormal, out var retained);
-            Assert.That(replacedNormal.BothEqual(), Is.False);
-            Assert.That(replacedNormal.Liberal, Is.Not.EqualTo(normal.Liberal));
-            Assert.That(replacedNormal.Liberal, Is.EqualTo(replacedNormal.Conservative + 1));
-            Assert.That(retained, Is.EqualTo(exceptions));
-
             var union = store.VNPExcSetUnion(new(left, left), new(right, right));
             Assert.That(union.BothEqual(), Is.True);
-            Assert.That(store.VNPExcSetIntersection(union, new(left, right)),
-                Is.EqualTo(new ValueNumPair(left, right)));
             Assert.That(store.VNPExcIsSubset(union, new(left, right)), Is.True);
             Assert.That(store.VNPExcIsSubset(new(left, left), new(right, right)), Is.False);
             Assert.That(store.VNPExcIsSubset(new(left, left), ValueNumStore.VNPForEmptyExcSet()), Is.True);

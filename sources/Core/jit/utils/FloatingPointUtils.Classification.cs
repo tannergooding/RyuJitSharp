@@ -32,13 +32,6 @@ public static partial class FloatingPointUtils
         return bits == 0x8000000000000000UL;
     }
 
-    public static bool isPositiveZero(double val)
-    {
-        var bits = DoubleToUInt64Bits(val);
-
-        return bits == 0x0000000000000000UL;
-    }
-
     public static double normalize(double value)
     {
         if (!Configuration.HOST_X86 || !isNaN(value))

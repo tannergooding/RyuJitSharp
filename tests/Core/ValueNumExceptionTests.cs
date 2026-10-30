@@ -23,9 +23,7 @@ internal static unsafe class ValueNumExceptionTests
         Singleton,
         Attach,
         Union,
-        Intersection,
         Add,
-        MakeUnique,
     }
 
     [TestCase(PairedExceptionOperation.Singleton, false)]
@@ -34,12 +32,8 @@ internal static unsafe class ValueNumExceptionTests
     [TestCase(PairedExceptionOperation.Attach, true)]
     [TestCase(PairedExceptionOperation.Union, false)]
     [TestCase(PairedExceptionOperation.Union, true)]
-    [TestCase(PairedExceptionOperation.Intersection, false)]
-    [TestCase(PairedExceptionOperation.Intersection, true)]
     [TestCase(PairedExceptionOperation.Add, false)]
     [TestCase(PairedExceptionOperation.Add, true)]
-    [TestCase(PairedExceptionOperation.MakeUnique, false)]
-    [TestCase(PairedExceptionOperation.MakeUnique, true)]
     public static void PairedExceptionsPreserveNativeAllocationOrderAndSemanticRoles(
         PairedExceptionOperation operation, bool different)
     {
@@ -80,8 +74,7 @@ internal static unsafe class ValueNumExceptionTests
         {
             left = new(tokens[0], different ? tokens[4] : tokens[0]);
         }
-        else if (operation is PairedExceptionOperation.Attach or PairedExceptionOperation.Add or
-            PairedExceptionOperation.MakeUnique)
+        else if (operation is PairedExceptionOperation.Attach or PairedExceptionOperation.Add)
         {
             var liberal = store.VNForIntCon(11);
             var conservative = different ? store.VNForIntCon(22) : liberal;
@@ -105,9 +98,7 @@ internal static unsafe class ValueNumExceptionTests
                 PairedExceptionOperation.Singleton => store.VNExcSetSingleton(value),
                 PairedExceptionOperation.Attach => store.VNWithExc(value, exceptions),
                 PairedExceptionOperation.Union => store.VNExcSetUnion(value, exceptions),
-                PairedExceptionOperation.Intersection => store.VNExcSetIntersection(value, exceptions),
                 PairedExceptionOperation.Add => store.VNUnionExcSet(value, exceptions),
-                PairedExceptionOperation.MakeUnique => store.VNMakeNormalUnique(value),
                 _ => throw new ArgumentOutOfRangeException(nameof(operation)),
             };
         }
@@ -121,9 +112,7 @@ internal static unsafe class ValueNumExceptionTests
                 PairedExceptionOperation.Singleton => store.VNPExcSetSingleton(left),
                 PairedExceptionOperation.Attach => store.VNPWithExc(left, right),
                 PairedExceptionOperation.Union => store.VNPExcSetUnion(left, right),
-                PairedExceptionOperation.Intersection => store.VNPExcSetIntersection(left, right),
                 PairedExceptionOperation.Add => store.VNPUnionExcSet(left, right),
-                PairedExceptionOperation.MakeUnique => store.VNPMakeNormalUniquePair(left),
                 _ => throw new ArgumentOutOfRangeException(nameof(operation)),
             };
         }
@@ -136,7 +125,7 @@ internal static unsafe class ValueNumExceptionTests
 
         string Meaning(int value)
         {
-            var isValue = operation is PairedExceptionOperation.Attach or PairedExceptionOperation.MakeUnique;
+            var isValue = operation is PairedExceptionOperation.Attach;
             var normal = isValue ? store.VNNormalValue(value) : ValueNumStore.NoVN;
             var exceptions = isValue ? store.VNExceptionSet(value) : value;
             var text = $"{normal}:";
@@ -169,8 +158,22 @@ internal static unsafe class ValueNumExceptionTests
             Assert.That(store.VNPWithExc(values, empty), Is.EqualTo(values));
             Assert.That(store.VNPUnionExcSet(values, empty), Is.EqualTo(empty));
             Assert.That(store.VNPExcSetUnion(empty, empty), Is.EqualTo(empty));
-            Assert.That(store.VNPExcSetIntersection(empty, empty), Is.EqualTo(empty));
             Assert.That(store.VNForExpr(null, TYP_INT), Is.EqualTo(conservative + 1));
+        });
+    }
+
+    [Test]
+    public static void ScalarExceptionSetIntersectionKeepsOnlyCommonMembers()
+    {
+        WithStore((_, store) =>
+        {
+            var common = store.VNForFunc(TYP_REF, VNF_NullPtrExc, store.VNForExpr(null, TYP_BYREF));
+            var leftOnly = store.VNForFunc(TYP_REF, VNF_NullPtrExc, store.VNForExpr(null, TYP_BYREF));
+            var rightOnly = store.VNForFunc(TYP_REF, VNF_NullPtrExc, store.VNForExpr(null, TYP_BYREF));
+            var left = store.VNExcSetUnion(store.VNExcSetSingleton(common), store.VNExcSetSingleton(leftOnly));
+            var right = store.VNExcSetUnion(store.VNExcSetSingleton(common), store.VNExcSetSingleton(rightOnly));
+
+            Assert.That(store.VNExcSetIntersection(left, right), Is.EqualTo(store.VNExcSetSingleton(common)));
         });
     }
 

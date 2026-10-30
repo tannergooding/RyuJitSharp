@@ -26,8 +26,8 @@ internal static class FloatingPointConversionFamilyTests
     [TestCase(0xFFFFFFFFFFFFFFFFUL, 0x5F800000U, 0x43F0000000000000UL)]
     public static void UnsignedConversionsRoundAtEachPrecision(ulong value, uint singleBits, ulong doubleBits)
     {
-        Assert.That(SingleToUInt32Bits(FloatingPointUtils.convertUInt64ToFloat(value)), Is.EqualTo(singleBits));
-        Assert.That(DoubleToUInt64Bits(FloatingPointUtils.convertUInt64ToDouble(value)), Is.EqualTo(doubleBits));
+        Assert.That(SingleToUInt32Bits((float)value), Is.EqualTo(singleBits));
+        Assert.That(DoubleToUInt64Bits((double)value), Is.EqualTo(doubleBits));
     }
 
     // Native floating-to-integer casts only define results when the truncated value is representable.
@@ -46,7 +46,7 @@ internal static class FloatingPointConversionFamilyTests
     {
         var value = UInt64BitsToDouble(bits);
 
-        Assert.That(FloatingPointUtils.convertDoubleToUInt64(value), Is.EqualTo(expected));
+        Assert.That(unchecked((ulong)value), Is.EqualTo(expected));
     }
 
     [TestCase(0x00000000U, 0x0000000000000000UL)]

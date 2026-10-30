@@ -15,23 +15,6 @@ public partial class Globals
         return (i > T.Zero) && (((i - T.One) & i) == T.Zero);
     }
 
-    public static int signum<T>(T val)
-        where T : INumber<T>
-    {
-        if (val < T.Zero)
-        {
-            return -1;
-        }
-        else if (val > T.Zero)
-        {
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
-    }
-
     public static uint CountDigits(uint num, uint @base = 10)
     {
         assert((2 <= @base) && (@base <= 16), "2 <= base && base <= 16");

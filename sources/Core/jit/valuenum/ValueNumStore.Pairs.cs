@@ -115,20 +115,6 @@ public sealed partial class ValueNumStore
         return VNForIntCon(unchecked((int)((uint)var_typesExtensions.NativeCount + exactSize)));
     }
 
-    public var_types DecodeBitCastType(ValueNum castToType, out uint size)
-    {
-        var encoded = unchecked((uint)ConstantValue<int>(castToType));
-        if (encoded < (uint)var_typesExtensions.NativeCount)
-        {
-            var type = var_typesExtensions.FromNativeOrdinal(unchecked((int)encoded));
-            size = unchecked((uint)type.Size);
-            return type;
-        }
-
-        size = encoded - (uint)var_typesExtensions.NativeCount;
-        return TYP_STRUCT;
-    }
-
     public ValueNum VNForBitCast(ValueNum source, var_types castToType, ValueSize size)
     {
         var app = new VNFuncApp();
@@ -201,14 +187,6 @@ public sealed partial class ValueNumStore
 
         assert(VNCheckAscending(rightItem, rightApp.GetArg(1)));
         return VNExcSetIntersection(left, rightApp.GetArg(1));
-    }
-
-    public ValueNumPair VNPExcSetIntersection(ValueNumPair left, ValueNumPair right)
-    {
-        var conservative = VNExcSetIntersection(left.Conservative, right.Conservative);
-        var liberal = VNExcSetIntersection(left.Liberal, right.Liberal);
-
-        return new(liberal, conservative);
     }
 
     public bool VNExcIsSubset(ValueNum fullSet, ValueNum candidateSet)
@@ -300,37 +278,6 @@ public sealed partial class ValueNumStore
 
     public ValueNumPair VNPNormalPair(ValueNumPair values)
         => new(VNNormalValue(values.Liberal), VNNormalValue(values.Conservative));
-
-    public ValueNum VNMakeNormalUnique(ValueNum value)
-    {
-        VNUnpackExc(value, out var normal, out var exceptions);
-        return VNWithExc(VNForExpr(_compiler.compCurBB, TypeOfVN(normal)), exceptions);
-    }
-
-    public ValueNumPair VNPMakeNormalUniquePair(ValueNumPair values)
-    {
-        var conservative = VNMakeNormalUnique(values.Conservative);
-        var liberal = VNMakeNormalUnique(values.Liberal);
-
-        return new(liberal, conservative);
-    }
-
-    public ValueNum VNUniqueWithExc(var_types type, ValueNum exceptions)
-    {
-        var unique = VNForExpr(_compiler.compCurBB, type);
-        if (exceptions == VNForEmptyExcSet())
-        {
-            return unique;
-        }
-
-        if (Configuration.DEBUG)
-        {
-            var app = new VNFuncApp();
-            assert(GetVNFunc(exceptions, ref app) && app.FuncIs(VNF_ExcSetCons));
-        }
-
-        return VNWithExc(unique, exceptions);
-    }
 
     public ValueNumPair VNPUniqueWithExc(var_types type, ValueNumPair exceptions)
     {

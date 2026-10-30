@@ -64,17 +64,6 @@ public struct PhasedVar<T>
         }
     }
 
-    // Override the value without reopening a read phase or asserting write-phase ownership.
-    public void OverrideAssign(T value)
-    {
-        if (Configuration.DEBUG)
-        {
-            _initialized = true;
-        }
-
-        _value = value;
-    }
-
     public void MarkAsReadOnly()
     {
         if (Configuration.DEBUG)
