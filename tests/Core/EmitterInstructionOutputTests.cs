@@ -147,7 +147,6 @@ internal static unsafe class EmitterInstructionOutputTests
 
     [TestCase(0, "6448890510000000")]
     [TestCase(1, "48830510000000FF")]
-    [TestCase(2, "C4E37D1D0D1000000003")]
     public static void StaticStoreEntryPointsReachTheirOutputFormats(int entrypoint, string hex)
     {
         WithOutput((_, emitter) =>
@@ -168,9 +167,7 @@ internal static unsafe class EmitterInstructionOutputTests
 
                 default:
                 {
-                    emitter.UseVexEncodings = true;
-                    emitter.emitIns_C_R_I(INS_vcvtps2ph, EA_32BYTE, FLD_GLOBAL_DS, 16, REG_X64_XMM1, 3);
-                    break;
+                    throw new ArgumentOutOfRangeException(nameof(entrypoint));
                 }
             }
         }, hex);

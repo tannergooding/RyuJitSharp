@@ -60,26 +60,6 @@ public partial class Emitter
         return false;
     }
 
-    public void emitIns_S_R_SIMD12(regNumber reg, int varx, int offs)
-    {
-        assert(_compiler is not null);
-        var frameOffset = _compiler.lvaFrameAddress(varx, out var fpBased);
-        var offset = unchecked(frameOffset + offs + 8);
-
-        emitIns_S_R(INS_fst_d, EA_8BYTE, reg, varx, offs);
-        if (offset < 512)
-        {
-            assert(offset >= 0);
-            var baseReg = fpBased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
-            emitIns_R_R_I_I(INS_vstelm_w, EA_4BYTE, reg, baseReg, offset >> 2, 2);
-        }
-        else
-        {
-            emitIns_R_R_I(INS_xvpickve_w, EA_4BYTE, REG_SCRATCH_FLT, reg, 2);
-            emitIns_S_R(INS_fst_s, EA_4BYTE, REG_SCRATCH_FLT, varx, offs + 8);
-        }
-    }
-
     private static bool InvalidVectorElementSize()
     {
         NO_WAY("unexpected vector element size");

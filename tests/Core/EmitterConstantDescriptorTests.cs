@@ -107,7 +107,6 @@ internal static unsafe class EmitterConstantDescriptorTests
 
         Assert.That(descriptor.idIsLargeDsp(), Is.EqualTo(large));
         Assert.That(descriptor.NativeLogicalSize, Is.EqualTo(large ? 24 : 16));
-        Assert.That(GetAddress(emitter, descriptor), Is.EqualTo((nint)displacement));
         Assert.That(GetAnyAddress(emitter, descriptor), Is.EqualTo((nint)displacement));
         AssertStoredDisplacement(descriptor, (nint)displacement, large);
     }
@@ -198,7 +197,6 @@ internal static unsafe class EmitterConstantDescriptorTests
             var large = displacement is < -8191 or > 8191;
 
             Assert.That(descriptor.idIsLargeDsp(), Is.EqualTo(large));
-            Assert.That(GetAddress(emitter, descriptor), Is.EqualTo(displacement));
             Assert.That(GetAnyAddress(emitter, descriptor), Is.EqualTo(displacement));
             Assert.That(address.amBaseReg, Is.EqualTo(REG_R31));
             Assert.That(address.amIndxReg, Is.EqualTo(REG_R30));
@@ -415,9 +413,6 @@ internal static unsafe class EmitterConstantDescriptorTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsDsp")]
     private static extern nint GetDisplacement(Emitter emitter, Emitter.instrDesc descriptor);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsAmd")]
-    private static extern nint GetAddress(Emitter emitter, Emitter.instrDesc descriptor);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsAmdAny")]
     private static extern nint GetAnyAddress(Emitter emitter, Emitter.instrDesc descriptor);

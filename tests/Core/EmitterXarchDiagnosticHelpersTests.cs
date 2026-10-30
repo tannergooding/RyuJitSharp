@@ -126,11 +126,11 @@ internal static unsafe class EmitterXarchDiagnosticHelpersTests
         var bytes = stackalloc byte[] { 0x0F, 0xAB };
         var pointer = (byte*)Unsafe.AsPointer(ref bytes[0]);
         var digits = Configuration.TARGET_AMD64 ? 10 : 6;
-        Assert.That(Capture(() => emitter.emitDispInsHex(Descriptor(), pointer, 2)),
+        Assert.That(Capture(() => emitter.emitDispInsHexXarch(Descriptor(), pointer, 2)),
             Is.EqualTo(" 0FAB" + new string(' ', (digits - 2) * 2)));
 
         compiler.opts.disDiffable = true;
-        Assert.That(Capture(() => emitter.emitDispInsHex(Descriptor(), pointer, 2)), Is.Empty);
+        Assert.That(Capture(() => emitter.emitDispInsHexXarch(Descriptor(), pointer, 2)), Is.Empty);
     }
 
     [Test]

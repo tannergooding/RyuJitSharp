@@ -84,12 +84,6 @@ public partial class Emitter
         return unchecked((int)BAD_CODE);
     }
 
-    public static bool emitIns_valid_imm_for_small_mov(regNumber reg, int imm, insFlags flags)
-    {
-        RequireArm32Target();
-        return isLowRegister(reg) && insSetsFlags(flags) && ((imm & 0x00ff) == imm);
-    }
-
     public static bool emitIns_valid_imm_for_cmp(int imm, insFlags flags)
     {
         RequireArm32Target();

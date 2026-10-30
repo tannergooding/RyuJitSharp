@@ -2699,8 +2699,6 @@ public enum FatalJitErrorCode
     GeneralRegisterOrZeroValidationIsNotSupportedForThisTarget = 1384,
     /// <summary>Vector-index validation is not supported for this target.</summary>
     VectorIndexValidationIsNotSupportedForThisTarget = 1385,
-    /// <summary>Embedded rounding modes are only supported on xarch.</summary>
-    EmbeddedRoundingModesAreOnlySupportedOnXarch = 1386,
     /// <summary>EVEX embedded masking is only supported on xarch.</summary>
     EVEXEmbeddedMaskingIsOnlySupportedOnXarch = 1387,
     /// <summary>Instruction output is not implemented for this target.</summary>
@@ -2813,12 +2811,8 @@ public enum FatalJitErrorCode
     ARM32StaticFieldImmediateInstructionRecordingIsNotPorted = 1441,
     /// <summary>Static-field immediate instruction recording requires xarch.</summary>
     StaticFieldImmediateInstructionRecordingRequiresXarch = 1442,
-    /// <summary>Static-field register-immediate instruction recording requires xarch.</summary>
-    StaticFieldRegisterImmediateInstructionRecordingRequiresXarch = 1443,
     /// <summary>Register-stack-immediate instruction recording requires xarch.</summary>
     RegisterStackImmediateInstructionRecordingRequiresXarch = 1444,
-    /// <summary>Memory operand format mapping requires xarch.</summary>
-    MemoryOperandFormatMappingRequiresXarch = 1445,
     /// <summary>Memory operand descriptor initialization requires xarch.</summary>
     MemoryOperandDescriptorInitializationRequiresXarch = 1446,
     /// <summary>Instruction memory format mapping requires xarch.</summary>
@@ -3139,8 +3133,6 @@ public enum FatalJitErrorCode
     LoongArch64EmbeddedDataRecordingRequiresAnActiveCompiler = 1605,
     /// <summary>RISC-V embedded-data recording requires a RISC-V64 target.</summary>
     RISCVEmbeddedDataRecordingRequiresARISCV64Target = 1606,
-    /// <summary>Instruction byte display is not implemented for the active target.</summary>
-    InstructionByteDisplayIsNotImplementedForTheActiveTarget = 1607,
     /// <summary>Target instruction store classification is not implemented.</summary>
     TargetInstructionStoreClassificationIsNotImplemented = 1608,
     /// <summary>Wasm store classification is unreachable for instruction {0}.</summary>
@@ -3429,8 +3421,6 @@ public enum FatalJitErrorCode
     UnexpectedGCReferenceStaticInstructionFormatArgumentForArgument = 1753,
     /// <summary>Xarch instruction recording requires xarch.</summary>
     XarchInstructionRecordingRequiresXarch = 1754,
-    /// <summary>SafeCvt does not support destination type {0}.</summary>
-    SafeCvtDoesNotSupportDestinationTypeArgument = 1756,
     /// <summary>Critical edge probe was not split</summary>
     CriticalEdgeProbeWasNotSplit = 1757,
     /// <summary>JitSynthesisExceptionWeight requires at least one value.</summary>
@@ -6992,7 +6982,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.Signed20BitImmediatesAreNotSupportedForThisTarget => "Signed 20-bit immediates are not supported for this target.",
             FatalJitErrorCode.GeneralRegisterOrZeroValidationIsNotSupportedForThisTarget => "General-register-or-zero validation is not supported for this target.",
             FatalJitErrorCode.VectorIndexValidationIsNotSupportedForThisTarget => "Vector-index validation is not supported for this target.",
-            FatalJitErrorCode.EmbeddedRoundingModesAreOnlySupportedOnXarch => "Embedded rounding modes are only supported on xarch.",
             FatalJitErrorCode.EVEXEmbeddedMaskingIsOnlySupportedOnXarch => "EVEX embedded masking is only supported on xarch.",
             FatalJitErrorCode.InstructionOutputIsNotImplementedForThisTarget => "Instruction output is not implemented for this target.",
             FatalJitErrorCode.Failure8ByteAPXImmediateOperandsRequireAMD64 => "8-byte APX immediate operands require AMD64.",
@@ -7049,9 +7038,7 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.ARM64StaticFieldImmediateInstructionRecordingIsNotPorted => "ARM64 static-field immediate instruction recording is not ported.",
             FatalJitErrorCode.ARM32StaticFieldImmediateInstructionRecordingIsNotPorted => "ARM32 static-field immediate instruction recording is not ported.",
             FatalJitErrorCode.StaticFieldImmediateInstructionRecordingRequiresXarch => "Static-field immediate instruction recording requires xarch.",
-            FatalJitErrorCode.StaticFieldRegisterImmediateInstructionRecordingRequiresXarch => "Static-field register-immediate instruction recording requires xarch.",
             FatalJitErrorCode.RegisterStackImmediateInstructionRecordingRequiresXarch => "Register-stack-immediate instruction recording requires xarch.",
-            FatalJitErrorCode.MemoryOperandFormatMappingRequiresXarch => "Memory operand format mapping requires xarch.",
             FatalJitErrorCode.MemoryOperandDescriptorInitializationRequiresXarch => "Memory operand descriptor initialization requires xarch.",
             FatalJitErrorCode.InstructionMemoryFormatMappingRequiresXarch => "Instruction memory format mapping requires xarch.",
             FatalJitErrorCode.AddressScalingIsOnlySupportedOnXarch => "Address scaling is only supported on xarch.",
@@ -7212,7 +7199,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.LoongArch64EmbeddedDataRecordingRequiresALoongArch64Target => "LoongArch64 embedded-data recording requires a LoongArch64 target.",
             FatalJitErrorCode.LoongArch64EmbeddedDataRecordingRequiresAnActiveCompiler => "LoongArch64 embedded-data recording requires an active compiler.",
             FatalJitErrorCode.RISCVEmbeddedDataRecordingRequiresARISCV64Target => "RISC-V embedded-data recording requires a RISC-V64 target.",
-            FatalJitErrorCode.InstructionByteDisplayIsNotImplementedForTheActiveTarget => "Instruction byte display is not implemented for the active target.",
             FatalJitErrorCode.TargetInstructionStoreClassificationIsNotImplemented => "Target instruction store classification is not implemented.",
             FatalJitErrorCode.WasmStoreClassificationIsUnreachableForInstructionArgument => "Wasm store classification is unreachable for instruction {0}.",
             FatalJitErrorCode.SingleRegisterInstructionRecordingRequiresXarch => "Single-register instruction recording requires xarch.",
@@ -7357,7 +7343,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.InitializedCompilerIsRequiredForStaticOutput => "An initialized compiler is required for static output.",
             FatalJitErrorCode.UnexpectedGCReferenceStaticInstructionFormatArgumentForArgument => "Unexpected GC reference static instruction format {0} for {1}.",
             FatalJitErrorCode.XarchInstructionRecordingRequiresXarch => "Xarch instruction recording requires xarch.",
-            FatalJitErrorCode.SafeCvtDoesNotSupportDestinationTypeArgument => "SafeCvt does not support destination type {0}.",
             FatalJitErrorCode.CriticalEdgeProbeWasNotSplit => "Critical edge probe was not split",
             FatalJitErrorCode.JitSynthesisExceptionWeightRequiresAtLeastOneValue => "JitSynthesisExceptionWeight requires at least one value.",
             FatalJitErrorCode.WasmSCCAnalysisRequiresADFSTree => "Wasm SCC analysis requires a DFS tree.",

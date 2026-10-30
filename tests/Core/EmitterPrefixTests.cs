@@ -46,7 +46,7 @@ internal static unsafe class EmitterPrefixTests
     [TestCase(INS_addps, REG_X64_XMM0, EA_16BYTE, false, true)]
     [TestCase(INS_addps, REG_X64_XMM16, EA_16BYTE, true, false)]
     [TestCase(INS_mov, REG_X64_RAX, EA_8BYTE, false, false)]
-    public static void SimdPrefixHelperSelectsTheRequiredEncoding(
+    public static void XarchPrefixOutputSelectsTheRequiredEncoding(
         instruction ins, regNumber reg, emitAttr size, bool expectEvex, bool expectVex)
     {
         var emitter = CreateEmitter();
@@ -64,7 +64,7 @@ internal static unsafe class EmitterPrefixTests
             _ => throw new AssertionException("A descriptor cannot require both VEX and EVEX."),
         };
 
-        Assert.That(emitter.AddSimdPrefixIfNeeded(descriptor, code, size), Is.EqualTo(expected));
+        Assert.That(AddXarchPrefix(emitter, descriptor, code, size), Is.EqualTo(expected));
     }
 
     [Test]
@@ -370,6 +370,9 @@ internal static unsafe class EmitterPrefixTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddEvexPrefix")]
     private static extern ulong AddEvexPrefix(Emitter emitter, Emitter.instrDesc descriptor, ulong code, emitAttr size);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddX86PrefixIfNeeded")]
+    private static extern ulong AddXarchPrefix(Emitter emitter, Emitter.instrDesc descriptor, ulong code, emitAttr size);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "insEncodeReg345")]
     private static extern uint EncodeRegisterField(

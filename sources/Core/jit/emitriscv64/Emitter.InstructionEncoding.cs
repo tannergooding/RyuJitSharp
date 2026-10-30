@@ -139,19 +139,9 @@ public partial class Emitter
         return (-limit <= value) && (value < limit);
     }
 
-    internal static bool isValidSimm13(nint value)
-    {
-        return isValidSignedImmediate(value, 13);
-    }
-
     public static bool isValidUimm5(nint value)
     {
         return value >> 5 == 0;
-    }
-
-    public static bool isValidUimm20(nint value)
-    {
-        return value >> 20 == 0;
     }
 
     public static bool isValidSimm21(nint value)
@@ -179,13 +169,6 @@ public partial class Emitter
         assert(isValidSignedImmediate(immediate, 13));
 
         return LowerNBitsOfWord(immediate, 13);
-    }
-
-    internal static uint TrimSignedToImm20(nint immediate)
-    {
-        assert(isValidSignedImmediate(immediate, 20));
-
-        return LowerNBitsOfWord(immediate, 20);
     }
 
     internal static uint TrimSignedToImm21(nint immediate)

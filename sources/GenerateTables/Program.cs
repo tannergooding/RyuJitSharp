@@ -3788,19 +3788,6 @@ public sealed partial class CodeGen
         armInstructionLoadStoreFlags = new StringBuilder(GetActivePreprocessorLines(
             armInstructionLoadStoreFlags.ToString(),
             new HashSet<string>(["TARGET_ARM", "TARGET_ARMARCH", "TARGET_32BIT"], StringComparer.Ordinal)));
-        var armInstructionCompareFlags = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
-        {
-            if (inputFile.Equals(@"Inputs\instrsarm.h", StringComparison.Ordinal))
-            {
-                var isCompare = parts[3].Trim().Equals("CMP", StringComparison.Ordinal);
-                _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                    $"        {(isCompare ? 8 : 0)}, // {parts[0].Trim()}");
-            }
-        });
-        armInstructionCompareFlags = new StringBuilder(GetActivePreprocessorLines(
-            armInstructionCompareFlags.ToString(),
-            new HashSet<string>(["TARGET_ARM", "TARGET_ARMARCH", "TARGET_32BIT"], StringComparer.Ordinal)));
-
         _ = Directory.CreateDirectory(@"Outputs\jit\emit");
         GenerateArm64FrameFormatAliases(arm64Inputs);
         File.WriteAllText(@"Outputs\jit\emit\Emitter.InstructionFormats.generated.cs", $$"""
@@ -3968,9 +3955,6 @@ public partial class Emitter
 
     private static ReadOnlySpan<byte> s_armInstructionLoadStoreFlags => [
 {{armInstructionLoadStoreFlags}}    ];
-
-    private static ReadOnlySpan<byte> s_armInstructionCompareFlags => [
-{{armInstructionCompareFlags}}    ];
 
     private static ReadOnlySpan<byte> s_x86InstructionNddFlags => [
 {{x86InstructionNddFlagsBuilder}}    ];

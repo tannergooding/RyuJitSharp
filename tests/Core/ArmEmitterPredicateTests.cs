@@ -33,15 +33,14 @@ internal static class ArmEmitterPredicateTests
         Assert.That(s_emitter.emitInsIsStore(ins), Is.EqualTo(expected));
     }
 
-    [TestCase(INS_ldr, true, false, false)]
-    [TestCase(INS_str, false, false, true)]
-    [TestCase(INS_cmp, false, true, false)]
-    [TestCase(INS_add, false, false, false)]
-    public static void LoadCompareAndStoreClassificationUsesArmInstructionFlags(
-        instruction ins, bool isLoad, bool isCompare, bool isStore)
+    [TestCase(INS_ldr, true, false)]
+    [TestCase(INS_str, false, true)]
+    [TestCase(INS_cmp, false, false)]
+    [TestCase(INS_add, false, false)]
+    public static void LoadAndStoreClassificationUsesArmInstructionFlags(
+        instruction ins, bool isLoad, bool isStore)
     {
         Assert.That(EmitInsIsLoad(s_emitter, ins), Is.EqualTo(isLoad));
-        Assert.That(EmitInsIsCompare(s_emitter, ins), Is.EqualTo(isCompare));
         Assert.That(s_emitter.emitInsIsStore(ins), Is.EqualTo(isStore));
     }
 
@@ -52,7 +51,6 @@ internal static class ArmEmitterPredicateTests
     {
         Assert.That(EmitInsIsLoadOrStore(s_emitter, ins), Is.False);
         Assert.That(EmitInsIsLoad(s_emitter, ins), Is.False);
-        Assert.That(EmitInsIsCompare(s_emitter, ins), Is.False);
         Assert.That(s_emitter.emitInsIsStore(ins), Is.False);
     }
 
@@ -62,7 +60,6 @@ internal static class ArmEmitterPredicateTests
         var ins = (instruction)CodeGen.instInfo.Length;
         Assert.That(EmitInsIsLoadOrStore(s_emitter, ins), Is.False);
         Assert.That(EmitInsIsLoad(s_emitter, ins), Is.False);
-        Assert.That(EmitInsIsCompare(s_emitter, ins), Is.False);
         Assert.That(s_emitter.emitInsIsStore(ins), Is.False);
     }
 
@@ -167,9 +164,6 @@ internal static class ArmEmitterPredicateTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoadArm32")]
     private static extern bool EmitInsIsLoad(Emitter emitter, instruction ins);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsCompareArm32")]
-    private static extern bool EmitInsIsCompare(Emitter emitter, instruction ins);
-
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsWritesToLclVarStackLocArm32")]
     private static extern bool EmitInsWritesToLclVarStackLoc(Emitter emitter, Emitter.instrDesc id);
 
@@ -240,16 +234,13 @@ internal static class ArmEmitterPredicateTests
         Assert.That(Emitter.isDoubleReg(reg), Is.EqualTo(expected));
     }
 
-    [TestCase(INS_FLAGS_SET, true, false, INS_FLAGS_SET, INS_FLAGS_SET)]
-    [TestCase(INS_FLAGS_NOT_SET, false, true, INS_FLAGS_NOT_SET, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_FLAGS_DONT_CARE, true, true, INS_FLAGS_NOT_SET, INS_FLAGS_SET)]
-    public static void FlagPredicatesPreserveNativeValues(
-        insFlags flags, bool expectedMaySet, bool expectedMayNotSet, insFlags expectedMustSet, insFlags expectedMustNotSet)
+    [TestCase(INS_FLAGS_SET, true, false)]
+    [TestCase(INS_FLAGS_NOT_SET, false, true)]
+    [TestCase(INS_FLAGS_DONT_CARE, true, true)]
+    public static void FlagPredicatesPreserveNativeValues(insFlags flags, bool expectedMaySet, bool expectedMayNotSet)
     {
         Assert.That(Emitter.insSetsFlags(flags), Is.EqualTo(expectedMaySet));
         Assert.That(Emitter.insDoesNotSetFlags(flags), Is.EqualTo(expectedMayNotSet));
-        Assert.That(Emitter.insMustSetFlags(flags), Is.EqualTo(expectedMustSet));
-        Assert.That(Emitter.insMustNotSetFlags(flags), Is.EqualTo(expectedMustNotSet));
     }
 
     [TestCase(INS_OPTS_NONE, true, false)]
@@ -260,21 +251,17 @@ internal static class ArmEmitterPredicateTests
     {
         Assert.That(Emitter.insOptsNone(option), Is.EqualTo(expectedNone));
         Assert.That(Emitter.insOptAnyInc(option), Is.EqualTo(expectedIncrement));
-        Assert.That(Emitter.insOptsPreDec(option), Is.EqualTo(option == INS_OPTS_LDST_PRE_DEC));
-        Assert.That(Emitter.insOptsPostInc(option), Is.EqualTo(option == INS_OPTS_LDST_POST_INC));
     }
 
-    [TestCase(INS_OPTS_RRX, true)]
-    [TestCase(INS_OPTS_LSL, true)]
-    [TestCase(INS_OPTS_LSR, true)]
-    [TestCase(INS_OPTS_ASR, true)]
-    [TestCase(INS_OPTS_ROR, true)]
-    [TestCase(INS_OPTS_NONE, false)]
-    [TestCase(INS_OPTS_LDST_PRE_DEC, false)]
-    public static void ShiftOptionPredicatesMatchTheArmOptionRange(insOpts option, bool expectedShift)
+    [TestCase(INS_OPTS_RRX)]
+    [TestCase(INS_OPTS_LSL)]
+    [TestCase(INS_OPTS_LSR)]
+    [TestCase(INS_OPTS_ASR)]
+    [TestCase(INS_OPTS_ROR)]
+    [TestCase(INS_OPTS_NONE)]
+    [TestCase(INS_OPTS_LDST_PRE_DEC)]
+    public static void SpecificShiftPredicatesMatchArmOptions(insOpts option)
     {
-        Assert.That(Emitter.insOptAnyShift(option), Is.EqualTo(expectedShift));
-        Assert.That(Emitter.insOptsRRX(option), Is.EqualTo(option == INS_OPTS_RRX));
         Assert.That(InsOptsLSLArm32(null, option), Is.EqualTo(option == INS_OPTS_LSL));
         Assert.That(Emitter.insOptsLSR(option), Is.EqualTo(option == INS_OPTS_LSR));
         Assert.That(Emitter.insOptsASR(option), Is.EqualTo(option == INS_OPTS_ASR));

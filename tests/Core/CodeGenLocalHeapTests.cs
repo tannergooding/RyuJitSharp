@@ -20,8 +20,8 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenLocalHeapTests
 {
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsAmd")]
-    private static extern nint Displacement(Emitter emitter, Emitter.instrDesc descriptor);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsAmdAny")]
+    private static extern nint GetAnyAddress(Emitter emitter, Emitter.instrDesc descriptor);
 
     [TestCase(1, 0, false, 16)]
     [TestCase(15, 32, false, 16)]
@@ -45,7 +45,7 @@ internal static class CodeGenLocalHeapTests
             Assert.That(InstructionConstant(codeGen.Emitter, ids[1]), Is.EqualTo((nint)aligned));
             if (outgoing != 0)
             {
-                Assert.That(Displacement(codeGen.Emitter, ids[2]), Is.EqualTo((nint)outgoing));
+                Assert.That(GetAnyAddress(codeGen.Emitter, ids[2]), Is.EqualTo((nint)outgoing));
             }
             Assert.That(codeGen.getCurrentStackLevel(), Is.Zero);
         });

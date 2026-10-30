@@ -7,11 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public static bool IsBitwiseInstruction(instruction ins)
-    {
-        return Configuration.TARGET_XARCH && (ins is INS_pandd or INS_pandnd or INS_pord or INS_pxord);
-    }
-
     public static bool DoesWriteZeroFlagForResult(instruction ins)
     {
         if (!Configuration.TARGET_XARCH)

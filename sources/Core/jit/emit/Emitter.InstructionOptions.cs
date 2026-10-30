@@ -7,39 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public insOpts GetEmbRoundingMode(byte mode)
-    {
-        if (!Configuration.TARGET_XARCH)
-        {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EmbeddedRoundingModesAreOnlySupportedOnXarch);
-            return default!;
-        }
-
-        switch (mode)
-        {
-            case 1:
-            {
-                return INS_OPTS_EVEX_er_rd;
-            }
-
-            case 2:
-            {
-                return INS_OPTS_EVEX_er_ru;
-            }
-
-            case 3:
-            {
-                return INS_OPTS_EVEX_er_rz;
-            }
-
-            default:
-            {
-                unreached();
-                return INS_OPTS_NONE;
-            }
-        }
-    }
-
     public void SetEvexEmbMaskIfNeeded(instrDesc id, insOpts instOptions)
     {
         if (!Configuration.TARGET_XARCH)

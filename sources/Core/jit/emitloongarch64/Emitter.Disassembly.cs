@@ -36,37 +36,6 @@ public partial class Emitter
         jitprintf(new string(' ', Math.Max(1, 16 - name.Length)));
     }
 
-    private unsafe void emitDispInsHexLoongArch64(instrDesc id, byte* code, nuint size)
-    {
-        if (Configuration.DEBUG)
-        {
-            _ = id;
-            var compiler = _compiler;
-            if (compiler is null)
-            {
-                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64DisassemblyRequiresAnActiveCompiler);
-                return;
-            }
-            if (!compiler.opts.disCodeBytes)
-            {
-                return;
-            }
-
-            if (!compiler.opts.disDiffable)
-            {
-                if (size == 4)
-                {
-                    jitprintf($"  {Unsafe.ReadUnaligned<uint>(code):X8}    ");
-                }
-                else
-                {
-                    assert(size == 0);
-                    jitprintf("              ");
-                }
-            }
-        }
-    }
-
     private unsafe void emitDisInsNameLoongArch64(uint code, byte* address, instrDesc id)
     {
         if (_compiler is null)

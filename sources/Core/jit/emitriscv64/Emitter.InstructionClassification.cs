@@ -10,16 +10,6 @@ public partial class Emitter
     private const byte RISCV64_LD = 1;
     private const byte RISCV64_ST = 2;
 
-    public bool emitInsIsLoadRiscV64(instruction ins)
-    {
-        RequireRiscV64Target();
-
-        // Pseudo instructions such as LEA are not represented in the instruction table.
-        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
-               (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
-               (((byte)CodeGen.instInfo[nativeOrdinal] & RISCV64_LD) != 0);
-    }
-
     public bool emitInsIsLoadOrStoreRiscV64(instruction ins)
     {
         RequireRiscV64Target();

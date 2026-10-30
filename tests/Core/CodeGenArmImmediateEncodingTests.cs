@@ -43,16 +43,15 @@ internal static class CodeGenArmImmediateEncodingTests
         Assert.That(EmitInsIsLoadOrStore(codeGen.Emitter, (instruction)(-1)), Is.False);
     }
 
-    [TestCase(INS_ldr, true, false, false)]
-    [TestCase(INS_str, false, false, true)]
-    [TestCase(INS_cmp, false, true, false)]
-    [TestCase(INS_add, false, false, false)]
-    public static void LoadCompareAndStoreClassifiersUseNativeInstructionFlags(
-        instruction ins, bool isLoad, bool isCompare, bool isStore)
+    [TestCase(INS_ldr, true, false)]
+    [TestCase(INS_str, false, true)]
+    [TestCase(INS_cmp, false, false)]
+    [TestCase(INS_add, false, false)]
+    public static void LoadAndStoreClassifiersUseNativeInstructionFlags(
+        instruction ins, bool isLoad, bool isStore)
     {
         var codeGen = NewCodeGen();
         Assert.That(EmitInsIsLoad(codeGen.Emitter, ins), Is.EqualTo(isLoad));
-        Assert.That(EmitInsIsCompare(codeGen.Emitter, ins), Is.EqualTo(isCompare));
         Assert.That(EmitInsIsStore(codeGen.Emitter, ins), Is.EqualTo(isStore));
     }
 
@@ -174,13 +173,6 @@ internal static class CodeGenArmImmediateEncodingTests
         Assert.That(Emitter.encodeModImmConst(immediate), Is.EqualTo(expected));
     }
 
-    [TestCaseSource(nameof(SmallMoveImmediateCases))]
-    public static void SmallMoveImmediateRequiresLowRegisterAndFlagSetting(
-        regNumber reg, int immediate, insFlags flags, bool expected)
-    {
-        Assert.That(Emitter.emitIns_valid_imm_for_small_mov(reg, immediate, flags), Is.EqualTo(expected));
-    }
-
     private static IEnumerable<TestCaseData> LowRegisterSelectionCases()
     {
         if (!Configuration.TARGET_ARM)
@@ -191,19 +183,6 @@ internal static class CodeGenArmImmediateEncodingTests
         yield return new TestCaseData(REG_R0, true);
         yield return new TestCaseData(REG_R7, true);
         yield return new TestCaseData(REG_R8, false);
-    }
-
-    private static IEnumerable<TestCaseData> SmallMoveImmediateCases()
-    {
-        if (!Configuration.TARGET_ARM)
-        {
-            yield break;
-        }
-
-        yield return new TestCaseData(REG_R0, 0xff, INS_FLAGS_SET, true);
-        yield return new TestCaseData(REG_R7, 0x100, INS_FLAGS_SET, false);
-        yield return new TestCaseData(REG_R8, 0xff, INS_FLAGS_SET, false);
-        yield return new TestCaseData(REG_R0, 0xff, INS_FLAGS_DONT_CARE, true);
     }
 
     [TestCase(0xff, INS_FLAGS_DONT_CARE, true)]
@@ -245,9 +224,6 @@ internal static class CodeGenArmImmediateEncodingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoad")]
     private static extern bool EmitInsIsLoad(Emitter emitter, instruction ins);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsCompare")]
-    private static extern bool EmitInsIsCompare(Emitter emitter, instruction ins);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsStore")]
     private static extern bool EmitInsIsStore(Emitter emitter, instruction ins);

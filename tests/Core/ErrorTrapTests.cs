@@ -51,16 +51,10 @@ internal static unsafe class ErrorTrapTests
             () => Globals.NO_WAY("no-way sentinel"),
             TestConfiguration.IsDebug ? CorJitResult.CORJIT_RECOVERABLEERROR : CorJitResult.CORJIT_INTERNALERROR);
         AssertFatalResult(() => Globals.unreached(), CorJitResult.CORJIT_RECOVERABLEERROR);
-        AssertFatalResult(() => Globals.NOWAY_MSG("noway message sentinel"), CorJitResult.CORJIT_RECOVERABLEERROR);
         AssertFatalResult(
             () => Globals.NOWAY_MSG_FILE_AND_LINE("noway location sentinel", "ErrorTrapTests.cs", 1),
             CorJitResult.CORJIT_RECOVERABLEERROR);
         AssertFatalResult(() => Globals.noway_assert(false), CorJitResult.CORJIT_RECOVERABLEERROR);
-
-        if (TestConfiguration.IsDebug)
-        {
-            AssertFatalResult(() => Globals.NO_WAY_NOASSERT("no-assert sentinel"), CorJitResult.CORJIT_INTERNALERROR);
-        }
     }
 
     [TestCase(false, 0)]

@@ -426,9 +426,4 @@ public partial class Emitter
         emitGCrFrameOffsMax = offsHi;
         emitGCrFrameOffsCnt = (offsHi - offsLo) / Configuration.TARGET_POINTER_SIZE;
     }
-
-    public bool emitIsWithinFrameRangeGCRs(int offs)
-    {
-        return (offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax);
-    }
 }

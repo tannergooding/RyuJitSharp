@@ -82,11 +82,6 @@ internal static unsafe class Arm64EmitterBookkeepingTests
             emitter.emitSetFrameRangeGCRs(-16, -8);
         }
 
-        var predicate = typeof(Emitter).GetMethod("emitIsWithinFrameRangeGCRs")
-            ?? throw new AssertionException("Missing native range predicate.");
-        Assert.That(predicate.Invoke(emitter, [-16]), Is.EqualTo(true));
-        Assert.That(predicate.Invoke(emitter, [-9]), Is.EqualTo(true));
-        Assert.That(predicate.Invoke(emitter, [-8]), Is.EqualTo(false));
         emitter.emitEndProlog();
     }
 

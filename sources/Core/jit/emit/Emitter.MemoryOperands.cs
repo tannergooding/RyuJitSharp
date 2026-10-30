@@ -10,31 +10,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public insFormat emitMapFmtAtoM(insFormat fmt)
-    {
-        if (!Configuration.TARGET_XARCH)
-        {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.MemoryOperandFormatMappingRequiresXarch);
-            return default!;
-        }
-
-        assert((fmt >= IF_XARCH_ARD) && (fmt <= IF_XARCH_RWR_RRD_ARD_RRD));
-        assert((IF_XARCH_RWR_RRD_ARD_RRD - IF_XARCH_ARD) == (IF_XARCH_RWR_RRD_MRD_RRD - IF_XARCH_MRD));
-        assert(IF_XARCH_MRD < IF_XARCH_ARD);
-
-        const uint delta = IF_XARCH_ARD - IF_XARCH_MRD;
-        assert((IF_XARCH_ARD - delta) == IF_XARCH_MRD);
-        assert((IF_XARCH_ARD_CNS - delta) == IF_XARCH_MRD_CNS);
-        assert((IF_XARCH_ARD_RRD - delta) == IF_XARCH_MRD_RRD);
-        assert((IF_XARCH_RRD_ARD - delta) == IF_XARCH_RRD_MRD);
-        assert((IF_XARCH_RRD_ARD_CNS - delta) == IF_XARCH_RRD_MRD_CNS);
-        assert((IF_XARCH_RRD_ARD_RRD - delta) == IF_XARCH_RRD_MRD_RRD);
-        assert((IF_XARCH_RRD_RRD_ARD - delta) == IF_XARCH_RRD_RRD_MRD);
-        assert((IF_XARCH_RWR_RRD_ARD_RRD - delta) == IF_XARCH_RWR_RRD_MRD_RRD);
-
-        return fmt - delta;
-    }
-
     public void emitHandleMemOp(GenTreeIndir indir, instrDesc id, insFormat fmt, instruction ins)
     {
         if (!Configuration.TARGET_XARCH)

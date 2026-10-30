@@ -80,42 +80,6 @@ public partial class Emitter
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
     }
 
-    public unsafe void emitIns_C_R_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs,
-        regNumber reg, int ival)
-    {
-        if (!Configuration.TARGET_XARCH)
-        {
-            FatalJitException.ThrowFatalJitException(
-        CORJIT_SKIPPED,
-        FatalJitErrorCode.StaticFieldRegisterImmediateInstructionRecordingRequiresXarch
-    );
-            return;
-        }
-
-        if (Configuration.TARGET_AMD64)
-        {
-            RequireSupportedInstructionRecording();
-        }
-
-        assert(IsSimdInstruction(ins));
-        assert(reg != REG_NA);
-        if (!jitStaticFldIsGlobAddr(fldHnd))
-        {
-            attr |= EA_DSP_RELOC_FLG;
-        }
-
-        var id = emitNewInstrCnsDsp(attr, ival, offs);
-        id.idIns(ins);
-        id.idInsFmt(emitInsModeFormat(ins, IF_XARCH_MRD_RRD_CNS));
-        id.idReg1(reg);
-        id.idAddr().iiaFieldHnd = fldHnd;
-        var sz = emitInsSizeCV(id, insCodeMR(ins), ival);
-        id.idCodeSize(sz);
-
-        dispIns(id);
-        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-    }
-
     public void emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, int ival,
         insOpts instOptions = INS_OPTS_NONE)
     {

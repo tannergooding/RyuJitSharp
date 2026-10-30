@@ -122,11 +122,6 @@ public partial class Emitter
         return 0;
     }
 
-    private nint emitGetInsAmd(instrDesc id)
-    {
-        return id.idIsLargeDsp() ? ((instrDescAmd)id).idaAmdVal : id.idAddr().iiaAddrMode.amDisp;
-    }
-
     private void emitGetInsCns(instrDesc id, ref CnsVal cv)
     {
         cv.cnsReloc = id.idIsCnsReloc();

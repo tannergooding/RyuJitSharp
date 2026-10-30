@@ -7,11 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public uint get_curTotalCodeSize()
-    {
-        return unchecked((uint)emitTotalCodeSize);
-    }
-
     public void emitComputeCodeSizes()
     {
         var compiler = _compiler;

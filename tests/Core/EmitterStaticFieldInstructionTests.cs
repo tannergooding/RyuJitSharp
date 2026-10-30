@@ -82,26 +82,6 @@ internal static unsafe class EmitterStaticFieldInstructionTests
         });
     }
 
-    [Test]
-    public static void SimdFieldStoresRetainRegisterAndImmediate()
-    {
-        WithEmitter((_, emitter) =>
-        {
-            emitter.UseVexEncodings = true;
-            var field = Compiler.eeFindJitDataOffs(64);
-            emitter.emitIns_C_R_I(INS_vcvtps2ph, EA_32BYTE, field, 8, REG_X64_XMM1, 3);
-            var id = Last(emitter);
-
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_MWR_RRD_CNS));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM1));
-            Assert.That(Constant(emitter, id), Is.EqualTo((nint)3));
-            Assert.That(Displacement(emitter, id), Is.EqualTo((nint)8));
-            Assert.That(id.idAddr().iiaGetJitDataOffset(), Is.EqualTo(64));
-            Assert.That(id.idIsDspReloc(), Is.True);
-            Assert.That(id.idCodeSize(), Is.EqualTo(10u));
-        });
-    }
-
     [TestCase(EA_1BYTE, REG_X64_RAX, 6u)]
     [TestCase(EA_1BYTE, REG_X64_RSP, 7u)]
     [TestCase(EA_2BYTE, REG_X64_RAX, 7u)]

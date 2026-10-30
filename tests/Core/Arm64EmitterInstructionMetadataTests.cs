@@ -19,7 +19,6 @@ internal static class Arm64EmitterInstructionMetadataTests
             var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(index);
             var info = CodeGen.instInfo[index];
 
-            Assert.That(IsCompare(null, ins), Is.EqualTo((info & (insInfoFlags)4) != 0), $"Compare classification for {ins}");
             Assert.That(IsVectorLong(null, ins), Is.EqualTo((info & (insInfoFlags)32) != 0), $"Long classification for {ins}");
             Assert.That(IsVectorNarrow(null, ins), Is.EqualTo((info & (insInfoFlags)64) != 0), $"Narrow classification for {ins}");
             Assert.That(IsVectorWide(null, ins), Is.EqualTo((info & (insInfoFlags)16) != 0), $"Wide classification for {ins}");
@@ -93,14 +92,10 @@ internal static class Arm64EmitterInstructionMetadataTests
 
     private static void AssertNoClassification(instruction ins)
     {
-        Assert.That(IsCompare(null, ins), Is.False);
         Assert.That(IsVectorLong(null, ins), Is.False);
         Assert.That(IsVectorNarrow(null, ins), Is.False);
         Assert.That(IsVectorWide(null, ins), Is.False);
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsIsCompareArm64")]
-    private static extern bool IsCompare(Emitter? emitter, instruction ins);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsIsVectorLongArm64")]
     private static extern bool IsVectorLong(Emitter? emitter, instruction ins);

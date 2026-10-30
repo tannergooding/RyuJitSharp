@@ -114,19 +114,8 @@ internal static class RiscVInstructionEncodingTests
         Assert.That(Emitter.TrimSignedToImm12(2047), Is.EqualTo(0x7FFu));
         Assert.That(Emitter.TrimSignedToImm13(-4096), Is.EqualTo(0x1000u));
         Assert.That(Emitter.TrimSignedToImm13(4095), Is.EqualTo(0xFFFu));
-        Assert.That(Emitter.TrimSignedToImm20(-524288), Is.EqualTo(0x80000u));
-        Assert.That(Emitter.TrimSignedToImm20(524287), Is.EqualTo(0x7FFFFu));
         Assert.That(Emitter.TrimSignedToImm21(-1048576), Is.EqualTo(0x100000u));
         Assert.That(Emitter.TrimSignedToImm21(1048575), Is.EqualTo(0xFFFFFu));
-    }
-
-    [Test]
-    public static void ValidatesThirteenBitSignedImmediates()
-    {
-        Assert.That(Emitter.isValidSimm13(-4097), Is.False);
-        Assert.That(Emitter.isValidSimm13(-4096), Is.True);
-        Assert.That(Emitter.isValidSimm13(4095), Is.True);
-        Assert.That(Emitter.isValidSimm13(4096), Is.False);
     }
 
     [Test]
@@ -163,14 +152,12 @@ internal static class RiscVInstructionEncodingTests
     }
 
     [Test]
-    public static void ClassifiesLoadsStoresAndLocalStackWrites()
+    public static void ClassifiesLoadStoreAndLocalStackWrites()
     {
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
 
-        Assert.That(emitter.emitInsIsLoadRiscV64(INS_lw), Is.True);
         Assert.That(emitter.emitInsIsStore(INS_lw), Is.False);
         Assert.That(emitter.emitInsIsLoadOrStoreRiscV64(INS_lw), Is.True);
-        Assert.That(emitter.emitInsIsLoadRiscV64(INS_sw), Is.False);
         Assert.That(emitter.emitInsIsStore(INS_sw), Is.True);
         Assert.That(emitter.emitInsIsLoadOrStoreRiscV64(INS_sw), Is.True);
         Assert.That(emitter.emitInsIsLoadOrStoreRiscV64(INS_addi), Is.False);

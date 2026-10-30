@@ -277,24 +277,6 @@ public partial class Globals
         }
     }
 
-    // Used for fallback stress mode
-    [DoesNotReturn]
-    [Conditional("DEBUG")]
-    public static void NO_WAY_NOASSERT(ReadOnlySpan<char> message) => noWay();
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void NOWAY_MSG(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
-    {
-        if (Configuration.DEBUG)
-        {
-            noWayAssertBodyConditional(message, filePath, lineNumber);
-        }
-        else
-        {
-            noWayAssertBodyConditional();
-        }
-    }
-
     public static void NOWAY_MSG_FILE_AND_LINE(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
         if (Configuration.DEBUG)

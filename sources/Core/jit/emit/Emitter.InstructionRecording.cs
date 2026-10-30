@@ -204,22 +204,6 @@ public partial class Emitter
             ((s_armInstructionLoadStoreFlags[nativeOrdinal] & 2) != 0);
     }
 
-    private bool emitInsIsCompareArm32(instruction ins)
-    {
-        if (!Configuration.TARGET_ARM)
-        {
-            FatalJitException.ThrowFatalJitException(
-        CORJIT_SKIPPED,
-        FatalJitErrorCode.ARM32InstructionClassificationIsOnlySupportedOnARM32
-    );
-            return default!;
-        }
-
-        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
-            (uint)nativeOrdinal < (uint)s_armInstructionCompareFlags.Length &&
-            (s_armInstructionCompareFlags[nativeOrdinal] != 0);
-    }
-
     private bool emitInsWritesToLclVarStackLocArm32(instrDesc id)
     {
         if (!Configuration.TARGET_ARM)
