@@ -20,13 +20,7 @@ internal partial struct FgStack
 
     public readonly bool IsStackAtLeastOneDeep => depth >= 1;
 
-    public readonly bool IsStackOneDeep => depth == 1;
-
-    public readonly bool IsStackTwoDeep => depth == 2;
-
     public readonly FgSlot Slot0 => (depth >= 1) ? slot0 : SLOT_UNKNOWN;
-
-    public readonly FgSlot Slot1 => (depth >= 2) ? slot1 : SLOT_UNKNOWN;
 
     public static bool IsArgument(FgSlot value) => value >= SLOT_ARGUMENT;
 
@@ -66,12 +60,6 @@ internal partial struct FgStack
             return info.inlArgInfo[argNum].argIsExact;
         }
         return false;
-    }
-
-    public static int SlotTypeToArgNum(FgSlot value)
-    {
-        assert(IsArgument(value));
-        return value - SLOT_ARGUMENT;
     }
 
     public void Clear()

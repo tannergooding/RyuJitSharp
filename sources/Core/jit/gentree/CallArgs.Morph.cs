@@ -586,10 +586,6 @@ public partial struct CallArgs
         _flags &= ~(Flags.HasAddedFinalArgs | Flags.AbiInformationDetermined);
     }
 
-    public static bool IsNonStandard(Compiler compiler, GenTreeCall call, CallArg argument)
-        => GetCustomRegister(compiler, call.UnmanagedCallConv, argument.WellKnownArg, out var register) &&
-           (register != TargetRuntimeMetadata.NoRegister);
-
     public static bool GetCustomRegister(
         Compiler compiler, CorInfoCallConvExtension callConv, WellKnownArg argument, out regNumber register)
     {

@@ -153,8 +153,6 @@ public sealed partial class Statement
         }
     }
 
-    public ref GenTree? TreeListBeginRef => ref _treeList;
-
     public GenTree? TreeListEnd
     {
         get
@@ -167,8 +165,6 @@ public sealed partial class Statement
             _treeListEnd = value;
         }
     }
-
-    public ref GenTree? TreeListEndRef => ref _treeListEnd;
 
     /// <summary>Visit occurrences in locals-list order without expanding promoted parents.</summary>
     /// <remarks>The callback may abort, but must not change the list and continue.</remarks>

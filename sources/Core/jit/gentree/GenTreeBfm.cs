@@ -22,6 +22,4 @@ public sealed class GenTreeBfm : GenTreeOp
     public uint GetOffset() => _offset;
 
     public uint GetWidth() => _width;
-
-    public uint GetMask() => unchecked((uint)((ulong.MaxValue >> (64 - (int)_width)) << (int)_offset));
 }

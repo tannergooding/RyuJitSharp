@@ -42,8 +42,6 @@ public partial class Globals
 
     public const int PACKED_GTF_SPILLED = 2;
 
-    public const string LONGEST_COMMON_LCL_VAR_DISPLAY = "V99 PInvokeFrame";
-
     public const int LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH = 17;
 
     /// <summary>Return 1-based AssertionIndex from 0-based int index.</summary>

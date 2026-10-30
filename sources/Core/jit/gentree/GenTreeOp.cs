@@ -56,39 +56,6 @@ public class GenTreeOp : GenTreeUnOp
         return oper;
     }
 
-    public ref GenTree ReturnValueRef()
-    {
-        assert(Oper is GT_RETURN or GT_RETFILT or GT_SWIFT_ERROR_RET);
-        if (Configuration.SWIFT_SUPPORT && (Oper is GT_SWIFT_ERROR_RET))
-        {
-            return ref Op2Ref;
-        }
-        return ref Op1Ref;
-    }
-
-    public GenTree GetReturnValue()
-    {
-        assert(Oper is GT_RETURN or GT_RETFILT or GT_SWIFT_ERROR_RET);
-        if (Configuration.SWIFT_SUPPORT && (Oper is GT_SWIFT_ERROR_RET))
-        {
-            return Op2;
-        }
-        return Op1;
-    }
-
-    public void SetReturnValue(GenTree retVal)
-    {
-        assert(Oper is GT_RETURN or GT_RETFILT or GT_SWIFT_ERROR_RET);
-        if (Configuration.SWIFT_SUPPORT && (Oper is GT_SWIFT_ERROR_RET))
-        {
-            Op2 = retVal;
-        }
-        else
-        {
-            Op1 = retVal;
-        }
-    }
-
     public bool IsNullOp2Legal => !Oper.IsBinary || Oper switch {
         GT_INTRINSIC => true,
         GT_LEA => true,

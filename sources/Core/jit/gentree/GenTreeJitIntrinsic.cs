@@ -71,8 +71,6 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
         }
     }
 
-    public bool IsSimd => _simdSize != 0;
-
     public unsafe CORINFO_METHOD_HANDLE MethodHandle
     {
         get

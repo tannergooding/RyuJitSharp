@@ -49,13 +49,9 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
 
     public bool IsExact => _kind is Kind.Exact;
 
-    public bool IsMask => _kind is Kind.Mask;
-
     public bool IsNull => (_kind is Kind.Exact) && (_size == 0);
 
     public bool IsUnknown => _kind is Kind.Unknown;
-
-    public bool IsVector => _kind is Kind.Vector;
 
     public static bool operator ==(ValueSize left, ValueSize right) => !left.IsUnknown
                                                                     && !right.IsUnknown

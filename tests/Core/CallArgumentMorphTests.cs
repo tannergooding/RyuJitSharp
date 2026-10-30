@@ -240,9 +240,15 @@ internal static unsafe class CallArgumentMorphTests
             Assert.That(small.AbiInfo.Segments[0].Register, Is.EqualTo(REG_RCX));
             Assert.That(pseudo.AbiInfo.NumSegments, Is.Zero);
             Assert.That(pseudo.AbiInfo.Segments.Length, Is.Zero);
-            Assert.That(CallArgs.IsNonStandard(compiler, call, pseudo), Is.False);
+            Assert.That(
+                CallArgs.GetCustomRegister(compiler, call.UnmanagedCallConv, pseudo.WellKnownArg, out var pseudoRegister) &&
+                pseudoRegister != TargetRuntimeMetadata.NoRegister,
+                Is.False);
             Assert.That(custom.AbiInfo.Segments[0].Register, Is.EqualTo(REG_RAX));
-            Assert.That(CallArgs.IsNonStandard(compiler, call, custom), Is.True);
+            Assert.That(
+                CallArgs.GetCustomRegister(compiler, call.UnmanagedCallConv, custom.WellKnownArg, out var customRegister) &&
+                customRegister != TargetRuntimeMetadata.NoRegister,
+                Is.True);
             Assert.That(last.AbiInfo.Segments[0].Register, Is.EqualTo(REG_XMM1));
             Assert.That(call.Args.OutgoingArgsStackSize, Is.EqualTo(32));
         });

@@ -3467,8 +3467,6 @@ public enum FatalJitErrorCode
     GenTreeDebugDataIsOnlyAvailableInDebugBuilds = 1778,
     /// <summary>Xarch embedded-masking compatibility is unsupported on this target.</summary>
     XarchEmbeddedMaskingCompatibilityIsUnsupportedOnThisTarget = 1779,
-    /// <summary>Embedded hardware-intrinsic masking requires hardware-intrinsic support.</summary>
-    EmbeddedHardwareIntrinsicMaskingRequiresHardwareIntrinsicSupport = 1780,
     /// <summary>Node-bashing statistics are not enabled.</summary>
     NodeBashingStatisticsAreNotEnabled = 1781,
     /// <summary>GenTree operator counts are not enabled.</summary>
@@ -3525,8 +3523,6 @@ public enum FatalJitErrorCode
     GTCCMPIsOnlySupportedOnX64AndARM64 = 1807,
     /// <summary>Argument load sizes are only supported on xarch targets.</summary>
     ArgumentLoadSizesAreOnlySupportedOnXarchTargets = 1808,
-    /// <summary>Argument padding is only supported on the Unix x86 ABI.</summary>
-    ArgumentPaddingIsOnlySupportedOnTheUnixX86ABI = 1809,
     /// <summary>RMW status is not supported on this target.</summary>
     RMWStatusIsNotSupportedOnThisTarget = 1810,
     /// <summary>The visited operand does not belong to its user.</summary>
@@ -7366,7 +7362,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.DontExtendStateIsOnlySupportedOnXarchTargets => "Dont-extend state is only supported on xarch targets.",
             FatalJitErrorCode.GenTreeDebugDataIsOnlyAvailableInDebugBuilds => "GenTree debug data is only available in Debug builds.",
             FatalJitErrorCode.XarchEmbeddedMaskingCompatibilityIsUnsupportedOnThisTarget => "Xarch embedded-masking compatibility is unsupported on this target.",
-            FatalJitErrorCode.EmbeddedHardwareIntrinsicMaskingRequiresHardwareIntrinsicSupport => "Embedded hardware-intrinsic masking requires hardware-intrinsic support.",
             FatalJitErrorCode.NodeBashingStatisticsAreNotEnabled => "Node-bashing statistics are not enabled.",
             FatalJitErrorCode.GenTreeOperatorCountsAreNotEnabled => "GenTree operator counts are not enabled.",
             FatalJitErrorCode.GenTreeSGtTrueSizesNativeLogicalSizesAreNotPorted => "GenTree::s_gtTrueSizes native logical sizes are not ported.",
@@ -7395,7 +7390,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.LongMultiplyShapeChecksAreOnlySupportedOnNonWasm32BitTargets => "Long-multiply shape checks are only supported on non-Wasm 32-bit targets.",
             FatalJitErrorCode.GTCCMPIsOnlySupportedOnX64AndARM64 => "GT_CCMP is only supported on x64 and ARM64.",
             FatalJitErrorCode.ArgumentLoadSizesAreOnlySupportedOnXarchTargets => "Argument load sizes are only supported on xarch targets.",
-            FatalJitErrorCode.ArgumentPaddingIsOnlySupportedOnTheUnixX86ABI => "Argument padding is only supported on the Unix x86 ABI.",
             FatalJitErrorCode.RMWStatusIsNotSupportedOnThisTarget => "RMW status is not supported on this target.",
             FatalJitErrorCode.VisitedOperandDoesNotBelongToItsUser => "The visited operand does not belong to its user.",
             FatalJitErrorCode.HardwareIntrinsicConstantEvaluationIsUnsupportedOnThisTarget => "Hardware intrinsic constant evaluation is unsupported on this target.",

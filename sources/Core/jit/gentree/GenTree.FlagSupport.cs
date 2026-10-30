@@ -7,12 +7,6 @@ namespace RyuJitSharp;
 
 public partial class GenTree
 {
-    public void SetOverflow()
-    {
-        assert(_oper.MayOverflow);
-        Flags |= GTF_OVERFLOW;
-    }
-
     public void ClearOverflow()
     {
         assert(_oper.MayOverflow);
@@ -22,37 +16,6 @@ public partial class GenTree
     public void Set64RsltMul()
     {
         Flags |= GTF_MUL_64RSLT;
-    }
-
-    public void Clear64RsltMul()
-    {
-        Flags &= ~GTF_MUL_64RSLT;
-    }
-
-    public void ClearIconHandleMask()
-    {
-        assert(Oper is GT_CNS_INT);
-        Flags &= ~GTF_ICON_HDL_MASK;
-    }
-
-    public bool IsEmbMaskOp()
-    {
-        return Configuration.FEATURE_HW_INTRINSICS && Oper.IsHWIntrinsic && ((Flags & GTF_HW_EM_OP) != 0);
-    }
-
-    public void MakeEmbMaskOp()
-    {
-        if (!Configuration.FEATURE_HW_INTRINSICS)
-        {
-            FatalJitException.ThrowFatalJitException(
-        FatalJitErrorCode.EmbeddedHardwareIntrinsicMaskingRequiresHardwareIntrinsicSupport
-    );
-            return;
-        }
-
-        assert(Oper.IsHWIntrinsic);
-        assert(!IsEmbMaskOp());
-        Flags |= GTF_HW_EM_OP;
     }
 
     // A false result does not promise to preserve ZF. Callers consuming the

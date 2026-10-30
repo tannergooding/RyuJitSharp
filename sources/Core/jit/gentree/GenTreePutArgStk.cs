@@ -14,8 +14,6 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
     private int _argOffset;
     private int _stackByteSize;
 
-    private int _argPadding;
-
     private bool _putInIncomingArgArea;
 
     internal Kind _kind;
@@ -71,21 +69,6 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
 
     public int ArgOffset => _argOffset;
 
-    public int ArgPadding
-    {
-        get
-        {
-            EnsureUnixX86Abi();
-            return _argPadding;
-        }
-
-        set
-        {
-            EnsureUnixX86Abi();
-            _argPadding = value;
-        }
-    }
-
     public GenTreeCall? Call => (Configuration.DEBUG || Configuration.UNIX_X86_ABI)
         ? _call
         : null;
@@ -112,15 +95,6 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
         if (!Configuration.TARGET_XARCH)
         {
             FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ArgumentLoadSizesAreOnlySupportedOnXarchTargets);
-            return;
-        }
-    }
-
-    private static void EnsureUnixX86Abi()
-    {
-        if (!Configuration.UNIX_X86_ABI)
-        {
-            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ArgumentPaddingIsOnlySupportedOnTheUnixX86ABI);
             return;
         }
     }

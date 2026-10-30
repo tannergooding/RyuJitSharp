@@ -45,11 +45,7 @@ public readonly partial struct GenCondition
 
     public bool IsFlag => (_code & OperMask) >= S;
 
-    public bool IsFloat => !IsFlag && ((_code & Float) != 0);
-
     public bool IsUnsigned => _code is >= ULT and <= UGT;
-
-    public bool IsUnordered => !IsFlag && ((_code & (Float | Unordered)) == (Float | Unordered));
 
     public string Name => s_names[(int)(_code)];
 

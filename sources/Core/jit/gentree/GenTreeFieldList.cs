@@ -91,19 +91,6 @@ public sealed partial class GenTreeFieldList : GenTree
         _uses.AddUse(use);
     }
 
-    /// <summary>Insert a new field use after the specified use and update side effect flags.</summary>
-    /// <param name="compiler"></param>
-    /// <param name="insertAfter"></param>
-    /// <param name="node"></param>
-    /// <param name="offset"></param>
-    /// <param name="type"></param>
-    public void InsertField(Compiler compiler, Use insertAfter, GenTree node, ushort offset, var_types type)
-    {
-        var use = new Use(node, offset, type);
-        _uses.InsertUse(insertAfter, use);
-        Flags |= node.Flags & GTF_ALL_EFFECT;
-    }
-
     /// <summary>Insert a new field use after the specified use without updating side effect flags.</summary>
     /// <param name="compiler"></param>
     /// <param name="insertAfter"></param>

@@ -492,8 +492,6 @@ public partial class GenTree
 
     public bool IsContainedIntOrIImmed => IsContained && _oper.IsCnsIntOrI && !IsUsedFromSpillTemp;
 
-    public bool IsContainedVecImmed => IsContained && _oper.IsCnsVec;
-
     public bool IsCopyBlkOp => IsBlkOp && !IsInitBlkOp;
 
     /// <summary>whether this is a GT_COPY or GT_RELOAD of a multi-reg</summary>
@@ -2444,38 +2442,6 @@ public partial class GenTree
             GT_COLON or GT_INDEX_ADDR => true,
             _ => false,
         };
-    }
-
-    public int IsLclVarUpdateTree(ref GenTree? otherTree, ref genTreeOps updateOper)
-    {
-        if ((_oper is GT_STORE_LCL_VAR) && AsLclVar().Data.Oper.IsBinary)
-        {
-            var localNumber = AsLclVar().LclNum;
-            var value = AsLclVar().Data;
-            var op1 = value.AsOp().Op1;
-            var op2 = value.AsOp().Op2;
-
-            if ((op1 is not null) && (op2 is not null) && (op1.Oper is GT_LCL_VAR) &&
-                (op1.AsLclVarCommon().LclNum == localNumber))
-            {
-                otherTree = op2;
-                updateOper = value.Oper;
-                return localNumber;
-            }
-        }
-
-        return BAD_VAR_NUM;
-    }
-
-    public bool IsBlockProfileUpdate()
-    {
-        if (_oper is GT_STOREIND)
-        {
-            var address = AsIndir().Addr;
-            return address.Oper.IsCnsIntOrI && address.AsIntCon().IsIconHandle(GTF_ICON_BBC_PTR);
-        }
-
-        return false;
     }
 
     public bool IsConvertMaskToVector =>

@@ -42,11 +42,11 @@ internal static unsafe class SelectLoweringTests
         });
     }
 
-    [TestCase(GenCondition.EQ, true)]
-    [TestCase(GenCondition.FEQ, false)]
-    [TestCase(GenCondition.FNEU, false)]
+    [TestCase(GenCondition.EQ, true, false)]
+    [TestCase(GenCondition.FEQ, false, true)]
+    [TestCase(GenCondition.FNEU, false, true)]
     public static void SelectccAvoidsMemoryAndOptionalRegistersForCompoundFloatConditions(
-        GenCondition.CodeKind code, bool contained)
+        GenCondition.CodeKind code, bool contained, bool isFloat)
     {
         WithCompiler(compiler => {
             compiler.lvaTable[0].Type = TYP_BYREF;
@@ -56,10 +56,10 @@ internal static unsafe class SelectLoweringTests
             var secondAddress = compiler.gtNewLclvNode(TYP_BYREF, 1);
             var second = compiler.gtNewIndir(TYP_INT, secondAddress);
             var condition = new GenCondition(code);
-            var compareType = condition.IsFloat ? TYP_DOUBLE : TYP_INT;
+            var compareType = isFloat ? TYP_DOUBLE : TYP_INT;
             compiler.lvaTable[2].Type = compareType;
             var left = compiler.gtNewLclvNode(compareType, 2);
-            GenTree right = condition.IsFloat
+            GenTree right = isFloat
                 ? compiler.gtNewDconNode(TYP_DOUBLE, 0.0)
                 : compiler.gtNewIconNode(TYP_INT, 0);
             var compare = new GenTreeOp(GT_CMP, TYP_VOID, left, right) {
