@@ -11,12 +11,14 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (Configuration.TARGET_XARCH)
         {
-            if (lookupCategory(intrinsic) is not HW_Category_IMM)
+            var metadata = ResolveMetadata(intrinsic);
+
+            if (metadata.Category is not HW_Category_IMM)
             {
                 return false;
             }
 
-            if ((lookupFlags(intrinsic) & HW_Flag_MaybeIMM) == 0)
+            if ((metadata.Flags & HW_Flag_MaybeIMM) == 0)
             {
                 return true;
             }
@@ -43,13 +45,15 @@ public readonly partial struct HWIntrinsicInfo
             JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ImmediateBoundsAreOnlyDefinedForXarchIntrinsics);
         }
 
-        if ((lookupFlags(intrinsic) & HW_Flag_EmbRoundingCompatible) != 0)
+        var metadata = ResolveMetadata(intrinsic);
+
+        if ((metadata.Flags & HW_Flag_EmbRoundingCompatible) != 0)
         {
             // Jump-table fallbacks compute entries 0..11; the managed fallback
             // rejects 0..7 before the embedded-rounding instruction is reached.
             return 11;
         }
-        assert(lookupCategory(intrinsic) is HW_Category_IMM);
+        assert(metadata.Category is HW_Category_IMM);
         switch (intrinsic)
         {
             case NI_AVX_Compare:
@@ -60,7 +64,7 @@ public readonly partial struct HWIntrinsicInfo
             case NI_AVX10v2_MinMaxScalar:
             case NI_AVX10v2_MinMax:
             {
-                assert(!HasFullRangeImm(intrinsic));
+                assert(!Configuration.TARGET_XARCH || (metadata.Flags & HW_Flag_FullRangeIMM) == 0);
                 return 31;
             }
             case NI_AVX2_GatherVector128:
@@ -68,7 +72,7 @@ public readonly partial struct HWIntrinsicInfo
             case NI_AVX2_GatherMaskVector128:
             case NI_AVX2_GatherMaskVector256:
             {
-                assert(!HasFullRangeImm(intrinsic));
+                assert(!Configuration.TARGET_XARCH || (metadata.Flags & HW_Flag_FullRangeIMM) == 0);
                 return 8;
             }
             case NI_AVX512_GetMantissa:
@@ -76,12 +80,12 @@ public readonly partial struct HWIntrinsicInfo
             case NI_AVX512_Range:
             case NI_AVX512_RangeScalar:
             {
-                assert(!HasFullRangeImm(intrinsic));
+                assert(!Configuration.TARGET_XARCH || (metadata.Flags & HW_Flag_FullRangeIMM) == 0);
                 return 15;
             }
             default:
             {
-                assert(HasFullRangeImm(intrinsic));
+                assert(!Configuration.TARGET_XARCH || (metadata.Flags & HW_Flag_FullRangeIMM) != 0);
                 return 255;
             }
         }

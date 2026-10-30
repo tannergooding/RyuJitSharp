@@ -161,6 +161,48 @@ public readonly partial struct HWIntrinsicInfo
         return tableIndex;
     }
 
+    internal readonly struct ResolvedMetadata
+    {
+        private readonly int _tableIndex;
+
+        internal ResolvedMetadata(NamedIntrinsic id)
+        {
+            _tableIndex = GetTableIndex(id);
+        }
+
+        internal HWIntrinsicCategory Category => GetRvaSpanEntry(s_categories, _tableIndex);
+
+        internal ManagedInstructionSet InstructionSet => GetRvaSpanEntry(s_instructionSets, _tableIndex);
+
+        internal HWIntrinsicFlag Flags => GetRvaSpanEntry(s_flags, _tableIndex);
+
+        internal int NumArgs
+        {
+            get
+            {
+                var count = GetRvaSpanEntry(s_numArgs, _tableIndex);
+                return count == byte.MaxValue ? -1 : count;
+            }
+        }
+
+        internal bool TryGetSimdSize(out uint simdSize)
+        {
+            var size = GetRvaSpanEntry(s_simdSizes, _tableIndex);
+
+            if (size != byte.MaxValue)
+            {
+                simdSize = size;
+                return true;
+            }
+
+            simdSize = 0;
+            return false;
+        }
+    }
+
+    internal static ResolvedMetadata ResolveMetadata(NamedIntrinsic id) =>
+        new(id);
+
     internal static int GetNativeTableEntryCount()
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)

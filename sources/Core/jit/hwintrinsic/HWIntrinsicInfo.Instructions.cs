@@ -83,7 +83,22 @@ public readonly partial struct HWIntrinsicInfo
             JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.TableDrivenHardwareIntrinsicsAreOnlySupportedOnXarch);
         }
 
+        return IsTableDrivenHWIntrinsic(category, lookupFlags(id));
+    }
+
+    internal static bool genIsTableDrivenHWIntrinsic(HWIntrinsicCategory category, HWIntrinsicFlag flags)
+    {
+        if (!Configuration.TARGET_XARCH)
+        {
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.TableDrivenHardwareIntrinsicsAreOnlySupportedOnXarch);
+        }
+
+        return IsTableDrivenHWIntrinsic(category, flags);
+    }
+
+    private static bool IsTableDrivenHWIntrinsic(HWIntrinsicCategory category, HWIntrinsicFlag flags)
+    {
         return (category is not HW_Category_Special and not HW_Category_Scalar and not HW_Category_Helper) &&
-            ((lookupFlags(id) & HW_Flag_SpecialCodeGen) == 0);
+            ((flags & HW_Flag_SpecialCodeGen) == 0);
     }
 }

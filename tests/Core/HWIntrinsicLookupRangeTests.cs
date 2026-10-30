@@ -110,6 +110,27 @@ internal static unsafe class HWIntrinsicLookupRangeTests
     }
 
     [Test]
+    public static void ResolvedMetadataMatchesSinglePropertyLookups()
+    {
+        var count = HWIntrinsicInfo.GetNativeTableEntryCount();
+
+        for (var tableIndex = 0; tableIndex < count; tableIndex++)
+        {
+            var id = HWIntrinsicInfo.GetIntrinsicIdForNativeTableIndex(tableIndex);
+            var metadata = HWIntrinsicInfo.ResolveMetadata(id);
+
+            Assert.That(metadata.Category, Is.EqualTo(HWIntrinsicInfo.lookupCategory(id)));
+            Assert.That(metadata.Flags, Is.EqualTo(HWIntrinsicInfo.lookupFlags(id)));
+            Assert.That(metadata.InstructionSet, Is.EqualTo(HWIntrinsicInfo.lookupIsa(id)));
+            Assert.That(metadata.NumArgs, Is.EqualTo(HWIntrinsicInfo.lookupNumArgs(id)));
+
+            var hasSimdSize = HWIntrinsicInfo.tryLookupSimdSize(id, out var simdSize);
+            Assert.That(metadata.TryGetSimdSize(out var resolvedSimdSize), Is.EqualTo(hasSimdSize));
+            Assert.That(resolvedSimdSize, Is.EqualTo(simdSize));
+        }
+    }
+
+    [Test]
     public static void MetadataTableContentsMatchThePinnedTargetSnapshot()
     {
         var count = HWIntrinsicInfo.GetNativeTableEntryCount();

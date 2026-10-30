@@ -123,10 +123,11 @@ public sealed partial class CodeGen
     {
         Emitter.RequireSupportedInstructionRecording();
         var intrinsic = node.HWIntrinsicId;
-        var category = HWIntrinsicInfo.lookupCategory(intrinsic);
-        assert((HWIntrinsicInfo.lookupFlags(intrinsic) & HW_Flag_EmbRoundingCompatible) != 0);
+        var metadata = HWIntrinsicInfo.ResolveMetadata(intrinsic);
+        var category = metadata.Category;
+        assert((metadata.Flags & HW_Flag_EmbRoundingCompatible) != 0);
         assert(!lastOp.IsContained);
-        assert(!HWIntrinsicInfo.genIsTableDrivenHWIntrinsic(intrinsic, category));
+        assert(!HWIntrinsicInfo.genIsTableDrivenHWIntrinsic(category, metadata.Flags));
         var baseType = node.SimdBaseType;
         var attr = Compiler.GetSimdTypeForSize(node.SimdSize).EmitActualSize;
         var ins = HWIntrinsicInfo.lookupIns(intrinsic, baseType, _compiler);

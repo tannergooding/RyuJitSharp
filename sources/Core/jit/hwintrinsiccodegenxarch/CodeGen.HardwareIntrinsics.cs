@@ -54,8 +54,9 @@ public sealed partial class CodeGen
 
         Emitter.RequireSupportedInstructionRecording();
         var intrinsic = node.HWIntrinsicId;
-        var isa = HWIntrinsicInfo.lookupIsa(intrinsic);
-        var category = HWIntrinsicInfo.lookupCategory(intrinsic);
+        var metadata = HWIntrinsicInfo.ResolveMetadata(intrinsic);
+        var isa = metadata.InstructionSet;
+        var category = metadata.Category;
         var numArgs = node.Operands.Length;
         GenTree? embMaskNode = null;
         GenTree? embMaskOp = null;
@@ -81,10 +82,11 @@ public sealed partial class CodeGen
             {
                 assert(_compiler.compIsaSupportedDebugOnly(isa));
             }
-            assert((HWIntrinsicInfo.lookupFlags(intrinsic) & HW_Flag_NoCodeGen) == 0);
-            assert(!HWIntrinsicInfo.NeedsNormalizeSmallTypeToInt(intrinsic) || !varTypeIsSmall(node.SimdBaseType));
+            assert((metadata.Flags & HW_Flag_NoCodeGen) == 0);
+            assert(!Configuration.TARGET_XARCH || (metadata.Flags & HW_Flag_NormalizeSmallTypeToInt) == 0 ||
+                !varTypeIsSmall(node.SimdBaseType));
         }
-        var tableDriven = HWIntrinsicInfo.genIsTableDrivenHWIntrinsic(intrinsic, category);
+        var tableDriven = HWIntrinsicInfo.genIsTableDrivenHWIntrinsic(category, metadata.Flags);
         var options = INS_OPTS_NONE;
         if (Emitter.UseEvexEncodings)
         {
@@ -122,8 +124,9 @@ public sealed partial class CodeGen
                     embMaskNode = node;
                     node = op2.AsHWIntrinsic();
                     intrinsic = node.HWIntrinsicId;
-                    isa = HWIntrinsicInfo.lookupIsa(intrinsic);
-                    category = HWIntrinsicInfo.lookupCategory(intrinsic);
+                    metadata = HWIntrinsicInfo.ResolveMetadata(intrinsic);
+                    isa = metadata.InstructionSet;
+                    category = metadata.Category;
                     numArgs = node.Operands.Length;
                     options = AddEmbMaskingMode(options, maskReg, mergeWithZero);
                     embMaskOp = op3;
