@@ -25,9 +25,7 @@ public abstract partial class CSE_HeuristicCommon
         {
             var category = successfulCandidate.IsAggressive() ? ": aggressive"
                 : successfulCandidate.IsModerate() ? ": moderate"
-                : successfulCandidate.IsConservative() ? ": conservative"
-                : successfulCandidate.IsStressCSE() ? ": stress"
-                : successfulCandidate.IsRandom() ? ": random" : "";
+                : successfulCandidate.IsConservative() ? ": conservative" : "";
             cseLclVarName += category;
             GetSequence().Add(unchecked((uint)descriptor.csdIndex));
         }

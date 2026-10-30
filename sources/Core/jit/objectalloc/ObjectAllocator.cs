@@ -126,57 +126,6 @@ public sealed partial class ObjectAllocator : Phase
         return allocType;
     }
 
-    // The stack-allocation-disabled path of MorphAllocObjNodes/MorphAllocObjNode.
-    internal void MorphHeapAllocObjNodes()
-    {
-        assert(!_isObjectStackAllocationEnabled);
-        var compiler = CompilerInstance;
-
-        foreach (var block in compiler.Blocks)
-        {
-            if (!block.HasFlag(BBF_HAS_NEWOBJ) && !block.HasFlag(BBF_HAS_NEWARR))
-            {
-                continue;
-            }
-
-            foreach (var stmt in block.Statements)
-            {
-                var tree = stmt.RootNode;
-
-                if ((tree.Oper is not GT_STORE_LCL_VAR) || (tree.Type is not TYP_REF))
-                {
-                    assert(!compiler.gtTreeContainsOper(tree, GT_ALLOCOBJ));
-                    continue;
-                }
-
-                var store = tree.AsLclVar();
-                var allocType = AllocationKind(store.Data);
-
-                if (allocType is ObjectAllocationType.OAT_NONE)
-                {
-                    continue;
-                }
-
-                if (Configuration.DEBUG)
-                {
-                    JITDUMP($"Allocating V{store.LclNum:D2} / [{TreeIdForDump(tree):D6}] on the heap: " +
-                        "[object stack allocation disabled]\n");
-                }
-
-                if (allocType is ObjectAllocationType.OAT_NEWOBJ or ObjectAllocationType.OAT_NEWOBJ_HEAP)
-                {
-                    var newData = MorphAllocObjNodeIntoHelperCall(store.Data.AsAllocObj());
-                    store.DataRef = newData;
-                    store.Flags |= newData.Flags & GTF_ALL_EFFECT;
-                }
-
-                // Tracking and the connection graph are established by the
-                // stack-allocation analysis, which cannot reach this path.
-                assert(!compiler.lvaGetDesc(store.LclNum).lvTracked);
-            }
-        }
-    }
-
     internal unsafe GenTreeCall MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj allocObj)
     {
         var compiler = CompilerInstance;

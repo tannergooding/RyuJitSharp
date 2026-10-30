@@ -114,7 +114,7 @@ internal static unsafe class AllocationLoweringTests
             var store = compiler.gtNewStoreLclVarNode(0, allocation);
             compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(store));
 
-            new ObjectAllocator(compiler).MorphHeapAllocObjNodes();
+            Assert.That(new ObjectAllocator(compiler).MorphAllocObjNodes(), Is.False);
 
             Assert.That(store.Data.Oper, Is.EqualTo(GT_CALL));
             Assert.That(store.Data.AsCall().HelperNum, Is.EqualTo(CORINFO_HELP_NEWSFAST));

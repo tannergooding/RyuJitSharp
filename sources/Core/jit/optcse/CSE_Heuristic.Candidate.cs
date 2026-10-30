@@ -17,8 +17,6 @@ public sealed class CSE_Candidate
     private bool _aggressive;
     private bool _moderate;
     private bool _conservative;
-    private bool _stressCSE;
-    private bool _random;
 
     public CSE_Candidate(CSE_HeuristicCommon context, CSEdsc descriptor)
     {
@@ -42,11 +40,6 @@ public sealed class CSE_Candidate
     public bool IsModerate() => _moderate;
     public void SetConservative() => _conservative = true;
     public bool IsConservative() => _conservative;
-    public void SetStressCSE() => _stressCSE = true;
-    public bool IsStressCSE() => _stressCSE;
-    public void SetRandom() => _random = true;
-    public bool IsRandom() => _random;
-
     public void InitializeCounts()
     {
         _size = Expr().CostSz;

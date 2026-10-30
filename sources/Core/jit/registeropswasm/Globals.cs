@@ -28,10 +28,4 @@ public static partial class Globals
         assert((type >= WasmValueType.Invalid) && (type < WasmValueType.Count));
         return names[(uint)type];
     }
-
-    internal static ref WasmValueType IncrementWasmValueType(ref WasmValueType type)
-    {
-        type = unchecked((WasmValueType)((uint)type + 1));
-        return ref type;
-    }
 }

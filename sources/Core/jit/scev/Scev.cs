@@ -76,8 +76,6 @@ public class Scev
 
     public bool OperIs(params ReadOnlySpan<ScevOper> opers) => opers.Contains(Oper);
 
-    public bool TypeIs(var_types type) => Type == type;
-
     public bool GetConstantValue(Compiler comp, out long value)
     {
         if (this is ScevConstant constant)

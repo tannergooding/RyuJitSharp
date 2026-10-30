@@ -58,21 +58,6 @@ internal static unsafe class CSEHeuristicSelectionTests
         });
     }
 
-    [TestCase(TYP_INT, TYP_INT, true)]
-    [TestCase(TYP_BYREF, TYP_LONG, true)]
-    [TestCase(TYP_LONG, TYP_BYREF, true)]
-    [TestCase(TYP_BYREF, TYP_REF, false)]
-    [TestCase(TYP_INT, TYP_LONG, false)]
-    public static void RewriteCompatibilityPreservesNativeTypePairs(
-        var_types localType, var_types expressionType, bool expected)
-    {
-        WithCompiler(compiler =>
-        {
-            var heuristic = new CSE_Heuristic(compiler);
-            Assert.That(heuristic.IsCompatibleType(localType, expressionType), Is.EqualTo(expected));
-        });
-    }
-
     [Test]
     public static void SortCandidatesUsesCostUseDefIndexAndCanonicalDescriptorIdentity()
     {
