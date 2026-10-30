@@ -399,7 +399,6 @@ internal static unsafe class SwiftAbiTests
         vtable.Base.Base.getChildType = &GetChildType;
         vtable.Base.Base.isIntrinsicType = &IsIntrinsicType;
         vtable.Base.Base.getClassNameFromMetadata = &GetClassNameFromMetadata;
-        vtable.Base.Base.classMustBeLoadedBeforeCodeIsRun = &ClassMustBeLoaded;
         vtable.Base.Base.getSwiftLowering = &GetConfiguredLowering;
         var state = new SwiftState { Interface = new ICorJitInfo { lpVtbl = &vtable } };
         JitFlags flags = default;
@@ -518,11 +517,6 @@ internal static unsafe class SwiftAbiTests
         var metadata = (SwiftClass*)cls;
         *ns = metadata->Namespace;
         return metadata->Name;
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void ClassMustBeLoaded(ICorJitInfo* info, CORINFO_CLASS_STRUCT_* cls)
-    {
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

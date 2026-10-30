@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "8ccc1569f5b5987ef17e54d769436aa7ecbd74ff",
-    "targetObservedAt": "2026-10-29",
-    "reconciledCommit": "8ccc1569f5b5987ef17e54d769436aa7ecbd74ff"
+    "targetCommit": "f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d",
+    "targetObservedAt": "2026-10-30",
+    "reconciledCommit": "f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Obtain an exact-SHA CoreRoot for 8ccc1569f5b5987ef17e54d769436aa7ecbd74ff and compare changed phase/codegen behavior; no matching binary set is available, so source reconciliation and unit tests do not establish full runtime parity. Resume at the unresolved dynamic TLS input-ownership boundary only when the EE allocation sequence is reproducible. Preserve B526/B527, the accepted D015 diagnostic, and residual exact-pinned FullDump differences. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Revisit the unresolved dynamic TLS input-ownership boundary only when the EE allocation sequence is reproducible; preserve process-order-sensitive differences without normalization or changing compiler constants. The exact f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d x64 corpus capture covers 23 methods with matching value-numbering, assertion-propagation, index-check, and redundant-branch phases; D015 remains accepted and this does not establish full runtime parity. Wasm GC-info emission remains unverified because the managed encoder is AMD64-only. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": null,
     "dynamicTlsInputBoundary": {
@@ -1064,8 +1064,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "8ccc1569f5b5987ef17e54d769436aa7ecbd74ff",
-    "reconciledCommit": "8ccc1569f5b5987ef17e54d769436aa7ecbd74ff",
+    "targetInputCommit": "f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d",
+    "reconciledCommit": "f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

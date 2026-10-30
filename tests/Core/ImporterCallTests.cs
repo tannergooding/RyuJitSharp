@@ -13,6 +13,32 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class ImporterCallTests
 {
     [Test]
+    public static void FastClassQueriesUseDedicatedCallbacks()
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.isByRefLike = &IsByRefLike;
+        vtable.Base.Base.isSharedInst = &IsSharedInst;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info.compCompHnd = &jitInfo;
+
+        Assert.Multiple(() => {
+            Assert.That(compiler.eeIsByRefLike((CORINFO_CLASS_STRUCT_*)0x10), Is.True);
+            Assert.That(compiler.eeIsByRefLike((CORINFO_CLASS_STRUCT_*)0x20), Is.False);
+            Assert.That(compiler.eeIsSharedInst((CORINFO_CLASS_STRUCT_*)0x20), Is.True);
+            Assert.That(compiler.eeIsSharedInst((CORINFO_CLASS_STRUCT_*)0x10), Is.False);
+        });
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsByRefLike(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* cls)
+        => (byte)(cls == (CORINFO_CLASS_STRUCT_*)0x10 ? 1 : 0);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsSharedInst(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* cls)
+        => (byte)(cls == (CORINFO_CLASS_STRUCT_*)0x20 ? 1 : 0);
+
+    [Test]
     public static void VirtualMethodPointerEmbedsMethodBeforeParentAndKeepsHelperArgumentOrder()
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -227,13 +253,11 @@ internal static unsafe class ImporterCallTests
     [TestCase(true, false, false)]
     [TestCase(true, true, false)]
     [TestCase(true, false, true)]
-    public static void HiddenInstantiationArgumentsPreserveHandleKindAndRestoration(bool classContext, bool indirect, bool readonlyArray)
+    public static void HiddenInstantiationArgumentsPreserveHandleKindAndEmbedding(bool classContext, bool indirect, bool readonlyArray)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.embedClassHandle = &EmbedInstantiationClass;
         vtable.Base.embedMethodHandle = &EmbedInstantiationMethod;
-        vtable.Base.Base.classMustBeLoadedBeforeCodeIsRun = &RestoreInstantiationClass;
-        vtable.Base.Base.methodMustBeLoadedBeforeCodeIsRun = &RestoreInstantiationMethod;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
         using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
@@ -260,7 +284,6 @@ internal static unsafe class ImporterCallTests
                     Assert.That(result.Type, Is.EqualTo(var_types.TYP_REF));
                     Assert.That(result.AsIntCon().IconValue, Is.EqualTo((nint)0));
                     Assert.That(state->Embedded, Is.Zero);
-                    Assert.That(state->Restored, Is.Zero);
                 });
             }
             else
@@ -272,7 +295,6 @@ internal static unsafe class ImporterCallTests
                         Is.EqualTo(classContext ? Globals.GTF_ICON_CLASS_HDL : Globals.GTF_ICON_METHOD_HDL));
                     Assert.That(icon.IconValue, Is.EqualTo(indirect ? (nint)(&state->Value) : state->Value));
                     Assert.That(state->Embedded, Is.EqualTo(1));
-                    Assert.That(state->Restored, Is.EqualTo(1));
                 });
             }
         }
@@ -393,7 +415,6 @@ internal static unsafe class ImporterCallTests
         vtable.Base.Base.getTypeForBox = &GetBoxedType;
         vtable.Base.Base.asCorInfoType = &GetBoxType;
         vtable.Base.Base.isEnum = &IsEnum;
-        vtable.Base.Base.classMustBeLoadedBeforeCodeIsRun = &RestoreBoxClass;
         vtable.Base.Base.getArrayRank = &GetBoxRank;
         vtable.Base.Base.getTypeInstantiationArgument = &GetBoxTypeArgument;
         vtable.Base.Base.printClassName = &PrintBoxClassName;
@@ -428,14 +449,12 @@ internal static unsafe class ImporterCallTests
             var token = new CORINFO_RESOLVED_TOKEN { hClass = (CORINFO_CLASS_STRUCT_*)&boxClass, token = 0x02000001 };
 
             compiler.impImportAndPushBox(token);
-            var restoreCount = boxClass.RestoreCount;
             var enumQueries = boxClass.EnumQueries;
 
             Assert.Multiple(() => {
                 Assert.That(compiler.lvaTable[compiler.impBoxTemp].lvSingleDef, Is.EqualTo(enumState == TypeCompareState.Must));
                 Assert.That(compiler.stackState.esStackDepth, Is.EqualTo(1));
                 Assert.That(compiler.stackState.esStack[0].val.Oper, Is.EqualTo(genTreeOps.GT_BOX));
-                Assert.That(restoreCount, Is.Zero);
                 Assert.That(enumQueries, Is.EqualTo(1));
             });
         }
@@ -460,13 +479,13 @@ internal static unsafe class ImporterCallTests
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)&EmbedNullableBoxClass;
         vtable.Base.Base.getBoxHelper = &GetNullableBoxHelper;
         vtable.Base.Base.getClassAttribs = &GetNullableBoxClassAttributes;
+        vtable.Base.Base.isSharedInst = &IsSharedInst;
         vtable.Base.Base.getFieldInClass = &GetNullableBoxValueField;
         vtable.Base.Base.getFieldOffset = &GetNullableBoxValueOffset;
         vtable.Base.Base.getFieldType = &GetNullableBoxValueType;
         vtable.Base.Base.getNewHelper = &GetNullableBoxNewHelper;
         vtable.Base.Base.getReadyToRunHelper = &GetNullableBoxReadyToRunHelper;
         vtable.Base.Base.getTypeForBox = &GetNullableBoxType;
-        vtable.Base.Base.classMustBeLoadedBeforeCodeIsRun = &RestoreNullableBoxClass;
         vtable.Base.Base.getArrayRank = &GetBoxRank;
         vtable.Base.Base.getTypeInstantiationArgument = &GetBoxTypeArgument;
         vtable.Base.Base.printClassName = &PrintBoxClassName;
@@ -922,7 +941,6 @@ internal static unsafe class ImporterCallTests
     {
         public nint Value;
         public int Embedded;
-        public int Restored;
         public bool Indirect;
     }
 
@@ -941,18 +959,9 @@ internal static unsafe class ImporterCallTests
         return handle->Indirect ? null : (void*)handle->Value;
     }
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void RestoreInstantiationClass(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* handle)
-        => ((InstantiationHandle*)handle)->Restored++;
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void RestoreInstantiationMethod(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* handle)
-        => ((InstantiationHandle*)handle)->Restored++;
-
     private struct BoxClass
     {
         public TypeCompareState EnumState;
-        public int RestoreCount;
         public int EnumQueries;
     }
 
@@ -1042,11 +1051,6 @@ internal static unsafe class ImporterCallTests
         => (CORINFO_CLASS_STRUCT_*)((NullableBoxEE*)self)->BoxedClass;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void RestoreNullableBoxClass(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
-    {
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoHelpFunc GetBoxHelper(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => CorInfoHelpFunc.CORINFO_HELP_BOX;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
@@ -1074,9 +1078,6 @@ internal static unsafe class ImporterCallTests
 
         return ((BoxClass*)type)->EnumState;
     }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void RestoreBoxClass(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => ((BoxClass*)type)->RestoreCount++;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetBoxRank(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;

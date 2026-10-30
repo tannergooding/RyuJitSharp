@@ -43,10 +43,27 @@ public sealed partial class RangeCheck
         return CheckedOps.TryAdd(size, limit.Constant, out maximum);
     }
 
-    private bool AddOverflows(Limit first, Limit second)
+    private static int GetLimitMin(Limit limit)
     {
-        return !GetLimitMax(first, out var maxFirst) || !GetLimitMax(second, out var maxSecond) ||
-            !CheckedOps.TryAdd(maxFirst, maxSecond, out _);
+        if (limit.IsConstant || (limit.IsBinOpArray && (limit.Constant <= 0)))
+        {
+            return limit.Constant;
+        }
+
+        return int.MinValue;
+    }
+
+    private bool AddOverflows(Range first, Range second)
+    {
+        if (!GetLimitMax(first.UpperLimit, out var maxFirst) ||
+            !GetLimitMax(second.UpperLimit, out var maxSecond) ||
+            !CheckedOps.TryAdd(maxFirst, maxSecond, out _))
+        {
+            return true;
+        }
+
+        return !CheckedOps.TryAdd(
+            GetLimitMin(first.LowerLimit), GetLimitMin(second.LowerLimit), out _);
     }
 
     private bool MultiplyOverflows(Limit first, Limit second)
@@ -59,13 +76,14 @@ public sealed partial class RangeCheck
     {
         var left = binary.Op1;
         var right = binary.Op2;
-        if ((!_searchPath.ContainsKey(left) && ComputeDoesOverflow(block, left, range)) ||
-            (!_searchPath.ContainsKey(right) && ComputeDoesOverflow(block, right, range)))
+        if (!_rangeMap.TryGetValue(left, out var leftRange) || !_rangeMap.TryGetValue(right, out var rightRange))
         {
             return true;
         }
 
-        if (!_rangeMap.TryGetValue(left, out var leftRange) || !_rangeMap.TryGetValue(right, out var rightRange))
+        var keepRange = range.LowerLimit.IsDependent || range.UpperLimit.IsDependent;
+        if ((!_searchPath.ContainsKey(left) && ComputeDoesOverflow(block, left, keepRange ? range : leftRange)) ||
+            (!_searchPath.ContainsKey(right) && ComputeDoesOverflow(block, right, keepRange ? range : rightRange)))
         {
             return true;
         }
@@ -78,7 +96,7 @@ public sealed partial class RangeCheck
 
         if (binary.Oper is GT_ADD)
         {
-            return AddOverflows(leftRange.UpperLimit, rightRange.UpperLimit);
+            return AddOverflows(leftRange, rightRange);
         }
 
         if (binary.Oper is GT_MUL)

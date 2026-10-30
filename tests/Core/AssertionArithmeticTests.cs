@@ -51,6 +51,43 @@ internal static unsafe class AssertionArithmeticTests
         });
     }
 
+    [TestCase(VNF_LT, false, GT_LE, true)]
+    [TestCase(VNF_LT, false, GT_GT, false)]
+    [TestCase(VNF_LT_UN, true, GT_LE, true)]
+    [TestCase(VNF_LT_UN, true, GT_GT, false)]
+    public static void IncrementedValueUsesStrictLessThanAssertions(
+        VNFunc assertionOper, bool unsigned, genTreeOps oper, bool expected)
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var leftVN = store.VNForExpr(null, TYP_INT);
+            var rightVN = store.VNForExpr(null, TYP_INT);
+            var left = compiler.gtNewLclvNode(TYP_INT, 0);
+            left._vnPair.SetBoth(leftVN);
+            var right = compiler.gtNewLclvNode(TYP_INT, 1);
+            right._vnPair.SetBoth(rightVN);
+            var one = compiler.gtNewIconNode(TYP_INT, 1);
+            one._vnPair.SetBoth(store.VNForIntCon(1));
+            var increment = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, left, one);
+            var incrementVN = store.VNForFuncNoFolding(TYP_INT, VNF_ADD, leftVN, one._vnPair.Conservative);
+            increment._vnPair.SetBoth(incrementVN);
+            var comparison = compiler.gtNewBinaryNode(oper, TYP_INT, increment, right);
+            comparison.AsOp().IsUnsigned = unsigned;
+            var compareVN = unsigned ? VNF_LE_UN : VNF_LE;
+            comparison._vnPair.SetBoth(store.VNForFuncNoFolding(TYP_INT, compareVN,
+                incrementVN, rightVN));
+            var statement = compiler.gtNewStmt(comparison);
+            var assertions = NewAssertions(compiler,
+                AssertionDsc.CreateRelopVN(compiler, assertionOper, leftVN, rightVN));
+
+            var result = compiler.optAssertionProp_RelOp(assertions, comparison, statement,
+                new BasicBlock(null, null));
+
+            Assert.That(result?.IsIntegralConst(expected ? 1 : 0), Is.True);
+            Assert.That(statement.RootNode, Is.SameAs(result));
+        });
+    }
+
     [TestCase(GT_DIV, true, true, GT_UDIV, true, true)]
     [TestCase(GT_MOD, true, true, GT_UMOD, true, true)]
     [TestCase(GT_DIV, false, true, GT_DIV, true, false)]

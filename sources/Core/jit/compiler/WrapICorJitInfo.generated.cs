@@ -237,13 +237,6 @@ public sealed unsafe partial class WrapICorJitInfo
         return temp;
     }
 
-    public void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
-    {
-        wrapComp.CLR_API_Enter(API_methodMustBeLoadedBeforeCodeIsRun);
-        wrapHnd->methodMustBeLoadedBeforeCodeIsRun(method);
-        wrapComp.CLR_API_Leave(API_methodMustBeLoadedBeforeCodeIsRun);
-    }
-
     public void getGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
     {
         wrapComp.CLR_API_Enter(API_getGSCookie);
@@ -365,6 +358,24 @@ public sealed unsafe partial class WrapICorJitInfo
         wrapComp.CLR_API_Enter(API_isValueClass);
         bool temp = wrapHnd->isValueClass(cls);
         wrapComp.CLR_API_Leave(API_isValueClass);
+
+        return temp;
+    }
+
+    public bool isByRefLike(CORINFO_CLASS_HANDLE cls)
+    {
+        wrapComp.CLR_API_Enter(API_isByRefLike);
+        bool temp = wrapHnd->isByRefLike(cls);
+        wrapComp.CLR_API_Leave(API_isByRefLike);
+
+        return temp;
+    }
+
+    public bool isSharedInst(CORINFO_CLASS_HANDLE cls)
+    {
+        wrapComp.CLR_API_Enter(API_isSharedInst);
+        bool temp = wrapHnd->isSharedInst(cls);
+        wrapComp.CLR_API_Leave(API_isSharedInst);
 
         return temp;
     }
@@ -642,13 +653,6 @@ public sealed unsafe partial class WrapICorJitInfo
         wrapComp.CLR_API_Leave(API_initClass);
 
         return temp;
-    }
-
-    public void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
-    {
-        wrapComp.CLR_API_Enter(API_classMustBeLoadedBeforeCodeIsRun);
-        wrapHnd->classMustBeLoadedBeforeCodeIsRun(cls);
-        wrapComp.CLR_API_Leave(API_classMustBeLoadedBeforeCodeIsRun);
     }
 
     public CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId)

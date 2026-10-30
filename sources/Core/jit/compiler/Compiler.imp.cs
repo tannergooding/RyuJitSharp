@@ -9620,7 +9620,7 @@ public partial class Compiler
                     {
                         indirFlags |= GTF_IND_TGT_HEAP;
                     }
-                    else if ((lclTyp is TYP_STRUCT) && (fieldInfo.structType != NO_CLASS_HANDLE) && eeIsByrefLike(fieldInfo.structType))
+                    else if ((lclTyp is TYP_STRUCT) && (fieldInfo.structType != NO_CLASS_HANDLE) && eeIsByRefLike(fieldInfo.structType))
                     {
                         // Field's type is a byref-like struct -> address is not on the heap.
                         indirFlags |= GTF_IND_TGT_NOT_HEAP;
@@ -9630,7 +9630,7 @@ public partial class Compiler
                         // Field's owner is a byref-like struct and the field is not static -> address is not on the heap.
                         var fldOwner = info.compCompHnd->getFieldClass(resolvedToken.hField);
 
-                        if ((fldOwner != NO_CLASS_HANDLE) && eeIsByrefLike(fldOwner))
+                        if ((fldOwner != NO_CLASS_HANDLE) && eeIsByRefLike(fldOwner))
                         {
                             indirFlags |= GTF_IND_TGT_NOT_HEAP;
                         }
@@ -10445,7 +10445,7 @@ public partial class Compiler
                         break;
                     }
 
-                    var isByRefLike = eeIsByrefLike(resolvedToken.hClass);
+                    var isByRefLike = eeIsByRefLike(resolvedToken.hClass);
 
                     if (isByRefLike)
                     {
@@ -10746,7 +10746,7 @@ public partial class Compiler
 
                         var indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
 
-                        if (eeIsByrefLike(resolvedToken.hClass))
+                        if (eeIsByRefLike(resolvedToken.hClass))
                         {
                             indirFlags |= GTF_IND_TGT_NOT_HEAP;
                         }
@@ -14606,7 +14606,7 @@ public partial class Compiler
         }
 
         // The ABI requires the retbuffer to point to stack.
-        return !fgAddrCouldBeHeap(retBuf) || eeIsByrefLike(call.RetClsHnd);
+        return !fgAddrCouldBeHeap(retBuf) || eeIsByRefLike(call.RetClsHnd);
     }
 
     public bool impIsPrimitive(CorInfoType jitType) => jitType is (>= CORINFO_TYPE_BOOL and <= CORINFO_TYPE_DOUBLE) or CORINFO_TYPE_PTR;

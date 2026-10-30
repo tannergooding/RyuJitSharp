@@ -580,7 +580,7 @@ public sealed class ClassLayout
     {
         // Byref-like structs are stack only
         return (_classHandle != NO_CLASS_HANDLE)
-            && compiler.eeIsByrefLike(_classHandle);
+            && compiler.eeIsByRefLike(_classHandle);
     }
 
     internal CorInfoGCType GetGCPtr(int slot)

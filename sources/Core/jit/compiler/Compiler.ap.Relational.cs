@@ -266,6 +266,20 @@ public partial class Compiler
                         result = gtNewIconNode(TYP_INT, tree.Oper == assertionOper ? 1 : 0);
                     }
                 }
+                else if (assertion.KindIs(OAK_LT, OAK_LT_UN) &&
+                    (tree.Oper is GT_LE or GT_GT) &&
+                    (tree.AsOp().IsUnsigned == assertion.KindIs(OAK_LT_UN)) &&
+                    (assertion.Op2.VN == op2VN) &&
+                    (!assertion.Op2.KindIs(O2K_VN_ADD_CNS) || (assertion.Op2.Cns == 0)))
+                {
+                    var addVN = ValueNumStore.NoVN;
+                    var addConstant = 0;
+                    if (vnStore.IsVNBinFuncWithConst(op1VN, VNF_ADD, ref addVN, ref addConstant) &&
+                        (addConstant == 1) && (addVN == assertion.Op1.VN))
+                    {
+                        result = gtNewIconNode(TYP_INT, tree.Oper is GT_LE ? 1 : 0);
+                    }
+                }
                 else if (assertion.CanPropEqualOrNotEqual && (assertion.Op1.VN == relopVN) &&
                     (assertion.Op2.VN == falseVN))
                 {

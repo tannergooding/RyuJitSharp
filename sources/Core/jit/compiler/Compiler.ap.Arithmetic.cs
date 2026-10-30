@@ -4,6 +4,7 @@
 
 using System;
 using static RyuJitSharp.Compiler.optAssertionKind;
+using static RyuJitSharp.Compiler.optOp1Kind;
 using static RyuJitSharp.Compiler.optOp2Kind;
 
 namespace RyuJitSharp;
@@ -232,12 +233,12 @@ public partial class Compiler
             _ = BitVecOps.VisitBits(apTraits, assertions, bitIndex =>
             {
                 var assertion = optGetAssertion(GetAssertionIndex((ushort)bitIndex));
-                if (!assertion.IsBoundsCheckNoThrow)
+                if (!assertion.Op1.KindIs(O1K_VN) || !assertion.KindIs(OAK_LT_UN) ||
+                    !assertion.Op2.KindIs(O2K_VN_ADD_CNS) || (assertion.Op2.Cns != 0))
                 {
                     return true;
                 }
 
-                assert((assertion.Op2.Cns == 0) && assertion.Op2.IsVNNeverNegative);
                 if (assertion.Op2.VN != lengthVN)
                 {
                     return true;

@@ -11,10 +11,38 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class WasmUnwindTests
 {
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetWasmGCInfoCodeSize")]
+    private static extern uint GetWasmGCInfoCodeSize(CodeGen codeGen, uint maxVirtualIP);
+
     [SetUp]
     public static void RequireWasmTarget()
     {
         Assume.That(Configuration.TARGET_WASM, "This fixture requires the Wasm target.");
+    }
+
+    [TestCase(false, 64u, 128u)]
+    [TestCase(true, 64u, 64u)]
+    [TestCase(false, 0x80000000u, 0u)]
+    [TestCase(true, 0x80000000u, 0x80000000u)]
+    public static void GCInfoCodeSizeUsesTheTargetAbi(bool nativeAot, uint maxVirtualIP, uint expected)
+    {
+        WithPublication((compiler, _) =>
+        {
+            compiler.eeInfoInitialized = true;
+            compiler.eeInfo.targetAbi = nativeAot
+                ? CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI
+                : CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
+            if (nativeAot)
+            {
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
+            }
+
+            Assert.That(compiler.IsNativeAot, Is.EqualTo(nativeAot));
+            var codeGen = (CodeGen)(compiler.codeGen
+                ?? throw new InvalidOperationException("Wasm code generation was not initialized."));
+
+            Assert.That(GetWasmGCInfoCodeSize(codeGen, maxVirtualIP), Is.EqualTo(expected));
+        });
     }
 
     [Test]

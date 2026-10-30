@@ -560,11 +560,12 @@ public partial class Compiler
                 new(comp, optOp2Kind.O2K_SUBRANGE, 0, range: range));
         }
 
-        public static AssertionDsc CreateNoThrowArrBnd(Compiler comp, ValueNum idxVN, ValueNum lenVN)
+        public static AssertionDsc CreateNoThrowArrBnd(Compiler comp, ValueNum idxVN, ValueNum lenVN,
+            bool isLenNeverNegative)
         {
             assert((idxVN != ValueNumStore.NoVN) && (lenVN != ValueNumStore.NoVN));
             return new(optAssertionKind.OAK_LT_UN, new(comp, optOp1Kind.O1K_VN, idxVN),
-                new(comp, optOp2Kind.O2K_VN_ADD_CNS, lenVN, isVNNeverNegative: true));
+                new(comp, optOp2Kind.O2K_VN_ADD_CNS, lenVN, isVNNeverNegative: isLenNeverNegative));
         }
 
         public static AssertionDsc CreateInt32ConstantVNAssertion(Compiler comp, ValueNum op1VN, ValueNum op2VN, bool equals)

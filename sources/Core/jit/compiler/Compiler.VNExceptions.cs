@@ -67,7 +67,8 @@ public partial class Compiler
         tree._vnPair = vnStore.VNPWithExc(normal, vnStore.VNPExcSetUnion(existing, exceptions));
     }
 
-    public ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper, GenTree dividend, GenTree divisor)
+    public ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper, GenTree dividend, GenTree divisor,
+        var_types simdBaseType = TYP_UNDEF)
     {
         assert(vnStore is not null);
         assert(oper is GT_DIV or GT_UDIV or GT_MOD or GT_UMOD);
@@ -77,13 +78,35 @@ public partial class Compiler
         var needArithmeticExcLib = !isUnsignedOper;
         var needArithmeticExcCon = !isUnsignedOper;
 
-        var type = dividend.Type.ActualType;
+        var isSimdOper = simdBaseType is not TYP_UNDEF;
+        assert(isSimdOper == varTypeIsSimd(dividend.Type));
+        var type = isSimdOper ? simdBaseType.ActualType : dividend.Type.ActualType;
         assert(type is TYP_INT or TYP_LONG);
         var divisorNorm = vnStore.VNPNormalPair(divisor._vnPair);
         var vnDivisorNormLib = divisorNorm.Liberal;
         var vnDivisorNormCon = divisorNorm.Conservative;
 
-        if (type is TYP_INT)
+        if (Configuration.FEATURE_SIMD && isSimdOper && !varTypeHasUnknownSize(dividend.Type))
+        {
+            var simdSize = genTypeSize(dividend.Type);
+            if (vnStore.IsVNConstant(vnDivisorNormLib))
+            {
+                var simdValue = vnStore.GetConstantSimd(vnDivisorNormLib);
+                needDivideByZeroExcLib = SimdConstantContains(simdBaseType, simdValue, simdSize, 0);
+                needArithmeticExcLib = needArithmeticExcLib &&
+                    SimdConstantContains(simdBaseType, simdValue, simdSize, -1);
+            }
+
+            if (vnStore.IsVNConstant(vnDivisorNormCon))
+            {
+                var simdValue = vnStore.GetConstantSimd(vnDivisorNormCon);
+                needDivideByZeroExcCon = SimdConstantContains(simdBaseType, simdValue, simdSize, 0);
+                needArithmeticExcCon = needArithmeticExcCon &&
+                    SimdConstantContains(simdBaseType, simdValue, simdSize, -1);
+            }
+        }
+
+        if (!isSimdOper && (type is TYP_INT))
         {
             if (vnStore.IsVNConstant(vnDivisorNormLib))
             {
@@ -111,7 +134,7 @@ public partial class Compiler
                 }
             }
         }
-        else
+        else if (!isSimdOper)
         {
             if (vnStore.IsVNConstant(vnDivisorNormLib))
             {
@@ -143,7 +166,25 @@ public partial class Compiler
         var dividendNorm = vnStore.VNPNormalPair(dividend._vnPair);
         var vnDividendNormLib = dividendNorm.Liberal;
         var vnDividendNormCon = dividendNorm.Conservative;
-        if (needArithmeticExcLib || needArithmeticExcCon)
+        if (Configuration.FEATURE_SIMD && isSimdOper && !varTypeHasUnknownSize(dividend.Type))
+        {
+            var simdSize = genTypeSize(dividend.Type);
+            var minValue = type is TYP_INT ? int.MinValue : long.MinValue;
+
+            if (needArithmeticExcLib && vnStore.IsVNConstant(vnDividendNormLib))
+            {
+                var simdValue = vnStore.GetConstantSimd(vnDividendNormLib);
+                needArithmeticExcLib = SimdConstantContains(simdBaseType, simdValue, simdSize, minValue);
+            }
+
+            if (needArithmeticExcCon && vnStore.IsVNConstant(vnDividendNormCon))
+            {
+                var simdValue = vnStore.GetConstantSimd(vnDividendNormCon);
+                needArithmeticExcCon = SimdConstantContains(simdBaseType, simdValue, simdSize, minValue);
+            }
+        }
+
+        if (!isSimdOper && (needArithmeticExcLib || needArithmeticExcCon))
         {
             if (type is TYP_INT)
             {
@@ -197,6 +238,80 @@ public partial class Compiler
         }
 
         return vnStore.VNPExcSetUnion(divideByZero, arithmetic);
+    }
+
+    private static bool SimdConstantContains(var_types simdBaseType, simd_t simdValue, uint simdSize, long value)
+    {
+        assert(varTypeIsIntegral(simdBaseType));
+        var elementCount = getSIMDVectorLength(simdSize, simdBaseType);
+        for (var index = 0; index < elementCount; index++)
+        {
+            long element;
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                {
+                    element = simdValue.AsSpan<sbyte>()[index];
+                    break;
+                }
+
+                case TYP_UBYTE:
+                {
+                    element = simdValue.AsSpan<byte>()[index];
+                    break;
+                }
+
+                case TYP_SHORT:
+                {
+                    element = simdValue.AsSpan<short>()[index];
+                    break;
+                }
+
+                case TYP_USHORT:
+                {
+                    element = simdValue.AsSpan<ushort>()[index];
+                    break;
+                }
+
+                case TYP_INT:
+                {
+                    element = simdValue.AsSpan<int>()[index];
+                    break;
+                }
+
+                case TYP_UINT:
+                {
+                    element = simdValue.AsSpan<uint>()[index];
+                    break;
+                }
+
+                case TYP_LONG:
+                {
+                    element = simdValue.AsSpan<long>()[index];
+                    break;
+                }
+
+                case TYP_ULONG:
+                {
+                    element = unchecked((long)simdValue.AsSpan<ulong>()[index]);
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    element = 0;
+                    break;
+                }
+            }
+
+            if (element == value)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void fgValueNumberAddExceptionSetForOverflow(GenTree tree)

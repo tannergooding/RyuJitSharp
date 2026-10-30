@@ -2336,7 +2336,7 @@ public partial class Compiler
 
                                 case NI_System_Type_get_IsByRefLike:
                                 {
-                                    retNode = compiler.eeIsByrefLike(hClass) ? compiler.gtNewTrue() : compiler.gtNewFalse();
+                                    retNode = compiler.eeIsByRefLike(hClass) ? compiler.gtNewTrue() : compiler.gtNewFalse();
                                     break;
                                 }
 
