@@ -163,45 +163,6 @@ public partial struct RegSet
         _rsModifiedRegsMask |= mask;
     }
 
-    public void rsRemoveRegsModified(regMaskTP mask)
-    {
-        assert(mask != RBM_NONE);
-        if (Configuration.DEBUG)
-        {
-            assert(_rsModifiedRegsMaskInitialized);
-        }
-
-        var remaining = AndNot(_rsModifiedRegsMask, mask);
-        if (Configuration.DEBUG)
-        {
-            assert((Compiler.lvaDoneFrameLayout < RyuJitSharp.Compiler.FINAL_FRAME_LAYOUT) ||
-                   _codeGen.Emitter.emitGeneratingPrologOrFuncletProlog() ||
-                   _codeGen.Emitter.emitGeneratingEpilogOrFuncletEpilog() ||
-                   ((remaining & AllCalleeSavedMask) == (_rsModifiedRegsMask & AllCalleeSavedMask)));
-        }
-
-        if (Configuration.DEBUG && Compiler.verbose)
-        {
-            jitprintf("Removing modified regs: ");
-            dspRegMask(mask);
-            if (_rsModifiedRegsMask == remaining)
-            {
-                jitprintf(" (unchanged)");
-            }
-            else
-            {
-                jitprintf(" (");
-                dspRegMask(_rsModifiedRegsMask);
-                jitprintf(" => ");
-                dspRegMask(remaining);
-                jitprintf(")");
-            }
-            jitprintf("\n");
-        }
-
-        _rsModifiedRegsMask = remaining;
-    }
-
     public void verifyRegUsed(regNumber reg)
     {
         if (!Configuration.TARGET_WASM)

@@ -227,26 +227,6 @@ internal sealed class JitHashTable<TKey, TValue>
         return node is null ? null : new ValueReference(node);
     }
 
-    internal ValueReference LookupPointerOrAdd(TKey key, TValue defaultValue)
-    {
-        CheckGrowth();
-        assert(_tableSizeInfo.prime != 0);
-
-        var index = GetIndexForKey(key);
-        for (var node = _table![index]; node is not null; node = node.Next)
-        {
-            if (_keyInfo.Equals(key, node.GetKey()))
-            {
-                return new ValueReference(node);
-            }
-        }
-
-        var newNode = AllocateNode(_table[index], key, defaultValue);
-        _table[index] = newNode;
-        _tableCount++;
-        return new ValueReference(newNode);
-    }
-
     internal bool Set(TKey key, TValue value, SetKind kind = SetKind.None)
     {
         CheckGrowth();

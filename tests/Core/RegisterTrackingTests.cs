@@ -249,7 +249,7 @@ internal static unsafe class RegisterTrackingTests
     }
 
     [Test]
-    public static void ModifiedMaskAccumulatesAndRemovingRegistersPreservesOthers()
+    public static void ModifiedMaskAccumulatesAndClassifiesRegisters()
     {
         WithCompiler(minOpts: true, (_, codeGen) => {
             ref var registers = ref codeGen.RegSet;
@@ -267,9 +267,6 @@ internal static unsafe class RegisterTrackingTests
             Assert.That(registers.rsGetModifiedFltCalleeSavedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_XMM6)));
             Assert.That(registers.rsRegsModified(new regMaskTP(SRBM_X64_RBX)), Is.True);
             Assert.That(registers.rsRegsModified(new regMaskTP(SRBM_X64_RCX)), Is.False);
-
-            registers.rsRemoveRegsModified(new regMaskTP(SRBM_X64_RBX | SRBM_X64_RCX));
-            Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_X64_RAX | SRBM_XMM6)));
 
             registers.rsClearRegsModified();
             Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(RBM_NONE));
@@ -315,9 +312,8 @@ internal static unsafe class RegisterTrackingTests
             compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
 
             registers.rsSetRegsModified(new regMaskTP(SRBM_X64_RBX | SRBM_X64_RAX));
-            registers.rsRemoveRegsModified(new regMaskTP(SRBM_X64_RAX));
 
-            Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
+            Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_X64_RBX | SRBM_X64_RAX)));
         });
     }
 
@@ -335,9 +331,7 @@ internal static unsafe class RegisterTrackingTests
 
             registers.rsSetRegsModified(new regMaskTP(SRBM_X64_RBX));
             Assert.That(registers.rsGetModifiedCalleeSavedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
-
-            registers.rsRemoveRegsModified(new regMaskTP(SRBM_X64_RBX));
-            Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(RBM_NONE));
+            Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
         });
     }
 

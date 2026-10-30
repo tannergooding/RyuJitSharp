@@ -10,7 +10,7 @@ namespace RyuJitSharp.UnitTests;
 internal static class JitHashTableTests
 {
     [Test]
-    public static void LookupSetAndPointerAddPreserveValues()
+    public static void LookupAndSetPreserveValues()
     {
         var table = new JitHashTable<uint, string>(new ConstantHashInfo());
         table.Reallocate(7);
@@ -20,15 +20,10 @@ internal static class JitHashTableTests
         Assert.That(table.Lookup(1, out var value), Is.True);
         Assert.That(value, Is.EqualTo("updated"));
 
-        var added = table.LookupPointerOrAdd(2, "default");
-        added.Value = "assigned";
-        Assert.That(table.Lookup(2, out value), Is.True);
-        Assert.That(value, Is.EqualTo("assigned"));
-
         Assert.That(table.Set(3, "constructed"), Is.False);
         Assert.That(table.Lookup(3, out value), Is.True);
         Assert.That(value, Is.EqualTo("constructed"));
-        Assert.That(table.GetCount(), Is.EqualTo(3));
+        Assert.That(table.GetCount(), Is.EqualTo(2));
     }
 
     [Test]
@@ -54,14 +49,16 @@ internal static class JitHashTableTests
     {
         var table = new JitHashTable<uint, string>(new ConstantHashInfo());
         table.Reallocate(7);
-        var value = table.LookupPointerOrAdd(1, "value");
+        Assert.That(table.Set(1, "value"), Is.False);
+        var value = table.LookupPointer(1) ?? throw new AssertionException("Missing value reference.");
 
         Assert.That(table.Remove(1), Is.True);
         _ = Assert.Throws<ObjectDisposedException>(() => _ = value.Value);
         Assert.That(table.Remove(1), Is.False);
         Assert.That(table.GetCount(), Is.Zero);
 
-        var removedByClear = table.LookupPointerOrAdd(2, "cleared");
+        Assert.That(table.Set(2, "cleared"), Is.False);
+        var removedByClear = table.LookupPointer(2) ?? throw new AssertionException("Missing value reference.");
         table.RemoveAll();
         _ = Assert.Throws<ObjectDisposedException>(() => _ = removedByClear.Value);
         Assert.That(table.GetCount(), Is.Zero);
