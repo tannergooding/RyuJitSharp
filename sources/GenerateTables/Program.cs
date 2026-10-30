@@ -17,6 +17,26 @@ internal static class Program
 {
     private static readonly Dictionary<string, Dictionary<string, string>> s_instructionFormatIdentifiers = [];
 
+    private static readonly HashSet<string> s_universalRegisterMaskAliasesToOmit = [
+        "EDX", "ESP", "RSI", "RDI", "RBX", "RCX",
+        "A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7",
+        "FA0", "FA1", "FA2", "FA3", "FA4", "FA5", "FA6", "FA7",
+        "F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7",
+        "F8", "F9", "F10", "F11", "F12", "F13", "F14", "F15",
+        "F18", "F19", "F20", "F21", "F22", "F23", "F24", "F25",
+        "F26", "F27", "F28", "F29", "F30", "F31",
+        "FS0", "FS1", "FS2", "FS3", "FS4", "FS5", "FS6", "FS7",
+        "FS8", "FS9", "FS10", "FS11",
+        "FT0", "FT1", "FT2", "FT3", "FT4", "FT5", "FT6", "FT7",
+        "FT8", "FT9", "FT10", "FT11",
+        "P0", "P1", "P2", "P3", "P4", "P5", "P6", "P7",
+        "P8", "P9", "P10", "P11", "P12", "P13", "P14", "P15",
+        "K0", "K1", "K2", "K3", "K4", "K5", "K6", "K7",
+        "R16", "R17", "R18", "R19", "R20", "R21", "R22", "R23",
+        "R24", "R25", "R26", "R27", "R28", "R29", "R30", "R31",
+        "S1",
+    ];
+
     private static readonly (string Target, string Identity, string InputFile)[] s_registerTargetHeaders = [
         ("X86", "X86", @"Inputs\registerx86.h"),
         ("AMD64", "X64", @"Inputs\registeramd64.h"),
@@ -7331,11 +7351,7 @@ public static partial class Globals
 
         foreach (var name in registerNameOrder)
         {
-            if (name is "EDX" or "ESP" or "RSI" or "RDI" or "RBX" or "RCX"
-                or "A0" or "A1" or "A2" or "A3" or "A4" or "A5" or "A6" or "A7"
-                or "K0" or "K1" or "K2" or "K3" or "K4" or "K5" or "K6" or "K7"
-                or "R16" or "R17" or "R18" or "R19" or "R20" or "R21" or "R22" or "R23"
-                or "R24" or "R25" or "R26" or "R27" or "R28" or "R29" or "R30" or "R31"
+            if (s_universalRegisterMaskAliasesToOmit.Contains(name)
                 || name.StartsWith("XMM", StringComparison.Ordinal))
             {
                 // Keep target-qualified aliases; these universal masks have no compiler callers.

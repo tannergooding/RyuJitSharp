@@ -4711,70 +4711,10 @@ public enum FatalJitErrorCode
     RegisterMaskPCIsNotAvailableForTheConfiguredTarget = 2511,
     /// <summary>Register mask &#x27;FP&#x27; is not available for the configured target.</summary>
     RegisterMaskFPIsNotAvailableForTheConfiguredTarget = 2512,
-    /// <summary>Register mask &#x27;F0&#x27; is not available for the configured target.</summary>
-    RegisterMaskF0IsNotAvailableForTheConfiguredTarget = 2513,
-    /// <summary>Register mask &#x27;F1&#x27; is not available for the configured target.</summary>
-    RegisterMaskF1IsNotAvailableForTheConfiguredTarget = 2514,
-    /// <summary>Register mask &#x27;F2&#x27; is not available for the configured target.</summary>
-    RegisterMaskF2IsNotAvailableForTheConfiguredTarget = 2515,
-    /// <summary>Register mask &#x27;F3&#x27; is not available for the configured target.</summary>
-    RegisterMaskF3IsNotAvailableForTheConfiguredTarget = 2516,
-    /// <summary>Register mask &#x27;F4&#x27; is not available for the configured target.</summary>
-    RegisterMaskF4IsNotAvailableForTheConfiguredTarget = 2517,
-    /// <summary>Register mask &#x27;F5&#x27; is not available for the configured target.</summary>
-    RegisterMaskF5IsNotAvailableForTheConfiguredTarget = 2518,
-    /// <summary>Register mask &#x27;F6&#x27; is not available for the configured target.</summary>
-    RegisterMaskF6IsNotAvailableForTheConfiguredTarget = 2519,
-    /// <summary>Register mask &#x27;F7&#x27; is not available for the configured target.</summary>
-    RegisterMaskF7IsNotAvailableForTheConfiguredTarget = 2520,
-    /// <summary>Register mask &#x27;F8&#x27; is not available for the configured target.</summary>
-    RegisterMaskF8IsNotAvailableForTheConfiguredTarget = 2521,
-    /// <summary>Register mask &#x27;F9&#x27; is not available for the configured target.</summary>
-    RegisterMaskF9IsNotAvailableForTheConfiguredTarget = 2522,
-    /// <summary>Register mask &#x27;F10&#x27; is not available for the configured target.</summary>
-    RegisterMaskF10IsNotAvailableForTheConfiguredTarget = 2523,
-    /// <summary>Register mask &#x27;F11&#x27; is not available for the configured target.</summary>
-    RegisterMaskF11IsNotAvailableForTheConfiguredTarget = 2524,
-    /// <summary>Register mask &#x27;F12&#x27; is not available for the configured target.</summary>
-    RegisterMaskF12IsNotAvailableForTheConfiguredTarget = 2525,
-    /// <summary>Register mask &#x27;F13&#x27; is not available for the configured target.</summary>
-    RegisterMaskF13IsNotAvailableForTheConfiguredTarget = 2526,
-    /// <summary>Register mask &#x27;F14&#x27; is not available for the configured target.</summary>
-    RegisterMaskF14IsNotAvailableForTheConfiguredTarget = 2527,
-    /// <summary>Register mask &#x27;F15&#x27; is not available for the configured target.</summary>
-    RegisterMaskF15IsNotAvailableForTheConfiguredTarget = 2528,
     /// <summary>Register mask &#x27;F16&#x27; is not available for the configured target.</summary>
     RegisterMaskF16IsNotAvailableForTheConfiguredTarget = 2529,
     /// <summary>Register mask &#x27;F17&#x27; is not available for the configured target.</summary>
     RegisterMaskF17IsNotAvailableForTheConfiguredTarget = 2530,
-    /// <summary>Register mask &#x27;F18&#x27; is not available for the configured target.</summary>
-    RegisterMaskF18IsNotAvailableForTheConfiguredTarget = 2531,
-    /// <summary>Register mask &#x27;F19&#x27; is not available for the configured target.</summary>
-    RegisterMaskF19IsNotAvailableForTheConfiguredTarget = 2532,
-    /// <summary>Register mask &#x27;F20&#x27; is not available for the configured target.</summary>
-    RegisterMaskF20IsNotAvailableForTheConfiguredTarget = 2533,
-    /// <summary>Register mask &#x27;F21&#x27; is not available for the configured target.</summary>
-    RegisterMaskF21IsNotAvailableForTheConfiguredTarget = 2534,
-    /// <summary>Register mask &#x27;F22&#x27; is not available for the configured target.</summary>
-    RegisterMaskF22IsNotAvailableForTheConfiguredTarget = 2535,
-    /// <summary>Register mask &#x27;F23&#x27; is not available for the configured target.</summary>
-    RegisterMaskF23IsNotAvailableForTheConfiguredTarget = 2536,
-    /// <summary>Register mask &#x27;F24&#x27; is not available for the configured target.</summary>
-    RegisterMaskF24IsNotAvailableForTheConfiguredTarget = 2537,
-    /// <summary>Register mask &#x27;F25&#x27; is not available for the configured target.</summary>
-    RegisterMaskF25IsNotAvailableForTheConfiguredTarget = 2538,
-    /// <summary>Register mask &#x27;F26&#x27; is not available for the configured target.</summary>
-    RegisterMaskF26IsNotAvailableForTheConfiguredTarget = 2539,
-    /// <summary>Register mask &#x27;F27&#x27; is not available for the configured target.</summary>
-    RegisterMaskF27IsNotAvailableForTheConfiguredTarget = 2540,
-    /// <summary>Register mask &#x27;F28&#x27; is not available for the configured target.</summary>
-    RegisterMaskF28IsNotAvailableForTheConfiguredTarget = 2541,
-    /// <summary>Register mask &#x27;F29&#x27; is not available for the configured target.</summary>
-    RegisterMaskF29IsNotAvailableForTheConfiguredTarget = 2542,
-    /// <summary>Register mask &#x27;F30&#x27; is not available for the configured target.</summary>
-    RegisterMaskF30IsNotAvailableForTheConfiguredTarget = 2543,
-    /// <summary>Register mask &#x27;F31&#x27; is not available for the configured target.</summary>
-    RegisterMaskF31IsNotAvailableForTheConfiguredTarget = 2544,
     /// <summary>Register mask &#x27;IP0&#x27; is not available for the configured target.</summary>
     RegisterMaskIP0IsNotAvailableForTheConfiguredTarget = 2545,
     /// <summary>Register mask &#x27;IP1&#x27; is not available for the configured target.</summary>
@@ -4847,38 +4787,6 @@ public enum FatalJitErrorCode
     RegisterMaskV30IsNotAvailableForTheConfiguredTarget = 2579,
     /// <summary>Register mask &#x27;V31&#x27; is not available for the configured target.</summary>
     RegisterMaskV31IsNotAvailableForTheConfiguredTarget = 2580,
-    /// <summary>Register mask &#x27;P0&#x27; is not available for the configured target.</summary>
-    RegisterMaskP0IsNotAvailableForTheConfiguredTarget = 2581,
-    /// <summary>Register mask &#x27;P1&#x27; is not available for the configured target.</summary>
-    RegisterMaskP1IsNotAvailableForTheConfiguredTarget = 2582,
-    /// <summary>Register mask &#x27;P2&#x27; is not available for the configured target.</summary>
-    RegisterMaskP2IsNotAvailableForTheConfiguredTarget = 2583,
-    /// <summary>Register mask &#x27;P3&#x27; is not available for the configured target.</summary>
-    RegisterMaskP3IsNotAvailableForTheConfiguredTarget = 2584,
-    /// <summary>Register mask &#x27;P4&#x27; is not available for the configured target.</summary>
-    RegisterMaskP4IsNotAvailableForTheConfiguredTarget = 2585,
-    /// <summary>Register mask &#x27;P5&#x27; is not available for the configured target.</summary>
-    RegisterMaskP5IsNotAvailableForTheConfiguredTarget = 2586,
-    /// <summary>Register mask &#x27;P6&#x27; is not available for the configured target.</summary>
-    RegisterMaskP6IsNotAvailableForTheConfiguredTarget = 2587,
-    /// <summary>Register mask &#x27;P7&#x27; is not available for the configured target.</summary>
-    RegisterMaskP7IsNotAvailableForTheConfiguredTarget = 2588,
-    /// <summary>Register mask &#x27;P8&#x27; is not available for the configured target.</summary>
-    RegisterMaskP8IsNotAvailableForTheConfiguredTarget = 2589,
-    /// <summary>Register mask &#x27;P9&#x27; is not available for the configured target.</summary>
-    RegisterMaskP9IsNotAvailableForTheConfiguredTarget = 2590,
-    /// <summary>Register mask &#x27;P10&#x27; is not available for the configured target.</summary>
-    RegisterMaskP10IsNotAvailableForTheConfiguredTarget = 2591,
-    /// <summary>Register mask &#x27;P11&#x27; is not available for the configured target.</summary>
-    RegisterMaskP11IsNotAvailableForTheConfiguredTarget = 2592,
-    /// <summary>Register mask &#x27;P12&#x27; is not available for the configured target.</summary>
-    RegisterMaskP12IsNotAvailableForTheConfiguredTarget = 2593,
-    /// <summary>Register mask &#x27;P13&#x27; is not available for the configured target.</summary>
-    RegisterMaskP13IsNotAvailableForTheConfiguredTarget = 2594,
-    /// <summary>Register mask &#x27;P14&#x27; is not available for the configured target.</summary>
-    RegisterMaskP14IsNotAvailableForTheConfiguredTarget = 2595,
-    /// <summary>Register mask &#x27;P15&#x27; is not available for the configured target.</summary>
-    RegisterMaskP15IsNotAvailableForTheConfiguredTarget = 2596,
     /// <summary>Register mask &#x27;FFR&#x27; is not available for the configured target.</summary>
     RegisterMaskFFRIsNotAvailableForTheConfiguredTarget = 2597,
     /// <summary>Register mask &#x27;RA&#x27; is not available for the configured target.</summary>
@@ -4907,8 +4815,6 @@ public enum FatalJitErrorCode
     RegisterMaskX0IsNotAvailableForTheConfiguredTarget = 2617,
     /// <summary>Register mask &#x27;S0&#x27; is not available for the configured target.</summary>
     RegisterMaskS0IsNotAvailableForTheConfiguredTarget = 2618,
-    /// <summary>Register mask &#x27;S1&#x27; is not available for the configured target.</summary>
-    RegisterMaskS1IsNotAvailableForTheConfiguredTarget = 2619,
     /// <summary>Register mask &#x27;S2&#x27; is not available for the configured target.</summary>
     RegisterMaskS2IsNotAvailableForTheConfiguredTarget = 2620,
     /// <summary>Register mask &#x27;S3&#x27; is not available for the configured target.</summary>
@@ -4933,70 +4839,6 @@ public enum FatalJitErrorCode
     RegisterMaskS11IsNotAvailableForTheConfiguredTarget = 2630,
     /// <summary>Register mask &#x27;ZERO&#x27; is not available for the configured target.</summary>
     RegisterMaskZEROIsNotAvailableForTheConfiguredTarget = 2631,
-    /// <summary>Register mask &#x27;FT0&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT0IsNotAvailableForTheConfiguredTarget = 2632,
-    /// <summary>Register mask &#x27;FT1&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT1IsNotAvailableForTheConfiguredTarget = 2633,
-    /// <summary>Register mask &#x27;FT2&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT2IsNotAvailableForTheConfiguredTarget = 2634,
-    /// <summary>Register mask &#x27;FT3&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT3IsNotAvailableForTheConfiguredTarget = 2635,
-    /// <summary>Register mask &#x27;FT4&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT4IsNotAvailableForTheConfiguredTarget = 2636,
-    /// <summary>Register mask &#x27;FT5&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT5IsNotAvailableForTheConfiguredTarget = 2637,
-    /// <summary>Register mask &#x27;FT6&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT6IsNotAvailableForTheConfiguredTarget = 2638,
-    /// <summary>Register mask &#x27;FT7&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT7IsNotAvailableForTheConfiguredTarget = 2639,
-    /// <summary>Register mask &#x27;FS0&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS0IsNotAvailableForTheConfiguredTarget = 2640,
-    /// <summary>Register mask &#x27;FS1&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS1IsNotAvailableForTheConfiguredTarget = 2641,
-    /// <summary>Register mask &#x27;FA0&#x27; is not available for the configured target.</summary>
-    RegisterMaskFA0IsNotAvailableForTheConfiguredTarget = 2642,
-    /// <summary>Register mask &#x27;FA1&#x27; is not available for the configured target.</summary>
-    RegisterMaskFA1IsNotAvailableForTheConfiguredTarget = 2643,
-    /// <summary>Register mask &#x27;FA2&#x27; is not available for the configured target.</summary>
-    RegisterMaskFA2IsNotAvailableForTheConfiguredTarget = 2644,
-    /// <summary>Register mask &#x27;FA3&#x27; is not available for the configured target.</summary>
-    RegisterMaskFA3IsNotAvailableForTheConfiguredTarget = 2645,
-    /// <summary>Register mask &#x27;FA4&#x27; is not available for the configured target.</summary>
-    RegisterMaskFA4IsNotAvailableForTheConfiguredTarget = 2646,
-    /// <summary>Register mask &#x27;FA5&#x27; is not available for the configured target.</summary>
-    RegisterMaskFA5IsNotAvailableForTheConfiguredTarget = 2647,
-    /// <summary>Register mask &#x27;FA6&#x27; is not available for the configured target.</summary>
-    RegisterMaskFA6IsNotAvailableForTheConfiguredTarget = 2648,
-    /// <summary>Register mask &#x27;FA7&#x27; is not available for the configured target.</summary>
-    RegisterMaskFA7IsNotAvailableForTheConfiguredTarget = 2649,
-    /// <summary>Register mask &#x27;FS2&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS2IsNotAvailableForTheConfiguredTarget = 2650,
-    /// <summary>Register mask &#x27;FS3&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS3IsNotAvailableForTheConfiguredTarget = 2651,
-    /// <summary>Register mask &#x27;FS4&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS4IsNotAvailableForTheConfiguredTarget = 2652,
-    /// <summary>Register mask &#x27;FS5&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS5IsNotAvailableForTheConfiguredTarget = 2653,
-    /// <summary>Register mask &#x27;FS6&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS6IsNotAvailableForTheConfiguredTarget = 2654,
-    /// <summary>Register mask &#x27;FS7&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS7IsNotAvailableForTheConfiguredTarget = 2655,
-    /// <summary>Register mask &#x27;FS8&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS8IsNotAvailableForTheConfiguredTarget = 2656,
-    /// <summary>Register mask &#x27;FS9&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS9IsNotAvailableForTheConfiguredTarget = 2657,
-    /// <summary>Register mask &#x27;FS10&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS10IsNotAvailableForTheConfiguredTarget = 2658,
-    /// <summary>Register mask &#x27;FS11&#x27; is not available for the configured target.</summary>
-    RegisterMaskFS11IsNotAvailableForTheConfiguredTarget = 2659,
-    /// <summary>Register mask &#x27;FT8&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT8IsNotAvailableForTheConfiguredTarget = 2660,
-    /// <summary>Register mask &#x27;FT9&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT9IsNotAvailableForTheConfiguredTarget = 2661,
-    /// <summary>Register mask &#x27;FT10&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT10IsNotAvailableForTheConfiguredTarget = 2662,
-    /// <summary>Register mask &#x27;FT11&#x27; is not available for the configured target.</summary>
-    RegisterMaskFT11IsNotAvailableForTheConfiguredTarget = 2663,
     /// <summary>NYI: WASM64</summary>
     NYIWASM64 = 2664,
     /// <summary>Floating register names are only available in Debug builds.</summary>
@@ -7845,38 +7687,8 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.RegisterMaskLRIsNotAvailableForTheConfiguredTarget => "Register mask 'LR' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskPCIsNotAvailableForTheConfiguredTarget => "Register mask 'PC' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskFPIsNotAvailableForTheConfiguredTarget => "Register mask 'FP' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF0IsNotAvailableForTheConfiguredTarget => "Register mask 'F0' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF1IsNotAvailableForTheConfiguredTarget => "Register mask 'F1' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF2IsNotAvailableForTheConfiguredTarget => "Register mask 'F2' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF3IsNotAvailableForTheConfiguredTarget => "Register mask 'F3' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF4IsNotAvailableForTheConfiguredTarget => "Register mask 'F4' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF5IsNotAvailableForTheConfiguredTarget => "Register mask 'F5' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF6IsNotAvailableForTheConfiguredTarget => "Register mask 'F6' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF7IsNotAvailableForTheConfiguredTarget => "Register mask 'F7' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF8IsNotAvailableForTheConfiguredTarget => "Register mask 'F8' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF9IsNotAvailableForTheConfiguredTarget => "Register mask 'F9' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF10IsNotAvailableForTheConfiguredTarget => "Register mask 'F10' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF11IsNotAvailableForTheConfiguredTarget => "Register mask 'F11' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF12IsNotAvailableForTheConfiguredTarget => "Register mask 'F12' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF13IsNotAvailableForTheConfiguredTarget => "Register mask 'F13' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF14IsNotAvailableForTheConfiguredTarget => "Register mask 'F14' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF15IsNotAvailableForTheConfiguredTarget => "Register mask 'F15' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskF16IsNotAvailableForTheConfiguredTarget => "Register mask 'F16' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskF17IsNotAvailableForTheConfiguredTarget => "Register mask 'F17' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF18IsNotAvailableForTheConfiguredTarget => "Register mask 'F18' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF19IsNotAvailableForTheConfiguredTarget => "Register mask 'F19' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF20IsNotAvailableForTheConfiguredTarget => "Register mask 'F20' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF21IsNotAvailableForTheConfiguredTarget => "Register mask 'F21' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF22IsNotAvailableForTheConfiguredTarget => "Register mask 'F22' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF23IsNotAvailableForTheConfiguredTarget => "Register mask 'F23' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF24IsNotAvailableForTheConfiguredTarget => "Register mask 'F24' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF25IsNotAvailableForTheConfiguredTarget => "Register mask 'F25' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF26IsNotAvailableForTheConfiguredTarget => "Register mask 'F26' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF27IsNotAvailableForTheConfiguredTarget => "Register mask 'F27' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF28IsNotAvailableForTheConfiguredTarget => "Register mask 'F28' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF29IsNotAvailableForTheConfiguredTarget => "Register mask 'F29' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF30IsNotAvailableForTheConfiguredTarget => "Register mask 'F30' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskF31IsNotAvailableForTheConfiguredTarget => "Register mask 'F31' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskIP0IsNotAvailableForTheConfiguredTarget => "Register mask 'IP0' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskIP1IsNotAvailableForTheConfiguredTarget => "Register mask 'IP1' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskPRIsNotAvailableForTheConfiguredTarget => "Register mask 'PR' is not available for the configured target.",
@@ -7913,22 +7725,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.RegisterMaskV29IsNotAvailableForTheConfiguredTarget => "Register mask 'V29' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskV30IsNotAvailableForTheConfiguredTarget => "Register mask 'V30' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskV31IsNotAvailableForTheConfiguredTarget => "Register mask 'V31' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP0IsNotAvailableForTheConfiguredTarget => "Register mask 'P0' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP1IsNotAvailableForTheConfiguredTarget => "Register mask 'P1' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP2IsNotAvailableForTheConfiguredTarget => "Register mask 'P2' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP3IsNotAvailableForTheConfiguredTarget => "Register mask 'P3' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP4IsNotAvailableForTheConfiguredTarget => "Register mask 'P4' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP5IsNotAvailableForTheConfiguredTarget => "Register mask 'P5' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP6IsNotAvailableForTheConfiguredTarget => "Register mask 'P6' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP7IsNotAvailableForTheConfiguredTarget => "Register mask 'P7' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP8IsNotAvailableForTheConfiguredTarget => "Register mask 'P8' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP9IsNotAvailableForTheConfiguredTarget => "Register mask 'P9' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP10IsNotAvailableForTheConfiguredTarget => "Register mask 'P10' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP11IsNotAvailableForTheConfiguredTarget => "Register mask 'P11' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP12IsNotAvailableForTheConfiguredTarget => "Register mask 'P12' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP13IsNotAvailableForTheConfiguredTarget => "Register mask 'P13' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP14IsNotAvailableForTheConfiguredTarget => "Register mask 'P14' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskP15IsNotAvailableForTheConfiguredTarget => "Register mask 'P15' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskFFRIsNotAvailableForTheConfiguredTarget => "Register mask 'FFR' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskRAIsNotAvailableForTheConfiguredTarget => "Register mask 'RA' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskTPIsNotAvailableForTheConfiguredTarget => "Register mask 'TP' is not available for the configured target.",
@@ -7943,7 +7739,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.RegisterMaskT8IsNotAvailableForTheConfiguredTarget => "Register mask 'T8' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskX0IsNotAvailableForTheConfiguredTarget => "Register mask 'X0' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskS0IsNotAvailableForTheConfiguredTarget => "Register mask 'S0' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskS1IsNotAvailableForTheConfiguredTarget => "Register mask 'S1' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskS2IsNotAvailableForTheConfiguredTarget => "Register mask 'S2' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskS3IsNotAvailableForTheConfiguredTarget => "Register mask 'S3' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskS4IsNotAvailableForTheConfiguredTarget => "Register mask 'S4' is not available for the configured target.",
@@ -7956,38 +7751,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.RegisterMaskS10IsNotAvailableForTheConfiguredTarget => "Register mask 'S10' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskS11IsNotAvailableForTheConfiguredTarget => "Register mask 'S11' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskZEROIsNotAvailableForTheConfiguredTarget => "Register mask 'ZERO' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT0IsNotAvailableForTheConfiguredTarget => "Register mask 'FT0' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT1IsNotAvailableForTheConfiguredTarget => "Register mask 'FT1' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT2IsNotAvailableForTheConfiguredTarget => "Register mask 'FT2' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT3IsNotAvailableForTheConfiguredTarget => "Register mask 'FT3' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT4IsNotAvailableForTheConfiguredTarget => "Register mask 'FT4' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT5IsNotAvailableForTheConfiguredTarget => "Register mask 'FT5' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT6IsNotAvailableForTheConfiguredTarget => "Register mask 'FT6' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT7IsNotAvailableForTheConfiguredTarget => "Register mask 'FT7' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS0IsNotAvailableForTheConfiguredTarget => "Register mask 'FS0' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS1IsNotAvailableForTheConfiguredTarget => "Register mask 'FS1' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFA0IsNotAvailableForTheConfiguredTarget => "Register mask 'FA0' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFA1IsNotAvailableForTheConfiguredTarget => "Register mask 'FA1' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFA2IsNotAvailableForTheConfiguredTarget => "Register mask 'FA2' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFA3IsNotAvailableForTheConfiguredTarget => "Register mask 'FA3' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFA4IsNotAvailableForTheConfiguredTarget => "Register mask 'FA4' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFA5IsNotAvailableForTheConfiguredTarget => "Register mask 'FA5' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFA6IsNotAvailableForTheConfiguredTarget => "Register mask 'FA6' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFA7IsNotAvailableForTheConfiguredTarget => "Register mask 'FA7' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS2IsNotAvailableForTheConfiguredTarget => "Register mask 'FS2' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS3IsNotAvailableForTheConfiguredTarget => "Register mask 'FS3' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS4IsNotAvailableForTheConfiguredTarget => "Register mask 'FS4' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS5IsNotAvailableForTheConfiguredTarget => "Register mask 'FS5' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS6IsNotAvailableForTheConfiguredTarget => "Register mask 'FS6' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS7IsNotAvailableForTheConfiguredTarget => "Register mask 'FS7' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS8IsNotAvailableForTheConfiguredTarget => "Register mask 'FS8' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS9IsNotAvailableForTheConfiguredTarget => "Register mask 'FS9' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS10IsNotAvailableForTheConfiguredTarget => "Register mask 'FS10' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFS11IsNotAvailableForTheConfiguredTarget => "Register mask 'FS11' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT8IsNotAvailableForTheConfiguredTarget => "Register mask 'FT8' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT9IsNotAvailableForTheConfiguredTarget => "Register mask 'FT9' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT10IsNotAvailableForTheConfiguredTarget => "Register mask 'FT10' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskFT11IsNotAvailableForTheConfiguredTarget => "Register mask 'FT11' is not available for the configured target.",
             FatalJitErrorCode.NYIWASM64 => "NYI: WASM64",
             FatalJitErrorCode.FloatingRegisterNamesAreOnlyAvailableInDebugBuilds => "Floating register names are only available in Debug builds.",
             FatalJitErrorCode.UnsupportedTargetArchitecture => "Unsupported target architecture.",

@@ -266,7 +266,7 @@ internal static unsafe class PatchpointMetadataTests
             }
             else
             {
-                var saved = RBM_S1;
+                var saved = Configuration.TARGET_LOONGARCH64 ? RBM_LOONGARCH64_S1 : RBM_RISCV64_S1;
                 var a0Mask = Configuration.TARGET_LOONGARCH64 ? RBM_LOONGARCH64_A0 : RBM_RISCV64_A0;
                 codeGen.RegSet.rsSetRegsModified(saved | a0Mask);
                 expectedSaves = saved | RBM_FP | RBM_RA;
