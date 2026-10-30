@@ -39,7 +39,7 @@ internal static unsafe class CodeGenCallInstructionTests
             codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RBX, TYP_REF);
             codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R12, TYP_BYREF);
 
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(INS_call));
@@ -74,7 +74,7 @@ internal static unsafe class CodeGenCallInstructionTests
                 call._callMethHnd = Compiler.eeFindHelper(CORINFO_HELP_STOP_FOR_GC);
             }
 
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(INS_l_jmp));
@@ -104,7 +104,7 @@ internal static unsafe class CodeGenCallInstructionTests
                 _ = codeGen.genConsumeReg(target);
             }
 
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(tailCall ? INS_tail_i_jmp : INS_call));
@@ -142,7 +142,7 @@ internal static unsafe class CodeGenCallInstructionTests
                 codeGen.genConsumeAddress(address);
             }
 
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(tailCall ? INS_tail_i_jmp : INS_call));
@@ -177,7 +177,7 @@ internal static unsafe class CodeGenCallInstructionTests
                 call._callMoreFlags |= GTF_CALL_M_TAILCALL;
             }
 
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_METHPTR));
@@ -211,7 +211,7 @@ internal static unsafe class CodeGenCallInstructionTests
             argument.AbiInfo = AbiPassingInformation.FromSegment(compiler, false,
                 AbiPassingSegment.InRegister(reg, 0, 8));
 
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(reg));
@@ -229,7 +229,7 @@ internal static unsafe class CodeGenCallInstructionTests
             call.Flags |= GTF_TLS_GET_ADDR;
             call.ControlExpr = new GenTreeIntCon(TYP_LONG, 0x3456) { IsContained = true };
 
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
 
             var ids = Descriptors(codeGen);
             Assert.That(ids.Select(id => id.idIns()), Is.EqualTo(
@@ -258,7 +258,7 @@ internal static unsafe class CodeGenCallInstructionTests
                 IsContained = true,
             };
 
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(INS_call));
@@ -298,7 +298,7 @@ internal static unsafe class CodeGenCallInstructionTests
                     AbiPassingSegment.InRegister(REG_X64_R10, 0, 8));
             }
 
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
         });
@@ -323,7 +323,7 @@ internal static unsafe class CodeGenCallInstructionTests
             compiler.info.compCompHnd = &jitInfo;
             TestConfiguration.SetDspCode(compiler, true);
 
-            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCallInstruction(call));
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCallInstructionXarch(call));
             Assert.That(Descriptors(codeGen), Is.Not.Empty);
             Assert.That(target._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
                 Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));

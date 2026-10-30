@@ -191,13 +191,4 @@ public sealed partial class Lowering
         compare.IsUnusedValue = false;
         return LowerNode(compare);
     }
-
-    private GenTree? LowerHWIntrinsicCmpOpLoongArch64(GenTreeHWIntrinsic node, genTreeOps cmpOp)
-    {
-        FatalJitException.ThrowFatalJitException(
-        CORJIT_SKIPPED,
-        FatalJitErrorCode.LoongArch64HardwareIntrinsicComparisonsAreNotPorted
-    );
-        return default!;
-    }
 }

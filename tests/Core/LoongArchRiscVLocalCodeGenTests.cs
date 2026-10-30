@@ -627,7 +627,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 
             if (Configuration.TARGET_LOONGARCH64)
             {
-                var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForInitBlkUnroll(tree));
+                var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForInitBlkUnrollLoongArch64(tree));
                 var expectedBoundary = isVolatile
                     ? "Immediate-only instruction recording requires xarch."
                     : destinationKind is 0
@@ -637,7 +637,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             }
             else
             {
-                var failure = CaptureFatalJitException(() => codeGen.genCodeForInitBlkUnroll(tree));
+                var failure = CaptureFatalJitException(() => codeGen.genCodeForInitBlkUnrollRiscV64(tree));
                 if (isVolatile)
                 {
                     const string? expectedBoundary = RiscVRecorderDebugBoundary;
@@ -2134,7 +2134,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             {
                 _kind = GenTreeBlk.BlkOpKindUnroll,
             };
-            var failure = Assert.Throws<InvalidOperationException>(() => codeGen.genCodeForCpBlkUnroll(block));
+            var failure = Assert.Throws<InvalidOperationException>(() => codeGen.genCodeForCpBlkUnrollLoongArch64(block));
 
             Assert.That(failure?.Message,
                 Is.EqualTo(FatalJitException.GetOptionalFailureMessage(expectedErrorCode)));

@@ -290,7 +290,7 @@ internal static unsafe class SysVX64CallOrchestrationTests
                 Is.EqualTo(memory ? Mask(REG_X64_R10) : RBM_NONE));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
                 Is.EqualTo(memory ? Mask(REG_X64_R11) : RBM_NONE));
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
             Assert.That(Descriptors(codeGen).Single().idIns(), Is.EqualTo(INS_tail_i_jmp));
         });
     }
@@ -320,7 +320,7 @@ internal static unsafe class SysVX64CallOrchestrationTests
                 AbiPassingSegment.InRegister(register, 0, 8));
 
             Assert.That(codeGen.getCallIndirectionCellReg(call), Is.EqualTo(register));
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(r2r ? INS_tail_i_jmp : INS_call));

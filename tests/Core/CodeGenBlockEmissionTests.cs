@@ -63,19 +63,19 @@ internal static class CodeGenBlockEmissionTests
 
                 case 2:
                 {
-                    codeGen.genCodeForInitBlkUnroll(node);
+                    codeGen.genCodeForInitBlkUnrollXarch(node);
                     break;
                 }
 
                 case 3:
                 {
-                    codeGen.genCodeForInitBlkLoop(node);
+                    codeGen.genCodeForInitBlkLoopXarch(node);
                     break;
                 }
 
                 case 4:
                 {
-                    codeGen.genCodeForCpBlkUnroll(node);
+                    codeGen.genCodeForCpBlkUnrollXarch(node);
                     break;
                 }
             }

@@ -227,7 +227,7 @@ internal static unsafe class CodeGenCallTests
                 Assert.That(baseNode._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
                     Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
             }
-            codeGen.genCallInstruction(call);
+            codeGen.genCallInstructionXarch(call);
             Assert.That(Descriptors(codeGen).Single().idIns(), Is.EqualTo(INS_tail_i_jmp));
         });
     }

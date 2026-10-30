@@ -9,15 +9,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-    private bool IsValidConstForMovImmLoongArch64(GenTreeHWIntrinsic node)
-    {
-        FatalJitException.ThrowFatalJitException(
-        CORJIT_SKIPPED,
-        FatalJitErrorCode.LoongArch64HardwareIntrinsicImmediateMaterializationIsNotPorted
-    );
-        return default!;
-    }
-
     private GenTree? LowerHWIntrinsic(GenTreeHWIntrinsic node)
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)

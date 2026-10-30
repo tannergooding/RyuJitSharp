@@ -2423,7 +2423,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 block, regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
 
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-            var failure = CaptureFatalJitException(() => codeGen.genCodeForCpBlkUnroll(block));
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForCpBlkUnrollRiscV64(block));
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
         });

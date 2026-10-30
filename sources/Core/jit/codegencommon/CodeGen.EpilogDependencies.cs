@@ -35,20 +35,6 @@ public sealed partial class CodeGen
         }
     }
 
-    public uint genPopCalleeSavedRegistersFromMask(regMaskTP popRegs)
-    {
-        if (!Configuration.TARGET_XARCH)
-        {
-            FatalJitException.ThrowFatalJitException(
-        CORJIT_SKIPPED,
-        FatalJitErrorCode.XarchCalleeSaveRestorationIsNotSupportedOnThisTarget
-    );
-            return default!;
-        }
-
-        return genPopCalleeSavedRegistersFromMaskXarch(popRegs);
-    }
-
     public unsafe void genFnEpilog(BasicBlock block)
     {
         if (Configuration.TARGET_WASM)

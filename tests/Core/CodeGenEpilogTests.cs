@@ -20,7 +20,7 @@ internal static unsafe class CodeGenEpilogTests
         WithEpilog((_, codeGen) =>
         {
             codeGen.IsFramePointerUsed = false;
-            var count = codeGen.genPopCalleeSavedRegistersFromMask(
+            var count = codeGen.genPopCalleeSavedRegistersFromMaskXarch(
                 RBM_RBX | RBM_RBP | RBM_RSI | RBM_RDI | RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15);
 
             Assert.That(count, Is.EqualTo(8u));

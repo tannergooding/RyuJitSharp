@@ -74,7 +74,7 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
                 _kind = BlkOpKindUnroll,
             };
 
-            RecordArm32Instructions(() => codeGen.genCodeForInitBlkUnroll(block));
+            RecordArm32Instructions(() => codeGen.genCodeForInitBlkUnrollArmArch(block));
 
             var emitted = InstructionsSince(codeGen.Emitter, 0);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
@@ -110,7 +110,7 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
             };
             codeGen.InternalRegisters.Add(block, Mask(REG_R3));
 
-            RecordArm32Instructions(() => codeGen.genCodeForCpBlkUnroll(block));
+            RecordArm32Instructions(() => codeGen.genCodeForCpBlkUnrollArmArch(block));
 
             var emitted = InstructionsSince(codeGen.Emitter, 0);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),

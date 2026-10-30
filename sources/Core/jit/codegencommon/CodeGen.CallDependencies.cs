@@ -41,36 +41,4 @@ public sealed partial class CodeGen
             return;
         }
     }
-
-    public unsafe void genCallInstruction(GenTreeCall call, int stackArgBytes = 0)
-    {
-        if (Configuration.TARGET_XARCH)
-        {
-            genCallInstructionXarch(call, stackArgBytes);
-        }
-        else if (Configuration.TARGET_WASM)
-        {
-            genCallInstructionWasm(call);
-        }
-        else if (Configuration.TARGET_RISCV64)
-        {
-            genCallInstructionRiscV64(call);
-        }
-        else if (Configuration.TARGET_LOONGARCH64)
-        {
-            genCallInstructionLoongArch64(call);
-        }
-        else if (Configuration.TARGET_ARMARCH)
-        {
-            genCallInstructionArmArch(call);
-        }
-        else
-        {
-            FatalJitException.ThrowFatalJitException(
-        CORJIT_SKIPPED,
-        FatalJitErrorCode.CallInstructionGenerationIsNotImplementedForThisTarget
-    );
-            return;
-        }
-    }
 }

@@ -71,53 +71,6 @@ public sealed partial class CodeGen
         }
     }
 
-    private void genCodeForShiftLoongArch64(GenTree tree)
-    {
-        var ins = genGetInsForOper(tree);
-        var size = tree.Type.EmitActualSize;
-
-        assert(tree.RegNum != REG_LOONGARCH64_NA);
-        genConsumeOperands(tree.AsOp());
-
-        var operand = tree.AsOp().Op1;
-        var shiftBy = tree.AsOp().Op2;
-        if (!shiftBy.Oper.IsCnsIntOrI)
-        {
-            GetEmitter().emitIns_R_R_R(ins, size, tree.RegNum, operand.RegNum, shiftBy.RegNum);
-        }
-        else
-        {
-            var shiftByImm = unchecked((uint)shiftBy.AsIntCon().IconValue);
-            var immWidth = unchecked((uint)EA_SIZE(size) * 8);
-            shiftByImm &= immWidth - 1;
-
-            if ((ins == INS_slli_w) && (shiftByImm >= 32))
-            {
-                ins = INS_slli_d;
-            }
-            else if ((ins == INS_slli_d) && (shiftByImm >= 32) && (shiftByImm < 64))
-            {
-                ins = INS_slli_d;
-            }
-            else if ((ins == INS_srai_d) && (shiftByImm >= 32) && (shiftByImm < 64))
-            {
-                ins = INS_srai_d;
-            }
-            else if ((ins == INS_srli_d) && (shiftByImm >= 32) && (shiftByImm < 64))
-            {
-                ins = INS_srli_d;
-            }
-            else if ((ins == INS_rotri_d) && (shiftByImm >= 32) && (shiftByImm < 64))
-            {
-                ins = INS_rotri_d;
-            }
-
-            GetEmitter().emitIns_R_R_I(ins, size, tree.RegNum, operand.RegNum, unchecked((int)shiftByImm));
-        }
-
-        genProduceReg(tree);
-    }
-
     private void genCodeForLclFldLoongArch64(GenTreeLclFld tree)
     {
         assert(tree.Oper is GT_LCL_FLD);

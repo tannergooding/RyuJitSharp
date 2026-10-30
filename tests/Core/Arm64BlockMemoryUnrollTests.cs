@@ -46,7 +46,7 @@ internal static class Arm64BlockMemoryUnrollTests
 
             var block = CreateBlock(size, Physical(REG_ARM64_R1, TYP_BYREF));
             codeGen.InternalRegisters.Add(block, Mask(REG_ARM64_R16) | Mask(REG_ARM64_V16));
-            codeGen.genCodeForInitBlkUnroll(block);
+            codeGen.genCodeForInitBlkUnrollArmArch(block);
 
             var emitted = Descriptors(codeGen);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(expectedInstructions));
@@ -74,7 +74,7 @@ internal static class Arm64BlockMemoryUnrollTests
             };
             var block = CreateBlock(8, address);
             codeGen.InternalRegisters.Add(block, Mask(REG_ARM64_R16));
-            codeGen.genCodeForInitBlkUnroll(block);
+            codeGen.genCodeForInitBlkUnrollArmArch(block);
 
             var emitted = Descriptors(codeGen);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo([INS_add, INS_str]));

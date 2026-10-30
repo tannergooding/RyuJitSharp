@@ -1253,20 +1253,12 @@ public enum FatalJitErrorCode
     BlockMemoryGenerationIsNotImplementedForThisTarget = 585,
     /// <summary>Unrolled memmove is not implemented for this target.</summary>
     UnrolledMemmoveIsNotImplementedForThisTarget = 586,
-    /// <summary>Loop block initialization is not implemented for this target.</summary>
-    LoopBlockInitializationIsNotImplementedForThisTarget = 587,
-    /// <summary>Unrolled block initialization is not implemented for this target.</summary>
-    UnrolledBlockInitializationIsNotImplementedForThisTarget = 588,
-    /// <summary>Unrolled block copy is not implemented for this target.</summary>
-    UnrolledBlockCopyIsNotImplementedForThisTarget = 589,
     /// <summary>Call register argument placement requires a native target.</summary>
     CallRegisterArgumentPlacementRequiresANativeTarget = 590,
     /// <summary>Unix AMD64 varargs are unsupported.</summary>
     UnixAMD64VarargsAreUnsupported = 591,
     /// <summary>Call generation is not implemented for this target.</summary>
     CallGenerationIsNotImplementedForThisTarget = 592,
-    /// <summary>Call-instruction generation is not implemented for this target.</summary>
-    CallInstructionGenerationIsNotImplementedForThisTarget = 593,
     /// <summary>Wasm tailcall epilog-register verification is not ported.</summary>
     WasmTailcallEpilogRegisterVerificationIsNotPorted = 594,
     /// <summary>Callee-save pushes require xarch.</summary>
@@ -1295,8 +1287,6 @@ public enum FatalJitErrorCode
     AMD64EmitterTestsRequireAnAMD64Target = 606,
     /// <summary>Callee-save restoration is not supported by this dispatcher.</summary>
     CalleeSaveRestorationIsNotSupportedByThisDispatcher = 607,
-    /// <summary>Xarch callee-save restoration is not supported on this target.</summary>
-    XarchCalleeSaveRestorationIsNotSupportedOnThisTarget = 608,
     /// <summary>Root epilog generation is not supported by this dispatcher.</summary>
     RootEpilogGenerationIsNotSupportedByThisDispatcher = 609,
     /// <summary>instGen_Return is not used on ARM64.</summary>
@@ -3977,8 +3967,6 @@ public enum FatalJitErrorCode
     PTESTLocalCouldNotBeCloned = 2029,
     /// <summary>Unexpected vector comparison base type: {0}.</summary>
     UnexpectedVectorComparisonBaseTypeArgument = 2030,
-    /// <summary>LoongArch64 hardware-intrinsic comparisons are not ported.</summary>
-    LoongArch64HardwareIntrinsicComparisonsAreNotPorted = 2031,
     /// <summary>EVEX mask local could not be cloned.</summary>
     EVEXMaskLocalCouldNotBeCloned = 2032,
     /// <summary>Conditional-select mask local could not be cloned.</summary>
@@ -4027,8 +4015,6 @@ public enum FatalJitErrorCode
     VectorGetElementLoweringIsNotPortedForThisTarget = 2054,
     /// <summary>Fused multiply lowering is not ported for this target.</summary>
     FusedMultiplyLoweringIsNotPortedForThisTarget = 2055,
-    /// <summary>LoongArch64 hardware-intrinsic immediate materialization is not ported.</summary>
-    LoongArch64HardwareIntrinsicImmediateMaterializationIsNotPorted = 2056,
     /// <summary>Hardware-intrinsic lowering is not available.</summary>
     HardwareIntrinsicLoweringIsNotAvailable = 2057,
     /// <summary>LoongArch64 hardware-intrinsic lowering is not ported.</summary>
@@ -4091,14 +4077,6 @@ public enum FatalJitErrorCode
     RISCV64SIMDContainmentWasDispatchedForAnotherTarget = 2087,
     /// <summary>RISC-V64 SIMD containment is not ported.</summary>
     RISCV64SIMDContainmentIsNotPorted = 2088,
-    /// <summary>RISC-V64 hardware-intrinsic immediate materialization was dispatched incorrectly.</summary>
-    RISCV64HardwareIntrinsicImmediateMaterializationWasDispatchedIncorrectly = 2089,
-    /// <summary>RISC-V64 hardware-intrinsic immediate materialization is not ported.</summary>
-    RISCV64HardwareIntrinsicImmediateMaterializationIsNotPorted = 2090,
-    /// <summary>RISC-V64 hardware-intrinsic comparison was dispatched incorrectly.</summary>
-    RISCV64HardwareIntrinsicComparisonWasDispatchedIncorrectly = 2091,
-    /// <summary>RISC-V64 hardware-intrinsic comparisons are not ported.</summary>
-    RISCV64HardwareIntrinsicComparisonsAreNotPorted = 2092,
     /// <summary>RISC-V64 hardware-intrinsic containment was dispatched incorrectly.</summary>
     RISCV64HardwareIntrinsicContainmentWasDispatchedIncorrectly = 2093,
     /// <summary>RISC-V64 hardware-intrinsic containment is not ported.</summary>
@@ -6299,13 +6277,9 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.WasmRegisterBitcastGenerationIsNotPorted => "Wasm register bitcast generation is not ported.",
             FatalJitErrorCode.BlockMemoryGenerationIsNotImplementedForThisTarget => "Block memory generation is not implemented for this target.",
             FatalJitErrorCode.UnrolledMemmoveIsNotImplementedForThisTarget => "Unrolled memmove is not implemented for this target.",
-            FatalJitErrorCode.LoopBlockInitializationIsNotImplementedForThisTarget => "Loop block initialization is not implemented for this target.",
-            FatalJitErrorCode.UnrolledBlockInitializationIsNotImplementedForThisTarget => "Unrolled block initialization is not implemented for this target.",
-            FatalJitErrorCode.UnrolledBlockCopyIsNotImplementedForThisTarget => "Unrolled block copy is not implemented for this target.",
             FatalJitErrorCode.CallRegisterArgumentPlacementRequiresANativeTarget => "Call register argument placement requires a native target.",
             FatalJitErrorCode.UnixAMD64VarargsAreUnsupported => "Unix AMD64 varargs are unsupported.",
             FatalJitErrorCode.CallGenerationIsNotImplementedForThisTarget => "Call generation is not implemented for this target.",
-            FatalJitErrorCode.CallInstructionGenerationIsNotImplementedForThisTarget => "Call-instruction generation is not implemented for this target.",
             FatalJitErrorCode.WasmTailcallEpilogRegisterVerificationIsNotPorted => "Wasm tailcall epilog-register verification is not ported.",
             FatalJitErrorCode.CalleeSavePushesRequireXarch => "Callee-save pushes require xarch.",
             FatalJitErrorCode.APXCalleeSavePushesRequireAMD64 => "APX callee-save pushes require AMD64.",
@@ -6320,7 +6294,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.CatchReturnGenerationIsNotSupportedByThisDispatcher => "Catch-return generation is not supported by this dispatcher.",
             FatalJitErrorCode.AMD64EmitterTestsRequireAnAMD64Target => "AMD64 emitter tests require an AMD64 target.",
             FatalJitErrorCode.CalleeSaveRestorationIsNotSupportedByThisDispatcher => "Callee-save restoration is not supported by this dispatcher.",
-            FatalJitErrorCode.XarchCalleeSaveRestorationIsNotSupportedOnThisTarget => "Xarch callee-save restoration is not supported on this target.",
             FatalJitErrorCode.RootEpilogGenerationIsNotSupportedByThisDispatcher => "Root epilog generation is not supported by this dispatcher.",
             FatalJitErrorCode.InstGenReturnIsNotUsedOnARM64 => "instGen_Return is not used on ARM64.",
             FatalJitErrorCode.ReturnInstructionGenerationIsNotImplementedOnThisTarget => "Return instruction generation is not implemented on this target.",
@@ -7661,7 +7634,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.UnexpectedBroadcastTypeArgument => "Unexpected broadcast type: {0}.",
             FatalJitErrorCode.PTESTLocalCouldNotBeCloned => "PTEST local could not be cloned.",
             FatalJitErrorCode.UnexpectedVectorComparisonBaseTypeArgument => "Unexpected vector comparison base type: {0}.",
-            FatalJitErrorCode.LoongArch64HardwareIntrinsicComparisonsAreNotPorted => "LoongArch64 hardware-intrinsic comparisons are not ported.",
             FatalJitErrorCode.EVEXMaskLocalCouldNotBeCloned => "EVEX mask local could not be cloned.",
             FatalJitErrorCode.ConditionalSelectMaskLocalCouldNotBeCloned => "Conditional-select mask local could not be cloned.",
             FatalJitErrorCode.HardwareConditionCodeLoweringIsNotAvailableForThisTarget => "Hardware condition-code lowering is not available for this target.",
@@ -7686,7 +7658,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.VectorDotLoweringIsNotPortedForThisTarget => "Vector Dot lowering is not ported for this target.",
             FatalJitErrorCode.VectorGetElementLoweringIsNotPortedForThisTarget => "Vector GetElement lowering is not ported for this target.",
             FatalJitErrorCode.FusedMultiplyLoweringIsNotPortedForThisTarget => "Fused multiply lowering is not ported for this target.",
-            FatalJitErrorCode.LoongArch64HardwareIntrinsicImmediateMaterializationIsNotPorted => "LoongArch64 hardware-intrinsic immediate materialization is not ported.",
             FatalJitErrorCode.HardwareIntrinsicLoweringIsNotAvailable => "Hardware-intrinsic lowering is not available.",
             FatalJitErrorCode.LoongArch64HardwareIntrinsicLoweringIsNotPorted => "LoongArch64 hardware-intrinsic lowering is not ported.",
             FatalJitErrorCode.RISCV64HardwareIntrinsicLoweringIsNotPorted => "RISC-V64 hardware-intrinsic lowering is not ported.",
@@ -7718,10 +7689,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.RISCV64SIMDLoweringIsNotPorted => "RISC-V64 SIMD lowering is not ported.",
             FatalJitErrorCode.RISCV64SIMDContainmentWasDispatchedForAnotherTarget => "RISC-V64 SIMD containment was dispatched for another target.",
             FatalJitErrorCode.RISCV64SIMDContainmentIsNotPorted => "RISC-V64 SIMD containment is not ported.",
-            FatalJitErrorCode.RISCV64HardwareIntrinsicImmediateMaterializationWasDispatchedIncorrectly => "RISC-V64 hardware-intrinsic immediate materialization was dispatched incorrectly.",
-            FatalJitErrorCode.RISCV64HardwareIntrinsicImmediateMaterializationIsNotPorted => "RISC-V64 hardware-intrinsic immediate materialization is not ported.",
-            FatalJitErrorCode.RISCV64HardwareIntrinsicComparisonWasDispatchedIncorrectly => "RISC-V64 hardware-intrinsic comparison was dispatched incorrectly.",
-            FatalJitErrorCode.RISCV64HardwareIntrinsicComparisonsAreNotPorted => "RISC-V64 hardware-intrinsic comparisons are not ported.",
             FatalJitErrorCode.RISCV64HardwareIntrinsicContainmentWasDispatchedIncorrectly => "RISC-V64 hardware-intrinsic containment was dispatched incorrectly.",
             FatalJitErrorCode.RISCV64HardwareIntrinsicContainmentIsNotPorted => "RISC-V64 hardware-intrinsic containment is not ported.",
             FatalJitErrorCode.RISCVConditionalSelectRequiresZicond => "RISC-V conditional select requires Zicond.",
