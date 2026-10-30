@@ -180,24 +180,6 @@ internal static class TargetRuntimeMetadata
         REG_RISCV64_A7,
         REG_WASM_NA);
 
-    internal static regNumber FirstFloatingArgumentRegister => Select(
-        FIRST_FP_ARGREG_X86,
-        FIRST_FP_ARGREG_AMD64,
-        FIRST_FP_ARGREG_ARM64,
-        FIRST_FP_ARGREG_ARM,
-        FIRST_FP_ARGREG_LOONGARCH64,
-        FIRST_FP_ARGREG_RISCV64,
-        FIRST_FP_ARGREG_WASM);
-
-    internal static regNumber LastFloatingArgumentRegister => Select(
-        LAST_FP_ARGREG_X86,
-        LAST_FP_ARGREG_AMD64,
-        LAST_FP_ARGREG_ARM64,
-        LAST_FP_ARGREG_ARM,
-        LAST_FP_ARGREG_LOONGARCH64,
-        LAST_FP_ARGREG_RISCV64,
-        LAST_FP_ARGREG_WASM);
-
     internal static regNumber ThirdIntegerArgumentRegister => Select(
         REG_X86_NA,
         Configuration.UNIX_AMD64_ABI ? REG_X64_RDX : REG_X64_R8,
@@ -329,8 +311,6 @@ internal static class TargetRuntimeMetadata
     internal static regMask FirstIntegerArgumentMask => Globals.genRegMask(FirstIntegerArgumentRegister).Lower;
 
     internal static regMask SecondIntegerArgumentMask => Globals.genRegMask(SecondIntegerArgumentRegister).Lower;
-
-    internal static regMask ThirdIntegerArgumentMask => Globals.genRegMask(ThirdIntegerArgumentRegister).Lower;
 
     internal static regMask LinkRegisterMask => Globals.genRegMask(LinkRegister).Lower;
 

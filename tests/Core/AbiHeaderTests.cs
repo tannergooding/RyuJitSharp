@@ -55,13 +55,11 @@ internal static unsafe class AbiHeaderTests
         Assert.That(info.NumSegments, Is.Zero);
         Assert.That(info.Segments.Length, Is.Zero);
         Assert.That(info.HasAnyRegisterSegment, Is.False);
-        Assert.That(info.HasAnyFloatingRegisterSegment, Is.False);
         Assert.That(info.HasAnyStackSegment, Is.False);
         Assert.That(info.HasExactlyOneRegisterSegment, Is.False);
         Assert.That(info.HasExactlyOneStackSegment, Is.False);
         Assert.That(info.IsSplitAcrossRegistersAndStack, Is.False);
         Assert.That(info.CountRegsAndStackSlots(), Is.Zero);
-        Assert.That(info.StackBytesConsumed(), Is.Zero);
     }
 
     [Test]
@@ -90,7 +88,6 @@ internal static unsafe class AbiHeaderTests
         }
 
         Assert.That(info.CountRegsAndStackSlots(), Is.EqualTo(count));
-        Assert.That(info.StackBytesConsumed(), Is.EqualTo(count * TARGET_POINTER_SIZE));
     }
 
     [TestCase(false, false)]
@@ -105,13 +102,13 @@ internal static unsafe class AbiHeaderTests
             ? AbiPassingInformation.FromSegments(NewCompiler(), segment, AbiPassingSegment.OnStack(0, 4, 3))
             : AbiPassingInformation.FromSegmentByValue(NewCompiler(), segment);
 
-        Assert.That(info.HasAnyFloatingRegisterSegment, Is.EqualTo(floating));
+        Assert.That(genIsValidFloatReg(info.Segments[0].Register), Is.EqualTo(floating));
         Assert.That(info.HasAnyStackSegment, Is.EqualTo(includeStack));
         Assert.That(info.HasAnyRegisterSegment, Is.True);
     }
 
     [Test]
-    public static void StackConsumptionSumsOnlyStackSegmentsIncludingPackedTails()
+    public static void StackSegmentsPreservePackedTailSizes()
     {
         var info = new AbiPassingInformation(4);
         info.Segments[0] = AbiPassingSegment.InRegister(IntRegister(0), 0, TARGET_POINTER_SIZE);
@@ -119,7 +116,8 @@ internal static unsafe class AbiHeaderTests
         info.Segments[2] = AbiPassingSegment.InRegister(FloatRegister(0), TARGET_POINTER_SIZE + 8, 4);
         info.Segments[3] = AbiPassingSegment.OnStackWithoutConsumingFullSlot(64, TARGET_POINTER_SIZE + 12, 3);
 
-        Assert.That(info.StackBytesConsumed(), Is.EqualTo((2 * TARGET_POINTER_SIZE) + 3));
+        Assert.That(info.Segments[1].StackSize, Is.EqualTo(2 * TARGET_POINTER_SIZE));
+        Assert.That(info.Segments[3].StackSize, Is.EqualTo(3));
         Assert.That(info.CountRegsAndStackSlots(), Is.EqualTo(5));
         Assert.That(info.IsSplitAcrossRegistersAndStack, Is.True);
     }
@@ -330,10 +328,10 @@ internal static unsafe class AbiHeaderTests
 
             Assert.That(result.NumSegments, Is.EqualTo(spill ? 1 : count));
             Assert.That(result.HasExactlyOneStackSegment, Is.EqualTo(spill));
-            Assert.That(result.StackBytesConsumed(), Is.EqualTo(spill ? elementSize * count : 0));
 
             if (spill)
             {
+                Assert.That(result.Segments[0].StackSize, Is.EqualTo(elementSize * count));
                 var next = classifier.Classify(compiler, TYP_FLOAT, null, WellKnownArg.None);
                 Assert.That(next.Segments[0].StackOffset, Is.EqualTo(elementSize * count));
             }
@@ -480,7 +478,7 @@ internal static unsafe class AbiHeaderTests
 
         var spilled = classifier.Classify(compiler, TYP_FLOAT, null, WellKnownArg.None);
         Assert.That(spilled.Segments[0].StackOffset, Is.Zero);
-        Assert.That(spilled.StackBytesConsumed(), Is.EqualTo(8));
+        Assert.That(spilled.Segments[0].StackSize, Is.EqualTo(8));
         Assert.That(classifier.StackSize, Is.EqualTo(8));
     }
 
@@ -601,13 +599,22 @@ internal static unsafe class AbiHeaderTests
 
         var result = classifier.Classify(compiler, TYP_STRUCT, new ClassLayout(12), WellKnownArg.None);
         Assert.That(result.IsSplitAcrossRegistersAndStack, Is.EqualTo(split));
-        Assert.That(result.StackBytesConsumed(), Is.EqualTo(preceding == 6 ? 0 : preceding == 7 ? 8 : 16));
 
         if (split)
         {
             Assert.That(result.Segments[0].Register, Is.EqualTo(IntArgRegs[7]));
             Assert.That(result.Segments[1].Offset, Is.EqualTo(8));
             Assert.That(result.Segments[1].Size, Is.EqualTo(4));
+            Assert.That(result.Segments[1].StackSize, Is.EqualTo(8));
+        }
+        else if (preceding == 6)
+        {
+            Assert.That(result.HasAnyStackSegment, Is.False);
+        }
+        else
+        {
+            Assert.That(result.HasExactlyOneStackSegment, Is.True);
+            Assert.That(result.Segments[0].StackSize, Is.EqualTo(16));
         }
     }
 
@@ -750,7 +757,6 @@ internal static unsafe class AbiHeaderTests
         var next = classifier.Classify(compiler, TYP_INT, null, WellKnownArg.None);
 
         Assert.That(empty.NumSegments, Is.Zero);
-        Assert.That(empty.StackBytesConsumed(), Is.Zero);
         Assert.That(next.Segments[0].Register, Is.EqualTo(IntArgRegs[0]));
     }
 

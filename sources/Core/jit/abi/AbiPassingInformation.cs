@@ -74,37 +74,6 @@ public partial struct AbiPassingInformation
         }
     }
 
-    public bool HasAnyFloatingRegisterSegment
-    {
-        get
-        {
-            foreach (ref readonly var segment in Segments)
-            {
-                if (segment.IsPassedInRegister && genIsValidFloatReg(segment.Register))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-    }
-
-    public int StackBytesConsumed()
-    {
-        uint numBytes = 0;
-
-        foreach (ref readonly var segment in Segments)
-        {
-            if (segment.IsPassedOnStack)
-            {
-                numBytes = unchecked(numBytes + (uint)segment.StackSize);
-            }
-        }
-
-        return unchecked((int)numBytes);
-    }
-
     public int CountRegsAndStackSlots()
     {
         uint count = 0;

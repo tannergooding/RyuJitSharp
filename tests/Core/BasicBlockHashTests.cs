@@ -56,33 +56,4 @@ internal static class BasicBlockHashTests
         Assert.That(block.Equals(block), Is.True);
         Assert.That(block.Equals(other), Is.False);
     }
-
-    [Test]
-    public static void RawTargetAccessorsReturnNullAndPopulatedDestinations()
-    {
-        var target = new BasicBlock(null, null);
-        var block = new BasicBlock(null, null);
-        block.bbTargetEdge = new FlowEdge(block, target, null);
-        block.Kind = BBKinds.BBJ_ALWAYS;
-
-        Assert.That(block.GetTargetRaw(), Is.SameAs(target));
-        block.bbTargetEdge = null;
-        Assert.That(block.GetTargetRaw(), Is.Null);
-
-        var trueTarget = new BasicBlock(null, null);
-        var falseTarget = new BasicBlock(null, null);
-        var conditional = new BasicBlock(null, null);
-        conditional.SetCond(
-            new FlowEdge(conditional, trueTarget, null),
-            new FlowEdge(conditional, falseTarget, null));
-
-        Assert.That(conditional.GetTrueTargetRaw(), Is.SameAs(trueTarget));
-        Assert.That(conditional.GetFalseTargetRaw(), Is.SameAs(falseTarget));
-
-        conditional.bbTrueEdge = null;
-        conditional.bbFalseEdge = null;
-
-        Assert.That(conditional.GetTrueTargetRaw(), Is.Null);
-        Assert.That(conditional.GetFalseTargetRaw(), Is.Null);
-    }
 }

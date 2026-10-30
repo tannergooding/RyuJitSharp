@@ -130,8 +130,6 @@ public sealed partial class InlineContext
     /// <summary>Get the native code size estimate for this inline.</summary>
     public int CodeSizeEstimate => _codeSizeEstimate;
 
-    public unsafe bool HasPgoInfo => (_pgoInfo.PgoSchema is not null) && (_pgoInfo.PgoSchemaCount > 0) && (_pgoInfo.PgoData is not null);
-
     public BitArray ILInstsSet => _ilInstsSet;
 
     /// <summary>Get the IL code size for this inline.</summary>

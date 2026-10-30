@@ -69,16 +69,6 @@ public sealed unsafe partial class GcInfoEncoder
             }
         }
 
-        public nuint GetFieldSize(string field)
-        {
-            if (!Enum.TryParse(field, out GcInfoField category) || category == GcInfoField.Count)
-            {
-                JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitArgument.Field);
-            }
-
-            return this[category];
-        }
-
         public void Record(GcInfoField field, nuint bits)
         {
             this[field] = unchecked(this[field] + bits);

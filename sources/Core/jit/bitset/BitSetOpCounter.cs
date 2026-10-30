@@ -83,8 +83,6 @@ public static partial class BitSetSupport
 
         internal uint GetCount(Operation op) => _opCounts[(int)op];
 
-        internal uint TotalOps => _totalOps;
-
         private void WriteReport()
         {
             _opOutputFile ??= new FileStream(

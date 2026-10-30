@@ -77,12 +77,6 @@ internal sealed class ArrayStack<T>
         return _data[i];
     }
 
-    internal ref T BottomRef(int i = 0)
-    {
-        Debug.Assert(_count > i);
-        return ref _data[i];
-    }
-
     internal void Reset()
     {
         _count = 0;

@@ -898,8 +898,6 @@ public sealed partial class BasicBlock : LIR.Range
     /// <returns></returns>
     public int bbStackDepthOnEntry => bbEntryState.esStackDepth;
 
-    public Span<StackEntry> bbStackOnEntry => bbEntryState.esStack;
-
     /// <summary>Checks that the basic block doesn't mix statements and LIR lists.</summary>
     public bool isValid
     {
@@ -1013,12 +1011,6 @@ public sealed partial class BasicBlock : LIR.Range
 
     public BasicBlock Target => TargetEdge.DestinationBlock;
 
-    public BasicBlock? GetTargetRaw()
-    {
-        assert(HasTarget);
-        return bbTargetEdge?.DestinationBlock;
-    }
-
     public FlowEdge TargetEdge
     {
         get
@@ -1122,12 +1114,6 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     public BasicBlock FalseTarget => FalseEdge.DestinationBlock;
-
-    public BasicBlock? GetFalseTargetRaw()
-    {
-        assert(Kind is BBJ_COND);
-        return bbFalseEdge?.DestinationBlock;
-    }
 
     public bool HasAllFlags(BasicBlockFlags flags)
     {
@@ -1330,12 +1316,6 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     public BasicBlock TrueTarget => TrueEdge.DestinationBlock;
-
-    public BasicBlock? GetTrueTargetRaw()
-    {
-        assert(Kind is BBJ_COND);
-        return bbTrueEdge?.DestinationBlock;
-    }
 
     public BBswtDesc SwitchTargets
     {
@@ -1575,11 +1555,6 @@ public sealed partial class BasicBlock : LIR.Range
     public void copyHndIndex(BasicBlock source)
     {
         bbHndIndex = source.bbHndIndex;
-    }
-
-    public void copyTryIndex(BasicBlock source)
-    {
-        bbTryIndex = source.bbTryIndex;
     }
 
     /// <summary>Decrease the profile-derived weight for a basic block, ensuring it remains non-negative, and update the run rarely flag as appropriate.</summary>

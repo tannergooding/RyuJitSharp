@@ -21,16 +21,6 @@ public static partial class InlineObservationExtensions
             }
         }
 
-        /// <summary>get a string describing the impact of an inline observation</summary>
-        public string ImpactString => observation.Impact switch {
-            InlineImpact.FATAL => "correctness -- fatal",
-            InlineImpact.FUNDAMENTAL => "correctness -- fundamental limitation",
-            InlineImpact.LIMITATION => "correctness -- jit limitation",
-            InlineImpact.PERFORMANCE => "performance",
-            InlineImpact.INFORMATION => "information",
-            _ => "unexpected impact",
-        };
-
         public bool IsValid => observation is > InlineObservation.CALLEE_UNUSED_INITIAL and < InlineObservation.CALLEE_UNUSED_FINAL;
 
         /// <summary>get a string describing this inline observation</summary>

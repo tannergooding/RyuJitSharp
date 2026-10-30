@@ -35,13 +35,33 @@ internal static class ArgumentRegisterValidityTests
 
     private static IEnumerable<TestCaseData> FloatingArgumentCases()
     {
-        var first = TargetRuntimeMetadata.FirstFloatingArgumentRegister;
-        var last = TargetRuntimeMetadata.LastFloatingArgumentRegister;
+        GetFloatingArgumentBounds(out var first, out var last);
         yield return new TestCaseData(first, first != REG_NA);
         yield return new TestCaseData(last, last != REG_NA);
         yield return new TestCaseData((regNumber)((int)first - 1), false);
         yield return new TestCaseData((regNumber)((int)last + 1), false);
         yield return new TestCaseData(REG_NA, false);
+    }
+
+    private static void GetFloatingArgumentBounds(out regNumber first, out regNumber last)
+    {
+        if (Configuration.TARGET_X86)
+        {
+            first = REG_X86_XMM0;
+            last = REG_X86_XMM3;
+            return;
+        }
+
+        var registers = FltArgRegs;
+        if (registers.Length == 0)
+        {
+            first = REG_NA;
+            last = REG_NA;
+            return;
+        }
+
+        first = registers[0];
+        last = registers[^1];
     }
 
     [TestCaseSource(nameof(FloatingArgumentCases))]

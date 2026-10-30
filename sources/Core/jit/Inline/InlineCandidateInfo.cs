@@ -21,8 +21,6 @@ public sealed class InlineCandidateInfo : HandleHistogramProfileCandidateInfo
 
     public int likelihood;
 
-    public bool needsMethodContext;
-
     public unsafe CORINFO_METHOD_INFO methInfo;
 
     /// <summary>the logical IL caller of this inlinee.</summary>

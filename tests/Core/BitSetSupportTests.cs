@@ -417,7 +417,6 @@ internal static class BitSetSupportTests
         }
 
         Assert.That(counter.GetCount(BitSetSupport.Operation.BSOP_NextBit), Is.EqualTo(2u));
-        Assert.That(counter.TotalOps, Is.EqualTo((uint)(countedOperations.Length + 2)));
     }
 
     [Test]

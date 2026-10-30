@@ -134,8 +134,6 @@ public sealed partial class InlineStrategy
     /// <summary>Return the current code size estimate for this method</summary>
     public int CurrentSizeEstimate => _currentSizeEstimate;
 
-    public bool HasObservedHardwareIntrinsicCheck => _hasHardwareIntrinsicCheck;
-
     /// <summary>Return number of import attempts</summary>
     public int ImportCount => _importCount;
 

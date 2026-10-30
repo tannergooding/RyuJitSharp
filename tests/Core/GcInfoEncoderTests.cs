@@ -25,9 +25,6 @@ internal static unsafe class GcInfoEncoderTests
             Assert.That(encoder.GetEncodedGCInfoSize(), Is.EqualTo((nuint)0));
             var measurements = CurrentMethodMeasurements(encoder);
             Assert.That(measurements.TotalSize, Is.EqualTo((nuint)16));
-            Assert.That(measurements.GetFieldSize("FlagsSize"), Is.EqualTo((nuint)4));
-            Assert.That(measurements.GetFieldSize("CodeLengthSize"), Is.EqualTo((nuint)9));
-            Assert.That(measurements.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)0));
             Assert.That(measurements.NumMethods, Is.EqualTo((nuint)1));
 
             var result = encoder.Emit();
@@ -57,7 +54,6 @@ internal static unsafe class GcInfoEncoderTests
             encoder.SetSizeOfStackOutgoingAndScratchArea(0);
             encoder.Build();
             var measurements = CurrentMethodMeasurements(encoder);
-            Assert.That(measurements.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)2));
             var result = encoder.Emit();
 
             Assert.That(new ReadOnlySpan<byte>(result, (int)context->Size).ToArray(),
@@ -82,8 +78,6 @@ internal static unsafe class GcInfoEncoderTests
             encoder.Build();
             var measurements = CurrentMethodMeasurements(encoder);
             Assert.That(measurements.TotalSize, Is.EqualTo((nuint)76));
-            Assert.That(measurements.GetFieldSize("GsCookieSize"), Is.EqualTo((nuint)7));
-            Assert.That(measurements.GetFieldSize("EncInfoSize"), Is.EqualTo((nuint)10));
             var result = encoder.Emit();
 
             Assert.That(context->Size, Is.EqualTo((nint)10));
@@ -161,7 +155,6 @@ internal static unsafe class GcInfoEncoderTests
             encoder.Build();
             var measurements = CurrentMethodMeasurements(encoder);
             Assert.That(measurements.NumRanges, Is.EqualTo((nuint)1));
-            Assert.That(measurements.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)2));
             Assert.That(measurements.NumTransitions, Is.GreaterThan((nuint)0));
             var result = encoder.Emit();
 

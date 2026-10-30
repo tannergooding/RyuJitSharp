@@ -38,7 +38,7 @@ internal static class ArrayStackTests
         Assert.That(stack.Bottom(19), Is.EqualTo(19));
 
         stack.TopRef() = 100;
-        stack.BottomRef(1) = 101;
+        stack.Data()[1] = 101;
 
         Assert.That(stack.Data().ToArray(), Is.EqualTo(s_expectedAfterGrowth));
     }

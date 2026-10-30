@@ -17,10 +17,6 @@ public partial class Globals
 
     public const byte SZU = SIZE_UNKNOWN;
 
-    public static byte PS => (byte)Configuration.TARGET_POINTER_SIZE;
-
-    public static byte PST => (byte)(Configuration.TARGET_POINTER_SIZE / sizeof(int));
-
     public static bool varTypeIsSimd(var_types v)
     {
         return Configuration.FEATURE_SIMD && (v.Classification & VTF_VEC) != 0;
@@ -98,11 +94,6 @@ public partial class Globals
     public static bool varTypeIsMultiReg(var_types vt)
     {
         return !Configuration.TARGET_64BIT && (vt is TYP_LONG);
-    }
-
-    public static bool varTypeIsSingleReg(var_types vt)
-    {
-        return Configuration.TARGET_64BIT || (vt is not TYP_LONG);
     }
 
     public static bool varTypeIsComposite(var_types vt) => !varTypeIsArithmetic(vt) && (vt != TYP_VOID);
