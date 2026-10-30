@@ -21,22 +21,4 @@ public readonly partial struct HWIntrinsicInfo
         var flags = lookupFlags(id);
         return (flags & HW_Flag_SpecialCodeGen) != 0;
     }
-
-    internal static bool HasSpecialImport(NamedIntrinsic id)
-    {
-        var flags = lookupFlags(id);
-        return (flags & (HW_Flag_SpecialImport | HW_Flag_InvalidNodeId)) != 0;
-    }
-
-    public static bool IsEmbRoundingCompatible(NamedIntrinsic id) =>
-        Configuration.TARGET_XARCH && ((lookupFlags(id) & HW_Flag_EmbRoundingCompatible) != 0);
-
-    public static bool MaybeImm(NamedIntrinsic id) =>
-        Configuration.TARGET_XARCH && ((lookupFlags(id) & HW_Flag_MaybeIMM) != 0);
-
-    public static bool NoJmpTableImm(NamedIntrinsic id) =>
-        (lookupFlags(id) & HW_Flag_NoJmpTableIMM) != 0;
-
-    public static bool MaybeNoJmpTableImm(NamedIntrinsic id) =>
-        (lookupFlags(id) & HW_Flag_MaybeNoJmpTableIMM) != 0;
 }

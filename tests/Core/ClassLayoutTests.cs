@@ -113,7 +113,8 @@ internal static class ClassLayoutTests
             layout._gcPtrs[slotCount - 1] = TYPE_GC_BYREF;
         }
 
-        Assert.That(layout.IsGCByRef(slotCount - 1), Is.EqualTo(hasGCPtr));
+        Assert.That(layout.GetGCPtr(slotCount - 1),
+            Is.EqualTo(hasGCPtr ? TYPE_GC_BYREF : TYPE_GC_NONE));
         Assert.That(layout.HasGCByRef(), Is.EqualTo(hasGCPtr));
     }
 }

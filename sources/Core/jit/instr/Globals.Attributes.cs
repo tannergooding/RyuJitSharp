@@ -30,23 +30,13 @@ public static partial class Globals
 
     public static emitAttr EA_HANDLE_CNS_RELOC => EA_PTRSIZE | EA_CNS_RELOC_FLG;
 
-    public static emitAttr GCS => EA_GCREF;
-
-    public static emitAttr BRS => EA_BYREF;
-
-    public static emitAttr EPS => EA_PTRSIZE;
-
     public const emitAttr EA_SCALABLE_ARM64 = (emitAttr)0x020;
 
     public static emitAttr EA_SET_FLG(emitAttr attr, emitAttr flags) => (emitAttr)((int)attr | (int)flags);
 
-    public static emitAttr EA_REMOVE_FLG(emitAttr attr, emitAttr flags) => attr & ~flags;
-
     public static emitAttr EA_SIZE(emitAttr attr) => attr & EA_SIZE_MASK;
 
     public static uint EA_SIZE_IN_BYTES(emitAttr attr) => (uint)EA_SIZE(attr);
-
-    public static bool EA_IS_OFFSET(emitAttr attr) => (attr & EA_OFFSET_FLG) != 0;
 
     public static bool EA_IS_GCREF(emitAttr attr) => (attr & EA_GCREF_FLG) != 0;
 
@@ -63,6 +53,4 @@ public static partial class Globals
     public static bool EA_IS_CNS_TLSGD_RELOC(emitAttr attr) => (attr & EA_CNS_TLSGD_RELOC) != 0;
 
     public static bool EA_IS_RELOC(emitAttr attr) => EA_IS_DSP_RELOC(attr) || EA_IS_CNS_RELOC(attr);
-
-    public static emitAttr EA_TYPE(emitAttr attr) => attr & ~(EA_OFFSET_FLG | EA_DSP_RELOC_FLG | EA_CNS_RELOC_FLG);
 }

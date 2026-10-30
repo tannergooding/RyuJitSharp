@@ -33,27 +33,6 @@ public sealed class hashBvNode
 
     public int numElements() => ELEMENTS_PER_NODE;
 
-    public void setLowest(indexType numToSet)
-    {
-        numToSet = Globals.NormalizeIndex(numToSet);
-        assert(numToSet <= BITS_PER_NODE);
-
-        var elementIndex = 0;
-        var allOnes = Globals.NormalizeElement(ulong.MaxValue);
-        while (numToSet > BITS_PER_ELEMENT)
-        {
-            elements[elementIndex] = allOnes;
-            numToSet -= BITS_PER_ELEMENT;
-            elementIndex++;
-        }
-
-        if (numToSet != 0)
-        {
-            var numToShift = BITS_PER_ELEMENT - (int)numToSet;
-            elements[elementIndex] = allOnes >> numToShift;
-        }
-    }
-
     public int countBits()
     {
         var result = 0;
@@ -66,15 +45,6 @@ public sealed class hashBvNode
         }
 
         return result;
-    }
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    public void dump()
-    {
-        jitprintf($"base: {baseIndex} {{ ");
-        var visitor = new DumpBitVisitor();
-        foreachBit(ref visitor);
-        jitprintf("}\n");
     }
 
     public void foreachBit(Action<indexType> action)
@@ -110,11 +80,6 @@ public sealed class hashBvNode
         : IHbvNodeBitVisitor<DelegateNodeBitVisitor>
     {
         public void Visit(ulong index) => action(index);
-    }
-
-    private readonly struct DumpBitVisitor : IHbvNodeBitVisitor<DumpBitVisitor>
-    {
-        public void Visit(ulong index) => jitprintf($"{unchecked((int)index)} ");
     }
 
     public void setBit(indexType index)

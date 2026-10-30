@@ -9,7 +9,6 @@ public partial class Globals
 {
     public const instruction FIRST_SSE_INSTRUCTION = INS_addpd;
     public const instruction LAST_SSE_INSTRUCTION = INS_gf2p8mulb;
-    public const instruction FIRST_AVX_INSTRUCTION = INS_vblendvpd;
     public const instruction FIRST_FMA_INSTRUCTION = INS_vfmadd132pd;
     public const instruction LAST_FMA_INSTRUCTION = INS_vfnmsub231ss;
     public const instruction FIRST_BMI_INSTRUCTION = INS_andn;

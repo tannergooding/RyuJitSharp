@@ -102,28 +102,4 @@ public static partial class Globals
     {
         jitprintf($"{unchecked((int)index)} ");
     }
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    public static void SimpleDumpNode(hashBvNode node)
-    {
-        jitprintf($"base: {node.baseIndex}\n");
-    }
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    public static void DumpNode(hashBvNode node)
-    {
-        node.dump();
-    }
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    public static void SimpleDumpDualNode(
-        hashBv left,
-        hashBv right,
-        hashBvNode? leftNode,
-        hashBvNode? rightNode)
-    {
-        jitprintf("nodes: ");
-        jitprintf(leftNode is null ? "----," : $"{leftNode.baseIndex},");
-        jitprintf(rightNode is null ? "----\n" : $"{rightNode.baseIndex}\n");
-    }
 }

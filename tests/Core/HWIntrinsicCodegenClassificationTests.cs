@@ -18,7 +18,10 @@ internal static class HWIntrinsicCodegenClassificationTests
             "requires hardware intrinsic support");
 
         Assert.That(HWIntrinsicInfo.RequiresCodegen(id), Is.EqualTo(requiresCodegen));
-        Assert.That(HWIntrinsicInfo.HasSpecialImport(id), Is.EqualTo(specialImport));
+        Assert.That(
+            (HWIntrinsicInfo.lookupFlags(id) &
+                (HWIntrinsicFlag.HW_Flag_SpecialImport | HWIntrinsicFlag.HW_Flag_InvalidNodeId)) != 0,
+            Is.EqualTo(specialImport));
         Assert.That(HWIntrinsicInfo.HasSpecialCodegen(id), Is.EqualTo(specialCodegen));
     }
 
@@ -37,7 +40,10 @@ internal static class HWIntrinsicCodegenClassificationTests
             "requires xarch hardware intrinsic support");
 
         Assert.That(HWIntrinsicInfo.RequiresCodegen(id), Is.EqualTo(requiresCodegen));
-        Assert.That(HWIntrinsicInfo.HasSpecialImport(id), Is.EqualTo(specialImport));
+        Assert.That(
+            (HWIntrinsicInfo.lookupFlags(id) &
+                (HWIntrinsicFlag.HW_Flag_SpecialImport | HWIntrinsicFlag.HW_Flag_InvalidNodeId)) != 0,
+            Is.EqualTo(specialImport));
         Assert.That(HWIntrinsicInfo.HasSpecialCodegen(id), Is.EqualTo(specialCodegen));
     }
 

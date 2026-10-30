@@ -567,8 +567,6 @@ public sealed class ClassLayout
         return false;
     }
 
-    public bool IsGCByRef(int slot) => GetGCPtr(slot) is TYPE_GC_BYREF;
-
     public bool IsGCPtr(int slot) => GetGCPtr(slot) is not TYPE_GC_NONE;
 
     public bool IsGCRef(int slot) => GetGCPtr(slot) is TYPE_GC_REF;

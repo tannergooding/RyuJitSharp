@@ -94,15 +94,6 @@ public partial class Globals
 
     public const int REGEN_CALLPAT = 0;
 
-    /// <summary>Did Jit or Inline succeeded?</summary>
-    public const int INFO6 = LL_INFO10000;
-
-    /// <summary>NYI stuff.</summary>
-    public const int INFO7 = LL_INFO100000;
-
-    /// <summary>Weird failures.</summary>
-    public const int INFO8 = LL_INFO1000000;
-
     public static unsafe CORINFO_OBJECT_HANDLE NO_OBJECT_HANDLE => null;
 
     public static unsafe CORINFO_CLASS_HANDLE NO_CLASS_HANDLE => null;
@@ -114,8 +105,6 @@ public partial class Globals
     public const IL_OFFSET BAD_IL_OFFSET = -1;
 
     public const int BAD_VAR_NUM = -1;
-
-    public const ushort BAD_LCL_OFFSET = ushort.MaxValue;
 
     // For the following specially handled FIELD_HANDLES we need
     //   values that are negative and have the low two bits zero

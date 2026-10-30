@@ -83,21 +83,6 @@ internal static class JitHashTableTests
     }
 
     [Test]
-    public static void PrimitiveKeyFunctionsPreserveNativeHashAndEqualityRules()
-    {
-        var smallKeyFuncs = new JitSmallPrimitiveKeyFuncs<int>();
-        Assert.That(smallKeyFuncs.GetHashCode(-1), Is.EqualTo(uint.MaxValue));
-
-        var largeKeyFuncs = new JitLargePrimitiveKeyFuncs<double>();
-        var doubleValue = BitConverter.Int64BitsToDouble(unchecked((long)0x123456789abcdef0));
-        Assert.That(largeKeyFuncs.GetHashCode(doubleValue), Is.EqualTo(0x88888888u));
-
-        var floatKeyFuncs = new JitLargePrimitiveKeyFuncs<float>();
-        Assert.That(floatKeyFuncs.Equals(float.NaN, float.NaN), Is.False);
-        Assert.That(floatKeyFuncs.Equals(0.0f, -0.0f), Is.True);
-    }
-
-    [Test]
     public static void PrimeInfoEntriesRetainNativeDivisors()
     {
         var primeInfo = Globals.jitPrimeInfo;

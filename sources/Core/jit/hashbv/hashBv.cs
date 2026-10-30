@@ -76,24 +76,6 @@ public sealed partial class hashBv
         return node;
     }
 
-    public void setAll(indexType numToSet)
-    {
-        numToSet = Globals.NormalizeIndex(numToSet);
-
-        for (indexType index = 0; index < numToSet; index = Globals.AddIndex(index, BITS_PER_NODE))
-        {
-            var node = getOrAddNodeForIndex(index);
-            var bitsToSet = Globals.NormalizeIndex(numToSet - index);
-
-            if (bitsToSet > BITS_PER_NODE)
-            {
-                bitsToSet = BITS_PER_NODE;
-            }
-
-            node.setLowest(bitsToSet);
-        }
-    }
-
     public int countBits()
     {
         var result = 0;
