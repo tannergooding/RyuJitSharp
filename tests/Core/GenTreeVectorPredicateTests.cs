@@ -66,93 +66,56 @@ internal static class GenTreeVectorPredicateTests
     }
 
     [Test]
-    public static void SimdPredicateHelpersPreserveNaNAndSignedZeroSemantics()
+    public static void SimdConstantsPreserveNaNAndSignedZeroSemantics()
     {
-        var value = default(simd64_t);
-        value.u32[0] = 0x80000000;
-        value.u32[1] = 0;
-        value.u32[2] = 0xFFC00001;
-        value.u32[3] = 0x3F800000;
-        var input = value.AsSpan<byte>();
+        var node = new GenTreeVecCon(TYP_SIMD16);
+        node.SimdVal.u32[0] = 0x80000000;
+        node.SimdVal.u32[1] = 0;
+        node.SimdVal.u32[2] = 0xFFC00001;
+        node.SimdVal.u32[3] = 0x3F800000;
 
-        var negative = Globals.EvaluateSimdIsNegative(TYP_FLOAT, input, 16);
-        var zero = Globals.EvaluateSimdIsZero(TYP_FLOAT, input, 16);
-        var negativeZero = Globals.EvaluateSimdIsNegativeZero(TYP_FLOAT, input, 16);
-        var positiveZero = Globals.EvaluateSimdIsPositiveZero(TYP_FLOAT, input, 16);
+        Assert.That(node.ContainsNaN(TYP_FLOAT), Is.True);
+        Assert.That(node.ContainsNegativeZero(TYP_FLOAT), Is.True);
+        Assert.That(node.ContainsPositiveZero(TYP_FLOAT), Is.True);
 
-        Assert.That(negative.u32[0], Is.EqualTo(uint.MaxValue));
-        Assert.That(negative.u32[1], Is.Zero);
-        Assert.That(negative.u32[2], Is.EqualTo(uint.MaxValue));
-        Assert.That(negative.u32[3], Is.Zero);
-
-        Assert.That(zero.u32[0], Is.EqualTo(uint.MaxValue));
-        Assert.That(zero.u32[1], Is.EqualTo(uint.MaxValue));
-        Assert.That(zero.u32[2], Is.Zero);
-        Assert.That(zero.u32[3], Is.Zero);
-
-        Assert.That(negativeZero.u32[0], Is.EqualTo(uint.MaxValue));
-        Assert.That(negativeZero.u32[1], Is.Zero);
-        Assert.That(positiveZero.u32[0], Is.Zero);
-        Assert.That(positiveZero.u32[1], Is.EqualTo(uint.MaxValue));
-
-        Assert.That(Globals.GetSimdIntegralBaseType(TYP_FLOAT), Is.EqualTo(TYP_INT));
-        Assert.That(Globals.GetSimdIntegralBaseType(TYP_DOUBLE), Is.EqualTo(TYP_LONG));
-        Assert.That(Globals.GetSimdIntegralBaseType(TYP_UINT), Is.EqualTo(TYP_UINT));
+        var negativeZeroMask = node.GetFloatingZeroMask(TYP_FLOAT, true);
+        var positiveZeroMask = node.GetFloatingZeroMask(TYP_FLOAT, false);
+        Assert.That(negativeZeroMask.u32[0], Is.EqualTo(uint.MaxValue));
+        Assert.That(negativeZeroMask.u32[1], Is.Zero);
+        Assert.That(positiveZeroMask.u32[0], Is.Zero);
+        Assert.That(positiveZeroMask.u32[1], Is.EqualTo(uint.MaxValue));
     }
 
     [TestCase(TYP_FLOAT)]
     [TestCase(TYP_DOUBLE)]
-    public static void SimdIsNaNReturnsPerLaneNotEqualMask(var_types baseType)
+    public static void SimdConstantsIdentifyNaNsAcrossElements(var_types baseType)
     {
-        var value = default(simd64_t);
+        var node = new GenTreeVecCon(TYP_SIMD16);
         if (baseType is TYP_FLOAT)
         {
-            value.f32[0] = float.NaN;
-            value.f32[1] = 0;
-            value.f32[2] = 1;
-            value.f32[3] = float.NaN;
-            value.f32[4] = float.NaN;
+            node.SimdVal.f32[0] = float.NaN;
+            node.SimdVal.f32[1] = 0;
+            node.SimdVal.f32[2] = 1;
+            node.SimdVal.f32[3] = float.NaN;
 
-            var result = Globals.EvaluateSimdIsNaN(baseType, value.AsSpan<byte>(), 16);
-            Assert.That(result.u32[0], Is.EqualTo(uint.MaxValue));
-            Assert.That(result.u32[1], Is.Zero);
-            Assert.That(result.u32[2], Is.Zero);
-            Assert.That(result.u32[3], Is.EqualTo(uint.MaxValue));
-            Assert.That(result.u32[4], Is.Zero);
+            Assert.That(node.ContainsNaN(baseType), Is.True);
+            Assert.That(node.IsNaN(baseType), Is.False);
+
+            node.SimdVal.f32[1] = float.NaN;
+            node.SimdVal.f32[2] = float.NaN;
+            Assert.That(node.IsNaN(baseType), Is.True);
         }
         else
         {
-            value.f64[0] = double.NaN;
-            value.f64[1] = -0.0;
-            value.f64[2] = double.NaN;
+            node.SimdVal.f64[0] = double.NaN;
+            node.SimdVal.f64[1] = -0.0;
 
-            var result = Globals.EvaluateSimdIsNaN(baseType, value.AsSpan<byte>(), 16);
-            Assert.That(result.u64[0], Is.EqualTo(ulong.MaxValue));
-            Assert.That(result.u64[1], Is.Zero);
-            Assert.That(result.u64[2], Is.Zero);
+            Assert.That(node.ContainsNaN(baseType), Is.True);
+            Assert.That(node.IsNaN(baseType), Is.False);
+
+            node.SimdVal.f64[1] = double.NaN;
+            Assert.That(node.IsNaN(baseType), Is.True);
         }
-    }
-
-    [Test]
-    public static void SimdAllBitsSetPredicatesCompareFloatingPayloadsAsIntegers()
-    {
-        var value = default(simd64_t);
-        value.u32[4] = uint.MaxValue;
-
-        Assert.That(Globals.EvaluateSimdAnyWhereAllBitsSet(TYP_FLOAT, value.AsSpan<byte>(), 16), Is.False);
-
-        value.u32[1] = uint.MaxValue;
-
-        Assert.That(Globals.EvaluateSimdAnyWhereAllBitsSet(TYP_FLOAT, value.AsSpan<byte>(), 16), Is.True);
-        Assert.That(Globals.EvaluateSimdAllWhereAllBitsSet(TYP_FLOAT, value.AsSpan<byte>(), 16), Is.False);
-
-        value.u32[0] = uint.MaxValue;
-        value.u32[2] = uint.MaxValue;
-        value.u32[3] = uint.MaxValue;
-
-        Assert.That(Globals.EvaluateSimdAllWhereAllBitsSet(TYP_FLOAT, value.AsSpan<byte>(), 16), Is.True);
-        Assert.That(Globals.EvaluateSimdIsNaN(TYP_INT, value.AsSpan<byte>(), 16).IsZero, Is.True);
-        Assert.That(Globals.EvaluateSimdIsNegative(TYP_UINT, value.AsSpan<byte>(), 16).IsZero, Is.True);
     }
 
     [TestCase(TYP_INT)]

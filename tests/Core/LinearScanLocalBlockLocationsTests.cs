@@ -26,7 +26,7 @@ internal static class LinearScanLocalBlockLocationsTests
         WithLocations((compiler, allocator, block, interval) =>
         {
             SetOps.AddElemD(compiler, block.bbLiveIn, 0);
-            allocator.setOutVarRegForBB(2, 0, predecessorReg);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, 2, 0, predecessorReg);
             BlockInfo(allocator)![1].predBBNum = 2;
             BlockInfo(allocator)![1].hasEHPred = ehPredecessor;
             interval.isWriteThru = writeThrough;
@@ -66,7 +66,7 @@ internal static class LinearScanLocalBlockLocationsTests
         {
             SetOps.AddElemD(compiler, block.bbLiveIn, 0);
             BlockInfo(allocator)![1].predBBNum = 2;
-            allocator.setOutVarRegForBB(2, 0, REG_X64_RCX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, 2, 0, REG_X64_RCX);
             interval.isWriteThru = true;
             interval.firstRefPosition = nextReferenceIsDefinition
                 ? new RefPosition(1, 2, null, RefType.RefTypeDef) : null;
@@ -290,7 +290,7 @@ internal static class LinearScanLocalBlockLocationsTests
         {
             SetOps.AddElemD(compiler, block.bbLiveIn, 0);
             BlockInfo(allocator)![1].predBBNum = 2;
-            allocator.setOutVarRegForBB(2, 0, REG_X64_RCX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, 2, 0, REG_X64_RCX);
             TestConfiguration.SetLinearScanStressMask(allocator, 0x200);
 
             ProcessStart(allocator, block);

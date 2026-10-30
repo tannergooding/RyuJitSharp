@@ -10,6 +10,13 @@ using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
+internal interface IHashTableInfo<TKey>
+{
+    bool Equals(TKey x, TKey y);
+
+    uint GetHashCode(TKey key);
+}
+
 internal interface IJitHashTableBehavior
 {
     uint GrowthFactorNumerator { get; }

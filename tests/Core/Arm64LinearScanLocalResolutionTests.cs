@@ -173,7 +173,12 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
                     isSplit = true,
                     varNum = (uint)index,
                 };
-                allocator.setOutVarRegForBB((uint)source.bbNum, (uint)index, index == 0 ? REG_ARM64_R0 : REG_ARM64_R1);
+                var outgoingMap = allocator.getOutVarToRegMap((uint)source.bbNum)
+                    ?? throw new AssertionException("Missing outgoing register map.");
+                allocator.setVarReg(
+                    outgoingMap,
+                    compiler.lvaTable[index]._varIndex,
+                    index == 0 ? REG_ARM64_R0 : REG_ARM64_R1);
                 allocator.setInVarRegForBB((uint)target.bbNum, (uint)index, index == 0 ? REG_ARM64_R1 : REG_ARM64_R0);
             }
 
@@ -268,7 +273,9 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             CandidateVars(allocator) = SetOps.MakeEmpty(compiler);
             SetOps.AddElemD(compiler, CandidateVars(allocator), 0);
             SplitOrSpilled(allocator) = SetOps.MakeEmpty(compiler);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, from);
+            var outgoingMap = allocator.getOutVarToRegMap((uint)source.bbNum)
+                ?? throw new AssertionException("Missing outgoing register map.");
+            allocator.setVarReg(outgoingMap, compiler.lvaTable[0]._varIndex, from);
             allocator.setInVarRegForBB((uint)target.bbNum, 0, to);
             var live = SetOps.MakeEmpty(compiler);
             SetOps.AddElemD(compiler, live, 0);

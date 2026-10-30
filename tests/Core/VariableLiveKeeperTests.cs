@@ -13,7 +13,6 @@ using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
-using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -166,29 +165,6 @@ internal static unsafe class VariableLiveKeeperTests
             Assert.That(keeper.getLiveRangesForVarForBody(0)[0].m_EndEmitLocation.Valid(), Is.False);
             Assert.That(keeper.getLiveRangesForVarForBody(2), Has.Count.EqualTo(1));
             Assert.That(keeper.getLiveRangesCount(), Is.EqualTo((nuint)2));
-        });
-    }
-
-    [Test]
-    public static void TrackedSetsUseTrackedIndexOrderAndFinalCloseSuppressesLaterEmitterAccess()
-    {
-        WithCompiler((compiler, codeGen) =>
-        {
-            var keeper = codeGen.getVariableLiveKeeper();
-            var variables = VarSetOps.MakeEmpty(compiler);
-            VarSetOps.AddElemD(compiler, variables, 0);
-            VarSetOps.AddElemD(compiler, variables, 2);
-            keeper.siStartOrCloseVariableLiveRanges(variables, true, false);
-            Assert.That(keeper.getLiveRangesForVarForBody(0), Is.Empty);
-            Assert.That(keeper.getLiveRangesForVarForBody(1), Has.Count.EqualTo(1));
-            Assert.That(keeper.getLiveRangesForVarForBody(2), Has.Count.EqualTo(1));
-
-            keeper.siEndAllVariableLiveRange(variables);
-            codeGen.Emitter.emitCurIG = null;
-            keeper.siEndVariableLiveRange(1);
-            keeper.siUpdateVariableLiveRange(in compiler.lvaTable[1], 1);
-            Assert.That(keeper.getLiveRangesForVarForBody(1)[0].m_EndEmitLocation.Valid(), Is.True);
-            Assert.That(keeper.getLiveRangesForVarForBody(2)[0].m_EndEmitLocation.Valid(), Is.True);
         });
     }
 

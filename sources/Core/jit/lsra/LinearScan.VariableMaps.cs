@@ -81,16 +81,6 @@ public sealed partial class LinearScan
         map[_compiler.lvaTable[varNum]._varIndex] = (regNumberSmall)reg;
     }
 
-    internal void setOutVarRegForBB(uint bbNum, uint varNum, regNumber reg)
-    {
-        assert(_enregisterLocalVars);
-        assert((uint)reg < byte.MaxValue && varNum < _compiler.lvaCount);
-        assert(_outVarToRegMaps is not null);
-        var map = _outVarToRegMaps[bbNum];
-        assert(map is not null);
-        map[_compiler.lvaTable[varNum]._varIndex] = (regNumberSmall)reg;
-    }
-
     private SplitEdgeInfo getSplitEdgeInfo(uint bbNum)
     {
         assert(_enregisterLocalVars);
@@ -166,24 +156,5 @@ public sealed partial class LinearScan
         assert(trackedVarIndex < _compiler.lvaTrackedCount);
 
         return (regNumber)map[trackedVarIndex];
-    }
-
-    internal regNumberSmall[]? setInVarToRegMap(uint bbNum, regNumberSmall[]? srcVarToRegMap)
-    {
-        assert(_enregisterLocalVars);
-        assert(_inVarToRegMaps is not null);
-        var inMap = _inVarToRegMaps[bbNum];
-        if (_regMapCount != 0)
-        {
-            assert(inMap is not null);
-            assert(srcVarToRegMap is not null);
-
-            // Native lsra.cpp copies regMapCount * sizeof(regNumber) bytes from
-            // regNumberSmall storage. Copy only the allocated logical entries,
-            // including padding, without replacing maps aliased by split blocks.
-            Array.Copy(srcVarToRegMap, inMap, _regMapCount);
-        }
-
-        return inMap;
     }
 }

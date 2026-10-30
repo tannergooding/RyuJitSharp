@@ -7,8 +7,6 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-    public const int NUM_SM_STATES = 250;
-
     // We rely on this to map the SM_OPCODE to single-opcode states. For example, in GetWeightForOpcode().
     public const int SM_STATE_ID_START = 1;
 

@@ -701,13 +701,6 @@ public sealed partial class Rationalizer : Phase
         }
     }
 
-    // sanity checking of rationalized IR
-    [System.Diagnostics.Conditional("DEBUG")]
-    public void SanityCheckRational()
-    {
-        SanityCheck();
-    }
-
     [System.Diagnostics.Conditional("DEBUG")]
     public static void ValidateStatement(Statement stmt, BasicBlock block)
     {

@@ -23,9 +23,6 @@ public partial struct PatchpointInfo
     private const int OFFSET_SHIFT = 0x1;
     private const int EXPOSURE_MASK = 0x1;
 
-    // Total size of this patchpoint info record, in bytes
-    public readonly int PatchpointInfoSize => ComputeSize(_numberOfLocals);
-
     // Original method caller SP offset for generic context arg
     public int GenericContextArgOffset
     {
@@ -88,8 +85,6 @@ public partial struct PatchpointInfo
         }
     }
 
-    public readonly bool HasMonitorAcquired => _monitorAcquiredOffset is not -1;
-
     // Original method FP relative offset for resumed indicator
     public int ResumedIndicatorOffset
     {
@@ -103,8 +98,6 @@ public partial struct PatchpointInfo
             _resumedIndicatorOffset = value;
         }
     }
-
-    public readonly bool HasResumedIndicator => _resumedIndicatorOffset is not -1;
 
     // Original method FP relative offset for async contexts
     public int AsyncExecutionContextOffset
@@ -120,8 +113,6 @@ public partial struct PatchpointInfo
         }
     }
 
-    public readonly bool HasAsyncExecutionContextOffset => _asyncExecutionContextOffset is not -1;
-
     public int AsyncSynchronizationContextOffset
     {
         readonly get
@@ -134,8 +125,6 @@ public partial struct PatchpointInfo
             _asyncSynchronizationContextOffset = value;
         }
     }
-
-    public readonly bool HasAsyncSynchronizationContextOffset => _asyncSynchronizationContextOffset is not -1;
 
     // True if this local was address exposed in the original method
     public readonly bool IsExposed(int localNum)

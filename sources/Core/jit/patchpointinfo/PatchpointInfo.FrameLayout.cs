@@ -19,6 +19,4 @@ public partial struct PatchpointInfo
             _asyncThreadObjectOffset = value;
         }
     }
-
-    public readonly bool HasAsyncThreadOffset => _asyncThreadObjectOffset is not -1;
 }

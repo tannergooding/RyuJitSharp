@@ -460,9 +460,9 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
                 new LinearScan.SplitEdgeInfo { fromBBNum = firstNumber, toBBNum = secondNumber };
             BlockInfo(allocator)[blocks[1].bbNum].predBBNum = firstNumber;
             allocator.initVarRegMaps();
-            allocator.setOutVarRegForBB(firstNumber, 0, regNumber.REG_X64_RAX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, firstNumber, 0, regNumber.REG_X64_RAX);
             allocator.setInVarRegForBB(secondNumber, 0, regNumber.REG_X64_RBX);
-            allocator.setOutVarRegForBB(secondNumber, 0, regNumber.REG_X64_RCX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, secondNumber, 0, regNumber.REG_X64_RCX);
 
             var firstHeader = Capture(() => blocks[0].dspBlockHeader());
             var secondHeader = Capture(() => blocks[1].dspBlockHeader());

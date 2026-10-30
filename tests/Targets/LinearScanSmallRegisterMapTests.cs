@@ -54,16 +54,17 @@ internal static unsafe class LinearScanSmallRegisterMapTests
             var register = (regNumber)value;
 
             allocator.setInVarRegForBB(1, 0, register);
-            allocator.setOutVarRegForBB(2, 0, register);
+            var outgoingMap = allocator.getOutVarToRegMap(2)
+                ?? throw new AssertionException("Missing outgoing map.");
+            allocator.setVarReg(outgoingMap, compiler.lvaTable[0]._varIndex, register);
 
             var inMap = allocator.getInVarToRegMap(1) ?? throw new AssertionException("Missing incoming map.");
-            var outMap = allocator.getOutVarToRegMap(2) ?? throw new AssertionException("Missing outgoing map.");
             Assert.That(inMap[2], Is.EqualTo((byte)value));
-            Assert.That(outMap[2], Is.EqualTo((byte)value));
+            Assert.That(outgoingMap[2], Is.EqualTo((byte)value));
             Assert.That(allocator.getVarReg(inMap, 2), Is.EqualTo(register));
-            Assert.That(allocator.getVarReg(outMap, 2), Is.EqualTo(register));
+            Assert.That(allocator.getVarReg(outgoingMap, 2), Is.EqualTo(register));
             Assert.That(inMap[0], Is.EqualTo((byte)REG_STK));
-            Assert.That(outMap[0], Is.EqualTo((byte)REG_STK));
+            Assert.That(outgoingMap[0], Is.EqualTo((byte)REG_STK));
         });
     }
 
@@ -104,32 +105,6 @@ internal static unsafe class LinearScanSmallRegisterMapTests
             _ = Assert.Throws<OverflowException>(() => allocator.setVarReg(map, 0, (regNumber)value));
 
             Assert.That(allocator.getVarReg(map, 0), Is.EqualTo(REG_NA));
-        });
-    }
-
-    [Test]
-    public static void MapCopyIncludesPaddingAndPreservesSplitBlockAliases()
-    {
-        WithMaps(1, (compiler, allocator) =>
-        {
-            var destination = allocator.getInVarToRegMap(1)
-                ?? throw new AssertionException("Missing incoming map.");
-            compiler.fgBBNumMax = 3;
-            allocator.getSplitBBNumToTargetBBNumMap().Add(3,
-                new LinearScan.SplitEdgeInfo { fromBBNum = 0, toBBNum = 1 });
-            var alias = allocator.getInVarToRegMap(3);
-            byte[] source = [0, 127, 128, 255, 42];
-
-            var result = allocator.setInVarToRegMap(1, source);
-
-            Assert.That(result, Is.SameAs(destination));
-            Assert.That(allocator.getInVarToRegMap(3), Is.SameAs(alias).And.SameAs(destination));
-            Assert.That(allocator.getOutVarToRegMap(3), Is.SameAs(destination));
-            Assert.That(destination, Is.EqualTo(source[..4]));
-            Assert.That(Buffer.ByteLength(destination), Is.EqualTo(4));
-            source[0] = 1;
-            Assert.That(destination[0], Is.Zero);
-            Assert.That(source[4], Is.EqualTo(42));
         });
     }
 

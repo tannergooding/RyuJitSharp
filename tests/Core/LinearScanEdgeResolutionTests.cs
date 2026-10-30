@@ -44,7 +44,7 @@ internal static class LinearScanEdgeResolutionTests
             SetOps.AddElemD(compiler, target.bbLiveIn, 0);
             var interval = MapInterval(compiler, allocator, 0);
             interval.isSpilled = true;
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, from);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 0, from);
             allocator.setInVarRegForBB((uint)target.bbNum, 0, to);
             var liveSet = SetOps.MakeEmpty(compiler);
             SetOps.AddElemD(compiler, liveSet, 0);
@@ -79,8 +79,8 @@ internal static class LinearScanEdgeResolutionTests
                 SetOps.AddElemD(compiler, liveSet, index);
                 SetOps.AddElemD(compiler, target.bbLiveIn, index);
             }
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_X64_RDX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 0, REG_X64_RCX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 1, REG_X64_RDX);
             allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_X64_RDX);
             allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_X64_RCX);
 
@@ -108,7 +108,8 @@ internal static class LinearScanEdgeResolutionTests
                 MapInterval(compiler, allocator, index).isSplit = true;
                 SetOps.AddElemD(compiler, liveSet, index);
                 SetOps.AddElemD(compiler, target.bbLiveIn, index);
-                allocator.setOutVarRegForBB((uint)source.bbNum, (uint)index, registers[index]);
+                LinearScanTestSupport.SetOutVarRegForBB(
+                    compiler, allocator, (uint)source.bbNum, (uint)index, registers[index]);
                 allocator.setInVarRegForBB((uint)target.bbNum, (uint)index,
                     registers[(index + 1) % registers.Length]);
             }
@@ -151,8 +152,8 @@ internal static class LinearScanEdgeResolutionTests
                 SetOps.AddElemD(compiler, liveSet, index);
                 SetOps.AddElemD(compiler, target.bbLiveIn, index);
             }
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_XMM0);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_X64_XMM1);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 0, REG_X64_XMM0);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 1, REG_X64_XMM1);
             allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_X64_XMM1);
             allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_X64_XMM0);
 
@@ -184,8 +185,8 @@ internal static class LinearScanEdgeResolutionTests
                 SetOps.AddElemD(compiler, liveSet, index);
                 SetOps.AddElemD(compiler, target.bbLiveIn, index);
             }
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_X64_STK);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 0, REG_X64_RCX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 1, REG_X64_STK);
             allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_X64_RDX);
             allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_X64_RCX);
 
@@ -213,8 +214,8 @@ internal static class LinearScanEdgeResolutionTests
                 MapInterval(compiler, allocator, index).isSplit = true;
                 SetOps.AddElemD(compiler, target.bbLiveIn, index);
             }
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_X64_RBX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 0, REG_X64_RCX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 1, REG_X64_RBX);
             allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_X64_RDX);
             allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_X64_RBX);
 
@@ -236,7 +237,7 @@ internal static class LinearScanEdgeResolutionTests
             var interval = MapInterval(compiler, allocator, 0);
             interval.isWriteThru = true;
             interval.isSpilled = true;
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 0, REG_X64_RCX);
             SetOps.AddElemD(compiler, target.bbLiveIn, 0);
             var liveSet = SetOps.MakeEmpty(compiler);
             SetOps.AddElemD(compiler, liveSet, 0);
@@ -260,7 +261,7 @@ internal static class LinearScanEdgeResolutionTests
             interval.isSpilled = true;
             SetOps.AddElemD(compiler, source.bbLiveOut, 0);
             SetOps.AddElemD(compiler, ExceptVars(allocator), 0);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 0, REG_X64_RCX);
 
             ResolveEdge(allocator, source, target, LinearScan.ResolveType.ResolveJoin,
                 SetOps.MakeEmpty(compiler), RBM_NONE);
@@ -280,7 +281,7 @@ internal static class LinearScanEdgeResolutionTests
             TestConfiguration.EnableVerbose(compiler);
             MapInterval(compiler, allocator, 0).isSplit = true;
             SetOps.AddElemD(compiler, target.bbLiveIn, 0);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 0, REG_X64_RCX);
             allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_X64_RDX);
             var liveSet = SetOps.MakeEmpty(compiler);
             SetOps.AddElemD(compiler, liveSet, 0);
@@ -349,8 +350,8 @@ internal static class LinearScanEdgeResolutionTests
             SetOps.AddElemD(compiler, other.bbLiveOut, 0);
             SetOps.AddElemD(compiler, join.bbLiveIn, 0);
             SetOps.AddElemD(compiler, splitSuccessor.bbLiveIn, 0);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
-            allocator.setOutVarRegForBB((uint)other.bbNum, 0, REG_X64_RDX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 0, REG_X64_RCX);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)other.bbNum, 0, REG_X64_RDX);
             allocator.setInVarRegForBB((uint)join.bbNum, 0, REG_X64_RDX);
             allocator.setInVarRegForBB((uint)splitSuccessor.bbNum, 0, REG_X64_RBX);
             HasCriticalEdges(allocator) = true;
@@ -500,8 +501,8 @@ internal static class LinearScanEdgeResolutionTests
             SetOps.AddElemD(compiler, source.bbLiveOut, 1);
             SetOps.AddElemD(compiler, split.bbLiveIn, 1);
             SetOps.AddElemD(compiler, join.bbLiveIn, 0);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_F2);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_F1);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 0, REG_F2);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, (uint)source.bbNum, 1, REG_F1);
             allocator.setInVarRegForBB((uint)join.bbNum, 0, REG_F0);
             allocator.setInVarRegForBB((uint)split.bbNum, 1, REG_F1);
 

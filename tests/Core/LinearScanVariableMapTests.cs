@@ -125,7 +125,7 @@ internal static unsafe class LinearScanVariableMapTests
 
             allocator.setInVarRegForBB(1, 0, regNumber.REG_X64_RAX);
             allocator.setInVarRegForBB(1, 3, REG_X64_XMM2);
-            allocator.setOutVarRegForBB(2, 2, REG_K7);
+            LinearScanTestSupport.SetOutVarRegForBB(compiler, allocator, 2, 2, REG_K7);
             var inMap = allocator.getInVarToRegMap(1);
             var outMap = allocator.getOutVarToRegMap(2);
             assert(inMap is not null);
@@ -184,61 +184,6 @@ internal static unsafe class LinearScanVariableMapTests
                 Is.EqualTo(regNumber.REG_X64_RSI));
             Assert.That(InMaps(allocator), Has.Length.EqualTo(3));
             Assert.That(OutMaps(allocator), Has.Length.EqualTo(3));
-        });
-    }
-
-    [TestCase(1, 4)]
-    [TestCase(5, 8)]
-    public static void MapCopyPreservesDestinationAliasesAndCopiesOnlyAllocatedEntries(int trackedCount, int mapCount)
-    {
-        WithCompiler(compiler => {
-            compiler.lvaTrackedCount = trackedCount;
-            compiler.lvaTrackedFixed = true;
-            compiler.fgBBNumMax = 2;
-            var allocator = new LinearScan(compiler);
-            MaxBlockBeforeResolution(allocator) = 2;
-            allocator.initVarRegMaps();
-            var destination = allocator.getInVarToRegMap(2);
-            assert(destination is not null);
-            compiler.fgBBNumMax = 3;
-            allocator.getSplitBBNumToTargetBBNumMap().Add(3,
-                new LinearScan.SplitEdgeInfo { fromBBNum = 0, toBBNum = 2 });
-            var alias = allocator.getInVarToRegMap(3);
-            Assert.That(alias, Is.SameAs(destination));
-
-            var source = new byte[mapCount + 1];
-            Array.Fill(source, (byte)regNumber.REG_X64_RAX);
-            source[mapCount - 1] = (byte)REG_K7;
-            source[mapCount] = (byte)REG_X64_NA;
-            var result = allocator.setInVarToRegMap(2, source);
-
-            Assert.That(result, Is.SameAs(destination));
-            Assert.That(allocator.getInVarToRegMap(3), Is.SameAs(alias));
-            Assert.That(destination, Has.Length.EqualTo(mapCount));
-            Assert.That(destination, Is.EqualTo(source.AsSpan(0, mapCount).ToArray()));
-            source[0] = (byte)regNumber.REG_X64_RDX;
-            Assert.That((regNumber)destination[0], Is.EqualTo(regNumber.REG_X64_RAX));
-            Assert.That((regNumber)source[mapCount], Is.EqualTo(REG_X64_NA));
-
-            result = allocator.setInVarToRegMap(2, alias);
-            Assert.That(result, Is.SameAs(destination));
-            Assert.That((regNumber)destination[0], Is.EqualTo(regNumber.REG_X64_RAX));
-            Assert.That((regNumber)destination[mapCount - 1], Is.EqualTo(REG_K7));
-        });
-    }
-
-    [Test]
-    public static void EmptyMapCopyReturnsTheNullDestinationWithoutDereferencingEitherMap()
-    {
-        WithCompiler(compiler => {
-            compiler.lvaTrackedFixed = true;
-            compiler.fgBBNumMax = 1;
-            var allocator = new LinearScan(compiler);
-            MaxBlockBeforeResolution(allocator) = 1;
-            allocator.initVarRegMaps();
-
-            Assert.That(allocator.setInVarToRegMap(1, null), Is.Null);
-            Assert.That(allocator.getInVarToRegMap(1), Is.Null);
         });
     }
 

@@ -69,7 +69,7 @@ internal static class JitHashTableTests
     public static void ComparerDefinesKeyEqualityAndHashing()
     {
         var table = new JitHashTable<string, int>(
-            new ComparerHashTableInfo<string>(StringComparer.OrdinalIgnoreCase));
+            new CaseInsensitiveHashInfo());
         table.Reallocate(7);
 
         Assert.That(table.Set("first", 1), Is.False);
@@ -141,6 +141,13 @@ internal static class JitHashTableTests
     private sealed class ConstantHashInfo : JitKeyFuncsDefEquals<uint>
     {
         public override uint GetHashCode(uint key) => 0;
+    }
+
+    private sealed class CaseInsensitiveHashInfo : IHashTableInfo<string>
+    {
+        public bool Equals(string x, string y) => StringComparer.OrdinalIgnoreCase.Equals(x, y);
+
+        public uint GetHashCode(string key) => unchecked((uint)StringComparer.OrdinalIgnoreCase.GetHashCode(key));
     }
 
     private sealed class IdentityKey

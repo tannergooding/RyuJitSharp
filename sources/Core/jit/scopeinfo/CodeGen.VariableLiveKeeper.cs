@@ -75,28 +75,6 @@ public sealed partial class CodeGen
             }
         }
 
-        public void siStartOrCloseVariableLiveRanges(ReadOnlySpan<nint> varsIndexSet, bool isBorn, bool isDying)
-        {
-            if (m_compiler.opts.compDbgInfo)
-            {
-                _ = VarSetOps.VisitBits(m_compiler, varsIndexSet, varIndex => {
-                    var trackedToVarNum = m_compiler.lvaTrackedToVarNum;
-                    if (trackedToVarNum is null)
-                    {
-                        FatalJitException.ThrowFatalJitException(
-        CORJIT_INTERNALERROR,
-        FatalJitErrorCode.TrackedLocalMappingHasNotBeenInitialized
-    );
-                        return default!;
-                    }
-                    var varNum = trackedToVarNum[varIndex];
-                    ref var varDsc = ref m_compiler.lvaGetDesc(varNum);
-                    siStartOrCloseVariableLiveRange(in varDsc, varNum, isBorn, isDying);
-                    return true;
-                });
-            }
-        }
-
         public void siStartVariableLiveRange(in LclVarDsc varDsc, int varNum)
         {
             if (m_compiler.opts.compDbgInfo && (unchecked((uint)varNum) < (uint)m_LiveDscCount) &&
