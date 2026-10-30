@@ -118,7 +118,7 @@ internal static unsafe class CodeGenNodeDispatchTests
             var first = new GenTreePhysReg(REG_RAX, TYP_REF) { RegNum = REG_RAX };
             var second = new GenTreePhysReg(REG_RCX, TYP_REF) { RegNum = REG_RCX };
             var tree = new GenTreeOp(oper, TYP_INT, first, second) { RegNum = REG_RDX };
-            codeGen.GCInfo.gcMarkRegSetGCref(RBM_RAX | RBM_RCX);
+            codeGen.GCInfo.gcMarkRegSetGCref(RBM_RAX | TestConfiguration.XarchRcxMask);
             codeGen.genCodeForTreeNode(tree);
 
             Assert.That(Descriptors(codeGen).Select(id => id.idIns()),
@@ -207,15 +207,15 @@ internal static unsafe class CodeGenNodeDispatchTests
     {
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
-            codeGen.GCInfo.gcMarkRegSetGCref(RBM_RAX | RBM_RBX);
+            codeGen.GCInfo.gcMarkRegSetGCref(RBM_RAX | TestConfiguration.XarchRbxMask);
             var rsiMask = Configuration.TARGET_AMD64 ? RBM_X64_RSI : RBM_X86_RSI;
-            codeGen.GCInfo.gcMarkRegSetByref(RBM_RCX | rsiMask);
+            codeGen.GCInfo.gcMarkRegSetByref(TestConfiguration.XarchRcxMask | rsiMask);
             codeGen.instGen(INS_nop);
             var before = codeGen.Emitter.emitCurIG;
             codeGen.genCodeForTreeNode(new GenTree(GT_START_PREEMPTGC, TYP_VOID));
 
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RAX));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(RBM_RCX));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(TestConfiguration.XarchRcxMask));
             Assert.That(codeGen.Emitter.emitCurIG, Is.Not.SameAs(before));
             Assert.That(Descriptors(codeGen), Is.Empty);
         });
@@ -308,7 +308,7 @@ internal static unsafe class CodeGenNodeDispatchTests
 
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            codeGen.GCInfo.gcMarkRegSetGCref(RBM_RBX);
+            codeGen.GCInfo.gcMarkRegSetGCref(TestConfiguration.XarchRbxMask);
             var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing current group.");
             TestConfiguration.SetDspCode(compiler, true);
             _ = InstructionRecordingTestSupport.Capture(() =>

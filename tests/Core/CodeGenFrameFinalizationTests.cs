@@ -53,7 +53,7 @@ internal static unsafe class CodeGenFrameFinalizationTests
         WithFrame((compiler, codeGen) =>
         {
             codeGen.IsFramePointerUsed = framePointer;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_X64_RSI | RBM_X64_XMM6);
+            codeGen.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask | RBM_X64_RSI | RBM_X64_XMM6);
 
             codeGen.genFinalizeFrame();
 
@@ -84,7 +84,7 @@ internal static unsafe class CodeGenFrameFinalizationTests
                 compiler.lvaTable[0].RegNum = REG_RBX;
                 calls++;
             });
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX);
+            codeGen.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask);
 
             codeGen.genFinalizeFrame();
 
@@ -122,7 +122,7 @@ internal static unsafe class CodeGenFrameFinalizationTests
             codeGen.IsFramePointerUsed = false;
             var live = floating ? new regMaskTP(SRBM_FLT_CALLEE_TRASH_INIT) : new regMaskTP(SRBM_INT_CALLEE_TRASH_INIT);
             codeGen.CalleeRegArgMaskLiveIn = live;
-            codeGen.RegSet.rsMaskResvd = floating ? RBM_X64_XMM6 : RBM_RBX;
+            codeGen.RegSet.rsMaskResvd = floating ? RBM_X64_XMM6 : TestConfiguration.XarchRbxMask;
 
             codeGen.genFinalizeFrame();
 

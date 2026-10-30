@@ -33,6 +33,25 @@ internal static partial class TestConfiguration
 
     public static bool IsArm32 => Configuration.TARGET_ARM;
 
+    public static regMaskTP XarchRbxMask => GetXarchRegisterMask(RBM_X86_RBX, RBM_X64_RBX);
+
+    public static regMaskTP XarchRcxMask => GetXarchRegisterMask(RBM_X86_RCX, RBM_X64_RCX);
+
+    private static regMaskTP GetXarchRegisterMask(regMaskTP x86Mask, regMaskTP amd64Mask)
+    {
+        if (Configuration.TARGET_X86)
+        {
+            return x86Mask;
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            return amd64Mask;
+        }
+
+        throw new InvalidOperationException("Xarch register masks require an x86 or AMD64 target.");
+    }
+
     public static void WithLsraStatistics(Action action)
     {
         const string switchName = "RyuJitSharp.TRACK_LSRA_STATS";

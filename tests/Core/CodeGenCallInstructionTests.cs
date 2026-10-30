@@ -45,7 +45,7 @@ internal static unsafe class CodeGenCallInstructionTests
             Assert.That(id.idIns(), Is.EqualTo(INS_call));
             Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_METHOD));
             Assert.That(EmitterCallInstructionTests.CallView.AsyncReturn(id), Is.EqualTo(async));
-            Assert.That(EmitterCallInstructionTests.CallView.Refs(id), Is.EqualTo(RBM_RBX));
+            Assert.That(EmitterCallInstructionTests.CallView.Refs(id), Is.EqualTo(TestConfiguration.XarchRbxMask));
             Assert.That(EmitterCallInstructionTests.CallView.Byrefs(id), Is.EqualTo(RBM_R12));
             Assert.That(ThisRefs(codeGen.Emitter), Is.EqualTo(
                 SRBM_X64_RBX | ((!unused && type == TYP_REF) ? SRBM_X64_RAX : 0)));

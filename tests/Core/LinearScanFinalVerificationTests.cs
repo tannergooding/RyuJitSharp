@@ -122,7 +122,7 @@ internal static unsafe class LinearScanFinalVerificationTests
             var fixedRegister = AddReference(allocator, RefType.RefTypeFixedReg, 4);
             fixedRegister.setReg(allocator.physRegs[(int)regNumber.REG_X64_RBX]);
             var killed = AddReference(allocator, RefType.RefTypeKill, 6);
-            killed.killedRegisters = RBM_RBX;
+            killed.killedRegisters = TestConfiguration.XarchRbxMask;
             var gcKill = AddReference(allocator, RefType.RefTypeKillGCRefs, 8);
             gcKill.registerAssignment = SRBM_X64_RAX;
             var optional = AddReference(allocator, RefType.RefTypeUse, 10, interval);

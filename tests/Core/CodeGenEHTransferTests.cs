@@ -113,7 +113,7 @@ internal static class CodeGenEHTransferTests
             Assert.That(codeGen.Emitter.emitCurIG!.igFlags & InsGroupFlags.NoGCInterrupt,
                 Is.EqualTo(InsGroupFlags.NoGCInterrupt));
             Assert.That(NoGcRequests(codeGen.Emitter), Is.Zero);
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(TestConfiguration.XarchRbxMask));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(RBM_R12));
 
             codeGen.instGen(INS_nop);

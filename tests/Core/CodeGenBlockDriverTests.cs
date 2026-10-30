@@ -157,9 +157,11 @@ internal static unsafe class CodeGenBlockDriverTests
 
             codeGen.genCodeForBlock(blocks[0]);
 
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(RBM_RBX));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? RBM_RBX : RBM_NONE));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? RBM_RBX : RBM_NONE));
+            var expectedGcRefs = type == TYP_REF ? TestConfiguration.XarchRbxMask : RBM_NONE;
+            var expectedByRefs = type == TYP_BYREF ? TestConfiguration.XarchRbxMask : RBM_NONE;
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(TestConfiguration.XarchRbxMask));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(expectedGcRefs));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(expectedByRefs));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.EqualTo(alwaysAlive));
             Assert.That(compiler.compCurBB, Is.Null);
         });
@@ -246,11 +248,11 @@ internal static unsafe class CodeGenBlockDriverTests
         {
             var blocks = Blocks(compiler, BBJ_CALLFINALLYRET, BBJ_RETURN);
             var current = compiler.compCurBB;
-            codeGen.GCInfo.gcMarkRegSetGCref(RBM_RBX);
+            codeGen.GCInfo.gcMarkRegSetGCref(TestConfiguration.XarchRbxMask);
             codeGen.genCodeForBlock(blocks[0]);
 
             Assert.That(compiler.compCurBB, Is.SameAs(current));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(TestConfiguration.XarchRbxMask));
             Assert.That(Descriptors(codeGen), Is.Empty);
         });
     }

@@ -52,7 +52,7 @@ internal static class EmitterPrologEpilogTests
             var vars = VarSetOps.MakeSingleton(compiler, 0);
             var placeholder = emitter.emitAddLabel(vars, RBM_RAX, RBM_RDX);
             var block = new BasicBlock(null, null);
-            emitter.emitCreatePlaceholderIG(kind, block, vars, RBM_RCX, RBM_R8, last: true);
+            emitter.emitCreatePlaceholderIG(kind, block, vars, TestConfiguration.XarchRcxMask, RBM_R8, last: true);
             var data = placeholder.igPhData ?? throw new AssertionException("Missing placeholder snapshot.");
             var expectedRefs = data.igPhInitGCrefRegs;
             var expectedByrefs = data.igPhInitByrefRegs;

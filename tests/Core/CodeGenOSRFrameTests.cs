@@ -36,7 +36,7 @@ internal static unsafe class CodeGenOSRFrameTests
             codeGen.resetFramePointerUsedWritePhase();
             codeGen.IsFramePointerUsed = framePointer;
             compiler.compLclFrameSize = 32;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_R12 | RBM_R13 | RBM_X64_XMM6);
+            codeGen.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask | RBM_R12 | RBM_R13 | RBM_X64_XMM6);
 
             codeGen.genOSRSaveRemainingCalleeSavedRegisters();
 

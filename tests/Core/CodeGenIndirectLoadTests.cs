@@ -40,7 +40,8 @@ internal static unsafe class CodeGenIndirectLoadTests
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(ins));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? RBM_RCX : RBM_NONE));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur,
+                Is.EqualTo(type == TYP_REF ? TestConfiguration.XarchRcxMask : RBM_NONE));
             if (local)
             {
                 Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));

@@ -102,7 +102,7 @@ internal static unsafe class PatchpointMetadataTests
                 codeGen.RegSet = new RegSet(codeGen);
                 codeGen.RegSet.rsClearRegsModified();
             }
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_R12 | RBM_RAX | RBM_X64_XMM6);
+            codeGen.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask | RBM_R12 | RBM_RAX | RBM_X64_XMM6);
             compiler.lvaDoneFrameLayout = FINAL_FRAME_LAYOUT;
 
             compiler.generatePatchpointInfo();
@@ -127,7 +127,7 @@ internal static unsafe class PatchpointMetadataTests
             Assert.That(result->AsyncThreadOffset, Is.EqualTo(contextKind >= 0 ? -48 : -1));
             Assert.That(result->AsyncExecutionContextOffset, Is.EqualTo(contextKind >= 0 ? -56 : -1));
             Assert.That(result->AsyncSynchronizationContextOffset, Is.EqualTo(contextKind >= 0 ? -64 : -1));
-            var expectedSaves = RBM_RBX | RBM_R12 | RBM_RBP;
+            var expectedSaves = TestConfiguration.XarchRbxMask | RBM_R12 | RBM_RBP;
             if (!Configuration.UNIX_AMD64_ABI)
             {
                 expectedSaves |= RBM_X64_XMM6;

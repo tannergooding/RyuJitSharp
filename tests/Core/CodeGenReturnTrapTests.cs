@@ -59,7 +59,7 @@ internal static unsafe class CodeGenReturnTrapTests
             }
             var label = EmitterJumpInstructionTests.JumpView.Target(saved[1]);
             Assert.That(label?.bbEmitCookie, Is.SameAs(codeGen.Emitter.emitCurIG));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(TestConfiguration.XarchRbxMask));
             Assert.That(codeGen.InternalRegisters.GetAll(tree),
                 Is.EqualTo(TestConfiguration.IsDebug ? RBM_X64_XMM5 : RBM_R11 | RBM_X64_XMM5));
         });

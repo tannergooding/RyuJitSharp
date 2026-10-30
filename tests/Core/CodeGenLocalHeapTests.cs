@@ -160,7 +160,7 @@ internal static class CodeGenLocalHeapTests
             Assert.That(instructions.Contains(INS_neg), Is.EqualTo(!initialize));
             Assert.That(instructions.Contains(INS_shr_N), Is.EqualTo(initialize));
             Assert.That(instructions.Contains(INS_and), Is.EqualTo(!initialize));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(TestConfiguration.XarchRbxMask));
             Assert.That(codeGen.getCurrentStackLevel(), Is.Zero);
             Assert.That(ids.Last().idIns(), Is.EqualTo(outgoing == 0 ? INS_mov : INS_lea));
             if (outgoing != 0)
@@ -192,7 +192,7 @@ internal static class CodeGenLocalHeapTests
             registers.Add(tree, RBM_RAX | RBM_RDX);
             Assert.That(registers.Count(tree), Is.EqualTo(2u));
             Assert.That(registers.Count(tree, RBM_RAX), Is.EqualTo(1u));
-            Assert.That(registers.Count(tree, RBM_RCX), Is.Zero);
+            Assert.That(registers.Count(tree, TestConfiguration.XarchRcxMask), Is.Zero);
             if (Configuration.HAS_MORE_THAN_64_REGISTERS)
             {
                 registers.Add(tree, regMaskTP.CreateFromRegNum(REG_X64_K1, REG_X64_K1.SingleTypeMask));

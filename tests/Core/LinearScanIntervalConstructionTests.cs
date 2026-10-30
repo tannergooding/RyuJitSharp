@@ -206,13 +206,13 @@ internal static unsafe class LinearScanIntervalConstructionTests
     {
         WithAllocator((compiler, allocator) => {
             _ = CreateBlocks(compiler, BBJ_RETURN);
-            compiler.codeGen!.RegSet.rsSetRegsModified(RBM_RBX);
+            compiler.codeGen!.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask);
 
             _ = allocator.DoRegisterAllocation();
 
             Assert.That(compiler.compRegAllocDone, Is.True);
             Assert.That(EnregisterLocalVars(allocator), Is.False);
-            Assert.That(compiler.codeGen.RegSet.rsRegsModified(RBM_RBX), Is.False);
+            Assert.That(compiler.codeGen.RegSet.rsRegsModified(TestConfiguration.XarchRbxMask), Is.False);
         }, enregister: true);
     }
 
@@ -569,10 +569,10 @@ internal static unsafe class LinearScanIntervalConstructionTests
     public static void EnregisteredModeRejectsBeforeBuildingOrChangingCodegenState()
     {
         WithAllocator((compiler, allocator) => {
-            compiler.codeGen!.CalleeRegArgMaskLiveIn = RBM_RCX;
+            compiler.codeGen!.CalleeRegArgMaskLiveIn = TestConfiguration.XarchRcxMask;
             _ = Assert.Throws<FatalJitException>(() => BuildIntervals(allocator));
             Assert.That(allocator.refPositions, Is.Empty);
-            Assert.That(compiler.codeGen.CalleeRegArgMaskLiveIn, Is.EqualTo(RBM_RCX));
+            Assert.That(compiler.codeGen.CalleeRegArgMaskLiveIn, Is.EqualTo(TestConfiguration.XarchRcxMask));
         }, enregister: true);
     }
 

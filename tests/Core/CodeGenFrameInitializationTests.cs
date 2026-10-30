@@ -193,13 +193,13 @@ internal static unsafe class CodeGenFrameInitializationTests
             compiler.srbmMskCalleeTrash = SRBM_MSK_CALLEE_TRASH_INIT;
             codeGen.CopyRegisterInfo();
             codeGen.CalleeRegArgMaskLiveIn = RBM_R12;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX);
+            codeGen.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask);
             codeGen.RegSet.rsMaskResvd = RBM_RAX | RBM_R12;
 
             var trash = new regMaskTP(SRBM_INT_CALLEE_TRASH_INIT | SRBM_FLT_CALLEE_TRASH_INIT,
                 SRBM_MSK_CALLEE_TRASH_INIT);
             Assert.That(codeGen.genGetParameterHomingTempRegisterCandidates(),
-                Is.EqualTo((trash | RBM_R12 | RBM_RBX) & ~(RBM_RAX | RBM_R12)));
+                Is.EqualTo((trash | RBM_R12 | TestConfiguration.XarchRbxMask) & ~(RBM_RAX | RBM_R12)));
         });
     }
 

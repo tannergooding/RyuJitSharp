@@ -7331,9 +7331,11 @@ public static partial class Globals
 
         foreach (var name in registerNameOrder)
         {
-            if (name is "EDX" or "ESP" or "RSI" or "RDI"
+            if (name is "EDX" or "ESP" or "RSI" or "RDI" or "RBX" or "RCX"
                 or "A0" or "A1" or "A2" or "A3" or "A4" or "A5" or "A6" or "A7"
                 or "K0" or "K1" or "K2" or "K3" or "K4" or "K5" or "K6" or "K7"
+                or "R16" or "R17" or "R18" or "R19" or "R20" or "R21" or "R22" or "R23"
+                or "R24" or "R25" or "R26" or "R27" or "R28" or "R29" or "R30" or "R31"
                 || name.StartsWith("XMM", StringComparison.Ordinal))
             {
                 // Keep target-qualified aliases; these universal masks have no compiler callers.

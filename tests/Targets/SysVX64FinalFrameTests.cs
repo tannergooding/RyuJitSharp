@@ -213,7 +213,7 @@ internal static unsafe class SysVX64FinalFrameTests
         WithFrame((compiler, codeGen) =>
         {
             codeGen.IsFramePointerUsed = true;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_R12 | RBM_X64_RDI);
+            codeGen.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask | RBM_R12 | RBM_X64_RDI);
             Allocator(compiler) = new LinearScan(compiler);
 
             codeGen.genFinalizeFrame();
@@ -264,7 +264,7 @@ internal static unsafe class SysVX64FinalFrameTests
             codeGen.resetFramePointerUsedWritePhase();
             codeGen.IsFramePointerUsed = false;
             compiler.compLclFrameSize = 32;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_R12 | RBM_R13 | RBM_X64_RDI);
+            codeGen.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask | RBM_R12 | RBM_R13 | RBM_X64_RDI);
 
             codeGen.genOSRSaveRemainingCalleeSavedRegisters();
 

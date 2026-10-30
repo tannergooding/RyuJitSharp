@@ -82,7 +82,7 @@ internal static unsafe class CodeGenProfilingEntryTests
                 Is.EqualTo(-compiler.lvaToCallerSPRelativeOffset(0, isFpBased: true)));
             Assert.That(ids[6].idIns(), Is.EqualTo(INS_call));
             Assert.That(ids[6].idIsNoGC(), Is.True);
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(TestConfiguration.XarchRbxMask));
             Assert.That(zeroed, Is.False);
             Assert.That(compiler.info.compProfilerCallback, Is.False);
         });

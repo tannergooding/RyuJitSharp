@@ -48,7 +48,7 @@ internal static unsafe class CodeGenIndirectStoreTests
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(size));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(data.RegNum));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(RBM_NONE));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(TestConfiguration.XarchRbxMask));
             if (TestConfiguration.IsDebug)
             {
                 Assert.That(address._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,

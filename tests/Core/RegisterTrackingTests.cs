@@ -29,11 +29,12 @@ internal static unsafe class RegisterTrackingTests
             compiler.lvaCount = 1;
             compiler.lvaTrackedCount = 1;
             GenTree? tree = TestConfiguration.IsDebug ? compiler.gtNewLclvNode(TYP_INT, 0) : null;
-            codeGen.RegSet.SetMaskVars(dying ? RBM_RAX | RBM_RBX : RBM_RBX);
+            var rbxMask = TestConfiguration.XarchRbxMask;
+            codeGen.RegSet.SetMaskVars(dying ? RBM_RAX | rbxMask : rbxMask);
 
             codeGen.genUpdateRegLife(in compiler.lvaTable[0], born, dying, tree);
 
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(dying ? RBM_RBX : RBM_RAX | RBM_RBX));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(dying ? rbxMask : RBM_RAX | rbxMask));
         });
     }
 
@@ -128,13 +129,13 @@ internal static unsafe class RegisterTrackingTests
             gc.gcMarkRegPtrVal(REG_X64_RAX, TYP_BYREF);
             registers.SetMaskVars(pointers);
             gc.gcMarkRegSetNpt(pointers);
-            Assert.That(gc.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
+            Assert.That(gc.gcRegGCrefSetCur, Is.EqualTo(TestConfiguration.XarchRbxMask));
             Assert.That(gc.gcRegByrefSetCur, Is.EqualTo(RBM_RAX));
 
             registers.RemoveMaskVars(RBM_RAX);
             gc.gcMarkRegPtrVal(REG_X64_RAX, TYP_INT);
             Assert.That(gc.gcRegByrefSetCur, Is.EqualTo(RBM_NONE));
-            Assert.That(gc.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
+            Assert.That(gc.gcRegGCrefSetCur, Is.EqualTo(TestConfiguration.XarchRbxMask));
 
             registers.ClearMaskVars();
             gc.gcMarkRegSetNpt(pointers);
@@ -154,7 +155,7 @@ internal static unsafe class RegisterTrackingTests
             gc.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
             VarSetOps.AddElemD(compiler, gc.gcVarPtrSetCur, 1);
             gc.gcRegGCrefSetCur = RBM_RAX;
-            gc.gcRegByrefSetCur = RBM_RBX;
+            gc.gcRegByrefSetCur = TestConfiguration.XarchRbxMask;
 
             gc.gcResetForBB();
 

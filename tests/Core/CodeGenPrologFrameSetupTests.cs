@@ -107,7 +107,7 @@ internal static unsafe class CodeGenPrologFrameSetupTests
         {
             var zeroed = true;
             var first = codeGen.Emitter.emitCurIG;
-            codeGen.genAllocLclFrame(size, scratch, ref zeroed, RBM_RCX | RBM_RDX);
+            codeGen.genAllocLclFrame(size, scratch, ref zeroed, TestConfiguration.XarchRcxMask | RBM_RDX);
 
             var ids = CodeGenLocalHeapTests.AllDescriptors(first, codeGen);
             Assert.That(ids.Select(id => id.idIns()), Is.EqualTo((instruction[])[INS_lea, INS_call, INS_mov]));
@@ -126,7 +126,7 @@ internal static unsafe class CodeGenPrologFrameSetupTests
         WithProlog((compiler, codeGen) =>
         {
             codeGen.IsFramePointerUsed = framePointer;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_RBP | RBM_R12 | RBM_X64_XMM6);
+            codeGen.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask | RBM_RBP | RBM_R12 | RBM_X64_XMM6);
             compiler.compCalleeRegsPushed = framePointer ? 2 : 3;
             var zeroed = true;
 
@@ -149,7 +149,7 @@ internal static unsafe class CodeGenPrologFrameSetupTests
         {
             codeGen.IsFramePointerUsed = framePointer;
             codeGen.Emitter.UsePromotedEvexEncodings = true;
-            var mask = RBM_RBX | RBM_R12 | RBM_R13;
+            var mask = TestConfiguration.XarchRbxMask | RBM_R12 | RBM_R13;
             if (includesRbp)
             {
                 mask |= RBM_RBP;

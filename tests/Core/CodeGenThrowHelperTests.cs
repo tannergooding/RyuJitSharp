@@ -91,7 +91,7 @@ internal static unsafe class CodeGenThrowHelperTests
             Assert.That(ThisRefs(codeGen.Emitter), Is.EqualTo(REG_RAX.SingleTypeMask));
             Assert.That(ThisByrefs(codeGen.Emitter), Is.EqualTo(REG_RBX.SingleTypeMask));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RAX));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(RBM_RBX));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(TestConfiguration.XarchRbxMask));
         });
     }
 

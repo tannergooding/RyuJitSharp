@@ -20,8 +20,9 @@ internal static unsafe class CodeGenEpilogTests
         WithEpilog((_, codeGen) =>
         {
             codeGen.IsFramePointerUsed = false;
-            var count = codeGen.genPopCalleeSavedRegistersFromMaskXarch(
-                RBM_RBX | RBM_RBP | RBM_X64_RSI | RBM_X64_RDI | RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15);
+            var savedRegisters = TestConfiguration.XarchRbxMask | RBM_RBP | RBM_X64_RSI | RBM_X64_RDI
+                | RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15;
+            var count = codeGen.genPopCalleeSavedRegistersFromMaskXarch(savedRegisters);
 
             Assert.That(count, Is.EqualTo(8u));
             Assert.That(Descriptors(codeGen).Select(id => id.idReg1()),
@@ -39,8 +40,9 @@ internal static unsafe class CodeGenEpilogTests
         {
             codeGen.IsFramePointerUsed = framePointer;
             codeGen.Emitter.UsePromotedEvexEncodings = true;
-            var count = codeGen.genPopCalleeSavedRegistersFromMaskAPX(
-                RBM_RBX | RBM_X64_RSI | RBM_X64_RDI | RBM_R12 | RBM_R13 | RBM_R14);
+            var savedRegisters = TestConfiguration.XarchRbxMask | RBM_X64_RSI | RBM_X64_RDI
+                | RBM_R12 | RBM_R13 | RBM_R14;
+            var count = codeGen.genPopCalleeSavedRegistersFromMaskAPX(savedRegisters);
 
             var ids = Descriptors(codeGen);
             Assert.That(count, Is.EqualTo(6u));
@@ -82,7 +84,7 @@ internal static unsafe class CodeGenEpilogTests
             compiler.compCalleeFPRegsSavedMask = 0;
             compiler.compLclFrameSize = 32;
             compiler.compCalleeRegsPushed = 1;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX);
+            codeGen.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask);
             var block = new BasicBlock(null, null);
 
             codeGen.genFnEpilog(block);
@@ -110,7 +112,7 @@ internal static unsafe class CodeGenEpilogTests
             compiler.compCalleeRegsPushed = 0;
             compiler.compLclFrameSize = 32;
             compiler.compCalleeFPRegsSavedMask = 0;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_R12);
+            codeGen.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask | RBM_R12);
 
             codeGen.genFnEpilog(new BasicBlock(null, null));
 
@@ -136,7 +138,7 @@ internal static unsafe class CodeGenEpilogTests
             compiler.compCalleeRegsPushed = 1;
             compiler.lvaOutgoingArgSpaceSize.ResetWritePhase();
             compiler.lvaOutgoingArgSpaceSize.Value = 32;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX);
+            codeGen.RegSet.rsSetRegsModified(TestConfiguration.XarchRbxMask);
 
             codeGen.genFnEpilog(new BasicBlock(null, null));
 

@@ -45,6 +45,17 @@ internal static class RegMaskIdentityTests
     }
 
     [Test]
+    public static void XarchRegisterMaskPropertiesSelectTheConfiguredTarget()
+    {
+        Assume.That(Configuration.TARGET_X86 || Configuration.TARGET_AMD64);
+        var expectedRbx = Configuration.TARGET_AMD64 ? Globals.RBM_X64_RBX : Globals.RBM_X86_RBX;
+        var expectedRcx = Configuration.TARGET_AMD64 ? Globals.RBM_X64_RCX : Globals.RBM_X86_RCX;
+
+        Assert.That(TestConfiguration.XarchRbxMask, Is.EqualTo(expectedRbx));
+        Assert.That(TestConfiguration.XarchRcxMask, Is.EqualTo(expectedRcx));
+    }
+
+    [Test]
     public static void TargetQualifiedTablesAndFactoriesMatchTheCurrentRegisterSet()
     {
         var target = GetTargetIdentity();

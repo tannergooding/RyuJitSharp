@@ -30,7 +30,7 @@ internal static class CodeGenLocalLoadTests
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_lea));
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(24u));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
-                Is.EqualTo(type == TYP_BYREF ? RBM_RCX : RBM_NONE));
+                Is.EqualTo(type == TYP_BYREF ? TestConfiguration.XarchRcxMask : RBM_NONE));
         });
     }
 
@@ -82,7 +82,7 @@ internal static class CodeGenLocalLoadTests
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(size));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(reg));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur,
-                Is.EqualTo(nodeType == TYP_REF ? RBM_RCX : RBM_NONE));
+                Is.EqualTo(nodeType == TYP_REF ? TestConfiguration.XarchRcxMask : RBM_NONE));
         });
     }
 
@@ -173,7 +173,7 @@ internal static class CodeGenLocalLoadTests
                     INS_insertps, EA_16BYTE, REG_X64_XMM1, REG_X64_XMM0, 0, 8, 0x28, INS_OPTS_NONE);
             });
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RCX));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(TestConfiguration.XarchRcxMask));
             Assert.That(diagnostic, Does.Contain("insertps"));
         });
     }

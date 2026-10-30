@@ -34,9 +34,9 @@ internal static class CodeGenSwapTests
             Assert.That(tree.Op1.RegNum, Is.EqualTo(REG_RAX));
             Assert.That(second.RegNum, Is.EqualTo(REG_RCX));
             Assert.That(compiler.compCurLife, Is.EqualTo(live));
-            var expectedRefs = RBM_RDX | (firstType == TYP_REF ? RBM_RCX : RBM_NONE)
+            var expectedRefs = RBM_RDX | (firstType == TYP_REF ? TestConfiguration.XarchRcxMask : RBM_NONE)
                 | (secondType == TYP_REF ? RBM_RAX : RBM_NONE);
-            var expectedByrefs = (firstType == TYP_BYREF ? RBM_RCX : RBM_NONE)
+            var expectedByrefs = (firstType == TYP_BYREF ? TestConfiguration.XarchRcxMask : RBM_NONE)
                 | (secondType == TYP_BYREF ? RBM_RAX : RBM_NONE);
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(expectedRefs));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(expectedByrefs));
@@ -69,7 +69,7 @@ internal static class CodeGenSwapTests
             TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForSwap(tree));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RCX));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(TestConfiguration.XarchRcxMask));
             Assert.That(Descriptors(codeGen), Is.Not.Empty);
             Assert.That(diagnostic, Does.Contain("xchg"));
         });

@@ -115,7 +115,7 @@ internal static unsafe class CodeGenHelperCallTests
             codeGen.genEmitCallWithCurrentGC(ref parameters);
 
             Assert.That(parameters.ptrVars, Is.SameAs(codeGen.GCInfo.gcVarPtrSetCur));
-            Assert.That(parameters.gcrefRegs, Is.EqualTo(RBM_RBX));
+            Assert.That(parameters.gcrefRegs, Is.EqualTo(TestConfiguration.XarchRbxMask));
             Assert.That(parameters.byrefRegs, Is.EqualTo(RBM_X64_RSI));
             Assert.That(Descriptors(codeGen)[^1].idIns(), Is.EqualTo(INS_call));
         });
@@ -259,7 +259,7 @@ internal static unsafe class CodeGenHelperCallTests
             }
             var gcDiagnostic = InstructionRecordingTestSupport.Capture(EmitCurrentGcCall);
             Assert.That(context.HelperQueries, Is.EqualTo(1));
-            Assert.That(parameters.gcrefRegs, Is.EqualTo(RBM_RBX));
+            Assert.That(parameters.gcrefRegs, Is.EqualTo(TestConfiguration.XarchRbxMask));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
             Assert.That(helperDiagnostic, Does.Contain("call"));
             Assert.That(gcDiagnostic, Does.Contain("call"));
