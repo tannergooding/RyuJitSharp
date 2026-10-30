@@ -398,7 +398,6 @@ internal static unsafe class EmitterDescriptorPayloadTests
         descriptor.idSmallCns(-1);
 
         Assert.That(descriptor.idInsSize(), Is.EqualTo(size));
-        Assert.That(descriptor.idInstrIsT1(), Is.EqualTo(size == Emitter.insSize.ISZ_16BIT));
         Assert.That(descriptor.idCodeSize(), Is.EqualTo(codeSize));
         Assert.That(descriptor.idInsFlags(), Is.EqualTo(insFlags.INS_FLAGS_SET));
         Assert.That(descriptor.idSmallCns(), Is.EqualTo(-1));

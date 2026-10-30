@@ -11,9 +11,4 @@ public partial struct NodeInternalRegisters
     {
         return GetFixedTable().GetEnumerator();
     }
-
-    public readonly WasmNodeInternalRegistersTable.Enumerator IterateWasm()
-    {
-        return GetWasmTable().GetEnumerator();
-    }
 }

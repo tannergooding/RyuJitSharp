@@ -373,34 +373,6 @@ public partial class Emitter
         }
     }
 
-    private static nint emitEncodeRotationImm90_or_270(nint imm)
-    {
-        return imm switch
-        {
-            90 => 0,
-            270 => 1,
-            _ => InvalidRotation(),
-        };
-    }
-
-    private static nint emitEncodeRotationImm0_to_270(nint imm)
-    {
-        return imm switch
-        {
-            0 => 0,
-            90 => 1,
-            180 => 2,
-            270 => 3,
-            _ => InvalidRotation(),
-        };
-    }
-
-    private static nint InvalidRotation()
-    {
-        assert(false, "!\"Invalid rotation value\"");
-        return 0;
-    }
-
     private static insOpts optWidenSveElemsizeArrangement(insOpts arrangement)
     {
         return arrangement switch

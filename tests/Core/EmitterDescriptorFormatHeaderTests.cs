@@ -34,7 +34,7 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
     [TestCase(IF_XARCH_SWR_RRD_RRD, IS_SF_WR | IS_R1_RD | IS_R2_RD)]
     [TestCase(IF_XARCH_ARW_RRW, IS_AM_RW | IS_R1_RW)]
     [TestCase(IF_XARCH_RWR_RRD_ARD_RRD, IS_R1_WR | IS_R2_RD | IS_AM_RD | IS_R3_RD)]
-    public static void NativeSchedulingMasksDriveEveryOperandClassification(Emitter.insFormat format, IS_INFO expected)
+    public static void NativeSchedulingMasksMatchExpectedOperands(Emitter.insFormat format, IS_INFO expected)
     {
         Assume.That(Configuration.TARGET_XARCH);
 
@@ -42,29 +42,29 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
         descriptor.idInsFmt(format);
 
         Assert.That(Emitter.emitGetSchedInfo(format), Is.EqualTo(expected));
-        AssertAccess(descriptor.idHasReg1(), descriptor.idIsReg1Read(), descriptor.idIsReg1Write(),
-            expected, IS_R1_RD, IS_R1_WR, IS_R1_RW);
-        AssertAccess(descriptor.idHasReg2(), descriptor.idIsReg2Read(), descriptor.idIsReg2Write(),
-            expected, IS_R2_RD, IS_R2_WR, IS_R2_RW);
-        AssertAccess(descriptor.idHasReg3(), descriptor.idIsReg3Read(), descriptor.idIsReg3Write(),
-            expected, IS_R3_RD, IS_R3_WR, IS_R3_RW);
-        AssertAccess(descriptor.idHasReg4(), descriptor.idIsReg4Read(), descriptor.idIsReg4Write(),
-            expected, IS_R4_RD, IS_R4_WR, IS_R4_RW);
-        AssertAccess(descriptor.idHasMemGen(), descriptor.idHasMemGenRead(), descriptor.idHasMemGenWrite(),
-            expected, IS_GM_RD, IS_GM_WR, IS_GM_RW);
-        AssertAccess(descriptor.idHasMemStk(), descriptor.idHasMemStkRead(), descriptor.idHasMemStkWrite(),
-            expected, IS_SF_RD, IS_SF_WR, IS_SF_RW);
-        AssertAccess(descriptor.idHasMemAdr(), descriptor.idHasMemAdrRead(), descriptor.idHasMemAdrWrite(),
-            expected, IS_AM_RD, IS_AM_WR, IS_AM_RW);
-        AssertAccess(descriptor.idHasMem(), descriptor.idHasMemRead(), descriptor.idHasMemWrite(), expected,
-            IS_GM_RD | IS_SF_RD | IS_AM_RD, IS_GM_WR | IS_SF_WR | IS_AM_WR, IS_GM_RW | IS_SF_RW | IS_AM_RW);
+        AssertWriteAccess(descriptor.idHasReg1(), descriptor.idIsReg1Write(), expected,
+            IS_R1_RD | IS_R1_WR | IS_R1_RW, IS_R1_WR | IS_R1_RW);
+        AssertWriteAccess(descriptor.idHasReg2(), descriptor.idIsReg2Write(), expected,
+            IS_R2_RD | IS_R2_WR | IS_R2_RW, IS_R2_WR | IS_R2_RW);
+        AssertWriteAccess(descriptor.idHasReg3(), descriptor.idIsReg3Write(), expected,
+            IS_R3_RD | IS_R3_WR | IS_R3_RW, IS_R3_WR | IS_R3_RW);
+        AssertWriteAccess(descriptor.idHasReg4(), descriptor.idIsReg4Write(), expected,
+            IS_R4_RD | IS_R4_WR | IS_R4_RW, IS_R4_WR | IS_R4_RW);
+        AssertWriteAccess(descriptor.idHasMemGen(), descriptor.idHasMemGenWrite(), expected,
+            IS_GM_RD | IS_GM_WR | IS_GM_RW, IS_GM_WR | IS_GM_RW);
+        AssertWriteAccess(descriptor.idHasMemStk(), descriptor.idHasMemStkWrite(), expected,
+            IS_SF_RD | IS_SF_WR | IS_SF_RW, IS_SF_WR | IS_SF_RW);
+        AssertWriteAccess(descriptor.idHasMemAdr(), descriptor.idHasMemAdrWrite(), expected,
+            IS_AM_RD | IS_AM_WR | IS_AM_RW, IS_AM_WR | IS_AM_RW);
+        AssertWriteAccess(descriptor.idHasMem(), descriptor.idHasMemWrite(), expected,
+            IS_GM_RD | IS_GM_WR | IS_GM_RW | IS_SF_RD | IS_SF_WR | IS_SF_RW | IS_AM_RD | IS_AM_WR | IS_AM_RW,
+            IS_GM_WR | IS_GM_RW | IS_SF_WR | IS_SF_RW | IS_AM_WR | IS_AM_RW);
     }
 
-    private static void AssertAccess(bool present, bool read, bool write, IS_INFO schedule, IS_INFO readOnly, IS_INFO writeOnly, IS_INFO readWrite)
+    private static void AssertWriteAccess(bool present, bool write, IS_INFO schedule, IS_INFO access, IS_INFO writes)
     {
-        Assert.That(present, Is.EqualTo((schedule & (readOnly | writeOnly | readWrite)) != 0));
-        Assert.That(read, Is.EqualTo((schedule & (readOnly | readWrite)) != 0));
-        Assert.That(write, Is.EqualTo((schedule & (writeOnly | readWrite)) != 0));
+        Assert.That(present, Is.EqualTo((schedule & access) != 0));
+        Assert.That(write, Is.EqualTo((schedule & writes) != 0));
     }
 
     [TestCase(IF_NONE, false)]

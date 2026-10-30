@@ -19,7 +19,6 @@ public partial struct GCInfo
     private const uint PasEnumLast = uint.MaxValue - 1;
     private const uint PasEnumEnd = uint.MaxValue - 2;
 
-    private const uint CpMaxCodeDelta = 0x23;
     private const uint CpMaxArgCount = 0x02;
     private const uint CpMaxArgMask = 0x00;
 

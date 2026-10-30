@@ -7,32 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private static bool canEncodeLoadOrStorePairOffset(long imm, emitAttr attr)
-    {
-        assert((attr == EA_4BYTE) || (attr == EA_8BYTE) || (attr == EA_16BYTE));
-
-        var size = EA_SIZE_IN_BYTES(attr);
-        return ((imm % size) == 0) && (imm >= (-64 * size)) && (imm < (64 * size));
-    }
-
-    private static emitAttr optGetDatasize(insOpts arrangement)
-    {
-        if ((arrangement == INS_OPTS_8B) || (arrangement == INS_OPTS_4H) ||
-            (arrangement == INS_OPTS_2S) || (arrangement == INS_OPTS_1D))
-        {
-            return EA_8BYTE;
-        }
-
-        if ((arrangement == INS_OPTS_16B) || (arrangement == INS_OPTS_8H) ||
-            (arrangement == INS_OPTS_4S) || (arrangement == INS_OPTS_2D))
-        {
-            return EA_16BYTE;
-        }
-
-        assert(false, " invalid 'arrangement' value");
-        return EA_UNKNOWN;
-    }
-
     private static emitAttr widenDatasize(emitAttr datasize)
     {
         if (datasize == EA_1BYTE)

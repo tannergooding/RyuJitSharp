@@ -10,8 +10,6 @@ public partial class Emitter
     public sealed class dataSection
     {
         public const uint MIN_DATA_ALIGN = 4;
-        public const uint MAX_DATA_ALIGN = 64;
-
         public enum sectionType
         {
             data,

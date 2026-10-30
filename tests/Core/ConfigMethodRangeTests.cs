@@ -107,7 +107,6 @@ internal static unsafe class ConfigMethodRangeTests
                 Assert.That(range.IsInit, Is.True);
                 Assert.That(range.Contains(hash), Is.EqualTo(expected));
                 Assert.That(range.Error, Is.False);
-                Assert.That(range.BadCharIndex, Is.EqualTo(-1));
             });
             range.EnsureInit(null);
             Assert.That(range.Contains(hash), Is.EqualTo(expected));
@@ -194,7 +193,6 @@ internal static unsafe class ConfigMethodRangeTests
         Assume.That(!TestConfiguration.IsDebug);
 
         var range = default(ConfigMethodRange);
-        _ = Assert.Throws<InvalidOperationException>(() => _ = range.BadCharIndex);
         _ = Assert.Throws<InvalidOperationException>(() => _ = range.Error);
         _ = Assert.Throws<InvalidOperationException>(() => _ = range.IsEmpty);
         _ = Assert.Throws<InvalidOperationException>(() => _ = range.IsInit);

@@ -96,12 +96,6 @@ public partial class Emitter
             return (isInfo & (IS_R1_RD | IS_R1_RW | IS_R1_WR)) != 0;
         }
 
-        public bool idIsReg1Read()
-        {
-            var isInfo = emitGetSchedInfo(idInsFmt());
-            return (isInfo & (IS_R1_RD | IS_R1_RW)) != 0;
-        }
-
         public bool idIsReg1Write()
         {
             var isInfo = emitGetSchedInfo(idInsFmt());
@@ -112,12 +106,6 @@ public partial class Emitter
         {
             var isInfo = emitGetSchedInfo(idInsFmt());
             return (isInfo & (IS_R2_RD | IS_R2_RW | IS_R2_WR)) != 0;
-        }
-
-        public bool idIsReg2Read()
-        {
-            var isInfo = emitGetSchedInfo(idInsFmt());
-            return (isInfo & (IS_R2_RD | IS_R2_RW)) != 0;
         }
 
         public bool idIsReg2Write()
@@ -132,12 +120,6 @@ public partial class Emitter
             return (isInfo & (IS_R3_RD | IS_R3_RW | IS_R3_WR)) != 0;
         }
 
-        public bool idIsReg3Read()
-        {
-            var isInfo = emitGetSchedInfo(idInsFmt());
-            return (isInfo & (IS_R3_RD | IS_R3_RW)) != 0;
-        }
-
         public bool idIsReg3Write()
         {
             var isInfo = emitGetSchedInfo(idInsFmt());
@@ -148,12 +130,6 @@ public partial class Emitter
         {
             var isInfo = emitGetSchedInfo(idInsFmt());
             return (isInfo & (IS_R4_RD | IS_R4_RW | IS_R4_WR)) != 0;
-        }
-
-        public bool idIsReg4Read()
-        {
-            var isInfo = emitGetSchedInfo(idInsFmt());
-            return (isInfo & (IS_R4_RD | IS_R4_RW)) != 0;
         }
 
         public bool idIsReg4Write()
@@ -219,11 +195,6 @@ public partial class Emitter
         public bool idHasMem()
         {
             return idHasMemGen() || idHasMemStk() || idHasMemAdr();
-        }
-
-        public bool idHasMemRead()
-        {
-            return idHasMemGenRead() || idHasMemStkRead() || idHasMemAdrRead();
         }
 
         public bool idHasMemWrite()

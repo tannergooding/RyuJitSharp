@@ -2,7 +2,6 @@
 
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
-using static RyuJitSharp.insOpts;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 
@@ -61,20 +60,6 @@ internal static class Arm64EmitterInstructionMetadataTests
         Assert.That(LoadStoreSize(null, descriptor), Is.EqualTo(expectedAccess));
     }
 
-    [TestCase(INS_OPTS_8B, EA_8BYTE)]
-    [TestCase(INS_OPTS_4H, EA_8BYTE)]
-    [TestCase(INS_OPTS_2S, EA_8BYTE)]
-    [TestCase(INS_OPTS_1D, EA_8BYTE)]
-    [TestCase(INS_OPTS_16B, EA_16BYTE)]
-    [TestCase(INS_OPTS_8H, EA_16BYTE)]
-    [TestCase(INS_OPTS_4S, EA_16BYTE)]
-    [TestCase(INS_OPTS_2D, EA_16BYTE)]
-    public static void ArrangementDataSizeMatchesNativeVectorWidth(insOpts arrangement, emitAttr expected)
-    {
-        Assume.That(Configuration.TARGET_ARM64);
-        Assert.That(GetDatasize(null, arrangement), Is.EqualTo(expected));
-    }
-
     [TestCase(EA_1BYTE, EA_2BYTE)]
     [TestCase(EA_2BYTE, EA_4BYTE)]
     [TestCase(EA_4BYTE, EA_8BYTE)]
@@ -111,9 +96,6 @@ internal static class Arm64EmitterInstructionMetadataTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsLoadStoreSize")]
     private static extern emitAttr LoadStoreSize(Emitter? emitter, Emitter.instrDesc descriptor);
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "optGetDatasize")]
-    private static extern emitAttr GetDatasize(Emitter? emitter, insOpts arrangement);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "widenDatasize")]
     private static extern emitAttr WidenDatasize(Emitter? emitter, emitAttr size);

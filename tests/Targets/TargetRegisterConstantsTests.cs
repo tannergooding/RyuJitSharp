@@ -16,14 +16,15 @@ internal static class TargetRegisterConstantsTests
 
         if (Configuration.TARGET_X86)
         {
-            Assert.That(Globals.SRBM_CALLEE_SAVED, Is.EqualTo(
-                Globals.SRBM_INT_CALLEE_SAVED | Globals.SRBM_FLT_CALLEE_SAVED | Globals.SRBM_MSK_CALLEE_SAVED));
+            Assert.That(TargetRuntimeMetadata.IntegerCalleeSavedMask, Is.EqualTo(Globals.SRBM_INT_CALLEE_SAVED));
+            Assert.That(TargetRuntimeMetadata.FloatingCalleeSavedMask, Is.EqualTo(Globals.SRBM_FLT_CALLEE_SAVED));
             Assert.That(Globals.SRBM_SPBASE_X86, Is.EqualTo(regMask.SRBM_X86_ESP));
         }
         else if (Configuration.TARGET_WASM)
         {
             Assert.That(Globals.REG_OPT_RSVD_WASM, Is.EqualTo(Globals.REG_NA));
-            Assert.That(Globals.SRBM_CALLEE_SAVED, Is.EqualTo(regMask.SRBM_NONE));
+            Assert.That(TargetRuntimeMetadata.IntegerCalleeSavedMask, Is.EqualTo(regMask.SRBM_NONE));
+            Assert.That(TargetRuntimeMetadata.FloatingCalleeSavedMask, Is.EqualTo(regMask.SRBM_NONE));
             Assert.That(Globals.SRBM_OPT_RSVD_WASM, Is.EqualTo(regMask.SRBM_NONE));
             Assert.That(Globals.SRBM_FPBASE, Is.EqualTo(regMask.SRBM_NONE));
             Assert.That(Globals.SRBM_SPBASE_WASM, Is.EqualTo(regMask.SRBM_NONE));

@@ -9,41 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public static bool isValidScalableDatasize(emitAttr size)
-    {
-        return (size & EA_SCALABLE_ARM64) == EA_SCALABLE_ARM64;
-    }
-
-    public static bool isValidVectorElemsizeSveFloat(emitAttr size)
-    {
-        return (size == EA_8BYTE) || (size == EA_4BYTE) || (size == EA_2BYTE);
-    }
-
-    public static bool isValidVectorElemsizeWidening(emitAttr size)
-    {
-        return (size == EA_4BYTE) || (size == EA_2BYTE) || (size == EA_1BYTE);
-    }
-
-    public static bool insOptsVectorImmShift(insOpts opt)
-    {
-        return (opt == INS_OPTS_LSL) || (opt == INS_OPTS_MSL);
-    }
-
-    public static bool insOptsLSR(insOpts opt)
-    {
-        return opt == INS_OPTS_LSR;
-    }
-
-    public static bool insOptsASR(insOpts opt)
-    {
-        return opt == INS_OPTS_ASR;
-    }
-
-    public static bool insOptsROR(insOpts opt)
-    {
-        return opt == INS_OPTS_ROR;
-    }
-
     public static bool insOpts64BitExtend(insOpts opt)
     {
         return (opt == INS_OPTS_UXTX) || (opt == INS_OPTS_SXTX);

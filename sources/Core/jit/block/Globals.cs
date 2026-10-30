@@ -12,9 +12,6 @@ public partial class Globals
     /// <summary>We use the following format when printing the BasicBlock number: bbNum </summary>
     public static string FMT_BB(int bbNum) => $"BB{bbNum:D2}";
 
-    /// <summary>Use this format for loop indices</summary>
-    public const string FMT_LP = "L{0:D2}";
-
     /// <summary>Use this format for profile weights</summary>
     public static string FMT_WT(weight_t weight) => $"{weight:g7}";
 

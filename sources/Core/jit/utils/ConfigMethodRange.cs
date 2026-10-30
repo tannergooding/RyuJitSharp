@@ -35,16 +35,6 @@ public partial struct ConfigMethodRange
 
     private int _badChar;
 
-    /// <summary>index + 1 of any bad character in range string</summary>
-    public readonly int BadCharIndex
-    {
-        get
-        {
-            ThrowIfNotDebug();
-            return _badChar - 1;
-        }
-    }
-
     public readonly bool Error
     {
         get

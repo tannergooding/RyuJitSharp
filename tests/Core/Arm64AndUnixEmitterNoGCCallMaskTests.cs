@@ -39,7 +39,8 @@ internal static unsafe class Arm64AndUnixEmitterNoGCCallMaskTests
                 profilerLeave = profilerEnter;
                 defaultKill = new regMaskTP(SRBM_CALLEE_TRASH_NOGC_ARM64);
                 interfaceTrash = SRBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
-                normalSaved = new regMaskTP(SRBM_CALLEE_SAVED);
+                normalSaved = new regMaskTP(
+                    TargetRuntimeMetadata.IntegerCalleeSavedMask | TargetRuntimeMetadata.FloatingCalleeSavedMask);
                 validateTrash = new regMaskTP(SRBM_VALIDATE_INDIRECT_CALL_TRASH_ARM64);
             }
             else

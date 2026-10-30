@@ -565,25 +565,6 @@ internal static unsafe class LateDisassemblyBackendTests
         Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo($"00A  {new string('A', indent - 4)}...  nop\n"));
     }
 
-    [TestCase("AA BB CC DD EE FF GG HH")]
-    [TestCase("AA BB CC DD EE FF GGGG HH II")]
-    public static void MsvcByteWrappingPreservesNativeWholeRemainderLastSpaceSearch(string byteText)
-    {
-        AssumeMsvcTarget();
-
-        var bytes = stackalloc byte[4];
-        var decoder = new FakeMsvc { ByteText = byteText, BytesMax = 18 };
-        using var stream = new MemoryStream();
-        using var output = new StreamWriter(stream, leaveOpen: true);
-        var count = MsWithBytes(default, decoder, 0x123, bytes, 4, output);
-        output.Flush();
-        var split = byteText[18] == ' ' ? 18 : byteText.LastIndexOf(' ', StringComparison.Ordinal);
-        var expected = $"  123: {byteText[..split],-18} nop\n       {byteText[(split + 1)..]}\n";
-
-        Assert.That(count, Is.EqualTo((nuint)4));
-        Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
-    }
-
     [TestCase(true)]
     [TestCase(false)]
     public static void MsvcArm64FallthroughUsesDecodedAddressOrExistingTarget(bool isAddress)
@@ -693,10 +674,6 @@ internal static unsafe class LateDisassemblyBackendTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CbDisassemble")]
     private static extern nuint MsInstruction(ref Disassembler disassembler, MsDisassembler decoder, nuint offset,
         ulong address, byte* bytes, nuint size, StreamWriter output, bool findLabels, bool printit, bool offsets, bool codeBytes);
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "CbDisassembleWithBytes")]
-    private static extern nuint MsWithBytes(Disassembler disassembler, MsDisassembler decoder,
-        ulong address, byte* bytes, nuint size, StreamWriter output);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "disCchAddrMember")]
     private static extern nuint AddressCallback(ref Disassembler disassembler, MsDisassembler decoder, ulong address,

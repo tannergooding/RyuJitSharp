@@ -265,7 +265,6 @@ internal static class EmitterSimdRegisterInstructionTests
             Assert.That(multiply.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_RWR_RRD));
             Assert.That(multiply.idIsReg1Write(), Is.True);
             Assert.That(multiply.idIsReg2Write(), Is.True);
-            Assert.That(multiply.idIsReg3Read(), Is.True);
             Assert.That(multiply.idCodeSize(), Is.EqualTo(5u));
 
             emitter.emitIns_R_R_R(INS_kandw, EA_2BYTE, REG_X64_K1, REG_X64_K2, REG_K3);

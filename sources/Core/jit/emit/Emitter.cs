@@ -351,14 +351,6 @@ public partial class Emitter
     /// <summary>Cache of currently live varPtrs (stkOffs -> varPtrDsc)</summary>
     private GCInfo.varPtrDsc?[]? emitGCrFrameLiveTab;
 
-    private int emitArgFrameOffsMin;
-
-    private int emitArgFrameOffsMax;
-
-    private int emitLclFrameOffsMin;
-
-    private int emitLclFrameOffsMax;
-
     /// <summary>what is the offset of "this" for synchronized methods?</summary>
     private int emitSyncThisObjOffs;
 

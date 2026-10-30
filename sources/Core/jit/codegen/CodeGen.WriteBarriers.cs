@@ -9,20 +9,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    internal bool genWriteBarrierUsed
-    {
-        get
-        {
-            if (!Configuration.DEBUG)
-            {
-                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WriteBarrierDiagnosticStateIsOnlyAvailableInDebugBuilds);
-                return false;
-            }
-
-            return Compiler.DebugData.Get(_compiler).CodeGenWriteBarrierUsed;
-        }
-    }
-
     public bool genUseOptimizedWriteBarriers(GCInfo.WriteBarrierForm writeBarrierForm)
     {
         return Configuration.TARGET_X86 && Configuration.NOGC_WRITE_BARRIERS;

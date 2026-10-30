@@ -108,12 +108,10 @@ internal static unsafe class StructReturnClassificationTests
     {
         WithCompiler(size, gcType, false, "Example", "Value", (compiler, handle, metadata) => {
             var descriptor = registerCount == 0 ? default : new ReturnTypeDesc();
-            Assert.That(descriptor.ReturnRegCountOrDefault, Is.Zero);
 
             descriptor.InitializeStructReturnType(compiler, handle, CorInfoCallConvExtension.Managed);
 
             Assert.That(descriptor.ReturnRegCount, Is.EqualTo(registerCount));
-            Assert.That(descriptor.ReturnRegCountOrDefault, Is.EqualTo(registerCount));
             if (registerCount != 0)
             {
                 Assert.That(descriptor.GetReturnRegType(0), Is.EqualTo(expectedType));
@@ -123,7 +121,6 @@ internal static unsafe class StructReturnClassificationTests
             Assert.That(metadata.Queries, Is.EqualTo(expectedQueries));
 
             descriptor.Reset();
-            Assert.That(descriptor.ReturnRegCountOrDefault, Is.Zero);
         });
     }
 
@@ -135,7 +132,6 @@ internal static unsafe class StructReturnClassificationTests
             descriptor.InitializeReturnType(compiler, TYP_VOID, handle, CorInfoCallConvExtension.Managed);
 
             Assert.That(descriptor.ReturnRegCount, Is.Zero);
-            Assert.That(descriptor.ReturnRegCountOrDefault, Is.Zero);
             Assert.That(descriptor.IsMultiRegRetType, Is.False);
         });
     }

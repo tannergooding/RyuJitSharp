@@ -260,12 +260,9 @@ internal static class ArmEmitterPredicateTests
     [TestCase(INS_OPTS_ROR)]
     [TestCase(INS_OPTS_NONE)]
     [TestCase(INS_OPTS_LDST_PRE_DEC)]
-    public static void SpecificShiftPredicatesMatchArmOptions(insOpts option)
+    public static void Arm32LslPredicateMatchesArmOption(insOpts option)
     {
         Assert.That(InsOptsLSLArm32(null, option), Is.EqualTo(option == INS_OPTS_LSL));
-        Assert.That(Emitter.insOptsLSR(option), Is.EqualTo(option == INS_OPTS_LSR));
-        Assert.That(Emitter.insOptsASR(option), Is.EqualTo(option == INS_OPTS_ASR));
-        Assert.That(Emitter.insOptsROR(option), Is.EqualTo(option == INS_OPTS_ROR));
     }
 
     [TestCase(EA_1BYTE, 8u)]

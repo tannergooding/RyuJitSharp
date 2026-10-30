@@ -104,10 +104,6 @@ public struct ReturnTypeDesc
         }
     }
 
-    // NOTE: we only use this function when writing out IR dumps.
-    // These dumps may take place before the ReturnTypeDesc has been initialized.
-    public readonly byte ReturnRegCountOrDefault => (byte)(IsInitialized ? ReturnRegCount : 0);
-
     public readonly int SingleReturnFieldOffset
     {
         get

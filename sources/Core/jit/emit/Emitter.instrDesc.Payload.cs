@@ -16,12 +16,6 @@ public partial class Emitter
         private insSize _idInsSize;
         private insFlags _idInsFlags;
 
-        public bool idInstrIsT1()
-        {
-            Emitter.RequireArm32Target();
-            return _idInsSize == insSize.ISZ_16BIT;
-        }
-
         public insSize idInsSize()
         {
             Emitter.RequireArm32Target();

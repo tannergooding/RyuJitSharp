@@ -278,33 +278,26 @@ internal static class EmitterInstructionFormatTests
     }
 
     [Test]
-    public static void SchedulingQueriesCoverAllRegisterAndMemoryBanks()
+    public static void SchedulingQueriesCoverRegisterAndMemoryWriteState()
     {
         var descriptor = CreateDescriptor();
         descriptor.idInsFmt(IF_XARCH_RWR_RRD_RRD_RRD);
         Assert.That(descriptor.idHasReg1(), Is.True);
-        Assert.That(descriptor.idIsReg1Read(), Is.False);
         Assert.That(descriptor.idIsReg1Write(), Is.True);
         Assert.That(descriptor.idHasReg2(), Is.True);
-        Assert.That(descriptor.idIsReg2Read(), Is.True);
         Assert.That(descriptor.idIsReg2Write(), Is.False);
         Assert.That(descriptor.idHasReg3(), Is.True);
-        Assert.That(descriptor.idIsReg3Read(), Is.True);
         Assert.That(descriptor.idIsReg3Write(), Is.False);
         Assert.That(descriptor.idHasReg4(), Is.True);
-        Assert.That(descriptor.idIsReg4Read(), Is.True);
         Assert.That(descriptor.idIsReg4Write(), Is.False);
         Assert.That(descriptor.idHasMem(), Is.False);
-        Assert.That(descriptor.idHasMemRead(), Is.False);
         Assert.That(descriptor.idHasMemWrite(), Is.False);
 
         descriptor.idInsFmt(IF_XARCH_MRW_RRW);
         Assert.That(descriptor.idHasMemGen(), Is.True);
         Assert.That(descriptor.idHasMemGenRead(), Is.True);
         Assert.That(descriptor.idHasMemGenWrite(), Is.True);
-        Assert.That(descriptor.idHasMemRead(), Is.True);
         Assert.That(descriptor.idHasMemWrite(), Is.True);
-        Assert.That(descriptor.idIsReg1Read(), Is.True);
         Assert.That(descriptor.idIsReg1Write(), Is.True);
         Assert.That(descriptor.idHasReg2(), Is.False);
 

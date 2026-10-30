@@ -10,8 +10,6 @@ namespace RyuJitSharp;
 
 public struct InternalRegs
 {
-    public const int MAX_REG_COUNT = 2;
-
     private regNumber _first;
     private regNumber _second;
     private int _count;

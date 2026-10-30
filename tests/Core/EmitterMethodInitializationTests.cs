@@ -106,9 +106,9 @@ internal static unsafe class EmitterMethodInitializationTests
         Assert.That(FirstGroup(emitter), Is.Not.SameAs(oldProlog));
         Assert.That(FirstGroup(emitter)!.GetDisplayId(), Is.EqualTo(1u));
         Assert.That(PrologEnd(emitter).Valid(), Is.False);
-        Assert.That(PrologEnd(emitter).IsOffsetZero(), Is.True);
+        Assert.That(CodePosition(ref PrologEnd(emitter)), Is.Zero);
         Assert.That(ExitStart(emitter).Valid(), Is.False);
-        Assert.That(ExitStart(emitter).IsOffsetZero(), Is.True);
+        Assert.That(CodePosition(ref ExitStart(emitter)), Is.Zero);
         Assert.That(FirstPlaceholder(emitter), Is.Null);
         Assert.That(LastPlaceholder(emitter), Is.Null);
         Assert.That(FirstColdGroup(emitter), Is.Null);
@@ -122,13 +122,13 @@ internal static unsafe class EmitterMethodInitializationTests
         CodePosition(ref location) = 42;
         Assert.That(location.Valid(), Is.True);
         Assert.That(location.GetIG(), Is.SameAs(group));
-        Assert.That(location.IsOffsetZero(), Is.False);
+        Assert.That(CodePosition(ref location), Is.EqualTo(42U));
 
         location.Init();
 
         Assert.That(location.Valid(), Is.False);
         Assert.That(location.GetIG(), Is.Null);
-        Assert.That(location.IsOffsetZero(), Is.True);
+        Assert.That(CodePosition(ref location), Is.Zero);
     }
 
     private static Emitter CreateEmitter()

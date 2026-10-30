@@ -74,9 +74,6 @@ public static partial class Globals
         SRBM_ALLDOUBLE_RISCV64,
         SRBM_ALLDOUBLE_WASM);
 
-    public static regMask SRBM_CALLEE_SAVED =>
-        TargetRuntimeMetadata.IntegerCalleeSavedMask | TargetRuntimeMetadata.FloatingCalleeSavedMask;
-
     public static regMaskTP RBM_ALLFLOAT => new(SRBM_ALLFLOAT);
 
     public static regMaskTP RBM_ALLINT => new(SRBM_ALLINT);

@@ -45,10 +45,6 @@ internal static class SharedWriteBarrierDispatchTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(instruction.INS_call));
             Assert.That(descriptors[0].idIsNoGC(), Is.True);
-            if (TestConfiguration.IsDebug)
-            {
-                Assert.That(codeGen.genWriteBarrierUsed, Is.True);
-            }
         });
     }
 
@@ -70,10 +66,6 @@ internal static class SharedWriteBarrierDispatchTests
     {
         var codeGen = Create();
         Assert.That(codeGen.genWriteBarrierHelperForWriteBarrierForm(form), Is.EqualTo(expected));
-        if (TestConfiguration.IsDebug)
-        {
-            Assert.That(codeGen.genWriteBarrierUsed, Is.True);
-        }
     }
 
     [TestCase(WBF_NoBarrier)]
@@ -90,10 +82,6 @@ internal static class SharedWriteBarrierDispatchTests
             ? $"No write-barrier helper exists for {form}."
             : "RJS-0004";
         Assert.That(error.Message, Is.EqualTo(expectedMessage));
-        if (TestConfiguration.IsDebug)
-        {
-            Assert.That(codeGen.genWriteBarrierUsed, Is.True);
-        }
     }
 
     [TestCase(WBF_BarrierChecked)]
@@ -106,10 +94,6 @@ internal static class SharedWriteBarrierDispatchTests
 
         Assert.That(error!.Result, Is.EqualTo(CORJIT_SKIPPED));
         Assert.That(error.Message, Is.EqualTo("Helper call generation is not implemented for this target."));
-        if (TestConfiguration.IsDebug)
-        {
-            Assert.That(codeGen.genWriteBarrierUsed, Is.True);
-        }
     }
 
     [TestCase(WBF_NoBarrier)]
@@ -127,10 +111,6 @@ internal static class SharedWriteBarrierDispatchTests
             ? $"No write-barrier helper exists for {form}."
             : "RJS-0004";
         Assert.That(error.Message, Is.EqualTo(expectedMessage));
-        if (TestConfiguration.IsDebug)
-        {
-            Assert.That(codeGen.genWriteBarrierUsed, Is.True);
-        }
     }
 
     private static CodeGen Create()

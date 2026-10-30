@@ -17,7 +17,7 @@ internal static unsafe class WasmRegAllocTests
     }
 
     [Test]
-    public static void NonFixedRegisterStateAndIterationPreserveFuncletAndNodeAssociations()
+    public static void NonFixedRegisterStatePreservesFuncletAndNodeAssociations()
     {
         WithCompiler(compiler =>
         {
@@ -38,33 +38,14 @@ internal static unsafe class WasmRegAllocTests
             codeGen.InternalRegisters.Add(firstTree, framePointer);
             codeGen.InternalRegisters.Add(secondTree, secondRegister);
 
-            var foundFirst = false;
-            var foundSecond = false;
-            var count = 0;
-            var iterator = codeGen.InternalRegisters.IterateWasm();
-            while (iterator.MoveNext())
-            {
-                var entry = iterator.Current;
-                if (ReferenceEquals(entry.Key, firstTree))
-                {
-                    foundFirst = true;
-                    Assert.That(entry.Value.Count, Is.EqualTo(2));
-                    Assert.That(entry.Value.GetAt(0), Is.EqualTo(stackPointer));
-                    Assert.That(entry.Value.GetAt(1), Is.EqualTo(framePointer));
-                }
-                else if (ReferenceEquals(entry.Key, secondTree))
-                {
-                    foundSecond = true;
-                    Assert.That(entry.Value.Count, Is.EqualTo(1));
-                    Assert.That(entry.Value.GetAt(0), Is.EqualTo(secondRegister));
-                }
+            ref var firstRegisters = ref codeGen.InternalRegisters.GetAllWasm(firstTree);
+            Assert.That(firstRegisters.Count, Is.EqualTo(2));
+            Assert.That(firstRegisters.GetAt(0), Is.EqualTo(stackPointer));
+            Assert.That(firstRegisters.GetAt(1), Is.EqualTo(framePointer));
 
-                count++;
-            }
-
-            Assert.That(count, Is.EqualTo(2));
-            Assert.That(foundFirst, Is.True);
-            Assert.That(foundSecond, Is.True);
+            ref var secondRegisters = ref codeGen.InternalRegisters.GetAllWasm(secondTree);
+            Assert.That(secondRegisters.Count, Is.EqualTo(1));
+            Assert.That(secondRegisters.GetAt(0), Is.EqualTo(secondRegister));
         });
     }
 

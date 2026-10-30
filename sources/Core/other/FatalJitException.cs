@@ -1133,8 +1133,6 @@ public enum FatalJitErrorCode
     InstructionArgumentHasNoInputSize = 520,
     /// <summary>Register masks are unavailable for this target.</summary>
     RegisterMasksAreUnavailableForThisTarget = 521,
-    /// <summary>Write-barrier diagnostic state is only available in Debug builds.</summary>
-    WriteBarrierDiagnosticStateIsOnlyAvailableInDebugBuilds = 522,
     /// <summary>Register zeroing requires a fixed register set.</summary>
     RegisterZeroingRequiresAFixedRegisterSet = 523,
     /// <summary>Register zeroing is not implemented for this target.</summary>
@@ -6195,7 +6193,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.InstructionInputSizeMetadataRequiresXarch => "Instruction input size metadata requires xarch.",
             FatalJitErrorCode.InstructionArgumentHasNoInputSize => "Instruction {0} has no input size.",
             FatalJitErrorCode.RegisterMasksAreUnavailableForThisTarget => "Register masks are unavailable for this target.",
-            FatalJitErrorCode.WriteBarrierDiagnosticStateIsOnlyAvailableInDebugBuilds => "Write-barrier diagnostic state is only available in Debug builds.",
             FatalJitErrorCode.RegisterZeroingRequiresAFixedRegisterSet => "Register zeroing requires a fixed register set.",
             FatalJitErrorCode.RegisterZeroingIsNotImplementedForThisTarget => "Register zeroing is not implemented for this target.",
             FatalJitErrorCode.CodeGenGenGetGSCookieTempRegsIsNotSupportedForThisTarget => "CodeGen.genGetGSCookieTempRegs is not supported for this target.",

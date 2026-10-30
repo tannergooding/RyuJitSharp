@@ -38,11 +38,6 @@ public struct emitLocation : IEquatable<emitLocation>
         return ig;
     }
 
-    public readonly bool IsOffsetZero()
-    {
-        return codePos == 0;
-    }
-
     public readonly bool Valid()
     {
         return ig is not null;
