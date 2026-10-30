@@ -230,12 +230,12 @@ internal static unsafe class CodeGenIndirectLoadTests
         {
             var tree = compiler.gtNewIconNode(TYP_INT, 0);
             var selected = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
-            codeGen.InternalRegisters.Add(tree, selected | RBM_RDX | RBM_K7);
+            codeGen.InternalRegisters.Add(tree, selected | RBM_RDX | RBM_X64_K7);
 
             Assert.That(codeGen.InternalRegisters.Extract(tree), Is.EqualTo(REG_X64_RDX));
-            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(selected | RBM_K7));
+            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(selected | RBM_X64_K7));
             Assert.That(codeGen.InternalRegisters.Extract(tree, selected), Is.EqualTo(reg));
-            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_K7));
+            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_X64_K7));
             Assert.That(codeGen.InternalRegisters.Extract(tree), Is.EqualTo(REG_X64_K7));
             Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_NONE));
         });
@@ -251,7 +251,7 @@ internal static unsafe class CodeGenIndirectLoadTests
         {
             var tree = compiler.gtNewIconNode(TYP_INT, 0);
             var selected = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
-            var registers = selected | RBM_RDX | RBM_K7;
+            var registers = selected | RBM_RDX | RBM_X64_K7;
             Assert.That(codeGen.InternalRegisters.Count(tree), Is.Zero);
             codeGen.InternalRegisters.Add(tree, registers);
 

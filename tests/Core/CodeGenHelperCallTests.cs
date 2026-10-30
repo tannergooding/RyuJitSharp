@@ -116,7 +116,7 @@ internal static unsafe class CodeGenHelperCallTests
 
             Assert.That(parameters.ptrVars, Is.SameAs(codeGen.GCInfo.gcVarPtrSetCur));
             Assert.That(parameters.gcrefRegs, Is.EqualTo(RBM_RBX));
-            Assert.That(parameters.byrefRegs, Is.EqualTo(RBM_RSI));
+            Assert.That(parameters.byrefRegs, Is.EqualTo(RBM_X64_RSI));
             Assert.That(Descriptors(codeGen)[^1].idIns(), Is.EqualTo(INS_call));
         });
     }

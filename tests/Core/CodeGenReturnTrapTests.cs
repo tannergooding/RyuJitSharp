@@ -29,7 +29,7 @@ internal static unsafe class CodeGenReturnTrapTests
             GenTree data = memory ? compiler.gtNewLclvNode(TYP_INT, 0) : Register(compiler, TYP_INT, REG_RAX);
             data.IsContained = memory;
             var tree = new GenTreeUnOp(GT_RETURNTRAP, TYP_VOID, data);
-            codeGen.InternalRegisters.Add(tree, RBM_R11 | RBM_XMM5);
+            codeGen.InternalRegisters.Add(tree, RBM_R11 | RBM_X64_XMM5);
             codeGen.GCInfo.gcMarkRegPtrVal(REG_RBX, TYP_REF);
             var firstGroup = codeGen.Emitter.emitCurIG;
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -61,7 +61,7 @@ internal static unsafe class CodeGenReturnTrapTests
             Assert.That(label?.bbEmitCookie, Is.SameAs(codeGen.Emitter.emitCurIG));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
             Assert.That(codeGen.InternalRegisters.GetAll(tree),
-                Is.EqualTo(TestConfiguration.IsDebug ? RBM_XMM5 : RBM_R11 | RBM_XMM5));
+                Is.EqualTo(TestConfiguration.IsDebug ? RBM_X64_XMM5 : RBM_R11 | RBM_X64_XMM5));
         });
     }
 

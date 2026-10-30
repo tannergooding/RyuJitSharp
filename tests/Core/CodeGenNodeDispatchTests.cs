@@ -208,7 +208,8 @@ internal static unsafe class CodeGenNodeDispatchTests
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
             codeGen.GCInfo.gcMarkRegSetGCref(RBM_RAX | RBM_RBX);
-            codeGen.GCInfo.gcMarkRegSetByref(RBM_RCX | RBM_RSI);
+            var rsiMask = Configuration.TARGET_AMD64 ? RBM_X64_RSI : RBM_X86_RSI;
+            codeGen.GCInfo.gcMarkRegSetByref(RBM_RCX | rsiMask);
             codeGen.instGen(INS_nop);
             var before = codeGen.Emitter.emitCurIG;
             codeGen.genCodeForTreeNode(new GenTree(GT_START_PREEMPTGC, TYP_VOID));

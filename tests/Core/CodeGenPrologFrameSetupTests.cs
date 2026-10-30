@@ -126,7 +126,7 @@ internal static unsafe class CodeGenPrologFrameSetupTests
         WithProlog((compiler, codeGen) =>
         {
             codeGen.IsFramePointerUsed = framePointer;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_RBP | RBM_R12 | RBM_XMM6);
+            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_RBP | RBM_R12 | RBM_X64_XMM6);
             compiler.compCalleeRegsPushed = framePointer ? 2 : 3;
             var zeroed = true;
 

@@ -4673,42 +4673,6 @@ public enum FatalJitErrorCode
     RegisterMaskRSPIsNotAvailableForTheConfiguredTarget = 2432,
     /// <summary>Register mask &#x27;RBP&#x27; is not available for the configured target.</summary>
     RegisterMaskRBPIsNotAvailableForTheConfiguredTarget = 2433,
-    /// <summary>Register mask &#x27;RSI&#x27; is not available for the configured target.</summary>
-    RegisterMaskRSIIsNotAvailableForTheConfiguredTarget = 2434,
-    /// <summary>Register mask &#x27;RDI&#x27; is not available for the configured target.</summary>
-    RegisterMaskRDIIsNotAvailableForTheConfiguredTarget = 2435,
-    /// <summary>Register mask &#x27;XMM0&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM0IsNotAvailableForTheConfiguredTarget = 2436,
-    /// <summary>Register mask &#x27;XMM1&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM1IsNotAvailableForTheConfiguredTarget = 2437,
-    /// <summary>Register mask &#x27;XMM2&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM2IsNotAvailableForTheConfiguredTarget = 2438,
-    /// <summary>Register mask &#x27;XMM3&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM3IsNotAvailableForTheConfiguredTarget = 2439,
-    /// <summary>Register mask &#x27;XMM4&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM4IsNotAvailableForTheConfiguredTarget = 2440,
-    /// <summary>Register mask &#x27;XMM5&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM5IsNotAvailableForTheConfiguredTarget = 2441,
-    /// <summary>Register mask &#x27;XMM6&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM6IsNotAvailableForTheConfiguredTarget = 2442,
-    /// <summary>Register mask &#x27;XMM7&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM7IsNotAvailableForTheConfiguredTarget = 2443,
-    /// <summary>Register mask &#x27;K0&#x27; is not available for the configured target.</summary>
-    RegisterMaskK0IsNotAvailableForTheConfiguredTarget = 2444,
-    /// <summary>Register mask &#x27;K1&#x27; is not available for the configured target.</summary>
-    RegisterMaskK1IsNotAvailableForTheConfiguredTarget = 2445,
-    /// <summary>Register mask &#x27;K2&#x27; is not available for the configured target.</summary>
-    RegisterMaskK2IsNotAvailableForTheConfiguredTarget = 2446,
-    /// <summary>Register mask &#x27;K3&#x27; is not available for the configured target.</summary>
-    RegisterMaskK3IsNotAvailableForTheConfiguredTarget = 2447,
-    /// <summary>Register mask &#x27;K4&#x27; is not available for the configured target.</summary>
-    RegisterMaskK4IsNotAvailableForTheConfiguredTarget = 2448,
-    /// <summary>Register mask &#x27;K5&#x27; is not available for the configured target.</summary>
-    RegisterMaskK5IsNotAvailableForTheConfiguredTarget = 2449,
-    /// <summary>Register mask &#x27;K6&#x27; is not available for the configured target.</summary>
-    RegisterMaskK6IsNotAvailableForTheConfiguredTarget = 2450,
-    /// <summary>Register mask &#x27;K7&#x27; is not available for the configured target.</summary>
-    RegisterMaskK7IsNotAvailableForTheConfiguredTarget = 2451,
     /// <summary>Register mask &#x27;STK&#x27; is not available for the configured target.</summary>
     RegisterMaskSTKIsNotAvailableForTheConfiguredTarget = 2452,
     /// <summary>Register mask &#x27;R8&#x27; is not available for the configured target.</summary>
@@ -4759,54 +4723,6 @@ public enum FatalJitErrorCode
     RegisterMaskR30IsNotAvailableForTheConfiguredTarget = 2475,
     /// <summary>Register mask &#x27;R31&#x27; is not available for the configured target.</summary>
     RegisterMaskR31IsNotAvailableForTheConfiguredTarget = 2476,
-    /// <summary>Register mask &#x27;XMM8&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM8IsNotAvailableForTheConfiguredTarget = 2477,
-    /// <summary>Register mask &#x27;XMM9&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM9IsNotAvailableForTheConfiguredTarget = 2478,
-    /// <summary>Register mask &#x27;XMM10&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM10IsNotAvailableForTheConfiguredTarget = 2479,
-    /// <summary>Register mask &#x27;XMM11&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM11IsNotAvailableForTheConfiguredTarget = 2480,
-    /// <summary>Register mask &#x27;XMM12&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM12IsNotAvailableForTheConfiguredTarget = 2481,
-    /// <summary>Register mask &#x27;XMM13&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM13IsNotAvailableForTheConfiguredTarget = 2482,
-    /// <summary>Register mask &#x27;XMM14&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM14IsNotAvailableForTheConfiguredTarget = 2483,
-    /// <summary>Register mask &#x27;XMM15&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM15IsNotAvailableForTheConfiguredTarget = 2484,
-    /// <summary>Register mask &#x27;XMM16&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM16IsNotAvailableForTheConfiguredTarget = 2485,
-    /// <summary>Register mask &#x27;XMM17&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM17IsNotAvailableForTheConfiguredTarget = 2486,
-    /// <summary>Register mask &#x27;XMM18&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM18IsNotAvailableForTheConfiguredTarget = 2487,
-    /// <summary>Register mask &#x27;XMM19&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM19IsNotAvailableForTheConfiguredTarget = 2488,
-    /// <summary>Register mask &#x27;XMM20&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM20IsNotAvailableForTheConfiguredTarget = 2489,
-    /// <summary>Register mask &#x27;XMM21&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM21IsNotAvailableForTheConfiguredTarget = 2490,
-    /// <summary>Register mask &#x27;XMM22&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM22IsNotAvailableForTheConfiguredTarget = 2491,
-    /// <summary>Register mask &#x27;XMM23&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM23IsNotAvailableForTheConfiguredTarget = 2492,
-    /// <summary>Register mask &#x27;XMM24&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM24IsNotAvailableForTheConfiguredTarget = 2493,
-    /// <summary>Register mask &#x27;XMM25&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM25IsNotAvailableForTheConfiguredTarget = 2494,
-    /// <summary>Register mask &#x27;XMM26&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM26IsNotAvailableForTheConfiguredTarget = 2495,
-    /// <summary>Register mask &#x27;XMM27&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM27IsNotAvailableForTheConfiguredTarget = 2496,
-    /// <summary>Register mask &#x27;XMM28&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM28IsNotAvailableForTheConfiguredTarget = 2497,
-    /// <summary>Register mask &#x27;XMM29&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM29IsNotAvailableForTheConfiguredTarget = 2498,
-    /// <summary>Register mask &#x27;XMM30&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM30IsNotAvailableForTheConfiguredTarget = 2499,
-    /// <summary>Register mask &#x27;XMM31&#x27; is not available for the configured target.</summary>
-    RegisterMaskXMM31IsNotAvailableForTheConfiguredTarget = 2500,
     /// <summary>Register mask &#x27;R0&#x27; is not available for the configured target.</summary>
     RegisterMaskR0IsNotAvailableForTheConfiguredTarget = 2501,
     /// <summary>Register mask &#x27;R1&#x27; is not available for the configured target.</summary>
@@ -5005,22 +4921,6 @@ public enum FatalJitErrorCode
     RegisterMaskRAIsNotAvailableForTheConfiguredTarget = 2598,
     /// <summary>Register mask &#x27;TP&#x27; is not available for the configured target.</summary>
     RegisterMaskTPIsNotAvailableForTheConfiguredTarget = 2599,
-    /// <summary>Register mask &#x27;A0&#x27; is not available for the configured target.</summary>
-    RegisterMaskA0IsNotAvailableForTheConfiguredTarget = 2600,
-    /// <summary>Register mask &#x27;A1&#x27; is not available for the configured target.</summary>
-    RegisterMaskA1IsNotAvailableForTheConfiguredTarget = 2601,
-    /// <summary>Register mask &#x27;A2&#x27; is not available for the configured target.</summary>
-    RegisterMaskA2IsNotAvailableForTheConfiguredTarget = 2602,
-    /// <summary>Register mask &#x27;A3&#x27; is not available for the configured target.</summary>
-    RegisterMaskA3IsNotAvailableForTheConfiguredTarget = 2603,
-    /// <summary>Register mask &#x27;A4&#x27; is not available for the configured target.</summary>
-    RegisterMaskA4IsNotAvailableForTheConfiguredTarget = 2604,
-    /// <summary>Register mask &#x27;A5&#x27; is not available for the configured target.</summary>
-    RegisterMaskA5IsNotAvailableForTheConfiguredTarget = 2605,
-    /// <summary>Register mask &#x27;A6&#x27; is not available for the configured target.</summary>
-    RegisterMaskA6IsNotAvailableForTheConfiguredTarget = 2606,
-    /// <summary>Register mask &#x27;A7&#x27; is not available for the configured target.</summary>
-    RegisterMaskA7IsNotAvailableForTheConfiguredTarget = 2607,
     /// <summary>Register mask &#x27;T0&#x27; is not available for the configured target.</summary>
     RegisterMaskT0IsNotAvailableForTheConfiguredTarget = 2608,
     /// <summary>Register mask &#x27;T1&#x27; is not available for the configured target.</summary>
@@ -7962,24 +7862,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.RegisterMaskRBXIsNotAvailableForTheConfiguredTarget => "Register mask 'RBX' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskRSPIsNotAvailableForTheConfiguredTarget => "Register mask 'RSP' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskRBPIsNotAvailableForTheConfiguredTarget => "Register mask 'RBP' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskRSIIsNotAvailableForTheConfiguredTarget => "Register mask 'RSI' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskRDIIsNotAvailableForTheConfiguredTarget => "Register mask 'RDI' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM0IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM0' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM1IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM1' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM2IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM2' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM3IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM3' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM4IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM4' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM5IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM5' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM6IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM6' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM7IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM7' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskK0IsNotAvailableForTheConfiguredTarget => "Register mask 'K0' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskK1IsNotAvailableForTheConfiguredTarget => "Register mask 'K1' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskK2IsNotAvailableForTheConfiguredTarget => "Register mask 'K2' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskK3IsNotAvailableForTheConfiguredTarget => "Register mask 'K3' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskK4IsNotAvailableForTheConfiguredTarget => "Register mask 'K4' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskK5IsNotAvailableForTheConfiguredTarget => "Register mask 'K5' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskK6IsNotAvailableForTheConfiguredTarget => "Register mask 'K6' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskK7IsNotAvailableForTheConfiguredTarget => "Register mask 'K7' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskSTKIsNotAvailableForTheConfiguredTarget => "Register mask 'STK' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskR8IsNotAvailableForTheConfiguredTarget => "Register mask 'R8' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskR9IsNotAvailableForTheConfiguredTarget => "Register mask 'R9' is not available for the configured target.",
@@ -8005,30 +7887,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.RegisterMaskR29IsNotAvailableForTheConfiguredTarget => "Register mask 'R29' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskR30IsNotAvailableForTheConfiguredTarget => "Register mask 'R30' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskR31IsNotAvailableForTheConfiguredTarget => "Register mask 'R31' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM8IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM8' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM9IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM9' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM10IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM10' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM11IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM11' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM12IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM12' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM13IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM13' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM14IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM14' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM15IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM15' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM16IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM16' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM17IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM17' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM18IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM18' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM19IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM19' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM20IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM20' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM21IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM21' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM22IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM22' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM23IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM23' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM24IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM24' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM25IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM25' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM26IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM26' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM27IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM27' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM28IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM28' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM29IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM29' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM30IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM30' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskXMM31IsNotAvailableForTheConfiguredTarget => "Register mask 'XMM31' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskR0IsNotAvailableForTheConfiguredTarget => "Register mask 'R0' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskR1IsNotAvailableForTheConfiguredTarget => "Register mask 'R1' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskR2IsNotAvailableForTheConfiguredTarget => "Register mask 'R2' is not available for the configured target.",
@@ -8128,14 +7986,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.RegisterMaskFFRIsNotAvailableForTheConfiguredTarget => "Register mask 'FFR' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskRAIsNotAvailableForTheConfiguredTarget => "Register mask 'RA' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskTPIsNotAvailableForTheConfiguredTarget => "Register mask 'TP' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskA0IsNotAvailableForTheConfiguredTarget => "Register mask 'A0' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskA1IsNotAvailableForTheConfiguredTarget => "Register mask 'A1' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskA2IsNotAvailableForTheConfiguredTarget => "Register mask 'A2' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskA3IsNotAvailableForTheConfiguredTarget => "Register mask 'A3' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskA4IsNotAvailableForTheConfiguredTarget => "Register mask 'A4' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskA5IsNotAvailableForTheConfiguredTarget => "Register mask 'A5' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskA6IsNotAvailableForTheConfiguredTarget => "Register mask 'A6' is not available for the configured target.",
-            FatalJitErrorCode.RegisterMaskA7IsNotAvailableForTheConfiguredTarget => "Register mask 'A7' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskT0IsNotAvailableForTheConfiguredTarget => "Register mask 'T0' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskT1IsNotAvailableForTheConfiguredTarget => "Register mask 'T1' is not available for the configured target.",
             FatalJitErrorCode.RegisterMaskT2IsNotAvailableForTheConfiguredTarget => "Register mask 'T2' is not available for the configured target.",

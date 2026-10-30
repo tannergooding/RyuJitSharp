@@ -394,7 +394,7 @@ internal static unsafe class CodeGenPrologInitializationTests
 
                     case 1:
                     {
-                        codeGen.genZeroInitFltRegs(RBM_XMM0, RBM_NONE, REG_X64_RAX);
+                        codeGen.genZeroInitFltRegs(RBM_X64_XMM0, RBM_NONE, REG_X64_RAX);
                         break;
                     }
 

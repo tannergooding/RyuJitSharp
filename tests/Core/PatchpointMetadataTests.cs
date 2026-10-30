@@ -102,7 +102,7 @@ internal static unsafe class PatchpointMetadataTests
                 codeGen.RegSet = new RegSet(codeGen);
                 codeGen.RegSet.rsClearRegsModified();
             }
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_R12 | RBM_RAX | RBM_XMM6);
+            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_R12 | RBM_RAX | RBM_X64_XMM6);
             compiler.lvaDoneFrameLayout = FINAL_FRAME_LAYOUT;
 
             compiler.generatePatchpointInfo();
@@ -130,7 +130,7 @@ internal static unsafe class PatchpointMetadataTests
             var expectedSaves = RBM_RBX | RBM_R12 | RBM_RBP;
             if (!Configuration.UNIX_AMD64_ABI)
             {
-                expectedSaves |= RBM_XMM6;
+                expectedSaves |= RBM_X64_XMM6;
             }
             Assert.That(result->CalleeSaveRegisters, Is.EqualTo((long)expectedSaves.Lower));
 
@@ -267,7 +267,8 @@ internal static unsafe class PatchpointMetadataTests
             else
             {
                 var saved = RBM_S1;
-                codeGen.RegSet.rsSetRegsModified(saved | RBM_A0);
+                var a0Mask = Configuration.TARGET_LOONGARCH64 ? RBM_LOONGARCH64_A0 : RBM_RISCV64_A0;
+                codeGen.RegSet.rsSetRegsModified(saved | a0Mask);
                 expectedSaves = saved | RBM_FP | RBM_RA;
             }
             compiler.lvaDoneFrameLayout = FINAL_FRAME_LAYOUT;

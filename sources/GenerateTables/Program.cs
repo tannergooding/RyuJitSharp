@@ -7331,6 +7331,15 @@ public static partial class Globals
 
         foreach (var name in registerNameOrder)
         {
+            if (name is "EDX" or "ESP" or "RSI" or "RDI"
+                or "A0" or "A1" or "A2" or "A3" or "A4" or "A5" or "A6" or "A7"
+                or "K0" or "K1" or "K2" or "K3" or "K4" or "K5" or "K6" or "K7"
+                || name.StartsWith("XMM", StringComparison.Ordinal))
+            {
+                // Keep target-qualified aliases; these universal masks have no compiler callers.
+                continue;
+            }
+
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public static regMaskTP RBM_{name}");
             _ = builder.AppendLine("    {");
             _ = builder.AppendLine("        get");

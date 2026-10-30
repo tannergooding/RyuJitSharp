@@ -406,7 +406,8 @@ internal static class HardwareBaseGenerationTests
             codeGen.CopyRegisterInfo();
             var node = new GenTreeHWIntrinsic(type, NI_Vector_op_Division, baseType, size,
                 Vector(type, REG_XMM4), Vector(type, REG_XMM5)) { RegNum = REG_XMM6 };
-            codeGen.InternalRegisters.Add(node, isa == 2 ? RBM_XMM1 | RBM_XMM2 : RBM_XMM0 | RBM_XMM1 | RBM_XMM2);
+            codeGen.InternalRegisters.Add(node,
+                isa == 2 ? RBM_X64_XMM1 | RBM_X64_XMM2 : RBM_X64_XMM0 | RBM_X64_XMM1 | RBM_X64_XMM2);
             var firstGroup = codeGen.Emitter.emitCurIG;
 
             codeGen.genBaseIntrinsic(node, INS_OPTS_NONE);

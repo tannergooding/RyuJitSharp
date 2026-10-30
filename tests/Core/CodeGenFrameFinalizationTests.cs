@@ -53,7 +53,7 @@ internal static unsafe class CodeGenFrameFinalizationTests
         WithFrame((compiler, codeGen) =>
         {
             codeGen.IsFramePointerUsed = framePointer;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_RSI | RBM_XMM6);
+            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_X64_RSI | RBM_X64_XMM6);
 
             codeGen.genFinalizeFrame();
 
@@ -122,11 +122,11 @@ internal static unsafe class CodeGenFrameFinalizationTests
             codeGen.IsFramePointerUsed = false;
             var live = floating ? new regMaskTP(SRBM_FLT_CALLEE_TRASH_INIT) : new regMaskTP(SRBM_INT_CALLEE_TRASH_INIT);
             codeGen.CalleeRegArgMaskLiveIn = live;
-            codeGen.RegSet.rsMaskResvd = floating ? RBM_XMM6 : RBM_RBX;
+            codeGen.RegSet.rsMaskResvd = floating ? RBM_X64_XMM6 : RBM_RBX;
 
             codeGen.genFinalizeFrame();
 
-            var expected = floating ? RBM_XMM7 : RBM_RBP;
+            var expected = floating ? RBM_X64_XMM7 : RBM_RBP;
             Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(expected));
             Assert.That(compiler.compCalleeRegsPushed, Is.EqualTo(floating ? 0 : 1));
             Assert.That(compiler.compCalleeFPRegsSavedMask, Is.EqualTo(floating ? SRBM_XMM7 : SRBM_NONE));

@@ -95,7 +95,7 @@ internal static unsafe class RegisterTrackingTests
             codeGen.genUpdateVarReg(ref compiler.lvaTable[2], tree, 1);
 
             Assert.That(compiler.lvaTable[2].RegNum, Is.EqualTo(REG_X64_XMM1));
-            Assert.That(codeGen.genGetRegMask(tree), Is.EqualTo(RBM_RAX | RBM_XMM1));
+            Assert.That(codeGen.genGetRegMask(tree), Is.EqualTo(RBM_RAX | RBM_X64_XMM1));
         });
     }
 
@@ -112,8 +112,8 @@ internal static unsafe class RegisterTrackingTests
             ];
             compiler.lvaCount = 2;
 
-            Assert.That(codeGen.genGetRegMask(in compiler.lvaTable[0]), Is.EqualTo(RBM_XMM31));
-            Assert.That(codeGen.genGetRegMask(in compiler.lvaTable[1]), Is.EqualTo(RBM_K1));
+            Assert.That(codeGen.genGetRegMask(in compiler.lvaTable[0]), Is.EqualTo(RBM_X64_XMM31));
+            Assert.That(codeGen.genGetRegMask(in compiler.lvaTable[1]), Is.EqualTo(RBM_X64_K1));
         });
     }
 
