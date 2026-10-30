@@ -49,44 +49,4 @@ internal static class ScalarNarrowingTests
     {
         Assert.That(float.IsNaN(forceCastToFloat(BitConverter.UInt64BitsToDouble(source))), Is.True);
     }
-
-    [TestCase(-0.9999999999999999, 0U)]
-    [TestCase(-0.0, 0U)]
-    [TestCase(0.0, 0U)]
-    [TestCase(0.9999999999999999, 0U)]
-    [TestCase(1.0, 1U)]
-    [TestCase(1.9, 1U)]
-    [TestCase(2147483647.0, 0x7FFFFFFFU)]
-    [TestCase(2147483648.0, 0x80000000U)]
-    [TestCase(4294967295.0, uint.MaxValue)]
-    [TestCase(4294967295.9999995, uint.MaxValue)]
-    public static void UInt32NarrowingTruncatesWithinTheNativeDefinedRange(double value, uint expected)
-    {
-        Assert.That(forceCastToUInt32(value), Is.EqualTo(expected));
-    }
-
-    public static IEnumerable<TestCaseData> WordCases()
-    {
-        yield return new TestCaseData(0UL, 0U, 0U);
-        yield return new TestCaseData(ulong.MaxValue, uint.MaxValue, uint.MaxValue);
-        yield return new TestCaseData(0x0123456789ABCDEFUL, 0x89ABCDEFU, 0x01234567U);
-        yield return new TestCaseData(0xFEDCBA9876543210UL, 0x76543210U, 0xFEDCBA98U);
-        yield return new TestCaseData(0xAAAAAAAA55555555UL, 0x55555555U, 0xAAAAAAAAU);
-        yield return new TestCaseData(0x55555555AAAAAAAAUL, 0xAAAAAAAAU, 0x55555555U);
-
-        for (var bit = 0; bit < 64; bit++)
-        {
-            yield return new TestCaseData(1UL << bit,
-                bit < 32 ? 1U << bit : 0U,
-                bit >= 32 ? 1U << (bit - 32) : 0U);
-        }
-    }
-
-    [TestCaseSource(nameof(WordCases))]
-    public static void WordExtractionPreservesEachUnsignedHalf(ulong value, uint low, uint high)
-    {
-        Assert.That(ulo32(value), Is.EqualTo(low));
-        Assert.That(uhi32(value), Is.EqualTo(high));
-        Assert.That(((ulong)uhi32(value) << 32) | ulo32(value), Is.EqualTo(value));
-    }
 }

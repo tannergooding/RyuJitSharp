@@ -34,29 +34,6 @@ internal static unsafe class MorphTreeSupportTests
         });
     }
 
-    [TestCase(0, false)]
-    [TestCase(1, false)]
-    [TestCase(2, true)]
-    [TestCase(3, true)]
-    public static void ReturnBlockQueryCountsTheGraphRatherThanTheCachedReturnList(int returns, bool expected)
-    {
-        WithCompiler(compiler => {
-            var first = new BasicBlock(null, null) { Kind = BBKinds.BBJ_THROW };
-            compiler.fgFirstBB = first;
-            compiler.fgReturnBlocks = null;
-            var previous = first;
-            for (var index = 0; index < returns; index++)
-            {
-                var block = new BasicBlock(null, null) { Kind = BBKinds.BBJ_RETURN };
-                previous.Next = block;
-                previous = block;
-            }
-
-            compiler.fgLastBB = previous;
-            Assert.That(compiler.fgMoreThanOneReturnBlock(), Is.EqualTo(expected));
-        });
-    }
-
     [TestCase(0, 0u, false, 0u)]
     [TestCase(3, 0u, true, 1u)]
     [TestCase(3, 2u, true, 3u)]

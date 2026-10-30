@@ -23,7 +23,6 @@ public partial class Liveness<TLiveness>
         _compiler.lvaTrackedCount = 0;
         _compiler.lvaTrackedCountInSizeTUnits = 0;
 
-        _compiler.SetLocalTrackedVars(VarSetOps.MakeEmpty(_compiler));
         if (_compiler.lvaCount == 0)
         {
             return;
@@ -112,6 +111,5 @@ public partial class Liveness<TLiveness>
         _compiler.lvaCurEpoch = unchecked(_compiler.lvaCurEpoch + 1);
         var bitsPerWord = (uint)(Unsafe.SizeOf<nint>() * 8);
         _compiler.lvaTrackedCountInSizeTUnits = (int)(((uint)_compiler.lvaTrackedCount + bitsPerWord - 1) / bitsPerWord);
-        _compiler.SetLocalTrackedVars(VarSetOps.MakeFull(_compiler));
     }
 }

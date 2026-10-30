@@ -64,7 +64,10 @@ internal static unsafe class ValueNumMemoryStateTests
 
             if (fresh)
             {
-                compiler.fgMutateAddressExposedLocal(tree, "test mutation");
+                compiler.recordAddressExposedLocalStore(
+                    tree,
+                    store.VNForExpr(compiler.compCurBB, TYP_HEAP),
+                    "test mutation");
                 Assert.That(compiler.fgCurMemoryVN[(int)ByrefExposed], Is.Not.EqualTo(byref));
             }
             else

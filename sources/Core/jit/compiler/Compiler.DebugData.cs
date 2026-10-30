@@ -787,7 +787,6 @@ public partial class Compiler
         internal bool PrintInlinedMethods;
         internal bool EHNormalizationDone;
         internal int InlinedCodeSize;
-        internal VARSET_TP TrackedVars = [];
         internal int LoopsConsidered;
         internal bool CurrentLoopHasHoistedExpression;
         internal int LoopsWithHoistedExpressions;
@@ -1386,30 +1385,6 @@ public partial class Compiler
 
     internal void CopyLocalDebugData(in LclVarDsc source, in LclVarDsc destination, LocalDebugDataCopyFlags fields)
         => CopyLocalDebugData(lvaGetLclNum(in source), lvaGetLclNum(in destination), fields);
-
-    [Conditional("DEBUG")]
-    internal void SetLocalTrackedVars(VARSET_TP trackedVars)
-    {
-        if (!Configuration.DEBUG)
-        {
-            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TrackedVariableSetStateIsOnlyAvailableInDebugBuilds);
-            return;
-        }
-
-        var data = GetDebugData();
-        VarSetOps.AssignNoCopy(this, ref data.TrackedVars, trackedVars);
-    }
-
-    internal VARSET_TP GetLocalTrackedVars()
-    {
-        if (!Configuration.DEBUG)
-        {
-            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TrackedVariableSetStateIsOnlyAvailableInDebugBuilds);
-            return default!;
-        }
-
-        return GetDebugData().TrackedVars;
-    }
 
     [Conditional("DEBUG")]
     internal void BeginLoopHoistStats()

@@ -1677,18 +1677,6 @@ public partial class Compiler
         }
     }
 
-    public unsafe bool eeRunWithErrorTrap<TParam>(delegate* unmanaged[Cdecl]<TParam*, void> function, TParam* parameter)
-        where TParam : unmanaged
-    {
-        return info.compCompHnd->runWithErrorTrap((errorTrapFunction)(function), parameter);
-    }
-
-    public unsafe bool eeRunWithSpmiErrorTrap<TParam>(delegate* unmanaged[Cdecl]<TParam*, void> function, TParam* parameter)
-        where TParam : unmanaged
-    {
-        return info.compCompHnd->runWithSPMIErrorTrap((errorTrapFunction)(function), parameter);
-    }
-
     public bool eeRunFunctorWithErrorTrap(Action function) => eeRunFunctorWithErrorTrap(function, spmiOnly: false);
 
     public bool eeRunFunctorWithSpmiErrorTrap(Action function) => eeRunFunctorWithErrorTrap(function, spmiOnly: true);

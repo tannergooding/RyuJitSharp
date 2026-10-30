@@ -7,11 +7,6 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-    public static bool isRegParamType(var_types type)
-    {
-        return !Configuration.TARGET_X86 || (type <= TYP_INT) || (type == TYP_REF) || (type == TYP_BYREF);
-    }
-
     public static string varTypeGCstring(var_types type)
     {
         return type switch {

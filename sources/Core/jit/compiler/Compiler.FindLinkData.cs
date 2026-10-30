@@ -9,9 +9,8 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public ref struct FindLinkData(GenTree node, ref GenTree edge, GenTree? user)
+    public ref struct FindLinkData(ref GenTree edge, GenTree? user)
     {
-        public GenTree nodeToFind = node;
         public ref GenTree result = ref edge;
         public GenTree? parent = user;
     }
@@ -34,12 +33,12 @@ public partial class Compiler
         {
             if (!_found)
             {
-                return new(_node, ref Unsafe.NullRef<GenTree>(), null);
+                return new(ref Unsafe.NullRef<GenTree>(), null);
             }
 
             if (_parent is null)
             {
-                return new(_node, ref statement.RootNodeRef, null);
+                return new(ref statement.RootNodeRef, null);
             }
 
             var index = 0;
@@ -47,7 +46,7 @@ public partial class Compiler
             {
                 if (index++ == _edgeIndex)
                 {
-                    return new(_node, ref edge, _parent);
+                    return new(ref edge, _parent);
                 }
             }
 

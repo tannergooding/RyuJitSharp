@@ -14,9 +14,6 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SharedBitShapeTests
 {
-    private static readonly ulong[] s_intervalValues =
-        [0UL, ulong.MaxValue, 0xAAAAAAAAAAAAAAAAUL, 0x5555555555555555UL, 0x8000000080000001UL];
-
     [TestCase(0U, 0U)]
     [TestCase(1U, 1U)]
     [TestCase(0x80000000U, 1U)]
@@ -61,35 +58,6 @@ internal static unsafe class SharedBitShapeTests
         WithoutNativeAssertions(() => {
             var mask = new regMaskTP(unchecked((regMask)lower), unchecked((regMask)upper));
             Assert.That(genCountBits(mask), Is.EqualTo(expected));
-        });
-    }
-
-    [TestCase(0, 1)]
-    [TestCase(0, 2)]
-    [TestCase(0, 31)]
-    [TestCase(0, 32)]
-    [TestCase(0, 63)]
-    [TestCase(1, 63)]
-    [TestCase(30, 32)]
-    [TestCase(31, 32)]
-    [TestCase(31, 33)]
-    [TestCase(31, 63)]
-    [TestCase(32, 63)]
-    [TestCase(62, 63)]
-    public static void BitsBetweenExcludesEndpointsAndPreservesOnlyInteriorBits(int startBit, int endBit)
-    {
-        WithoutNativeAssertions(() => {
-            foreach (var value in s_intervalValues)
-            {
-                ulong expected = 0;
-
-                for (var bit = startBit + 1; bit < endBit; bit++)
-                {
-                    expected |= value & (1UL << bit);
-                }
-
-                Assert.That(BitsBetween(value, 1UL << endBit, 1UL << startBit), Is.EqualTo(expected));
-            }
         });
     }
 
@@ -320,20 +288,6 @@ internal static unsafe class SharedBitShapeTests
 
     private static readonly List<string?> s_assertions = [];
     private static readonly string[] s_exactlyOneAssertion = ["genExactlyOneBit(value)"];
-
-    [TestCase(0UL, 2UL, "start != 0")]
-    [TestCase(1UL, 0UL, "start < end")]
-    [TestCase(3UL, 8UL, "(start & (start - 1)) == 0")]
-    [TestCase(4UL, 6UL, "(end & (end - 1)) == 0")]
-    [TestCase(3UL, 2UL, "start < end|(start & (start - 1)) == 0")]
-    public static void BitsBetweenReportsOrderedNativePreconditions(ulong start, ulong end, string expected)
-    {
-        Assume.That(TestConfiguration.IsDebug, "Native assertion capture is available only in Debug.");
-
-        WithAssertionRecorder(() => _ = BitsBetween(ulong.MaxValue, end, start));
-
-        Assert.That(s_assertions, Is.EqualTo(expected.Split('|')));
-    }
 
     [TestCase(false)]
     [TestCase(true)]

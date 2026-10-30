@@ -36,7 +36,6 @@ internal static unsafe partial class IndirectCallTransformationTests
 
             var stmt = compiler.gtNewStmt(parent);
             var link = compiler.gtFindLink(stmt, shared);
-            Assert.That(link.nodeToFind, Is.SameAs(shared));
             Assert.That(link.parent, Is.SameAs(parent));
             Assert.That(Unsafe.AreSame(ref link.result, ref parent.Op1Ref), Is.True);
             var replacement = compiler.gtNewIconNode(TYP_INT, 2);

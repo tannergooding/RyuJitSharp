@@ -51,8 +51,6 @@ public sealed partial class FlowGraphNaturalLoop
 
     public ReadOnlySpan<FlowEdge> ExitEdges => CollectionsMarshal.AsSpan(_exitEdges);
 
-    public FlowEdge BackEdge(int index) => _backEdges[index];
-
     public FlowEdge EntryEdge(int index) => _entryEdges[index];
 
     public FlowEdge ExitEdge(int index) => _exitEdges[index];

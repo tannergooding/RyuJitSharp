@@ -16,13 +16,13 @@ internal static class FuncInfoRangeTests
         compiler.fgFuncletsCreated = true;
         compiler.compFuncInfoCount = (ushort)(funcletCount + 1);
         compiler.compFuncInfos = new FuncInfoDsc[funcletCount + 2];
-        compiler.compFuncInfos[0].funFlags = 91;
-        compiler.compFuncInfos[^1].funFlags = 92;
+        compiler.compFuncInfos[0].funEHIndex = 91;
+        compiler.compFuncInfos[^1].funEHIndex = 92;
 
         var index = 1;
         foreach (ref var function in compiler.Funclets())
         {
-            function.funFlags = (byte)index;
+            function.funEHIndex = (ushort)index;
             index++;
         }
 
@@ -31,18 +31,18 @@ internal static class FuncInfoRangeTests
 
         foreach (ref var function in compiler.Funclets().Reverse())
         {
-            Assert.That(function.funFlags, Is.EqualTo(index));
-            function.funFlags += 10;
+            Assert.That(function.funEHIndex, Is.EqualTo(index));
+            function.funEHIndex += 10;
             index--;
         }
 
         Assert.That(index, Is.Zero);
-        Assert.That(compiler.compFuncInfos[0].funFlags, Is.EqualTo(91));
-        Assert.That(compiler.compFuncInfos[^1].funFlags, Is.EqualTo(92));
+        Assert.That(compiler.compFuncInfos[0].funEHIndex, Is.EqualTo(91));
+        Assert.That(compiler.compFuncInfos[^1].funEHIndex, Is.EqualTo(92));
 
         for (index = 1; index <= funcletCount; index++)
         {
-            Assert.That(compiler.compFuncInfos[index].funFlags, Is.EqualTo(index + 10));
+            Assert.That(compiler.compFuncInfos[index].funEHIndex, Is.EqualTo(index + 10));
         }
     }
 }

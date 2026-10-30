@@ -16,21 +16,4 @@ public static partial class Globals
 
         return Volatile.Read(ref narrowed);
     }
-
-    public static uint forceCastToUInt32(double value)
-    {
-        var narrowed = unchecked((uint)value);
-
-        return Volatile.Read(ref narrowed);
-    }
-
-    public static uint ulo32(ulong value)
-    {
-        return unchecked((uint)value);
-    }
-
-    public static uint uhi32(ulong value)
-    {
-        return (uint)(value >> 32);
-    }
 }

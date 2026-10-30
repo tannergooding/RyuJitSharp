@@ -873,59 +873,6 @@ public partial class Compiler
         call.AddGdvCandidateInfo(this, inlineCandidateInfo);
     }
 
-    /// <summary>Check if two field address nodes reference at the same location.</summary>
-    /// <param name="op1">first field address</param>
-    /// <param name="op2">second field address</param>
-    /// <returns>If op1's parents node and op2's parents node are at the same location, return true. Otherwise, return false</returns>
-    public unsafe bool areFieldAddressesTheSame(GenTreeFieldAddr op1, GenTreeFieldAddr op2)
-    {
-        assert((op1.Oper is GT_FIELD_ADDR) && (op2.Oper is GT_FIELD_ADDR));
-
-        var op1ObjRef = op1.FldObj;
-        var op2ObjRef = op2.FldObj;
-
-        while ((op1ObjRef is not null) && (op2ObjRef is not null))
-        {
-            assert(varTypeIsI(op1ObjRef.Type.ActualType) && varTypeIsI(op2ObjRef.Type.ActualType));
-
-            var oper = op1ObjRef.Oper;
-
-            if (op2ObjRef.Oper != oper)
-            {
-                break;
-            }
-
-            if (((oper is GT_LCL_VAR) || op1ObjRef.IsLclVarAddr) && (op1ObjRef.AsLclVarCommon().LclNum == op2ObjRef.AsLclVarCommon().LclNum))
-            {
-                return true;
-            }
-
-            if (oper is GT_IND)
-            {
-                op1ObjRef = op1ObjRef.AsIndir().Addr;
-                op2ObjRef = op2ObjRef.AsIndir().Addr;
-                continue;
-            }
-
-            if (oper is GT_FIELD_ADDR)
-            {
-                var op1FieldAddr = op1ObjRef.AsFieldAddr();
-                var op2FieldAddr = op2ObjRef.AsFieldAddr();
-
-                if (op1FieldAddr.FldHnd == op2FieldAddr.FldHnd)
-                {
-                    op1ObjRef = op1FieldAddr.FldObj;
-                    op2ObjRef = op2FieldAddr.FldObj;
-                    continue;
-                }
-            }
-
-            break;
-        }
-
-        return false;
-    }
-
     /// <summary>see if we can profitably guess at the class involved in an interface or virtual call.</summary>
     /// <param name="call">potential guarded devirtualization candidate</param>
     /// <param name="ilOffset">IL ofset of the call instruction</param>

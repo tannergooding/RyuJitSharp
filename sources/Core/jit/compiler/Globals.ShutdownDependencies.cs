@@ -63,15 +63,6 @@ public partial class Globals
         }
     }
 
-    internal static nuint NativeBasicBlockSize
-    {
-        get
-        {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NativeSizeofBasicBlockIsNotPorted);
-            return default!;
-        }
-    }
-
     internal static nuint NativeFlowEdgeSize
     {
         get

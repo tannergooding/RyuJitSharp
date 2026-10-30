@@ -12,7 +12,6 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class ErrorTrapTests
 {
     private static bool s_reject;
-    private static bool s_spmiOnly;
 
     [TestCase(CorJitResult.CORJIT_BADCODE)]
     [TestCase(CorJitResult.CORJIT_INTERNALERROR)]
@@ -112,31 +111,6 @@ internal static unsafe class ErrorTrapTests
         });
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void TypedCallbacksForwardParameterAndSelectedTrap(bool spmiOnly)
-    {
-        WithCompiler(compiler => {
-            var invocations = stackalloc int[1];
-            var succeeded = spmiOnly
-                ? compiler.eeRunWithSpmiErrorTrap(&Increment, invocations)
-                : compiler.eeRunWithErrorTrap(&Increment, invocations);
-
-            Assert.That(succeeded, Is.True);
-            Assert.That(invocations[0], Is.EqualTo(1));
-            Assert.That(s_spmiOnly, Is.EqualTo(spmiOnly));
-
-            s_reject = true;
-            succeeded = spmiOnly
-                ? compiler.eeRunWithSpmiErrorTrap(&Increment, invocations)
-                : compiler.eeRunWithErrorTrap(&Increment, invocations);
-
-            Assert.That(succeeded, Is.False);
-            Assert.That(invocations[0], Is.EqualTo(1));
-            Assert.That(s_spmiOnly, Is.EqualTo(spmiOnly));
-        });
-    }
-
     [Test]
     public static void FatalJitFailureDoesNotCrossUnmanagedBoundary()
         => ManagedCallbacksRespectTrapAndTerminalSemantics(false, 1);
@@ -159,12 +133,6 @@ internal static unsafe class ErrorTrapTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ThrowFromManagedCallback(Exception failure) => throw failure;
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static void Increment(int* invocations)
-    {
-        *invocations = unchecked(*invocations + 1);
-    }
-
     private static void WithCompiler(Action<Compiler> action)
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -175,7 +143,6 @@ internal static unsafe class ErrorTrapTests
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
         compiler.info.compCompHnd = &jitInfo;
         s_reject = false;
-        s_spmiOnly = false;
         action(compiler);
     }
 
@@ -238,7 +205,6 @@ internal static unsafe class ErrorTrapTests
     private static byte InvokeErrorTrap(ICorJitInfo* self, delegate* unmanaged[Cdecl]<void*, void> callback,
         void* state)
     {
-        s_spmiOnly = false;
         return InvokeCallback(callback, state);
     }
 
@@ -246,7 +212,6 @@ internal static unsafe class ErrorTrapTests
     private static byte InvokeSpmiErrorTrap(ICorJitInfo* self, delegate* unmanaged[Cdecl]<void*, void> callback,
         void* state)
     {
-        s_spmiOnly = true;
         return InvokeCallback(callback, state);
     }
 

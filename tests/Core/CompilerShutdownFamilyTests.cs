@@ -566,7 +566,6 @@ internal static class CompilerShutdownFamilyTests
 
         if (Configuration.MEASURE_BLOCK_SIZE)
         {
-            yield return new TestCaseData("BasicBlockSize");
             yield return new TestCaseData("FlowEdgeSize");
         }
 
@@ -762,11 +761,6 @@ internal static class CompilerShutdownFamilyTests
             case "StaticNodeSizeReport":
             {
                 _ = InvokeStaticMethod(typeof(Compiler), "compDisplayStaticSizes");
-                break;
-            }
-            case "BasicBlockSize":
-            {
-                _ = NativeBasicBlockSize;
                 break;
             }
             case "FlowEdgeSize":

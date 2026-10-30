@@ -79,7 +79,7 @@ internal static unsafe class NaturalLoopTests
             Assert.That(loop.ContainsBlock(blocks[^1]), Is.False);
             Assert.That(loop.GetPreheader(), Is.SameAs(blocks[0]));
             Assert.That(loop.EntryEdge(0), Is.SameAs(entry));
-            Assert.That(loop.BackEdge(0), Is.SameAs(back));
+            Assert.That(loop.BackEdges[0], Is.SameAs(back));
             Assert.That(loop.ExitEdge(0), Is.SameAs(exit));
             Assert.That(loop.ExitEdges.Length, Is.EqualTo(secondExit ? 2 : 1));
             Assert.That(loops.IsLoopBackEdge(back), Is.True);

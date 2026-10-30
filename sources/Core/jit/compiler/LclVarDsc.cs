@@ -1054,31 +1054,6 @@ public partial struct LclVarDsc
 
     public readonly bool lvIsInReg => lvIsRegCandidate && (_lvRegNum != REG_STK);
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Design",
-        "CA1065:Do not raise exceptions in unexpected locations",
-        Justification = "Targets without fixed register sets cannot provide a local register mask.")]
-    public readonly regMask lvRegMask
-    {
-        get
-        {
-            if (!Configuration.HAS_FIXED_REGISTER_SET)
-            {
-                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LocalRegisterMasksRequireAFixedRegisterSet);
-                return default!;
-            }
-
-            if (_lvRegNum != REG_STK)
-            {
-                return (regMask)(1L << (int)(_lvRegNum));
-            }
-            else
-            {
-                return SRBM_NONE;
-            }
-        }
-    }
-
     /// <summary>Get a bitset of flags that represents all fields dying.</summary>
     /// <remarks>Only usable for promoted locals.</remarks>
     public readonly GenTreeFlags AllFieldDeathFlags
@@ -1119,13 +1094,6 @@ public partial struct LclVarDsc
         }
         return refCnt;
     }
-
-    /// <summary>increment reference count for this local var</summary>
-    /// <param name="delta">the amount of the increment</param>
-    /// <param name="state">the requestor's expected ref count state; defaults to RCS_NORMAL</param>
-    /// <remarks>It is currently the caller's responsibility to ensure this increment will not cause overflow.</remarks>
-    public void incLvRefCnt(ushort delta, RefCountState state = RCS_NORMAL)
-        => setLvRefCnt((ushort)(_lvRefCnt + delta), state);
 
     /// <summary>set the reference count for this local var</summary>
     /// <param name="newValue">the desired new reference count</param>
@@ -1418,9 +1386,6 @@ public partial struct LclVarDsc
     // not to be the SsaConfig::RESERVED_SSA_NUM, which indicates that the variable is
     // not an SSA variable).
     public readonly ref LclSsaVarDsc GetPerSsaData(int ssaNum) => ref lvPerSsaData.GetSsaDef(ssaNum);
-
-    // Returns the SSA number for "ssaDef". Requires "ssaDef" to be a valid definition of this variable.
-    public readonly int GetSsaNumForSsaDef(in LclSsaVarDsc ssaDef) => lvPerSsaData.GetSsaNum(ssaDef);
 
     /// <summary>Determine register type for this local var.</summary>
     /// <param name="tree">node that uses the local, its type is checked first.</param>

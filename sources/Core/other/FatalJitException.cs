@@ -1655,10 +1655,6 @@ public enum FatalJitErrorCode
     LoongArch64SIMDIsUnavailableForThisConfiguration = 791,
     /// <summary>LoongArch64 SIMD instruction options are not ported.</summary>
     LoongArch64SIMDInstructionOptionsAreNotPorted = 792,
-    /// <summary>LoongArch64 SIMD upper-lane saving is not ported.</summary>
-    LoongArch64SIMDUpperLaneSavingIsNotPorted = 793,
-    /// <summary>LoongArch64 SIMD upper-lane restoration is not ported.</summary>
-    LoongArch64SIMDUpperLaneRestorationIsNotPorted = 794,
     /// <summary>LoongArch64 indirect load/store recording requires LoongArch64.</summary>
     LoongArch64IndirectLoadStoreRecordingRequiresLoongArch64 = 795,
     /// <summary>LoongArch64 indirect load/store recording requires an active compiler.</summary>
@@ -1907,8 +1903,6 @@ public enum FatalJitErrorCode
     SingleDefinitionDisqualificationReasonIsOnlyAvailableInDebugBuilds = 926,
     /// <summary>Compiler debug data is only available in Debug builds.</summary>
     CompilerDebugDataIsOnlyAvailableInDebugBuilds = 927,
-    /// <summary>Tracked-variable set state is only available in Debug builds.</summary>
-    TrackedVariableSetStateIsOnlyAvailableInDebugBuilds = 928,
     /// <summary>Tree IDs are only available in Debug builds.</summary>
     TreeIDsAreOnlyAvailableInDebugBuilds = 929,
     /// <summary>Inline size diagnostics are only available in Debug builds.</summary>
@@ -2409,8 +2403,6 @@ public enum FatalJitErrorCode
     UnexpectedLoopComparisonArgument = 1224,
     /// <summary>Unwind information has not been initialized.</summary>
     UnwindInformationHasNotBeenInitialized = 1225,
-    /// <summary>Floating-point argument register mapping is not supported for this target.</summary>
-    FloatingPointArgumentRegisterMappingIsNotSupportedForThisTarget = 1226,
     /// <summary>The LIR range does not reach its last node.</summary>
     LIRRangeDoesNotReachItsLastNode = 1227,
     /// <summary>No compiler is active on this thread.</summary>
@@ -6478,8 +6470,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.LoongArch64GTSWAPGenerationIsNotPorted => "LoongArch64 GT_SWAP generation is not ported.",
             FatalJitErrorCode.LoongArch64SIMDIsUnavailableForThisConfiguration => "LoongArch64 SIMD is unavailable for this configuration.",
             FatalJitErrorCode.LoongArch64SIMDInstructionOptionsAreNotPorted => "LoongArch64 SIMD instruction options are not ported.",
-            FatalJitErrorCode.LoongArch64SIMDUpperLaneSavingIsNotPorted => "LoongArch64 SIMD upper-lane saving is not ported.",
-            FatalJitErrorCode.LoongArch64SIMDUpperLaneRestorationIsNotPorted => "LoongArch64 SIMD upper-lane restoration is not ported.",
             FatalJitErrorCode.LoongArch64IndirectLoadStoreRecordingRequiresLoongArch64 => "LoongArch64 indirect load/store recording requires LoongArch64.",
             FatalJitErrorCode.LoongArch64IndirectLoadStoreRecordingRequiresAnActiveCompiler => "LoongArch64 indirect load/store recording requires an active compiler.",
             FatalJitErrorCode.LoongArch64ContainedAddressIsMissingItsIndexTree => "LoongArch64 contained address is missing its index tree.",
@@ -6604,7 +6594,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.AddressExposedReasonIsOnlyAvailableInDebugBuilds => "Address-exposed reason is only available in Debug builds.",
             FatalJitErrorCode.SingleDefinitionDisqualificationReasonIsOnlyAvailableInDebugBuilds => "The single-definition disqualification reason is only available in Debug builds.",
             FatalJitErrorCode.CompilerDebugDataIsOnlyAvailableInDebugBuilds => "Compiler debug data is only available in Debug builds.",
-            FatalJitErrorCode.TrackedVariableSetStateIsOnlyAvailableInDebugBuilds => "Tracked-variable set state is only available in Debug builds.",
             FatalJitErrorCode.TreeIDsAreOnlyAvailableInDebugBuilds => "Tree IDs are only available in Debug builds.",
             FatalJitErrorCode.InlineSizeDiagnosticsAreOnlyAvailableInDebugBuilds => "Inline size diagnostics are only available in Debug builds.",
             FatalJitErrorCode.BasicBlockDumpOrderIsOnlyAvailableInDebugBuilds => "Basic block dump order is only available in Debug builds.",
@@ -6855,7 +6844,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.SIMDTypeClassificationIsUnsupportedOnThisTarget => "SIMD type classification is unsupported on this target.",
             FatalJitErrorCode.UnexpectedLoopComparisonArgument => "Unexpected loop comparison: {0}",
             FatalJitErrorCode.UnwindInformationHasNotBeenInitialized => "Unwind information has not been initialized.",
-            FatalJitErrorCode.FloatingPointArgumentRegisterMappingIsNotSupportedForThisTarget => "Floating-point argument register mapping is not supported for this target.",
             FatalJitErrorCode.LIRRangeDoesNotReachItsLastNode => "The LIR range does not reach its last node.",
             FatalJitErrorCode.NoCompilerIsActiveOnThisThread => "No compiler is active on this thread.",
             FatalJitErrorCode.DebuggerLookupsAreOnlyAvailableInDebugBuilds => "Debugger lookups are only available in Debug builds.",

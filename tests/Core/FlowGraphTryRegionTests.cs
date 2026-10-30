@@ -114,10 +114,9 @@ internal static class FlowGraphTryRegionTests
             var dfs = useDfs ? Dfs(compiler, blocks) : null;
             var regions = FlowGraphTryRegions.Build(compiler, dfs);
             var region = Region(regions, blocks[1]);
-            Assert.That(region.GetHeaderBlock(), Is.SameAs(blocks[1]));
+            Assert.That(region.EhDsc.ebdTryBeg, Is.SameAs(blocks[1]));
             Assert.That(region.NumBlocks(), Is.EqualTo(count));
             Assert.That(region.HasCatchHandler(), Is.True);
-            Assert.That(region.EnclosingRegion(), Is.Null);
             Assert.That(region.CanEnumerateInReversePostOrder(), Is.EqualTo(useDfs));
             Assert.That(region.EntryEdges().ToArray(), Is.EqualTo<FlowEdge[]>([edges[0]]));
             Assert.That(region.UnreachableBlocks().Length, Is.Zero);
@@ -239,9 +238,6 @@ internal static class FlowGraphTryRegionTests
             var outer = RegionSlot(regions, 3);
 
             Assert.That(regions.GetTryRegionByHeader(blocks[2]), Is.SameAs(inner));
-            Assert.That(inner.EnclosingRegion(), Is.SameAs(outer));
-            Assert.That(mutual.EnclosingRegion(), Is.SameAs(outer));
-            Assert.That(outer.EnclosingRegion(), Is.Null);
             Assert.That(inner.NumBlocks(), Is.EqualTo(2));
             Assert.That(mutual.NumBlocks(), Is.EqualTo(2));
             Assert.That(outer.NumBlocks(), Is.EqualTo(4));
@@ -254,9 +250,8 @@ internal static class FlowGraphTryRegionTests
 
             // Equal IL offsets do not make different block ranges mutual-protect.
             compiler.compHndBBtab[1].ebdTryLast = blocks[4];
-            Assert.That(inner.EnclosingRegion(), Is.SameAs(mutual));
             compiler.compHndBBtab[0].ebdTryBeg = blocks[3];
-            Assert.That(inner.GetHeaderBlock(), Is.SameAs(blocks[3]));
+            Assert.That(inner.EhDsc.ebdTryBeg, Is.SameAs(blocks[3]));
         });
     }
 
@@ -288,7 +283,6 @@ internal static class FlowGraphTryRegionTests
             var regions = FlowGraphTryRegions.Build(compiler, useDfs ? Dfs(compiler, blocks) : null, includeHandlers);
             var inner = Region(regions, blocks[4]);
             var outer = Region(regions, blocks[1]);
-            Assert.That(inner.EnclosingRegion(), Is.SameAs(outer));
             Assert.That(inner.NumBlocks(), Is.EqualTo(2));
             Assert.That(outer.NumBlocks(), Is.EqualTo(expectedOuterCount));
             Assert.That(Region(regions, blocks[2]).NumBlocks(), Is.EqualTo(1));
@@ -439,7 +433,6 @@ internal static class FlowGraphTryRegionTests
             var regions = FlowGraphTryRegions.Build(compiler, null);
             var inner = Region(regions, blocks[1]);
 
-            Assert.That(inner.EnclosingRegion(), Is.Null);
             Assert.That(CodeGenLifeTransitionTests.Capture(() => FlowGraphTryRegion.Dump(inner)),
                 Is.EqualTo("EH#00: 1 blocks [excluding handler blocks] [ in EH#01]: [bbNum]: BB02 [entries]:  BB01->BB02"));
         });

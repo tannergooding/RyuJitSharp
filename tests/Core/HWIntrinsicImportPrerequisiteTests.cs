@@ -96,8 +96,8 @@ internal static unsafe class HWIntrinsicImportPrerequisiteTests
         var_types[] coarseTypes =
             [reader.GetOp1Type(), reader.GetOp2Type(), reader.GetOp3Type(), reader.GetOp4Type()];
         var_types[] preciseTypes =
-            [reader.GetOp1TypeAsPrecise(), reader.GetOp2TypeAsPrecise(),
-             reader.GetOp3TypeAsPrecise(), reader.GetOp4TypeAsPrecise()];
+            [reader.op1JitType.PreciseVarType, reader.GetOp2TypeAsPrecise(),
+             reader.op3JitType.PreciseVarType, reader.op4JitType.PreciseVarType];
 
         for (var i = 0; i < 4; i++)
         {

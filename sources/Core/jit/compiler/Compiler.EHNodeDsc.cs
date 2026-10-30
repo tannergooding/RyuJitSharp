@@ -65,31 +65,9 @@ public partial class Compiler
 
         public bool ehnIsFilterBlock => ehnBlockType == FilterNode;
 
-        public bool ehnIsHandlerBlock => ehnBlockType == HandlerNode;
-
         public bool ehnIsFinallyBlock => ehnBlockType == FinallyNode;
 
         public bool ehnIsFaultBlock => ehnBlockType == FaultNode;
-
-        /// <summary>returns true if there is any overlap between the two nodes</summary>
-        /// <param name="node1"></param>
-        /// <param name="node2"></param>
-        /// <returns></returns>
-        public static bool ehnIsOverlap(EHNodeDsc node1, EHNodeDsc node2)
-        {
-            if (node1.ehnStartOffset < node2.ehnStartOffset)
-            {
-                return (node1.ehnEndOffset >= node2.ehnStartOffset);
-            }
-            else
-            {
-                return (node1.ehnStartOffset <= node2.ehnEndOffset);
-            }
-        }
-
-        // fails with BADCODE if inner is not completely nested inside outer
-        public static bool ehnIsNested(EHNodeDsc inner, EHNodeDsc outer)
-            => (inner.ehnStartOffset >= outer.ehnStartOffset) && (inner.ehnEndOffset <= outer.ehnEndOffset);
 
         public void ehnSetTryNodeType()
         {

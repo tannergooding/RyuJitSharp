@@ -11324,24 +11324,6 @@ public partial class Compiler
         }
     }
 
-    public bool fgMoreThanOneReturnBlock()
-    {
-        var returnCount = 0u;
-        foreach (var block in Blocks)
-        {
-            if (block.Kind is BBJ_RETURN)
-            {
-                returnCount++;
-                if (returnCount > 1)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     /// <summary>Removes a block from the return block list.</summary>
     /// <param name="block">the block to remove from the return block list</param>
     public void fgRemoveReturnBlock(BasicBlock block)

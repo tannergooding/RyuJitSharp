@@ -146,7 +146,7 @@ internal static unsafe class LoopDiscoveryTests
             _ = compiler.optFindLoopsPhase();
             var loop = compiler._loops!.GetLoopByHeader(blocks[1])!;
             Assert.That(loop.BackEdges.Length, Is.EqualTo(1));
-            var latch = loop.BackEdge(0).SourceBlock;
+            var latch = loop.BackEdges[0].SourceBlock;
             Assert.That(latch.HasFlag(BBF_INTERNAL), Is.True);
             Assert.That(blocks[2].FalseTarget, Is.SameAs(latch));
             Assert.That(blocks[3].Target, Is.SameAs(latch));

@@ -13,12 +13,6 @@ public partial class Compiler
         recordGcHeapStore(tree, vnStore.VNForExpr(compCurBB, TYP_HEAP), message);
     }
 
-    public void fgMutateAddressExposedLocal(GenTree tree, string message)
-    {
-        assert(vnStore is not null);
-        recordAddressExposedLocalStore(tree, vnStore.VNForExpr(compCurBB, TYP_HEAP), message);
-    }
-
     public void recordGcHeapStore(GenTree tree, ValueNum gcHeapVN, string message)
     {
         assert(compCurBB is not null);

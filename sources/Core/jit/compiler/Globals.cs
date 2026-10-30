@@ -187,9 +187,6 @@ public partial class Globals
 
     public const int DEFAULT_MIN_OPTS_LV_REF_COUNT = 8000;
 
-    /// <summary>Maximum number of locals before turning off the inlining.</summary>
-    public const int MAX_LV_NUM_COUNT_FOR_INLINING = 512;
-
     //
     // Default numbers used to perform loop alignment. All the numbers are chosen
     // based on experimenting with various benchmarks.
@@ -369,42 +366,6 @@ public partial class Globals
         CORINFO_HFA_ELEM_VECTOR128 when Configuration.FEATURE_SIMD => TYP_SIMD16,
         _ => TYP_UNKNOWN,
     };
-
-    public static CorInfoHFAElemType HfaElemKindFromType(var_types type)
-    {
-        switch (type)
-        {
-            case TYP_FLOAT:
-            {
-                return CORINFO_HFA_ELEM_FLOAT;
-            }
-
-            case TYP_DOUBLE:
-            {
-                return CORINFO_HFA_ELEM_DOUBLE;
-            }
-
-            case TYP_SIMD8 when Configuration.FEATURE_SIMD:
-            {
-                return CORINFO_HFA_ELEM_VECTOR64;
-            }
-
-            case TYP_SIMD16 when Configuration.FEATURE_SIMD:
-            {
-                return CORINFO_HFA_ELEM_VECTOR128;
-            }
-            case TYP_UNDEF:
-            {
-                return CORINFO_HFA_ELEM_NONE;
-            }
-
-            default:
-            {
-                assert(false, "Invalid HFA Type");
-                return CORINFO_HFA_ELEM_NONE;
-            }
-        }
-    }
 
     public static bool IsHfa(CorInfoHFAElemType kind) => kind is not CORINFO_HFA_ELEM_NONE;
 

@@ -21,10 +21,6 @@ public partial class Compiler
 
         public unsafe CORINFO_METHOD_INFO* compMethodInfo;
 
-        public bool hasCircularClassConstraints;
-
-        public bool hasCircularMethodConstraints;
-
         public string compMethodName = "";
 
         public string compClassName = "";

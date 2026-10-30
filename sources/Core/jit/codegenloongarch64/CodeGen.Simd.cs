@@ -28,39 +28,4 @@ public sealed partial class CodeGen
     );
         return default!;
     }
-
-    public void genSimdUpperSaveLoongArch64(GenTreeIntrinsic node)
-    {
-        if (!Configuration.TARGET_LOONGARCH64 || !Configuration.FEATURE_SIMD)
-        {
-            FatalJitException.ThrowFatalJitException(
-        CORJIT_SKIPPED,
-        FatalJitErrorCode.LoongArch64SIMDIsUnavailableForThisConfiguration
-    );
-            return;
-        }
-
-        NYI("unimplemented on LOONGARCH64 yet");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LoongArch64SIMDUpperLaneSavingIsNotPorted);
-        return;
-    }
-
-    public void genSimdUpperRestoreLoongArch64(GenTreeIntrinsic node)
-    {
-        if (!Configuration.TARGET_LOONGARCH64 || !Configuration.FEATURE_SIMD)
-        {
-            FatalJitException.ThrowFatalJitException(
-        CORJIT_SKIPPED,
-        FatalJitErrorCode.LoongArch64SIMDIsUnavailableForThisConfiguration
-    );
-            return;
-        }
-
-        NYI("unimplemented on LOONGARCH64 yet");
-        FatalJitException.ThrowFatalJitException(
-        CORJIT_SKIPPED,
-        FatalJitErrorCode.LoongArch64SIMDUpperLaneRestorationIsNotPorted
-    );
-        return;
-    }
 }

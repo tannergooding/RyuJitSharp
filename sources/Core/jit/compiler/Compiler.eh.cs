@@ -171,17 +171,6 @@ public partial class Compiler
         return HBtab.HasCatchHandler && HBtab.InHndRegionBBRange(blk);
     }
 
-    public bool bbInCatchHandlerILRange(BasicBlock blk)
-    {
-        ref var HBtab = ref ehGetBlockHndDsc(blk);
-
-        if (Unsafe.IsNullRef(in HBtab))
-        {
-            return false;
-        }
-        return HBtab.HasCatchHandler && HBtab.InHndRegionILRange(blk);
-    }
-
     /// <summary>Given a hndBlk, see if it is in one of tryBlk's catch handler regions.</summary>
     /// <param name="tryBlk"></param>
     /// <param name="hndBlk"></param>
@@ -672,34 +661,6 @@ public partial class Compiler
 
         assert(mostNestedRegion <= compHndBBtabCount);
         return mostNestedRegion;
-    }
-
-    public ref EHblkDsc ehInitHndBlockRange(BasicBlock blk, out BasicBlock? hndBeg, out BasicBlock? hndLast, out bool inFilter)
-    {
-        ref var hndTab = ref ehGetBlockHndDsc(blk);
-
-        if (!Unsafe.IsNullRef(in hndTab))
-        {
-            if (hndTab.InFilterRegionBBRange(blk))
-            {
-                hndBeg = hndTab.ebdFilter;
-                hndLast = hndTab.BBFilterLast;
-                inFilter = true;
-            }
-            else
-            {
-                hndBeg = hndTab.ebdHndBeg;
-                hndLast = hndTab.ebdHndLast;
-                inFilter = false;
-            }
-        }
-        else
-        {
-            hndBeg = null;
-            hndLast = null;
-            inFilter = false;
-        }
-        return ref hndTab;
     }
 
     public ref EHblkDsc ehInitHndRange(BasicBlock blk, out IL_OFFSET hndBeg, out IL_OFFSET hndEnd, out bool inFilter)

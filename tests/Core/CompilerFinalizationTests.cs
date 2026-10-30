@@ -171,22 +171,6 @@ internal static unsafe class CompilerFinalizationTests
         });
     }
 
-    [Test]
-    public static void TrackedVariableSetIsDebugOnlySidecarState()
-    {
-        WithCompiler(compiler => {
-            if (TestConfiguration.IsDebug)
-            {
-                compiler.SetLocalTrackedVars([]);
-                Assert.That(compiler.GetLocalTrackedVars(), Is.Empty);
-            }
-            else
-            {
-                _ = Assert.Throws<InvalidOperationException>(() => compiler.GetLocalTrackedVars());
-            }
-        });
-    }
-
     [TestCase(false)]
     [TestCase(true)]
     [UnconditionalSuppressMessage("Trimming", "IL2070",
@@ -324,7 +308,6 @@ internal static unsafe class CompilerFinalizationTests
     {
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
-            compiler.SetLocalTrackedVars([]);
             TestConfiguration.SetVerbose(compiler, true);
             TestConfiguration.SetVerboseTrees(compiler, true);
             TestConfiguration.SetVerboseSsa(compiler, true);

@@ -23,14 +23,12 @@ internal static class FuncInfoDscMetadataTests
         var descriptor = new FuncInfoDsc
         {
             funKind = kind,
-            funFlags = 0xA5,
             funEHIndex = ushort.MaxValue,
         };
 
         Assert.That(descriptor.IsFunclet(), Is.EqualTo(isFunclet));
         Assert.That(descriptor.IsMethod(), Is.EqualTo(isMethod));
         Assert.That(descriptor.funKind, Is.EqualTo(kind));
-        Assert.That(descriptor.funFlags, Is.EqualTo(0xA5));
         Assert.That(descriptor.funEHIndex, Is.EqualTo(ushort.MaxValue));
     }
 

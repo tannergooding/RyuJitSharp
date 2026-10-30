@@ -351,9 +351,6 @@ public partial class Compiler
 
     public InlineArrayMemoryKindCount<NodeToUnsignedMap?> _memorySsaMap;
 
-    // The Refany type is the only struct type whose structure is implicitly assumed by IL.  We need its fields.
-    public unsafe CORINFO_CLASS_HANDLE _refAnyClass;
-
     public static BitSetSupport.BitSetOpCounter? _varsetOpCounter =>
         MeasurementData.VarSetOperationCounts.Counter;
 
@@ -874,8 +871,6 @@ public partial class Compiler
 
     public regMask SRBM_INT_CALLEE_TRASH =>
         Configuration.TARGET_AMD64 ? srbmIntCalleeTrash : Globals.SRBM_INT_CALLEE_TRASH;
-
-    public int REG_INT_COUNT => unchecked((int)(REG_INT_LAST - TargetRuntimeMetadata.IntegerRegisterFirst + 1));
 
     public regNumber REG_INT_LAST =>
         Configuration.TARGET_AMD64 ? regIntLast : TargetRuntimeMetadata.IntegerRegisterLast;
@@ -2363,19 +2358,6 @@ public partial class Compiler
         {
             jitprintf($"[{tree.TreeId:D6}]");
         }
-    }
-
-    /// <summary>Use to determine if a struct *might* be a simd type. As this function only takes a size, many structs will fit the criteria.</summary>
-    /// <param name="structSize"></param>
-    /// <returns></returns>
-    public bool structSizeMightRepresentSimdType(nint structSize)
-    {
-        if (!Configuration.FEATURE_SIMD)
-        {
-            return false;
-        }
-
-        return (structSize >= GetMinVectorByteLength()) && (structSize <= GetMaxVectorByteLength());
     }
 
     public bool IsTargetAbi(CORINFO_RUNTIME_ABI abi)

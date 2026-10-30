@@ -81,8 +81,8 @@ internal static class FuncletCreationTests
                 Assert.That(compiler.funCurrentFunc().GetStartBlock(compiler), Is.SameAs(block));
             }
             ref var descriptor = ref compiler.funGetFunc(3);
-            descriptor.funFlags = 7;
-            Assert.That(compiler.compFuncInfos[3].funFlags, Is.EqualTo(7));
+            descriptor.funEHIndex = 7;
+            Assert.That(compiler.compFuncInfos[3].funEHIndex, Is.EqualTo(7));
         });
     }
 

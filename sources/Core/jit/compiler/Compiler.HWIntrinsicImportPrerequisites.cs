@@ -76,10 +76,7 @@ public partial class Compiler
         public readonly var_types GetOp3Type() => op3JitType.VarType;
         public readonly var_types GetOp4Type() => op4JitType.VarType;
 
-        public readonly var_types GetOp1TypeAsPrecise() => op1JitType.PreciseVarType;
         public readonly var_types GetOp2TypeAsPrecise() => op2JitType.PreciseVarType;
-        public readonly var_types GetOp3TypeAsPrecise() => op3JitType.PreciseVarType;
-        public readonly var_types GetOp4TypeAsPrecise() => op4JitType.PreciseVarType;
     }
 
     private void getHWIntrinsicImmOps(

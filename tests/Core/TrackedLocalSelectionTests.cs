@@ -166,7 +166,7 @@ internal static unsafe class TrackedLocalSelectionTests
     [TestCase(64)]
     [TestCase(65)]
     [TestCase(129)]
-    public static void SelectionUpdatesEpochWordCountAndCompleteDebugTrackedSet(int count)
+    public static void SelectionUpdatesEpochAndTrackedWordCount(int count)
     {
         WithCompiler(count, compiler => {
             compiler.lvaCurEpoch = int.MaxValue;
@@ -190,19 +190,6 @@ internal static unsafe class TrackedLocalSelectionTests
             var full = BitSetOps<Compiler, TrackedVarBitSetTraits>.MakeFull(compiler);
             Assert.That(BitSetOps<Compiler, TrackedVarBitSetTraits>.Count(compiler, full), Is.EqualTo((nint)count));
             Assert.That(BitSetOps<Compiler, TrackedVarBitSetTraits>.IsMember(compiler, full, count - 1), Is.True);
-            if (TestConfiguration.IsDebug)
-            {
-                var trackedVars = compiler.GetLocalTrackedVars();
-                Assert.That(trackedVars.Length, Is.EqualTo((count + 63) / 64));
-                for (var index = 0; index < count; index++)
-                {
-                    Assert.That((trackedVars[index / 64] & ((nint)1 << (index % 64))) != 0, Is.True);
-                }
-                if ((count % 64) != 0)
-                {
-                    Assert.That(trackedVars[^1] >>> (count % 64), Is.EqualTo((nint)0));
-                }
-            }
         });
     }
 
@@ -222,10 +209,6 @@ internal static unsafe class TrackedLocalSelectionTests
             Assert.That(compiler.lvaTrackedCountInSizeTUnits, Is.Zero);
             Assert.That(compiler.lvaCurEpoch, Is.EqualTo(21));
             Assert.That(compiler.lvaTrackedToVarNum, Is.SameAs(previousMapping));
-            if (TestConfiguration.IsDebug)
-            {
-                Assert.That(compiler.GetLocalTrackedVars(), Is.Empty);
-            }
         });
     }
 

@@ -8916,26 +8916,6 @@ public partial class Compiler
         return new GenTreePhysReg(reg, type);
     }
 
-    public GenTreeConditional gtNewConditionalNode(
-        genTreeOps oper,
-        GenTree cond,
-        GenTree op1,
-        GenTree op2,
-        var_types type)
-    {
-        assert(oper.IsConditional);
-        var node = new GenTreeConditional(oper, type, cond, op1, op2);
-        node.Flags |= cond.Flags & GTF_ALL_EFFECT;
-        node.Flags |= op1.Flags & GTF_ALL_EFFECT;
-        node.Flags |= op2.Flags & GTF_ALL_EFFECT;
-        return node;
-    }
-
-    public GenTreeFieldList gtNewFieldList()
-    {
-        return new GenTreeFieldList();
-    }
-
     public GenTreeIntCon gtNewIconNode(var_types type, nint value)
     {
         return new GenTreeIntCon(type, value);

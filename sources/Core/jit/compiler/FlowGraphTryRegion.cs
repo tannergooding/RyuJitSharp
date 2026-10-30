@@ -54,20 +54,7 @@ public sealed class FlowGraphTryRegion
 
     public bool RequiresRuntimeResumption() => _requiresRuntimeResumption;
 
-    public BasicBlock GetHeaderBlock() => EhDsc.ebdTryBeg;
-
     public bool CanEnumerateInReversePostOrder() => _regions.GetDfsTree() is not null;
-
-    public FlowGraphTryRegion? EnclosingRegion()
-    {
-        var ancestor = _parent;
-        while ((ancestor is not null) && IsMutualProtectWith(ancestor))
-        {
-            ancestor = ancestor._parent;
-        }
-
-        return ancestor;
-    }
 
     // Unlike loops, try regions enumerate their regular block bit vector directly.
     public BasicBlockVisit VisitTryRegionBlocksReversePostOrder(Func<BasicBlock, BasicBlockVisit> func)

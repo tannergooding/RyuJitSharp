@@ -113,37 +113,11 @@ internal static class IRVerificationTests
     }
 
     [Test]
-    public static void ConditionalFactoryPreservesOperandsAndEffects()
+    public static void FieldListConstructorCreatesContainedStructNodes()
     {
-        SsaLivenessTests.WithCompiler(0, compiler => {
-            var condition = compiler.gtNewIconNode(TYP_INT, 1);
-            var trueValue = compiler.gtNewIconNode(TYP_INT, 2);
-            var falseValue = compiler.gtNewIconNode(TYP_INT, 3);
-            condition.Flags |= GTF_EXCEPT;
-            trueValue.Flags |= GTF_ASG;
-            falseValue.Flags |= GTF_CALL;
-
-            var node = compiler.gtNewConditionalNode(GT_SELECT, condition, trueValue, falseValue, TYP_INT);
-
-            Assert.That(node.Oper, Is.EqualTo(GT_SELECT));
-            Assert.That(node.Type, Is.EqualTo(TYP_INT));
-            Assert.That(node.Cond, Is.SameAs(condition));
-            Assert.That(node.Op1, Is.SameAs(trueValue));
-            Assert.That(node.Op2, Is.SameAs(falseValue));
-            Assert.That(node.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EXCEPT | GTF_ASG | GTF_CALL));
-
-            Assert.That(
-                () => compiler.gtNewConditionalNode(GT_ADD, condition, trueValue, falseValue, TYP_INT),
-                Throws.Exception);
-        });
-    }
-
-    [Test]
-    public static void FieldListFactoryCreatesContainedStructNodes()
-    {
-        SsaLivenessTests.WithCompiler(0, compiler => {
-            var first = compiler.gtNewFieldList();
-            var second = compiler.gtNewFieldList();
+        SsaLivenessTests.WithCompiler(0, _ => {
+            var first = new GenTreeFieldList();
+            var second = new GenTreeFieldList();
 
             Assert.That(first.Oper, Is.EqualTo(GT_FIELD_LIST));
             Assert.That(first.Type, Is.EqualTo(TYP_STRUCT));

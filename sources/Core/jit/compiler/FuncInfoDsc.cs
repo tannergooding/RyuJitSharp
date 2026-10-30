@@ -8,7 +8,6 @@ namespace RyuJitSharp;
 public partial struct FuncInfoDsc
 {
     public FuncKind funKind;
-    public byte funFlags;
     public ushort funEHIndex;
 
     public regNumber funStackPointerReg;
