@@ -32,9 +32,17 @@ internal static class Program
         "P0", "P1", "P2", "P3", "P4", "P5", "P6", "P7",
         "P8", "P9", "P10", "P11", "P12", "P13", "P14", "P15",
         "K0", "K1", "K2", "K3", "K4", "K5", "K6", "K7",
+        "V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7",
+        "V8", "V9", "V10", "V11", "V12", "V13", "V14", "V15",
+        "V16", "V17", "V18", "V19", "V20", "V21", "V22", "V23",
+        "V24", "V25", "V26", "V27", "V28", "V29", "V30", "V31",
+        "PR", "ZR", "FFR",
         "R16", "R17", "R18", "R19", "R20", "R21", "R22", "R23",
         "R24", "R25", "R26", "R27", "R28", "R29", "R30", "R31",
-        "S1",
+        "S0", "S1", "S2", "S3", "S4", "S5", "S6", "S7",
+        "S8", "S9", "S10", "S11",
+        "T2", "T3", "T4", "T5", "T6", "T7", "T8",
+        "X0", "TP", "GP", "ZERO", "STK", "SP",
     ];
 
     private static readonly (string Target, string Identity, string InputFile)[] s_registerTargetHeaders = [
