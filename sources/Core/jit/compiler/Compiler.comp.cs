@@ -3002,7 +3002,8 @@ public partial class Compiler
             {
                 if (verbose)
                 {
-                    jitprintf($"\n\n*** JitStress: {DebugData.CompStressData.ModeNames[stressAreaIndex]} ***\n\n");
+                    var stressModeName = Encoding.ASCII.GetString(DebugData.CompStressData.ModeNamesUtf8[stressAreaIndex]);
+                    jitprintf($"\n\n*** JitStress: {stressModeName} ***\n\n");
                 }
             }
 
@@ -3025,7 +3026,7 @@ public partial class Compiler
 
         if (result == 0)
         {
-            result = unchecked((uint)HashString(DebugData.CompStressData.ModeNames[(int)area]));
+            result = HashStressModeName(DebugData.CompStressData.ModeNamesUtf8[(int)area]);
 
             if (result == 0)
             {
@@ -3036,6 +3037,18 @@ public partial class Compiler
         }
 
         return result;
+    }
+
+    private static uint HashStressModeName(ReadOnlySpan<byte> stressModeName)
+    {
+        var hash = 5381;
+
+        foreach (var value in stressModeName)
+        {
+            hash = unchecked(((hash << 5) + hash) ^ value);
+        }
+
+        return unchecked((uint)hash);
     }
 
     private static unsafe bool StressModeNamesContain(byte* names, ReadOnlySpan<byte> stressModeName)

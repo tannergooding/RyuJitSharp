@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 
 namespace RyuJitSharp;
@@ -235,9 +234,63 @@ public partial class Compiler
 
         internal static class CompStressData
         {
-            internal static readonly string[] ModeNames = Enum.GetNames<compStressArea>();
             internal static readonly int[] AreaHashes = new int[(int)STRESS_COUNT];
-            internal static readonly byte[][] ModeNamesUtf8 = Array.ConvertAll(ModeNames, static name => Encoding.ASCII.GetBytes(name));
+            internal static readonly byte[][] ModeNamesUtf8 =
+            [
+                "STRESS_NONE"u8.ToArray(),
+                "STRESS_REGS"u8.ToArray(),
+                "STRESS_DBL_ALN"u8.ToArray(),
+                "STRESS_LCL_FLDS"u8.ToArray(),
+                "STRESS_UNROLL_LOOPS"u8.ToArray(),
+                "STRESS_MAKE_CSE"u8.ToArray(),
+                "STRESS_LEGACY_INLINE"u8.ToArray(),
+                "STRESS_CLONE_EXPR"u8.ToArray(),
+                "STRESS_FOLD"u8.ToArray(),
+                "STRESS_MERGED_RETURNS"u8.ToArray(),
+                "STRESS_BB_PROFILE"u8.ToArray(),
+                "STRESS_OPT_BOOLS_GC"u8.ToArray(),
+                "STRESS_OPT_BOOLS_COMPARE_CHAIN_COST"u8.ToArray(),
+                "STRESS_REMORPH_TREES"u8.ToArray(),
+                "STRESS_64RSLT_MUL"u8.ToArray(),
+                "STRESS_DO_WHILE_LOOPS"u8.ToArray(),
+                "STRESS_MIN_OPTS"u8.ToArray(),
+                "STRESS_REVERSE_FLAG"u8.ToArray(),
+                "STRESS_TAILCALL"u8.ToArray(),
+                "STRESS_CATCH_ARG"u8.ToArray(),
+                "STRESS_UNSAFE_BUFFER_CHECKS"u8.ToArray(),
+                "STRESS_NULL_OBJECT_CHECK"u8.ToArray(),
+                "STRESS_RANDOM_INLINE"u8.ToArray(),
+                "STRESS_ASYNC_INLINE"u8.ToArray(),
+                "STRESS_SWITCH_CMP_BR_EXPANSION"u8.ToArray(),
+                "STRESS_GENERIC_VARN"u8.ToArray(),
+                "STRESS_PROFILER_CALLBACKS"u8.ToArray(),
+                "STRESS_BYREF_PROMOTION"u8.ToArray(),
+                "STRESS_PROMOTE_FEWER_STRUCTS"u8.ToArray(),
+                "STRESS_VN_BUDGET"u8.ToArray(),
+                "STRESS_SSA_INFO"u8.ToArray(),
+                "STRESS_SPLIT_TREES_RANDOMLY"u8.ToArray(),
+                "STRESS_SPLIT_TREES_REMOVE_COMMAS"u8.ToArray(),
+                "STRESS_NO_OLD_PROMOTION"u8.ToArray(),
+                "STRESS_PHYSICAL_PROMOTION"u8.ToArray(),
+                "STRESS_PHYSICAL_PROMOTION_COST"u8.ToArray(),
+                "STRESS_UNWIND"u8.ToArray(),
+                "STRESS_OPT_REPEAT"u8.ToArray(),
+                "STRESS_INITIAL_PARAM_REG"u8.ToArray(),
+                "STRESS_DOWNWARDS_COUNTED_LOOPS"u8.ToArray(),
+                "STRESS_STRENGTH_REDUCTION"u8.ToArray(),
+                "STRESS_STRENGTH_REDUCTION_PROFITABILITY"u8.ToArray(),
+                "STRESS_COUNT_VARN"u8.ToArray(),
+                "STRESS_FORCE_INLINE"u8.ToArray(),
+                "STRESS_EMITTER"u8.ToArray(),
+                "STRESS_CHK_REIMPORT"u8.ToArray(),
+                "STRESS_GENERIC_CHECK"u8.ToArray(),
+                "STRESS_IF_CONVERSION_COST"u8.ToArray(),
+                "STRESS_IF_CONVERSION_INNER_LOOPS"u8.ToArray(),
+                "STRESS_POISON_IMPLICIT_BYREFS"u8.ToArray(),
+                "STRESS_THREE_OPT_LAYOUT"u8.ToArray(),
+                "STRESS_GET_RANGE"u8.ToArray(),
+                "STRESS_COUNT"u8.ToArray(),
+            ];
         }
 
         internal static class RichDebugInfoFileData
