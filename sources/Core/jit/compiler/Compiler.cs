@@ -2113,7 +2113,7 @@ public partial class Compiler
 
     public unsafe bool IsHwSimdClass(CORINFO_CLASS_HANDLE clsHnd)
     {
-        if (Configuration.FEATURE_HW_INTRINSICS && isIntrinsicType(clsHnd))
+        if (Configuration.FEATURE_HW_INTRINSICS && eeIsIntrinsicType(clsHnd))
         {
             _ = getClassNameFromMetadata(clsHnd, out var namespaceName);
             return namespaceName.Equals("System.Runtime.Intrinsics", StringComparison.Ordinal);
@@ -2143,7 +2143,7 @@ public partial class Compiler
     /// <returns>true if the given struct type should be treated as a primitive for unmanaged calls, false otherwise.</returns>
     public unsafe bool isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
     {
-        if (!isIntrinsicType(clsHnd))
+        if (!eeIsIntrinsicType(clsHnd))
         {
             return false;
         }
@@ -2161,7 +2161,7 @@ public partial class Compiler
 
     public unsafe bool IsSimdClass(CORINFO_CLASS_HANDLE clsHnd)
     {
-        if (isIntrinsicType(clsHnd))
+        if (eeIsIntrinsicType(clsHnd))
         {
             _ = getClassNameFromMetadata(clsHnd, out var namespaceName);
             return namespaceName.Equals("System.Numerics", StringComparison.Ordinal);
@@ -2176,7 +2176,7 @@ public partial class Compiler
 
     public unsafe bool isSpanClass(CORINFO_CLASS_HANDLE clsHnd)
     {
-        if (isIntrinsicType(clsHnd))
+        if (eeIsIntrinsicType(clsHnd))
         {
             var className = getClassNameFromMetadata(clsHnd, out var namespaceName);
             return namespaceName.Equals("System", StringComparison.Ordinal) &&
@@ -2239,7 +2239,7 @@ public partial class Compiler
 
     public unsafe bool IsSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
     {
-        if (isIntrinsicType(clsHnd))
+        if (eeIsIntrinsicType(clsHnd))
         {
             var className = getClassNameFromMetadata(clsHnd, out var namespaceName);
             return className.Equals("Half", StringComparison.Ordinal) && namespaceName.Equals("System", StringComparison.Ordinal);
@@ -2720,7 +2720,7 @@ public partial class Compiler
             return TYP_UNDEF;
         }
 
-        if ((typeHnd is null) || !isIntrinsicType(typeHnd))
+        if ((typeHnd is null) || !eeIsIntrinsicType(typeHnd))
         {
             return TYP_UNDEF;
         }
@@ -3122,9 +3122,6 @@ public partial class Compiler
 
         return threshold;
     }
-
-    private unsafe bool isIntrinsicType(CORINFO_CLASS_HANDLE clsHnd)
-        => info.compCompHnd->isIntrinsicType(clsHnd);
 
     private unsafe bool notifyInstructionSetUsage(ManagedInstructionSet isa, bool supported, bool preserveNegativeDependency = false)
     {

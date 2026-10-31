@@ -112,7 +112,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls) => lpVtbl->Base.Base.asCorInfoType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public byte* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, byte** namespaceName) => lpVtbl->Base.Base.getClassNameFromMetadata((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, namespaceName);
+    public byte* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, byte** namespaceName) => Compiler.eeGetClassNameFromMetadataFromJitInfo(ref this, JitTls.Compiler, cls, namespaceName);
 
     public CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, int index) => lpVtbl->Base.Base.getTypeInstantiationArgument((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, index);
 

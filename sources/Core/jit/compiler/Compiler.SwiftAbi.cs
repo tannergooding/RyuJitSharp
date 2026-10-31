@@ -42,7 +42,7 @@ public partial class Compiler
             type = eeGetChildType(clsHnd, &typeHnd);
         }
 
-        if ((type is not CORINFO_TYPE_VALUECLASS) || !info.compCompHnd->isIntrinsicType(typeHnd))
+        if ((type is not CORINFO_TYPE_VALUECLASS) || !eeIsIntrinsicType(typeHnd))
         {
             return false;
         }

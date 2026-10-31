@@ -21,7 +21,7 @@ public partial class Compiler
             return;
         }
 
-        if (info.compCompHnd->isIntrinsicType(awaiterArgument.SignatureClassHandle))
+        if (eeIsIntrinsicType(awaiterArgument.SignatureClassHandle))
         {
             // Nested YieldAwaiter may have no reported namespace; intrinsic type identity is sufficient.
             var className = info.compCompHnd->getClassNameFromMetadata(awaiterArgument.SignatureClassHandle, null);

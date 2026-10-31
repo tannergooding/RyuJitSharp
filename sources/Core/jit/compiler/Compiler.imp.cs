@@ -11474,7 +11474,7 @@ public partial class Compiler
                         retCls = sig.retTypeClass;
                     }
 
-                    if ((retCls != NO_CLASS_HANDLE) && compiler.info.compCompHnd->isIntrinsicType(retCls))
+                    if ((retCls != NO_CLASS_HANDLE) && compiler.eeIsIntrinsicType(retCls))
                     {
                         byte* pNamespaceName;
                         var pClassName = compiler.info.compCompHnd->getClassNameFromMetadata(retCls, &pNamespaceName);

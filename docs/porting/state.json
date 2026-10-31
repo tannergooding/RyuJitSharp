@@ -13,14 +13,14 @@
     "nextAction": "Revisit the unresolved dynamic TLS input-ownership boundary only when the EE allocation sequence is reproducible; preserve process-order-sensitive differences without normalization or changing compiler constants. The exact f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d x64 corpus capture covers 23 methods with matching value-numbering, assertion-propagation, index-check, and redundant-branch phases; D015 remains accepted and this does not establish full runtime parity. Wasm GC-info emission remains unverified because the managed encoder is AMD64-only. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
-      "E03: Keep isIntrinsicType, primitive mappings, and nullable/enum predicates direct pending type-set stability, repeated-handle evidence, and tri-state/output semantics.",
-      "E05: Keep getMethodSig direct while CORINFO_SIG_INFO contains EE-owned pointers with undocumented buffer stability; preserve memberParent context.",
+      "E03: isIntrinsicType now uses a per-Compiler last-handle boolean cache; the pinned repeated-handle profile is under artifacts\\e03-isintrinsictype. Keep primitive mappings and nullable/enum predicates direct pending repeated-handle evidence and complete output/tri-state semantics.",
+      "E05: Keep getMethodSig direct; a per-Compiler last-result prototype keyed by method and memberParent reduced calls 63 to 51 but was rejected because copied CORINFO_SIG_INFO retains EE-owned args and instantiation pointers without a general lifetime contract. Preserve memberParent context.",
       "E08: Keep eePrintType diagnostic recursion and explicit SuperPMI child-type probes direct to preserve fallback and capture behavior.",
-      "E10: Keep arbitrary-format eePrintType/eePrintMethod and raw assembly-name queries direct.",
-      "E11: Keep helper queries with optional method-handle outputs and explicit SuperPMI queries direct.",
+      "E10: getClassNameFromMetadata uses a per-Compiler last-handle cache keyed by class and namespace-output shape; the pinned MethodTable name pointers live with the MethodTable. Keep arbitrary-format eePrintType/eePrintMethod and raw assembly-name queries direct.",
+      "E11: Keep getHelperFtn calls with optional method-handle outputs and explicit SuperPMI queries direct; the method-only one-entry prototype saved no calls (18 baseline and candidate) and adds NativeAOT state, while native helper lookups may observe code-version/precode state. compGetHelperFtn retains its matched-VM cache.",
       "E12: Keep GetImmutableDataFromAddress byte-array sharing and static-field contents direct until ownership and mutability are closed.",
-      "E13: Keep address-alignment and relocation-hint queries direct until same-address reuse is measured and matched-VM stability is established.",
-      "E14: Keep method-attribute queries direct until setMethodAttribs invalidation is shared across compiler contexts; inlinee Compilers are fresh instances sharing the EE interface.",
+      "E13: A per-Compiler last-target getRelocTypeHint prototype reduced pinned Release calls 76 to 46, but no material timing win was established (the baseline API total rounded to 0.0 ms); the prototype was not retained. Keep getRelocTypeHint direct, and keep getAddressAlignment direct until a matched profile shows repeated addresses. Evidence: artifacts\\inventory-followup\\e11-baseline-profile and e13-candidate-profile.",
+      "E14: A per-Compiler last-result cache with shared setMethodAttribs epoch invalidation had zero hits across 800 Release method-handle queries. Keep direct; reopen only with workload evidence of repeated handles. Debug still re-queries to observe DONT_INLINE changes.",
       "E15: Keep contextual resolution, access, and loader-sensitive operations outside the initial cache wave."
     ],
     "dynamicTlsInputBoundary": {

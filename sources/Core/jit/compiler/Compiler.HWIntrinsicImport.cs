@@ -177,7 +177,7 @@ public partial class Compiler
             CORINFO_CLASS_HANDLE classHnd;
             var fieldHandle = eeGetFieldInClass(argClass, 0);
             _ = eeGetFieldCorInfoType(fieldHandle, &classHnd);
-            assert(isIntrinsicType(classHnd));
+            assert(eeIsIntrinsicType(classHnd));
             simdBaseType = getBaseTypeAndSizeOfSimdType(classHnd, out var sizeBytes);
             simdSize = checked((byte)sizeBytes);
             assert(simdSize > 0);
