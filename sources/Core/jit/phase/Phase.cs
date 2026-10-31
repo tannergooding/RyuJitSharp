@@ -30,20 +30,37 @@ public abstract partial class Phase
         observations.Check(status);
     }
 
+    internal static void Run<TAction>(Compiler compiler, Phases phase, TAction action)
+        where TAction : struct, ICompilerPhaseAction
+    {
+        // The delegate-backed CompilerPhase wrappers use the base lifecycle hooks.
+        var phaseName = phase.Name;
+        var observations = new Observations(compiler);
+
+        PrePhaseCore(compiler, phase, phaseName);
+        var status = action.Invoke(compiler);
+        PostPhaseCore(compiler, phase, phaseName, status);
+        observations.Check(status);
+    }
+
     protected abstract PhaseStatus DoPhase();
 
     /// <summary>perform dumps and checks after a phase executes</summary>
     /// <param name="status">status from the DoPhase call for this phase</param>
     protected virtual void PostPhase(PhaseStatus status)
     {
-        var compiler = _compiler;
-        compiler.EndPhase(_phase);
+        PostPhaseCore(_compiler, _phase, _name, status);
+    }
+
+    private static void PostPhaseCore(Compiler compiler, Phases phase, string name, PhaseStatus status)
+    {
+        compiler.EndPhase(phase);
 
         if (Configuration.DEBUG)
         {
             if (Configuration.DUMP_FLOWGRAPHS)
             {
-                _ = compiler.fgDumpFlowGraph(_phase, Compiler.PhasePosition.PostPhase);
+                _ = compiler.fgDumpFlowGraph(phase, Compiler.PhasePosition.PostPhase);
             }
 
             // Don't dump or check post phase unless the phase made changes.
@@ -58,23 +75,23 @@ public abstract partial class Phase
                 if (compiler.compIsForInlining)
                 {
                     assert(compiler.impInlineInfo.iciCall is not null);
-                    jitprintf($"\n*************** Inline @[{compiler.impInlineInfo.iciCall.TreeId:D6}] Finishing PHASE {_name}{statusMessage}\n");
+                    jitprintf($"\n*************** Inline @[{compiler.impInlineInfo.iciCall.TreeId:D6}] Finishing PHASE {name}{statusMessage}\n");
                 }
                 else
                 {
                     if (compiler.opts.optRepeatActive)
                     {
-                        jitprintf($"\n*************** Finishing PHASE {_name}{statusMessage} (OptRepeat iteration {compiler.opts.optRepeatIteration} of {compiler.opts.optRepeatCount})\n");
+                        jitprintf($"\n*************** Finishing PHASE {name}{statusMessage} (OptRepeat iteration {compiler.opts.optRepeatIteration} of {compiler.opts.optRepeatCount})\n");
                     }
                     else
                     {
-                        jitprintf($"\n*************** Finishing PHASE {_name}{statusMessage}\n");
+                        jitprintf($"\n*************** Finishing PHASE {name}{statusMessage}\n");
                     }
                 }
 
                 if (doPostPhase && doPostPhaseDumps)
                 {
-                    jitprintf($"Trees after {_name}\n");
+                    jitprintf($"Trees after {name}\n");
                     compiler.fgDispBasicBlocks(true);
                 }
             }
@@ -105,7 +122,7 @@ public abstract partial class Phase
                     var extraFlagsBefore = compiler.Metrics.IRExtraFlags;
                     compiler.fgDebugCheckLinks();
                     var extraFlags = compiler.Metrics.IRExtraFlags - extraFlagsBefore;
-                    JITDUMP($"IR flag check found {extraFlags} extra flags after {_name}\n");
+                    JITDUMP($"IR flag check found {extraFlags} extra flags after {name}\n");
                 }
 
                 if ((checks & PhaseChecks.CHECK_EH) != 0)
@@ -136,32 +153,36 @@ public abstract partial class Phase
     /// <summary>perform dumps and checks before a phase executes</summary>
     protected virtual void PrePhase()
     {
-        var compiler = _compiler;
-        compiler.BeginPhase(_phase);
+        PrePhaseCore(_compiler, _phase, _name);
+    }
+
+    private static void PrePhaseCore(Compiler compiler, Phases phase, string name)
+    {
+        compiler.BeginPhase(phase);
 
         if (Configuration.DEBUG && VERBOSE)
         {
             if (compiler.compIsForInlining)
             {
                 assert(compiler.impInlineInfo.iciCall is not null);
-                jitprintf($"\n*************** Inline @[{compiler.impInlineInfo.iciCall.TreeId:D6}] Starting PHASE {_name}\n");
+                jitprintf($"\n*************** Inline @[{compiler.impInlineInfo.iciCall.TreeId:D6}] Starting PHASE {name}\n");
             }
             else
             {
                 if (compiler.opts.optRepeatActive)
                 {
-                    jitprintf($"\n*************** Starting PHASE {_name} (OptRepeat iteration {compiler.opts.optRepeatIteration} of {compiler.opts.optRepeatCount})\n");
+                    jitprintf($"\n*************** Starting PHASE {name} (OptRepeat iteration {compiler.opts.optRepeatIteration} of {compiler.opts.optRepeatCount})\n");
                 }
                 else
                 {
-                    jitprintf($"\n*************** Starting PHASE {_name}\n");
+                    jitprintf($"\n*************** Starting PHASE {name}\n");
                 }
             }
         }
 
         if (Configuration.DUMP_FLOWGRAPHS)
         {
-            _ = compiler.fgDumpFlowGraph(_phase, Compiler.PhasePosition.PrePhase);
+            _ = compiler.fgDumpFlowGraph(phase, Compiler.PhasePosition.PrePhase);
         }
     }
 }

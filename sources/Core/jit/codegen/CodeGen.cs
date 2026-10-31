@@ -1063,6 +1063,54 @@ public sealed partial class CodeGen : ICodeGen
         return true;
     }
 
+    private readonly struct GenerateCodePhaseAction : ICompilerPhaseAction
+    {
+        private readonly CodeGen _codeGen;
+
+        public GenerateCodePhaseAction(CodeGen codeGen)
+        {
+            _codeGen = codeGen;
+        }
+
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            _codeGen.genGenerateMachineCodeForEntry();
+            return PhaseStatus.MODIFIED_EVERYTHING;
+        }
+    }
+
+    private readonly struct EmitCodePhaseAction : ICompilerPhaseAction
+    {
+        private readonly CodeGen _codeGen;
+
+        public EmitCodePhaseAction(CodeGen codeGen)
+        {
+            _codeGen = codeGen;
+        }
+
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            _codeGen.genEmitMachineCode();
+            return PhaseStatus.MODIFIED_EVERYTHING;
+        }
+    }
+
+    private readonly struct EmitGCAndEHPhaseAction : ICompilerPhaseAction
+    {
+        private readonly CodeGen _codeGen;
+
+        public EmitGCAndEHPhaseAction(CodeGen codeGen)
+        {
+            _codeGen = codeGen;
+        }
+
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            _codeGen.genEmitUnwindDebugGCandEH();
+            return PhaseStatus.MODIFIED_EVERYTHING;
+        }
+    }
+
     public unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode)
     {
         if (Configuration.LATE_DISASM)
@@ -1090,9 +1138,9 @@ public sealed partial class CodeGen : ICodeGen
         _nativeSizeOfCode = &generatedSize;
         try
         {
-            DoPhase(_compiler, PHASE_GENERATE_CODE, genGenerateMachineCodeForEntry);
-            DoPhase(_compiler, PHASE_EMIT_CODE, genEmitMachineCode);
-            DoPhase(_compiler, PHASE_EMIT_GCEH, genEmitUnwindDebugGCandEH);
+            DoPhase(_compiler, PHASE_GENERATE_CODE, new GenerateCodePhaseAction(this));
+            DoPhase(_compiler, PHASE_EMIT_CODE, new EmitCodePhaseAction(this));
+            DoPhase(_compiler, PHASE_EMIT_GCEH, new EmitGCAndEHPhaseAction(this));
 
             if (Configuration.DEBUG && Compiler.DebugData.Get(_compiler).CodeGenWriteBarrierUsed &&
                 (JitConfig.EnableExtraSuperPmiQueries != 0) && !_compiler.IsAot)

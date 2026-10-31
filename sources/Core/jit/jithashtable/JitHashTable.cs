@@ -47,9 +47,9 @@ internal sealed class JitHashTableBehavior : IJitHashTableBehavior
     public void NoMemory() => Globals.NOMEM();
 }
 
-internal abstract class JitKeyFuncsDefEquals<TKey> : IHashTableInfo<TKey>
+internal static class JitKeyFuncsDefEquals<TKey>
 {
-    public bool Equals(TKey x, TKey y)
+    public static bool Equals(TKey x, TKey y)
     {
         if (!typeof(TKey).IsValueType)
         {
@@ -68,13 +68,13 @@ internal abstract class JitKeyFuncsDefEquals<TKey> : IHashTableInfo<TKey>
 
         return EqualityComparer<TKey>.Default.Equals(x, y);
     }
-
-    public abstract uint GetHashCode(TKey key);
 }
 
-internal sealed class JitPtrKeyFuncs<TKey> : JitKeyFuncsDefEquals<TKey>
+internal readonly struct JitPtrKeyFuncs<TKey> : IHashTableInfo<TKey>
 {
-    public override uint GetHashCode(TKey key)
+    public bool Equals(TKey x, TKey y) => JitKeyFuncsDefEquals<TKey>.Equals(x, y);
+
+    public uint GetHashCode(TKey key)
     {
         if (typeof(TKey) == typeof(BasicBlock))
         {
@@ -107,7 +107,8 @@ internal sealed class JitPtrKeyFuncs<TKey> : JitKeyFuncsDefEquals<TKey>
     }
 }
 
-internal sealed class JitHashTable<TKey, TValue>
+internal sealed class JitHashTable<TKey, TValue, TKeyInfo>
+    where TKeyInfo : struct, IHashTableInfo<TKey>
 {
     internal sealed class Node
     {
@@ -181,16 +182,15 @@ internal sealed class JitHashTable<TKey, TValue>
         Overwrite,
     }
 
-    private readonly IHashTableInfo<TKey> _keyInfo;
+    private readonly TKeyInfo _keyInfo;
     private readonly IJitHashTableBehavior _behavior;
     private Node?[]? _table;
     private JitPrimeInfo _tableSizeInfo;
     private uint _tableCount;
     private uint _tableMax;
 
-    internal JitHashTable(IHashTableInfo<TKey> keyInfo, IJitHashTableBehavior? behavior = null)
+    internal JitHashTable(TKeyInfo keyInfo, IJitHashTableBehavior? behavior = null)
     {
-        ArgumentNullException.ThrowIfNull(keyInfo);
         _keyInfo = keyInfo;
         _behavior = behavior ?? new JitHashTableBehavior();
         _table = null;
@@ -482,7 +482,7 @@ internal sealed class JitHashTable<TKey, TValue>
         private Node? _node;
         private bool _started;
 
-        internal NodeIterator(JitHashTable<TKey, TValue> owner)
+        internal NodeIterator(JitHashTable<TKey, TValue, TKeyInfo> owner)
         {
             _table = owner._table;
             _tableSize = owner._tableSizeInfo.prime;

@@ -3194,6 +3194,783 @@ public partial class Compiler
         }
     }
 
+    private readonly struct PreImportPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            if (compiler.compIsForInlining)
+            {
+                // Notify root instance that an inline attempt is about to import IL
+                assert(compiler.impInlineRoot._inlineStrategy is not null);
+                compiler.impInlineRoot._inlineStrategy.NoteImport();
+            }
+
+            VarSetOps.AssignAllowUninitRhs(compiler, ref compiler.compCurLife, VarSetOps.UninitVal());
+            return PhaseStatus.MODIFIED_EVERYTHING;
+        }
+    }
+
+    private readonly struct PrepareToInstrumentPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgPrepareToInstrumentMethod();
+        }
+    }
+
+    private readonly struct IncorporateProfilePhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgIncorporateProfileData();
+        }
+    }
+
+    private readonly struct ImportPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgImport();
+        }
+    }
+
+    private readonly struct InstrumentMethodPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgInstrumentMethod();
+        }
+    }
+
+    private readonly struct TransformPatchpointsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgTransformPatchpoints();
+        }
+    }
+
+    private readonly struct TransformIndirectCallsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgTransformIndirectCalls();
+        }
+    }
+
+    private readonly struct PostImportationCleanupPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgPostImportationCleanup();
+        }
+    }
+
+    private readonly struct SaveAsyncContextsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.SaveAsyncContexts();
+        }
+    }
+
+    private readonly struct CanonicalizeFirstBBPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgCanonicalizeFirstBB();
+        }
+    }
+
+    private readonly struct EarlyQmarkExpansionPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            // The Action phase reports changes regardless of the expansion result.
+            _ = compiler.fgExpandQmarkNodes(early: true);
+            return PhaseStatus.MODIFIED_EVERYTHING;
+        }
+    }
+
+    private readonly struct HeadTailMergePhaseAction : ICompilerPhaseAction
+    {
+        private readonly bool _isFirstPass;
+
+        public HeadTailMergePhaseAction(bool isFirstPass)
+        {
+            _isFirstPass = isFirstPass;
+        }
+
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            _ = compiler.fgHeadTailMerge(_isFirstPass);
+            return PhaseStatus.MODIFIED_EVERYTHING;
+        }
+    }
+
+    private readonly struct PostMorphPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
+            compiler.fgMarkDemotedImplicitByRefArgs();
+            compiler.lvaRefCountState = RCS_INVALID;
+            compiler.fgLocalVarLivenessDone = false;
+            _ = compiler.fgExpandQmarkNodes(early: false);
+
+            if (Configuration.DEBUG)
+            {
+                compiler.compCurBB = null;
+            }
+
+            // Enable IR checks
+            compiler.activePhaseChecks |= PhaseChecks.CHECK_IR;
+            return PhaseStatus.MODIFIED_EVERYTHING;
+        }
+    }
+
+    private readonly struct AdjustThrowLikelihoodsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            // Native ActionPhase discards a functor's returned status.
+            _ = ProfileSynthesis.AdjustThrowEdgeLikelihoods(compiler);
+            return PhaseStatus.MODIFIED_EVERYTHING;
+        }
+    }
+
+    private readonly struct DfsBlocksPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgDfsBlocksAndRemove();
+        }
+    }
+
+    private readonly struct RemoveEmptyFinallyPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgRemoveEmptyFinally();
+        }
+    }
+
+    private readonly struct RemoveEmptyTryPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgRemoveEmptyTry();
+        }
+    }
+
+    private readonly struct RemoveEmptyTryCatchFaultPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgRemoveEmptyTryCatchOrTryFault();
+        }
+    }
+
+    private readonly struct RepairProfilePhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgRepairProfile();
+        }
+    }
+
+    private readonly struct UpdateFlowGraphPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgUpdateFlowGraphPhase();
+        }
+    }
+
+    private readonly struct MorphInitPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgMorphInit();
+        }
+    }
+
+    private readonly struct InlinePhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgInline();
+        }
+    }
+
+    private readonly struct PostInlineNoReturnCleanupPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgPostInlineNoReturnCleanup();
+        }
+    }
+
+    private readonly struct ResolveGDVsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgResolveGDVs();
+        }
+    }
+
+    private readonly struct AddInternalPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgAddInternal();
+        }
+    }
+
+    private readonly struct SwiftErrorReturnsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgAddSwiftErrorReturns();
+        }
+    }
+
+    private readonly struct PromoteStructsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgPromoteStructs();
+        }
+    }
+
+    private readonly struct LocalMorphPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgLocalMorph();
+        }
+    }
+
+    private readonly struct OptimizeMaskConversionsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgOptimizeMaskConversions();
+        }
+    }
+
+    private readonly struct EarlyLivenessPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgEarlyLiveness();
+        }
+    }
+
+    private readonly struct ForwardSubstitutionPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgForwardSub();
+        }
+    }
+
+    private readonly struct PhysicalPromotionPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.PhysicalPromotion();
+        }
+    }
+
+    private readonly struct UnpinNonMovableLocalsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgUnpinNonMovableLocals();
+        }
+    }
+
+    private readonly struct ImplicitByRefCopyOmissionPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgMarkImplicitByRefCopyOmissionCandidates();
+        }
+    }
+
+    private readonly struct RetypeImplicitByRefArgsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgRetypeImplicitByRefArgs();
+        }
+    }
+
+    private readonly struct MorphBlocksPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgMorphBlocks();
+        }
+    }
+
+    private readonly struct SsaBuildPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgSsaBuild();
+        }
+    }
+
+    private readonly struct EarlyPropPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optEarlyProp();
+        }
+    }
+
+    private readonly struct ValueNumberPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgValueNumber();
+        }
+    }
+
+    private readonly struct HoistLoopCodePhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optHoistLoopCode();
+        }
+    }
+
+    private readonly struct VnCopyPropPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optVnCopyProp();
+        }
+    }
+
+    private readonly struct RedundantBranchesPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optRedundantBranches();
+        }
+    }
+
+    private readonly struct OptimizeCSEsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            compiler.optOptimizeCSEs();
+            return PhaseStatus.MODIFIED_EVERYTHING;
+        }
+    }
+
+    private readonly struct BoundsCheckCoalescePhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optBoundsCheckCoalesce();
+        }
+    }
+
+    private readonly struct AssertionPropMainPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optAssertionPropMain();
+        }
+    }
+
+    private readonly struct RangeCheckPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.rangeCheckPhase();
+        }
+    }
+
+    private readonly struct InductionVariablesPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optInductionVariables();
+        }
+    }
+
+    private readonly struct VNBasedDeadStoreRemovalPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optVNBasedDeadStoreRemoval();
+        }
+    }
+
+    private readonly struct RangeCheckCloningPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optRangeCheckCloning();
+        }
+    }
+
+    private readonly struct VNBasedIntrinsicExpansionPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgVNBasedIntrinsicExpansion();
+        }
+    }
+
+    private readonly struct MergeFinallyChainsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgMergeFinallyChains();
+        }
+    }
+
+    private readonly struct CloneFinallyPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgCloneFinally();
+        }
+    }
+
+    private readonly struct ComputeBlockWeightsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgComputeBlockWeights();
+        }
+    }
+
+    private readonly struct OptimizeFlowPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optOptimizeFlow();
+        }
+    }
+
+    private readonly struct FindLoopsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optFindLoopsPhase();
+        }
+    }
+
+    private readonly struct InvertLoopsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optInvertLoops();
+        }
+    }
+
+    private readonly struct SetBlockWeightsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optSetBlockWeights();
+        }
+    }
+
+    private readonly struct CloneLoopsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optCloneLoops();
+        }
+    }
+
+    private readonly struct UnrollLoopsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optUnrollLoops();
+        }
+    }
+
+    private readonly struct ComputeDominatorsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgComputeDominators();
+        }
+    }
+
+    private readonly struct StressSplitTreePhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.StressSplitTree();
+        }
+    }
+
+    private readonly struct RemoveUnreachableTryPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgRemoveUnreachableTry();
+        }
+    }
+
+    private readonly struct CreateFuncletsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgCreateFunclets();
+        }
+    }
+
+    private readonly struct LateCastExpansionPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgLateCastExpansion();
+        }
+    }
+
+    private readonly struct ExpandRuntimeLookupsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgExpandRuntimeLookups();
+        }
+    }
+
+    private readonly struct ExpandStaticInitPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgExpandStaticInit();
+        }
+    }
+
+    private readonly struct ExpandThreadLocalAccessPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgExpandThreadLocalAccess();
+        }
+    }
+
+    private readonly struct ExpandStackArrayAllocationsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgExpandStackArrayAllocations();
+        }
+    }
+
+    private readonly struct InsertGCPollsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgInsertGCPolls();
+        }
+    }
+
+    private readonly struct MorphArrayPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgMorphArrayOps();
+        }
+    }
+
+    private readonly struct MarkLocalVarsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.lvaMarkLocalVars();
+        }
+    }
+
+    private readonly struct FindOperOrderPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgFindOperOrder();
+        }
+    }
+
+    private readonly struct SetBlockOrderPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgSetBlockOrder();
+        }
+    }
+
+    private readonly struct SwitchRecognitionPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optRecognizeAndOptimizeSwitchJumps();
+        }
+    }
+
+    private readonly struct OptimizeBoolsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optOptimizeBools();
+        }
+    }
+
+    private readonly struct IfConversionPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optIfConversion();
+        }
+    }
+
+    private readonly struct OptimizePreLayoutPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optOptimizePreLayout();
+        }
+    }
+
+    private readonly struct TransformAsyncPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.TransformAsync();
+        }
+    }
+
+    private readonly struct GSPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.gsPhase();
+        }
+    }
+
+    private readonly struct WasmEHFlowPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgWasmEhFlow();
+        }
+    }
+
+    private readonly struct WasmRepairTryEntriesPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgWasmRepairTryEntries();
+        }
+    }
+
+    private readonly struct WasmTransformSccsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgWasmTransformSccs();
+        }
+    }
+
+    private readonly struct LateLivenessPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgLateLiveness();
+        }
+    }
+
+    private readonly struct WasmVirtualIPPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgWasmVirtualIP();
+        }
+    }
+
+    private readonly struct WasmGCRefCandidatesPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgWasmFindGCRefCandidates();
+        }
+    }
+
+    private readonly struct WasmSpillRefsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgWasmSpillRefs();
+        }
+    }
+
+    private readonly struct RegisterAllocationPhaseAction : ICompilerPhaseAction
+    {
+        private readonly IRegAlloc _regAlloc;
+
+        public RegisterAllocationPhaseAction(IRegAlloc regAlloc)
+        {
+            _regAlloc = regAlloc;
+        }
+
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return _regAlloc.DoRegisterAllocation();
+        }
+    }
+
+    private readonly struct WasmControlFlowPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgWasmControlFlow();
+        }
+    }
+
+    private readonly struct SearchImprovedLayoutPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgSearchImprovedLayout();
+        }
+    }
+
+    private readonly struct OptimizePostLayoutPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.optOptimizePostLayout();
+        }
+    }
+
+    private readonly struct DetermineFirstColdBlockPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgDetermineFirstColdBlock();
+        }
+    }
+
+    private readonly struct PlaceLoopAlignInstructionsPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.placeLoopAlignInstructions();
+        }
+    }
+
     /// <summary>run phases needed for compilation</summary>
     /// <param name="methodCodePtr">address of generated code</param>
     /// <param name="methodCodeSize">size of the generated code (hot + cold sections)</param>
@@ -3212,31 +3989,22 @@ public partial class Compiler
         activePhaseChecks |= PhaseChecks.CHECK_FG;
 
         // Prepare for importation
-        DoPhase(this, PHASE_PRE_IMPORT, () => {
-            if (compIsForInlining)
-            {
-                // Notify root instance that an inline attempt is about to import IL
-                assert(impInlineRoot._inlineStrategy is not null);
-                impInlineRoot._inlineStrategy.NoteImport();
-            }
-
-            VarSetOps.AssignAllowUninitRhs(this, ref compCurLife, VarSetOps.UninitVal());
-        });
+        DoPhase(this, PHASE_PRE_IMPORT, default(PreImportPhaseAction));
 
         // If we're going to instrument code, we may need to prepare before we import.
         // Also do this before we read in any profile data.
         if (jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR))
         {
-            DoPhase(this, PHASE_IBCPREP, fgPrepareToInstrumentMethod);
+            DoPhase(this, PHASE_IBCPREP, default(PrepareToInstrumentPhaseAction));
         }
 
         // Incorporate profile data.
         //   Note: the importer is sensitive to block weights, so this has to happen before importation.
         activePhaseChecks |= PhaseChecks.CHECK_PROFILE | PhaseChecks.CHECK_PROFILE_FLAGS;
-        DoPhase(this, PHASE_INCPROFILE, fgIncorporateProfileData);
+        DoPhase(this, PHASE_INCPROFILE, default(IncorporateProfilePhaseAction));
 
         activePhaseChecks |= PhaseChecks.CHECK_FG_INIT_BLOCK;
-        DoPhase(this, PHASE_CANONICALIZE_ENTRY, fgCanonicalizeFirstBB);
+        DoPhase(this, PHASE_CANONICALIZE_ENTRY, default(CanonicalizeFirstBBPhaseAction));
 
         // If we are doing OSR, update flow to initially reach the appropriate IL offset.
         if (opts.IsOSR)
@@ -3249,7 +4017,7 @@ public partial class Compiler
 
         // Import: convert the instrs in each basic block to a tree based intermediate representation
         activePhaseChecks |= PhaseChecks.CHECK_IR | PhaseChecks.CHECK_IR_RELAXED;
-        DoPhase(this, PHASE_IMPORTATION, fgImport);
+        DoPhase(this, PHASE_IMPORTATION, default(ImportPhaseAction));
 
         // If this is a failed inline attempt, we're done.
         if (compIsForInlining && compInlineResult.IsFailure)
@@ -3269,28 +4037,25 @@ public partial class Compiler
             return;
         }
 
-        // Native ActionPhase discards lambda results and reports changes.
-        DoPhase(this, PHASE_EARLY_QMARK_EXPANSION, () => {
-            _ = fgExpandQmarkNodes(early: true);
-        });
+        DoPhase(this, PHASE_EARLY_QMARK_EXPANSION, default(EarlyQmarkExpansionPhaseAction));
 
         // If instrumenting, add block and class probes.
         if (jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR))
         {
-            DoPhase(this, PHASE_IBCINSTR, fgInstrumentMethod);
+            DoPhase(this, PHASE_IBCINSTR, default(InstrumentMethodPhaseAction));
         }
 
         // Expand any patchpoints
-        DoPhase(this, PHASE_PATCHPOINTS, fgTransformPatchpoints);
+        DoPhase(this, PHASE_PATCHPOINTS, default(TransformPatchpointsPhaseAction));
 
         // Transform indirect calls that require control flow expansion.
-        DoPhase(this, PHASE_INDXCALL, fgTransformIndirectCalls);
+        DoPhase(this, PHASE_INDXCALL, default(TransformIndirectCallsPhaseAction));
 
         // Cleanup un-imported BBs, cleanup un-imported or partially imported try regions, add OSR step blocks.
-        DoPhase(this, PHASE_POST_IMPORT, fgPostImportationCleanup);
+        DoPhase(this, PHASE_POST_IMPORT, default(PostImportationCleanupPhaseAction));
 
         // Capture and restore contexts around the body, if needed.
-        DoPhase(this, PHASE_ASYNC_SAVE_CONTEXTS, SaveAsyncContexts);
+        DoPhase(this, PHASE_ASYNC_SAVE_CONTEXTS, default(SaveAsyncContextsPhaseAction));
 
         // If we're importing for inlining, we're done.
         if (compIsForInlining)
@@ -3316,10 +4081,10 @@ public partial class Compiler
         noway_assert(!compIsForInlining);
 
         // Prepare for the morph phases
-        DoPhase(this, PHASE_MORPH_INIT, fgMorphInit);
+        DoPhase(this, PHASE_MORPH_INIT, default(MorphInitPhaseAction));
 
         // Inline callee methods into this root method
-        DoPhase(this, PHASE_MORPH_INLINE, fgInline);
+        DoPhase(this, PHASE_MORPH_INLINE, default(InlinePhaseAction));
 
         // Record "start" values for post-inlining cycles and elapsed time.
         RecordStateAtEndOfInlining();
@@ -3327,13 +4092,13 @@ public partial class Compiler
         if (opts.OptimizationEnabled)
         {
             // Trim dead code that follows no-return calls introduced by inlining, so subsequent phases see a cleaner flow graph.
-            DoPhase(this, PHASE_POST_INLINE_NORETURN, fgPostInlineNoReturnCleanup);
+            DoPhase(this, PHASE_POST_INLINE_NORETURN, default(PostInlineNoReturnCleanupPhaseAction));
 
             // Try and resolve GDV checks if improved types were found during inlining
-            DoPhase(this, PHASE_RESOLVE_GDVS, fgResolveGDVs);
+            DoPhase(this, PHASE_RESOLVE_GDVS, default(ResolveGDVsPhaseAction));
 
             // Build post-order and remove dead blocks
-            DoPhase(this, PHASE_DFS_BLOCKS1, fgDfsBlocksAndRemove);
+            DoPhase(this, PHASE_DFS_BLOCKS1, default(DfsBlocksPhaseAction));
         }
 
         // Transform each GT_ALLOCOBJ node into either an allocation helper call or local variable allocation on the stack.
@@ -3347,43 +4112,41 @@ public partial class Compiler
         objectAllocator.Run(); // PHASE_ALLOCATE_OBJECTS
 
         // Add any internal blocks/trees we may need
-        DoPhase(this, PHASE_MORPH_ADD_INTERNAL, fgAddInternal);
+        DoPhase(this, PHASE_MORPH_ADD_INTERNAL, default(AddInternalPhaseAction));
 
         if (Configuration.SWIFT_SUPPORT)
         {
             // Transform GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes if this method has Swift error handling
-            DoPhase(this, PHASE_SWIFT_ERROR_RET, fgAddSwiftErrorReturns);
+            DoPhase(this, PHASE_SWIFT_ERROR_RET, default(SwiftErrorReturnsPhaseAction));
         }
 
         // Remove empty try regions (try/finally)
-        DoPhase(this, PHASE_EMPTY_TRY, fgRemoveEmptyTry);
+        DoPhase(this, PHASE_EMPTY_TRY, default(RemoveEmptyTryPhaseAction));
 
         // Remove empty try regions (try/catch/fault)
-        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT, fgRemoveEmptyTryCatchOrTryFault);
+        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT, default(RemoveEmptyTryCatchFaultPhaseAction));
 
         // Remove empty finally regions
-        DoPhase(this, PHASE_EMPTY_FINALLY, fgRemoveEmptyFinally);
+        DoPhase(this, PHASE_EMPTY_FINALLY, default(RemoveEmptyFinallyPhaseAction));
 
         // Streamline chains of finally invocations
-        DoPhase(this, PHASE_MERGE_FINALLY_CHAINS, fgMergeFinallyChains);
+        DoPhase(this, PHASE_MERGE_FINALLY_CHAINS, default(MergeFinallyChainsPhaseAction));
 
         // Clone code in finallys to reduce overhead for non-exceptional paths
-        DoPhase(this, PHASE_CLONE_FINALLY, fgCloneFinally);
+        DoPhase(this, PHASE_CLONE_FINALLY, default(CloneFinallyPhaseAction));
 
         // Do some flow-related optimizations
         if (opts.OptimizationEnabled)
         {
             // Tail merge
-            DoPhase(this, PHASE_HEAD_TAIL_MERGE, () => {
-                _ = fgHeadTailMerge(true);
-            });
+            DoPhase(this, PHASE_HEAD_TAIL_MERGE, new HeadTailMergePhaseAction(isFirstPass: true));
 
             // Run an early flow graph simplification pass
-            DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, fgUpdateFlowGraphPhase);
+            DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, default(UpdateFlowGraphPhaseAction));
         }
 
         // Promote struct locals
-        DoPhase(this, PHASE_PROMOTE_STRUCTS, fgPromoteStructs);
+        DoPhase(this, PHASE_PROMOTE_STRUCTS, default(PromoteStructsPhaseAction));
 
         // Enable early ref counting of locals
         lvaRefCountState = RCS_EARLY;
@@ -3391,32 +4154,32 @@ public partial class Compiler
         if (opts.OptimizationEnabled)
         {
             // Build post-order and remove dead blocks
-            DoPhase(this, PHASE_DFS_BLOCKS2, fgDfsBlocksAndRemove);
+            DoPhase(this, PHASE_DFS_BLOCKS2, default(DfsBlocksPhaseAction));
 
             fgNodeThreading = NodeThreading.AllLocals;
         }
 
         // Simplify local accesses and analyze address exposure.
-        DoPhase(this, PHASE_LOCAL_MORPH, fgLocalMorph);
+        DoPhase(this, PHASE_LOCAL_MORPH, default(LocalMorphPhaseAction));
 
         // Optimize away conversions to/from masks in local variables.
-        DoPhase(this, PHASE_OPTIMIZE_MASK_CONVERSIONS, fgOptimizeMaskConversions);
+        DoPhase(this, PHASE_OPTIMIZE_MASK_CONVERSIONS, default(OptimizeMaskConversionsPhaseAction));
 
         // Do an early pass of liveness for forward sub and morph.
         // This data is valid until after morph.
-        DoPhase(this, PHASE_EARLY_LIVENESS, fgEarlyLiveness);
+        DoPhase(this, PHASE_EARLY_LIVENESS, default(EarlyLivenessPhaseAction));
 
         // Run a simple forward substitution pass.
-        DoPhase(this, PHASE_FWD_SUB, fgForwardSub);
+        DoPhase(this, PHASE_FWD_SUB, default(ForwardSubstitutionPhaseAction));
 
         // Promote struct locals based on primitive access patterns
-        DoPhase(this, PHASE_PHYSICAL_PROMOTION, PhysicalPromotion);
+        DoPhase(this, PHASE_PHYSICAL_PROMOTION, default(PhysicalPromotionPhaseAction));
 
         // Unpin pinned locals whose value is provably non-movable.
-        DoPhase(this, PHASE_UNPIN_LOCALS, fgUnpinNonMovableLocals);
+        DoPhase(this, PHASE_UNPIN_LOCALS, default(UnpinNonMovableLocalsPhaseAction));
 
         // Expose candidates for implicit byref last-use copy elision.
-        DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, fgMarkImplicitByRefCopyOmissionCandidates);
+        DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, default(ImplicitByRefCopyOmissionPhaseAction));
 
         // Locals tree list is no longer kept valid.
         fgEndLocalTreeLists();
@@ -3427,7 +4190,7 @@ public partial class Compiler
         {
             fgImplicitByRefLclFldsStale = true;
         }
-        DoPhase(this, PHASE_MORPH_IMPBYREF, fgRetypeImplicitByRefArgs);
+        DoPhase(this, PHASE_MORPH_IMPBYREF, default(RetypeImplicitByRefArgsPhaseAction));
 
         if (Configuration.DEBUG)
         {
@@ -3442,79 +4205,59 @@ public partial class Compiler
             fgImplicitByRefLclFldsStale = false;
         }
         var preMorphBBCount = fgBBcount;
-        DoPhase(this, PHASE_MORPH_GLOBAL, fgMorphBlocks);
+        DoPhase(this, PHASE_MORPH_GLOBAL, default(MorphBlocksPhaseAction));
 
         // Global morph restores the strict IR flag invariants.
         activePhaseChecks &= ~PhaseChecks.CHECK_IR_RELAXED;
 
-        DoPhase(this, PHASE_POST_MORPH, () => {
-            // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
-            fgMarkDemotedImplicitByRefArgs();
-            lvaRefCountState = RCS_INVALID;
-            fgLocalVarLivenessDone = false;
-
-            _ = fgExpandQmarkNodes(early: false);
-
-            if (Configuration.DEBUG)
-            {
-                compCurBB = null;
-            }
-
-            // Enable IR checks
-            activePhaseChecks |= PhaseChecks.CHECK_IR;
-        });
+        DoPhase(this, PHASE_POST_MORPH, default(PostMorphPhaseAction));
 
         if (opts.OptimizationEnabled)
         {
             // Compute the block weights
-            DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, fgComputeBlockWeights);
+            DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, default(ComputeBlockWeightsPhaseAction));
 
             // Try again to remove empty try finally/fault clauses
-            DoPhase(this, PHASE_EMPTY_FINALLY_2, fgRemoveEmptyFinally);
+            DoPhase(this, PHASE_EMPTY_FINALLY_2, default(RemoveEmptyFinallyPhaseAction));
 
             // Remove empty try regions (try/finally)
-            DoPhase(this, PHASE_EMPTY_TRY_2, fgRemoveEmptyTry);
+            DoPhase(this, PHASE_EMPTY_TRY_2, default(RemoveEmptyTryPhaseAction));
 
             // Remove empty try regions (try/catch/fault)
-            DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, fgRemoveEmptyTryCatchOrTryFault);
+            DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, default(RemoveEmptyTryCatchFaultPhaseAction));
 
             // Run some flow graph optimizations (but don't reorder)
-            DoPhase(this, PHASE_OPTIMIZE_FLOW, optOptimizeFlow);
+            DoPhase(this, PHASE_OPTIMIZE_FLOW, default(OptimizeFlowPhaseAction));
 
             // Second pass of tail merge
-            DoPhase(this, PHASE_HEAD_TAIL_MERGE2, () => {
-                _ = fgHeadTailMerge(false);
-            });
+            DoPhase(this, PHASE_HEAD_TAIL_MERGE2, new HeadTailMergePhaseAction(isFirstPass: false));
 
             // Compute DFS tree and remove all unreachable blocks.
-            DoPhase(this, PHASE_DFS_BLOCKS3, fgDfsBlocksAndRemove);
+            DoPhase(this, PHASE_DFS_BLOCKS3, default(DfsBlocksPhaseAction));
 
             // Adjust heuristic-derived edge likelihoods into paths that are known to throw.
-            DoPhase(this, PHASE_ADJUST_THROW_LIKELIHOODS, () => {
-                // Native ActionPhase discards a functor's returned status.
-                _ = ProfileSynthesis.AdjustThrowEdgeLikelihoods(this);
-            });
+            DoPhase(this, PHASE_ADJUST_THROW_LIKELIHOODS, default(AdjustThrowLikelihoodsPhaseAction));
 
             // Discover and classify natural loops (e.g. mark iterative loops as such).
-            DoPhase(this, PHASE_FIND_LOOPS, optFindLoopsPhase);
+            DoPhase(this, PHASE_FIND_LOOPS, default(FindLoopsPhaseAction));
 
             // Re-establish profile consistency, now that inlining and morph have run.
-            DoPhase(this, PHASE_REPAIR_PROFILE_POST_MORPH, fgRepairProfile);
+            DoPhase(this, PHASE_REPAIR_PROFILE_POST_MORPH, default(RepairProfilePhaseAction));
 
             // Invert loops
-            DoPhase(this, PHASE_INVERT_LOOPS, optInvertLoops);
+            DoPhase(this, PHASE_INVERT_LOOPS, default(InvertLoopsPhaseAction));
 
             // Scale block weights and mark run rarely blocks.
-            DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, optSetBlockWeights);
+            DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, default(SetBlockWeightsPhaseAction));
 
             // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
-            DoPhase(this, PHASE_CLONE_LOOPS, optCloneLoops);
+            DoPhase(this, PHASE_CLONE_LOOPS, default(CloneLoopsPhaseAction));
 
             // Unroll loops
-            DoPhase(this, PHASE_UNROLL_LOOPS, optUnrollLoops);
+            DoPhase(this, PHASE_UNROLL_LOOPS, default(UnrollLoopsPhaseAction));
 
             // Compute dominators and exceptional entry blocks
-            DoPhase(this, PHASE_COMPUTE_DOMINATORS, fgComputeDominators);
+            DoPhase(this, PHASE_COMPUTE_DOMINATORS, default(ComputeDominatorsPhaseAction));
         }
 
         // Decide the kind of code we want to generate. Done here, after the second
@@ -3524,21 +4267,21 @@ public partial class Compiler
 
         // Morph multi-dimensional array operations.
         // (Consider deferring all array operation morphing, including single-dimensional array ops, from global morph to here, so cloning doesn't have to deal with morphed forms.)
-        DoPhase(this, PHASE_MORPH_MDARR, fgMorphArrayOps);
+        DoPhase(this, PHASE_MORPH_MDARR, default(MorphArrayPhaseAction));
 
         // Create the variable table (and compute variable ref counts)
-        DoPhase(this, PHASE_MARK_LOCAL_VARS, lvaMarkLocalVars);
+        DoPhase(this, PHASE_MARK_LOCAL_VARS, default(MarkLocalVarsPhaseAction));
 
         // IMPORTANT, after this point, locals are ref counted.
         // However, ref counts are not kept incrementally up to date.
         assert(lvaLocalVarRefCounted);
 
         // Figure out the order in which operators are to be evaluated
-        DoPhase(this, PHASE_FIND_OPER_ORDER, fgFindOperOrder);
+        DoPhase(this, PHASE_FIND_OPER_ORDER, default(FindOperOrderPhaseAction));
 
         // Weave the tree lists.
         // Anyone who modifies the tree shapes after this point is responsible for calling fgSetStmtSeq() to keep the nodes properly linked.
-        DoPhase(this, PHASE_SET_BLOCK_ORDER, fgSetBlockOrder);
+        DoPhase(this, PHASE_SET_BLOCK_ORDER, default(SetBlockOrderPhaseAction));
 
         fgNodeThreading = NodeThreading.AllTrees;
 
@@ -3595,7 +4338,7 @@ public partial class Compiler
                 if (doSsa)
                 {
                     // Build up SSA form for the IR
-                    DoPhase(this, PHASE_BUILD_SSA, fgSsaBuild);
+                    DoPhase(this, PHASE_BUILD_SSA, default(SsaBuildPhaseAction));
                 }
                 else
                 {
@@ -3606,31 +4349,31 @@ public partial class Compiler
                 if (doEarlyProp)
                 {
                     // Propagate array length and rewrite getType() method call
-                    DoPhase(this, PHASE_EARLY_PROP, optEarlyProp);
+                    DoPhase(this, PHASE_EARLY_PROP, default(EarlyPropPhaseAction));
                 }
 
                 if (doValueNum)
                 {
                     // Value number the trees
-                    DoPhase(this, PHASE_VALUE_NUMBER, fgValueNumber);
+                    DoPhase(this, PHASE_VALUE_NUMBER, default(ValueNumberPhaseAction));
                 }
 
                 if (doLoopHoisting)
                 {
                     // Hoist invariant code out of loops
-                    DoPhase(this, PHASE_HOIST_LOOP_CODE, optHoistLoopCode);
+                    DoPhase(this, PHASE_HOIST_LOOP_CODE, default(HoistLoopCodePhaseAction));
                 }
 
                 if (doCopyProp)
                 {
                     // Perform VN based copy propagation
-                    DoPhase(this, PHASE_VN_COPY_PROP, optVnCopyProp);
+                    DoPhase(this, PHASE_VN_COPY_PROP, default(VnCopyPropPhaseAction));
                 }
 
                 if (doBranchOpt)
                 {
                     // Optimize redundant branches
-                    DoPhase(this, PHASE_OPTIMIZE_BRANCHES, optRedundantBranches);
+                    DoPhase(this, PHASE_OPTIMIZE_BRANCHES, default(RedundantBranchesPhaseAction));
                 }
                 else
                 {
@@ -3641,28 +4384,28 @@ public partial class Compiler
                 if (doCse)
                 {
                     // Remove common sub-expressions
-                    DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, optOptimizeCSEs);
+                    DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, default(OptimizeCSEsPhaseAction));
                 }
 
                 if (doAssertionProp)
                 {
                     // Coalesce groups of constant-indexed bounds checks.
-                    DoPhase(this, PHASE_BOUNDS_CHECK_COALESCE, optBoundsCheckCoalesce);
+                    DoPhase(this, PHASE_BOUNDS_CHECK_COALESCE, default(BoundsCheckCoalescePhaseAction));
 
                     // Assertion propagation
-                    DoPhase(this, PHASE_ASSERTION_PROP_MAIN, optAssertionPropMain);
+                    DoPhase(this, PHASE_ASSERTION_PROP_MAIN, default(AssertionPropMainPhaseAction));
                 }
 
                 if (doRangeAnalysis)
                 {
                     // Bounds check elimination via range analysis
-                    DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, rangeCheckPhase);
+                    DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, default(RangeCheckPhaseAction));
                 }
 
                 if (doOptimizeIVs)
                 {
                     // Simplify and optimize induction variables used in natural loops
-                    DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, optInductionVariables);
+                    DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, default(InductionVariablesPhaseAction));
                 }
 
                 fgInvalidateDfsTree();
@@ -3670,19 +4413,19 @@ public partial class Compiler
                 if (doVNBasedDeadStoreRemoval)
                 {
                     // Note: this invalidates SSA and value numbers on tree nodes.
-                    DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, optVNBasedDeadStoreRemoval);
+                    DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, default(VNBasedDeadStoreRemovalPhaseAction));
                 }
 
                 if (doRangeCheckCloning)
                 {
                     // Clone blocks with subsequent bounds checks
-                    DoPhase(this, PHASE_RANGE_CHECK_CLONING, optRangeCheckCloning);
+                    DoPhase(this, PHASE_RANGE_CHECK_CLONING, default(RangeCheckCloningPhaseAction));
                 }
 
                 if (doVNBasedIntrinExpansion)
                 {
                     // Expand some intrinsics based on VN data
-                    DoPhase(this, PHASE_VN_BASED_INTRINSIC_EXPAND, fgVNBasedIntrinsicExpansion);
+                    DoPhase(this, PHASE_VN_BASED_INTRINSIC_EXPAND, default(VNBasedIntrinsicExpansionPhaseAction));
                 }
 
                 // Conservatively mark all VNs as stale
@@ -3691,7 +4434,7 @@ public partial class Compiler
                 if (fgModified)
                 {
                     // update the flowgraph if we modified it during the optimization phase
-                    DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, fgUpdateFlowGraphPhase);
+                    DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, default(UpdateFlowGraphPhaseAction));
 
                     // Clean up unreachable blocks.
                     // In opt-repeat builds, RecomputeFlowGraphAnnotations() will call
@@ -3701,7 +4444,7 @@ public partial class Compiler
 
                     if (!opts.optRepeat || (opts.optRepeatIteration == opts.optRepeatCount))
                     {
-                        DoPhase(this, PHASE_OPT_DFS_BLOCKS, fgDfsBlocksAndRemove);
+                        DoPhase(this, PHASE_OPT_DFS_BLOCKS, default(DfsBlocksPhaseAction));
                         fgInvalidateDfsTree();
                     }
                 }
@@ -3737,58 +4480,58 @@ public partial class Compiler
 
         if (Configuration.DEBUG)
         {
-            DoPhase(this, PHASE_STRESS_SPLIT_TREE, StressSplitTree);
+            DoPhase(this, PHASE_STRESS_SPLIT_TREE, default(StressSplitTreePhaseAction));
         }
 
         // Try again to remove empty try finally/fault clauses
-        DoPhase(this, PHASE_EMPTY_FINALLY_3, fgRemoveEmptyFinally);
+        DoPhase(this, PHASE_EMPTY_FINALLY_3, default(RemoveEmptyFinallyPhaseAction));
 
         // Remove empty try regions (try/finally)
-        DoPhase(this, PHASE_EMPTY_TRY_3, fgRemoveEmptyTry);
+        DoPhase(this, PHASE_EMPTY_TRY_3, default(RemoveEmptyTryPhaseAction));
 
         // Remove empty try regions (try/catch/fault)
-        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, fgRemoveEmptyTryCatchOrTryFault);
+        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, default(RemoveEmptyTryCatchFaultPhaseAction));
 
         // Remove unreachable try regions.
-        DoPhase(this, PHASE_REMOVE_UNREACHABLE_TRY, fgRemoveUnreachableTry);
+        DoPhase(this, PHASE_REMOVE_UNREACHABLE_TRY, default(RemoveUnreachableTryPhaseAction));
 
         // Create funclets from the EH handlers.
-        DoPhase(this, PHASE_CREATE_FUNCLETS, fgCreateFunclets);
+        DoPhase(this, PHASE_CREATE_FUNCLETS, default(CreateFuncletsPhaseAction));
 
         // Expand casts
-        DoPhase(this, PHASE_EXPAND_CASTS, fgLateCastExpansion);
+        DoPhase(this, PHASE_EXPAND_CASTS, default(LateCastExpansionPhaseAction));
 
         // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
-        DoPhase(this, PHASE_EXPAND_RTLOOKUPS, fgExpandRuntimeLookups);
+        DoPhase(this, PHASE_EXPAND_RTLOOKUPS, default(ExpandRuntimeLookupsPhaseAction));
 
         // Partially inline static initializations
-        DoPhase(this, PHASE_EXPAND_STATIC_INIT, fgExpandStaticInit);
+        DoPhase(this, PHASE_EXPAND_STATIC_INIT, default(ExpandStaticInitPhaseAction));
 
         // Expand thread local access
-        DoPhase(this, PHASE_EXPAND_TLS, fgExpandThreadLocalAccess);
+        DoPhase(this, PHASE_EXPAND_TLS, default(ExpandThreadLocalAccessPhaseAction));
 
         // Expand stack allocated arrays
-        DoPhase(this, PHASE_EXPAND_STACK_ARR, fgExpandStackArrayAllocations);
+        DoPhase(this, PHASE_EXPAND_STACK_ARR, default(ExpandStackArrayAllocationsPhaseAction));
 
         // Insert GC Polls
-        DoPhase(this, PHASE_INSERT_GC_POLLS, fgInsertGCPolls);
+        DoPhase(this, PHASE_INSERT_GC_POLLS, default(InsertGCPollsPhaseAction));
 
         if (opts.OptimizationEnabled)
         {
             // Conditional to switch conversion, and switch peeling
-            DoPhase(this, PHASE_SWITCH_RECOGNITION, optRecognizeAndOptimizeSwitchJumps);
+            DoPhase(this, PHASE_SWITCH_RECOGNITION, default(SwitchRecognitionPhaseAction));
 
             // Optimize boolean conditions
-            DoPhase(this, PHASE_OPTIMIZE_BOOLS, optOptimizeBools);
+            DoPhase(this, PHASE_OPTIMIZE_BOOLS, default(OptimizeBoolsPhaseAction));
 
             // If conversion
-            DoPhase(this, PHASE_IF_CONVERSION, optIfConversion);
+            DoPhase(this, PHASE_IF_CONVERSION, default(IfConversionPhaseAction));
 
             // Run flow optimizations before reordering blocks
-            DoPhase(this, PHASE_OPTIMIZE_PRE_LAYOUT, optOptimizePreLayout);
+            DoPhase(this, PHASE_OPTIMIZE_PRE_LAYOUT, default(OptimizePreLayoutPhaseAction));
 
             // Ensure profile is consistent before starting backend phases
-            DoPhase(this, PHASE_REPAIR_PROFILE_PRE_LAYOUT, fgRepairProfile);
+            DoPhase(this, PHASE_REPAIR_PROFILE_PRE_LAYOUT, default(RepairProfilePhaseAction));
         }
 
         // Stash the current estimate of the function's size if necessary.
@@ -3822,25 +4565,25 @@ public partial class Compiler
 
         if (compIsAsync)
         {
-            DoPhase(this, PHASE_ASYNC, TransformAsync);
+            DoPhase(this, PHASE_ASYNC, default(TransformAsyncPhaseAction));
         }
 
         // GS security checks for unsafe buffers
-        DoPhase(this, PHASE_GS_COOKIE, gsPhase);
+        DoPhase(this, PHASE_GS_COOKIE, default(GSPhaseAction));
 
         if (Configuration.TARGET_WASM)
         {
             // Make EH continuation flow explicit
-            DoPhase(this, PHASE_WASM_EH_FLOW, fgWasmEhFlow);
+            DoPhase(this, PHASE_WASM_EH_FLOW, default(WasmEHFlowPhaseAction));
 
             // Clean up unreachable blocks.
-            DoPhase(this, PHASE_DFS_BLOCKS_WASM, fgDfsBlocksAndRemove);
+            DoPhase(this, PHASE_DFS_BLOCKS_WASM, default(DfsBlocksPhaseAction));
 
             // Repair any multiple-entry try regions back to single entry.
-            DoPhase(this, PHASE_WASM_REPAIR_TRY_ENTRIES, fgWasmRepairTryEntries);
+            DoPhase(this, PHASE_WASM_REPAIR_TRY_ENTRIES, default(WasmRepairTryEntriesPhaseAction));
 
             // Transform any strongly connected components into reducible flow.
-            DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, fgWasmTransformSccs);
+            DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, default(WasmTransformSccsPhaseAction));
         }
 
         // Assign registers to variables, etc.
@@ -3861,17 +4604,17 @@ public partial class Compiler
         _pLowering.FinalizeOutgoingArgSpace();
 
         // Run the final liveness pass after adding throw helper calls.
-        DoPhase(this, PHASE_LCLVARLIVENESS, fgLateLiveness);
+        DoPhase(this, PHASE_LCLVARLIVENESS, default(LateLivenessPhaseAction));
 
         if (Configuration.TARGET_WASM)
         {
             // Determine if a Virtual IP is needed and add code as needed to keep the Virtual IP updated.
-            DoPhase(this, PHASE_WASM_VIRTUAL_IP, fgWasmVirtualIP);
+            DoPhase(this, PHASE_WASM_VIRTUAL_IP, default(WasmVirtualIPPhaseAction));
 
-            DoPhase(this, PHASE_WASM_IDENTIFY_GCSAFE_LOCALS, fgWasmFindGCRefCandidates);
+            DoPhase(this, PHASE_WASM_IDENTIFY_GCSAFE_LOCALS, default(WasmGCRefCandidatesPhaseAction));
 
             // Spill live refs and byrefs at calls into pinned stack slots.
-            DoPhase(this, PHASE_WASM_SPILL_REFS, fgWasmSpillRefs);
+            DoPhase(this, PHASE_WASM_SPILL_REFS, default(WasmSpillRefsPhaseAction));
         }
 
         FinalizeEH();
@@ -3882,7 +4625,7 @@ public partial class Compiler
         // Now that lowering is completed we can proceed to perform register allocation
         activePhaseChecks &= ~PhaseChecks.CHECK_LIR_UNUSED_VALUES;
 
-        DoPhase(this, PHASE_LINEAR_SCAN, _regAlloc.DoRegisterAllocation);
+        DoPhase(this, PHASE_LINEAR_SCAN, new RegisterAllocationPhaseAction(_regAlloc));
 
         // Copied from rpPredictRegUse()
         IsFullPtrRegMapRequired = codeGen.Interruptible || !codeGen.IsFramePointerUsed;
@@ -3890,24 +4633,24 @@ public partial class Compiler
         if (Configuration.TARGET_WASM)
         {
             // Reorder blocks for wasm and figure out wasm control flow nesting
-            DoPhase(this, PHASE_WASM_CONTROL_FLOW, fgWasmControlFlow);
+            DoPhase(this, PHASE_WASM_CONTROL_FLOW, default(WasmControlFlowPhaseAction));
         }
         else if (opts.OptimizationEnabled)
         {
             // We won't introduce new blocks from here on out, so run the new block layout.
-            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, fgSearchImprovedLayout);
+            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, default(SearchImprovedLayoutPhaseAction));
 
             // Now that the flowgraph is finalized, run post-layout optimizations.
-            DoPhase(this, PHASE_OPTIMIZE_POST_LAYOUT, optOptimizePostLayout);
+            DoPhase(this, PHASE_OPTIMIZE_POST_LAYOUT, default(OptimizePostLayoutPhaseAction));
 
             // Determine start of cold region if we are hot/cold splitting
-            DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, fgDetermineFirstColdBlock);
+            DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, default(DetermineFirstColdBlockPhaseAction));
         }
 
         if (Configuration.FEATURE_LOOP_ALIGN)
         {
             // Place loop alignment instructions
-            DoPhase(this, PHASE_ALIGN_LOOPS, placeLoopAlignInstructions);
+            DoPhase(this, PHASE_ALIGN_LOOPS, default(PlaceLoopAlignInstructionsPhaseAction));
         }
 
         // The common phase checks and dumps are no longer relevant past this point.

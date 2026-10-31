@@ -13,8 +13,8 @@ namespace RyuJitSharp;
 // Clone-edge construction observes the native BlockToBlockMap bucket traversal order.
 public sealed class BlockToBlockMapDictionary : IReadOnlyDictionary<BasicBlock, BasicBlock>
 {
-    private readonly JitHashTable<BasicBlock, BasicBlock> _table =
-        new(new JitPtrKeyFuncs<BasicBlock>());
+    private readonly JitHashTable<BasicBlock, BasicBlock, JitPtrKeyFuncs<BasicBlock>> _table =
+        new(default);
 
     [SuppressMessage("Design", "CA1043:Use Integral Or String Argument For Indexers",
         Justification = "BasicBlock is the key type of the native BlockToBlockMap.")]
@@ -78,7 +78,7 @@ public sealed class BlockToBlockMapDictionary : IReadOnlyDictionary<BasicBlock, 
     public void Set(BasicBlock key, BasicBlock value)
     {
         ArgumentNullException.ThrowIfNull(key);
-        _ = _table.Set(key, value, JitHashTable<BasicBlock, BasicBlock>.SetKind.Overwrite);
+        _ = _table.Set(key, value, JitHashTable<BasicBlock, BasicBlock, JitPtrKeyFuncs<BasicBlock>>.SetKind.Overwrite);
     }
 
     public bool TryAdd(BasicBlock key, BasicBlock value)
