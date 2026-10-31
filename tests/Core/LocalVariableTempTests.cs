@@ -46,4 +46,24 @@ internal static class LocalVariableTempTests
             }
         });
     }
+
+    [Test]
+    public static void AdjustingWrittenThisPreservesDescriptorAcrossTableGrowth()
+    {
+        LinearScanMinimalCandidatesTests.WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF, lvHasILStoreOp = true }];
+            compiler.lvaCount = 1;
+            compiler.info.compThisArg = 0;
+            var originalTable = compiler.lvaTable;
+
+            compiler.fgAdjustForAddressExposedOrWrittenThis();
+
+            Assert.That(compiler.lvaTable, Is.Not.SameAs(originalTable));
+            Assert.That(compiler.lvaArg0Var, Is.EqualTo(1));
+            Assert.That(compiler.lvaTable[0].Type, Is.EqualTo(TYP_REF));
+            Assert.That(compiler.lvaTable[0].lvHasILStoreOp, Is.False);
+            Assert.That(compiler.lvaTable[1].Type, Is.EqualTo(TYP_REF));
+            Assert.That(compiler.lvaTable[1].lvHasILStoreOp, Is.True);
+        });
+    }
 }

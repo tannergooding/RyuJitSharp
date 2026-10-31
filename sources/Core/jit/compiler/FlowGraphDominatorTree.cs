@@ -84,8 +84,9 @@ public sealed class FlowGraphDominatorTree
         var compiler = dfsTree.GetCompiler();
         var postOrder = dfsTree.GetPostOrder();
         var count = dfsTree.PostOrderCount;
-        compiler._blockToEHPreds = null;
-        compiler._dominancePreds = null;
+        compiler.fgInvalidateFlowGraphAnalysis(
+            Compiler.FlowGraphAnalysisInvalidation.ExceptionalPredecessors |
+            Compiler.FlowGraphAnalysisInvalidation.DominancePredecessors);
 
         assert(compiler.fgFirstBB is not null);
         assert((compiler.fgFirstBB.bbPreds is null) && !compiler.fgFirstBB.hasTryIndex);

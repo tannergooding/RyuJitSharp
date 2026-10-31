@@ -2663,12 +2663,14 @@ public partial class Compiler
         assert(JitConfig.JitOptRepeatCount > 0);
         fgResetForSsa(deepClean: true);
         vnStore = null;
-        _blockToEHPreds = null;
-        _dominancePreds = null;
+        fgInvalidateFlowGraphAnalysis(
+            FlowGraphAnalysisInvalidation.ExceptionalPredecessors |
+            FlowGraphAnalysisInvalidation.DominancePredecessors);
         fgSsaPassesCompleted = 0;
         fgVNPassesCompleted = 0;
-        fgSsaValid = false;
-        _nodeToLoopMemoryBlockMap = null;
+        fgInvalidateFlowGraphAnalysis(
+            FlowGraphAnalysisInvalidation.SsaValidity |
+            FlowGraphAnalysisInvalidation.LoopMemoryBlockMap);
 
         foreach (var block in Blocks)
         {

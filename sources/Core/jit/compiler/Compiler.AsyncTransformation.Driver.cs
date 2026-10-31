@@ -67,7 +67,8 @@ public partial class Compiler
             }
             VarSetOps.AssignNoCopy(_compiler, ref _compiler.compCurLife,
                 VarSetOps.MakeEmpty(_compiler));
-            _compiler._blockToEHPreds = null;
+            _compiler.fgInvalidateFlowGraphAnalysis(
+                Compiler.FlowGraphAnalysisInvalidation.ExceptionalPredecessors);
 
             var defaultValues = new AsyncDefaultValueAnalysis(_compiler);
             defaultValues.Run();

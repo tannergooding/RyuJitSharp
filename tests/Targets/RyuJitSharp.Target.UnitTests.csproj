@@ -52,6 +52,7 @@
     <Compile Include="..\Core\GenTreeMultiRegTargetTests.cs" Link="GenTreeMultiRegTargetTests.cs" />
     <Compile Include="..\Core\GenTreeCallRegisterStateTests.cs" Link="GenTreeCallRegisterStateTests.cs" />
     <Compile Include="..\Core\FuncletCreationTargetTests.cs" Link="FuncletCreationTargetTests.cs" />
+    <Compile Include="..\Core\FlowGraphDfsTests.cs" Link="FlowGraphDfsTests.cs" />
     <Compile Include="..\Core\HWIntrinsicCodegenClassificationTests.cs" Link="HWIntrinsicCodegenClassificationTests.cs" />
     <Compile Include="..\Core\InstructionOptionIdentityTests.cs" Link="InstructionOptionIdentityTests.cs" />
     <Compile Include="..\Core\InstructionFlagModelTests.cs" Link="InstructionFlagModelTests.cs" />
