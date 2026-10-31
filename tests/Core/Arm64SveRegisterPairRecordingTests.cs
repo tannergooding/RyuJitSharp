@@ -80,6 +80,27 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         });
     }
 
+    [TestCase(INS_sve_aesimc)]
+    [TestCase(INS_sve_aesmc)]
+    public static void DestructiveUnaryAesCopiesSourceBeforeRecordingOperation(instruction ins)
+    {
+        WithEmitter(emitter =>
+        {
+            var id = Record(emitter,
+                () => emitter.emitInsSve_R_R(ins, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V31, INS_OPTS_SCALABLE_B),
+                expectedSize: 8);
+            var instructions = CurrentInstructions(emitter)
+                ?? throw new AssertionException("No descriptor buffer was prepared.");
+
+            Assert.That(instructions, Has.Count.EqualTo(2));
+            Assert.That(instructions[0].idIns(), Is.EqualTo(INS_sve_mov));
+            Assert.That(instructions[0].idReg1(), Is.EqualTo(REG_ARM64_V0));
+            Assert.That(instructions[0].idReg2(), Is.EqualTo(REG_ARM64_V31));
+            Assert.That(id.idIns(), Is.EqualTo(ins));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_V0));
+        });
+    }
+
     [TestCase(INS_sve_mov, INS_OPTS_SCALABLE_B, IF_ARM64_SVE_AU_3A)]
     [TestCase(INS_sve_movprfx, INS_OPTS_NONE, IF_ARM64_SVE_BI_2A)]
     public static void GenericMoveRecordingDispatchesUnpredicatedSVEForms(
@@ -690,6 +711,9 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
     private static extern ref int GroupSize(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
+    private static extern ref List<Emitter.instrDesc>? CurrentInstructions(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitDecodeRotationImm90_or_270")]
     private static extern nint DecodeRotation(Emitter? emitter, nint encoded);

@@ -15,7 +15,7 @@ param(
     [switch] $BlockCounters,
     [switch] $DisableObjectStackAllocation,
     [string] $TypeName = "RyuJitSharp.PortingCorpus",
-    [string[]] $ExpectedMethods = @("Main", "Add", "Branch", "Locals", "Call", "InlineCaller", "IndirectCall", "FoldConstants", "FoldFloating", "FoldInteger", "FoldHardware", "PartialVectorCreate",
+    [string[]] $ExpectedMethods = @("Main", "Add", "Branch", "Locals", "Call", "InlineCaller", "IndirectCall", "FoldConstants", "FoldFloating", "FoldInteger", "FoldHardware", "VectorDivide", "PartialVectorCreate",
         "SynchronizedReturn", "GenericCatch", "PInvokeCall", "ReversePInvoke", "ManyReturns", "LocalAddressStore", "LocalAddressDifference", "ImplicitByRefArgument", "LoopSum", "IndexedArray",
         "RepeatedFields", "GenericMetadataReuse", "RepeatedCalls", "CriticalEdgeJoin", "NestedLoopExits", "NestedExceptionFlow", "SwitchSuccessors", "CriticalEdgeRegisterPressure",
         "LoopExitWithPreheaderJoin", "MultipleLoopExitEdges", "NestedLoopSharedExit", "DisjointLoops"),

@@ -98,6 +98,8 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         else if (Configuration.TARGET_ARM64)
         {
             AssertNativeOrdinal(InstructionSet_Fp16, 7);
+            AssertNativeOrdinal(InstructionSet_SvePmull128, 23);
+            AssertNativeOrdinal(InstructionSet_SvePmull128_Arm64, 41);
         }
         else if (Configuration.TARGET_RISCV64)
         {
@@ -138,6 +140,33 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         missingPackedSimd.AddInstructionSet(InstructionSet_RelaxedSimd);
         missingPackedSimd = Globals.EnsureInstructionSetFlagsAreValid(missingPackedSimd);
         Assert.That(missingPackedSimd.HasInstructionSet(InstructionSet_RelaxedSimd), Is.False);
+    }
+
+    [Test]
+    public static void SvePmull128PreservesItsAbiAndReadyToRunIdentities()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+
+        Assert.That((int)CORINFO_InstructionSet.InstructionSet_ARM64_SvePmull128, Is.EqualTo(23));
+        Assert.That((int)CORINFO_InstructionSet.InstructionSet_ARM64_SvePmull128_Arm64, Is.EqualTo(41));
+        Assert.That((int)ReadyToRunInstructionSet.READYTORUN_INSTRUCTION_SvePmull128, Is.EqualTo(96));
+        Assert.That(Globals.InstructionSetToString(InstructionSet_SvePmull128), Is.EqualTo("SvePmull128"));
+        Assert.That(
+            Globals.InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet.READYTORUN_INSTRUCTION_SvePmull128),
+            Is.EqualTo(InstructionSet_SvePmull128));
+
+        var validFlags = default(CORINFO_InstructionSetFlags);
+        validFlags.AddInstructionSet(InstructionSet_ArmBase);
+        validFlags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
+        validFlags.AddInstructionSet(InstructionSet_AdvSimd);
+        validFlags.AddInstructionSet(InstructionSet_AdvSimd_Arm64);
+        validFlags.AddInstructionSet(InstructionSet_Sve);
+        validFlags.AddInstructionSet(InstructionSet_Sve_Arm64);
+        validFlags.AddInstructionSet(InstructionSet_SvePmull128);
+        validFlags.AddInstructionSet(InstructionSet_SvePmull128_Arm64);
+        validFlags = Globals.EnsureInstructionSetFlagsAreValid(validFlags);
+        Assert.That(validFlags.HasInstructionSet(InstructionSet_SvePmull128), Is.True);
+        Assert.That(validFlags.HasInstructionSet(InstructionSet_SvePmull128_Arm64), Is.True);
     }
 
     [Test]

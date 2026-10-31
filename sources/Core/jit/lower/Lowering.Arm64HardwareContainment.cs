@@ -217,11 +217,6 @@ public sealed partial class Lowering
                 var mask = node.GetOp(1);
                 var trueValue = node.GetOp(2);
                 var falseValue = node.GetOp(3);
-                if (mask.IsMaskZero)
-                {
-                    MakeSrcContained(node, mask);
-                    LABELEDDISPTREERANGE("Contained false mask op1 in ConditionalSelect", BlockRange(), mask);
-                }
 
                 if (trueValue.Oper.IsHWIntrinsic && ((trueValue.Flags & GTF_HW_EM_OP) == 0))
                 {

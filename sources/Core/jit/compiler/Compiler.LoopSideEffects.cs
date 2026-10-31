@@ -315,8 +315,7 @@ public partial class Compiler
                         if (call.IsHelperCall())
                         {
                             var helper = call.HelperNum;
-                            if (helper.MutatesHeap ||
-                                (helper.MayRunCctor && (tree.Flags & GTF_CALL_HOISTABLE) == 0))
+                            if (helper.MutatesHeap || helper.MayRunCctor)
                             {
                                 memoryHavoc |= AllLoopMemoryKinds;
                             }

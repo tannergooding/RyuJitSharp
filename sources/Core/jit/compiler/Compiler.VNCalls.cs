@@ -549,6 +549,14 @@ public partial class Compiler
             {
                 return VNF_GetdynamicNongcthreadstaticBase;
             }
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            {
+                return VNF_GetdynamicGcthreadstaticBaseOptimized;
+            }
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
+            {
+                return VNF_GetdynamicNongcthreadstaticBaseOptimized;
+            }
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
             {
                 return VNF_GetdynamicGcthreadstaticBaseNoctor;
@@ -727,8 +735,8 @@ public partial class Compiler
 
         var pure = helper.IsPure;
         var allocation = helper.IsAllocator;
-        var modHeap = helper.MutatesHeap;
         var mayRunCctor = helper.MayRunCctor;
+        var modHeap = helper.MutatesHeap || mayRunCctor;
         var exceptions = ValueNumStore.VNPForEmptyExcSet();
 
         if (!helper.NoThrow)
@@ -800,6 +808,8 @@ public partial class Compiler
                 }
                 case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+                case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+                case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
                 case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
                 {
@@ -857,10 +867,6 @@ public partial class Compiler
         else if (pure || allocation)
         {
             var vnf = fgValueNumberJitHelperMethodVNFunc(helper);
-            if (mayRunCctor && ((call.Flags & GTF_CALL_HOISTABLE) == 0))
-            {
-                modHeap = true;
-            }
             if (allocation && (call.Args.FindWellKnownArg(WellKnownArg.StackArrayLocal) is not null))
             {
                 if (vnf is VNF_JitNewArr)

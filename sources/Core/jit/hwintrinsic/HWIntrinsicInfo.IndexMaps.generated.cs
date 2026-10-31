@@ -1880,6 +1880,12 @@ public partial struct HWIntrinsicInfo
         ushort.MaxValue, // NI_Sve2_VectorTableLookupExtension
         ushort.MaxValue, // NI_Sve2_Xor
         ushort.MaxValue, // NI_Sve2_XorRotateRight
+        ushort.MaxValue, // NI_SveAes_Decrypt
+        ushort.MaxValue, // NI_SveAes_Encrypt
+        ushort.MaxValue, // NI_SveAes_InverseMixColumns
+        ushort.MaxValue, // NI_SveAes_MixColumns
+        ushort.MaxValue, // NI_SvePmull128_PolynomialMultiplyWideningEven
+        ushort.MaxValue, // NI_SvePmull128_PolynomialMultiplyWideningOdd
         ushort.MaxValue, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
         ushort.MaxValue, // NI_SveSm4_Encode
         ushort.MaxValue, // NI_SveSm4_KeyUpdate
@@ -4698,35 +4704,41 @@ public partial struct HWIntrinsicInfo
         1177, // NI_Sve2_VectorTableLookupExtension
         1178, // NI_Sve2_Xor
         1179, // NI_Sve2_XorRotateRight
-        1180, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
-        1181, // NI_SveSm4_Encode
-        1182, // NI_SveSm4_KeyUpdate
-        1183, // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
-        1184, // NI_Sve_ConditionalExtractLastActiveElementScalar
-        1185, // NI_Sve_ConvertMaskToVector
-        1186, // NI_Sve_ConvertVectorToMask
-        1187, // NI_Sve_ConversionTrueMask
-        1188, // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
-        1189, // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
-        1190, // NI_Sve_SaturatingDecrementBy64BitElementCountScalar
-        1191, // NI_Sve_SaturatingIncrementBy16BitElementCountScalar
-        1192, // NI_Sve_SaturatingIncrementBy32BitElementCountScalar
-        1193, // NI_Sve_SaturatingIncrementBy64BitElementCountScalar
-        1194, // NI_Sve_StoreAndZipx2
-        1195, // NI_Sve_StoreAndZipx3
-        1196, // NI_Sve_StoreAndZipx4
-        1197, // NI_Sve_And_Predicates
-        1198, // NI_Sve_BitwiseClear_Predicates
-        1199, // NI_Sve_Or_Predicates
-        1200, // NI_Sve_Xor_Predicates
-        1201, // NI_Sve_ConditionalSelect_Predicates
-        1202, // NI_Sve_ZipHigh_Predicates
-        1203, // NI_Sve_ZipLow_Predicates
-        1204, // NI_Sve_UnzipEven_Predicates
-        1205, // NI_Sve_UnzipOdd_Predicates
-        1206, // NI_Sve_TransposeEven_Predicates
-        1207, // NI_Sve_TransposeOdd_Predicates
-        1208, // NI_Sve_ReverseElement_Predicates
+        1180, // NI_SveAes_Decrypt
+        1181, // NI_SveAes_Encrypt
+        1182, // NI_SveAes_InverseMixColumns
+        1183, // NI_SveAes_MixColumns
+        1184, // NI_SvePmull128_PolynomialMultiplyWideningEven
+        1185, // NI_SvePmull128_PolynomialMultiplyWideningOdd
+        1186, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
+        1187, // NI_SveSm4_Encode
+        1188, // NI_SveSm4_KeyUpdate
+        1189, // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
+        1190, // NI_Sve_ConditionalExtractLastActiveElementScalar
+        1191, // NI_Sve_ConvertMaskToVector
+        1192, // NI_Sve_ConvertVectorToMask
+        1193, // NI_Sve_ConversionTrueMask
+        1194, // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
+        1195, // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
+        1196, // NI_Sve_SaturatingDecrementBy64BitElementCountScalar
+        1197, // NI_Sve_SaturatingIncrementBy16BitElementCountScalar
+        1198, // NI_Sve_SaturatingIncrementBy32BitElementCountScalar
+        1199, // NI_Sve_SaturatingIncrementBy64BitElementCountScalar
+        1200, // NI_Sve_StoreAndZipx2
+        1201, // NI_Sve_StoreAndZipx3
+        1202, // NI_Sve_StoreAndZipx4
+        1203, // NI_Sve_And_Predicates
+        1204, // NI_Sve_BitwiseClear_Predicates
+        1205, // NI_Sve_Or_Predicates
+        1206, // NI_Sve_Xor_Predicates
+        1207, // NI_Sve_ConditionalSelect_Predicates
+        1208, // NI_Sve_ZipHigh_Predicates
+        1209, // NI_Sve_ZipLow_Predicates
+        1210, // NI_Sve_UnzipEven_Predicates
+        1211, // NI_Sve_UnzipOdd_Predicates
+        1212, // NI_Sve_TransposeEven_Predicates
+        1213, // NI_Sve_TransposeOdd_Predicates
+        1214, // NI_Sve_ReverseElement_Predicates
         ushort.MaxValue, // NI_PackedSimd_Abs
         ushort.MaxValue, // NI_PackedSimd_Add
         ushort.MaxValue, // NI_PackedSimd_AddPairwiseWidening
@@ -5987,35 +5999,41 @@ public partial struct HWIntrinsicInfo
         1867, // NI_Sve2_VectorTableLookupExtension
         1868, // NI_Sve2_Xor
         1869, // NI_Sve2_XorRotateRight
-        1870, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
-        1871, // NI_SveSm4_Encode
-        1872, // NI_SveSm4_KeyUpdate
-        1873, // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
-        1874, // NI_Sve_ConditionalExtractLastActiveElementScalar
-        1875, // NI_Sve_ConvertMaskToVector
-        1876, // NI_Sve_ConvertVectorToMask
-        1877, // NI_Sve_ConversionTrueMask
-        1878, // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
-        1879, // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
-        1880, // NI_Sve_SaturatingDecrementBy64BitElementCountScalar
-        1881, // NI_Sve_SaturatingIncrementBy16BitElementCountScalar
-        1882, // NI_Sve_SaturatingIncrementBy32BitElementCountScalar
-        1883, // NI_Sve_SaturatingIncrementBy64BitElementCountScalar
-        1884, // NI_Sve_StoreAndZipx2
-        1885, // NI_Sve_StoreAndZipx3
-        1886, // NI_Sve_StoreAndZipx4
-        1887, // NI_Sve_And_Predicates
-        1888, // NI_Sve_BitwiseClear_Predicates
-        1889, // NI_Sve_Or_Predicates
-        1890, // NI_Sve_Xor_Predicates
-        1891, // NI_Sve_ConditionalSelect_Predicates
-        1892, // NI_Sve_ZipHigh_Predicates
-        1893, // NI_Sve_ZipLow_Predicates
-        1894, // NI_Sve_UnzipEven_Predicates
-        1895, // NI_Sve_UnzipOdd_Predicates
-        1896, // NI_Sve_TransposeEven_Predicates
-        1897, // NI_Sve_TransposeOdd_Predicates
-        1898, // NI_Sve_ReverseElement_Predicates
+        1870, // NI_SveAes_Decrypt
+        1871, // NI_SveAes_Encrypt
+        1872, // NI_SveAes_InverseMixColumns
+        1873, // NI_SveAes_MixColumns
+        1874, // NI_SvePmull128_PolynomialMultiplyWideningEven
+        1875, // NI_SvePmull128_PolynomialMultiplyWideningOdd
+        1876, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
+        1877, // NI_SveSm4_Encode
+        1878, // NI_SveSm4_KeyUpdate
+        1879, // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
+        1880, // NI_Sve_ConditionalExtractLastActiveElementScalar
+        1881, // NI_Sve_ConvertMaskToVector
+        1882, // NI_Sve_ConvertVectorToMask
+        1883, // NI_Sve_ConversionTrueMask
+        1884, // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
+        1885, // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
+        1886, // NI_Sve_SaturatingDecrementBy64BitElementCountScalar
+        1887, // NI_Sve_SaturatingIncrementBy16BitElementCountScalar
+        1888, // NI_Sve_SaturatingIncrementBy32BitElementCountScalar
+        1889, // NI_Sve_SaturatingIncrementBy64BitElementCountScalar
+        1890, // NI_Sve_StoreAndZipx2
+        1891, // NI_Sve_StoreAndZipx3
+        1892, // NI_Sve_StoreAndZipx4
+        1893, // NI_Sve_And_Predicates
+        1894, // NI_Sve_BitwiseClear_Predicates
+        1895, // NI_Sve_Or_Predicates
+        1896, // NI_Sve_Xor_Predicates
+        1897, // NI_Sve_ConditionalSelect_Predicates
+        1898, // NI_Sve_ZipHigh_Predicates
+        1899, // NI_Sve_ZipLow_Predicates
+        1900, // NI_Sve_UnzipEven_Predicates
+        1901, // NI_Sve_UnzipOdd_Predicates
+        1902, // NI_Sve_TransposeEven_Predicates
+        1903, // NI_Sve_TransposeOdd_Predicates
+        1904, // NI_Sve_ReverseElement_Predicates
     ];
 
     private static ReadOnlySpan<ushort> s_WasmTableIndexByUnionIndex => [
@@ -7889,6 +7907,12 @@ public partial struct HWIntrinsicInfo
         ushort.MaxValue, // NI_Sve2_VectorTableLookupExtension
         ushort.MaxValue, // NI_Sve2_Xor
         ushort.MaxValue, // NI_Sve2_XorRotateRight
+        ushort.MaxValue, // NI_SveAes_Decrypt
+        ushort.MaxValue, // NI_SveAes_Encrypt
+        ushort.MaxValue, // NI_SveAes_InverseMixColumns
+        ushort.MaxValue, // NI_SveAes_MixColumns
+        ushort.MaxValue, // NI_SvePmull128_PolynomialMultiplyWideningEven
+        ushort.MaxValue, // NI_SvePmull128_PolynomialMultiplyWideningOdd
         ushort.MaxValue, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
         ushort.MaxValue, // NI_SveSm4_Encode
         ushort.MaxValue, // NI_SveSm4_KeyUpdate
@@ -8140,83 +8164,83 @@ public partial struct HWIntrinsicInfo
         150, // NI_Vector_op_UnaryNegation
         151, // NI_Vector_op_UnaryPlus
         152, // NI_Vector_op_UnsignedRightShift
-        1899, // NI_PackedSimd_Abs
-        1900, // NI_PackedSimd_Add
-        1901, // NI_PackedSimd_AddPairwiseWidening
-        1902, // NI_PackedSimd_AddSaturate
-        1903, // NI_PackedSimd_AllTrue
-        1904, // NI_PackedSimd_And
-        1905, // NI_PackedSimd_AndNot
-        1906, // NI_PackedSimd_AnyTrue
-        1907, // NI_PackedSimd_AverageRounded
-        1908, // NI_PackedSimd_Bitmask
-        1909, // NI_PackedSimd_BitwiseSelect
-        1910, // NI_PackedSimd_Ceiling
-        1911, // NI_PackedSimd_CompareEqual
-        1912, // NI_PackedSimd_CompareGreaterThan
-        1913, // NI_PackedSimd_CompareGreaterThanOrEqual
-        1914, // NI_PackedSimd_CompareLessThan
-        1915, // NI_PackedSimd_CompareLessThanOrEqual
-        1916, // NI_PackedSimd_CompareNotEqual
-        1917, // NI_PackedSimd_ConvertNarrowingSaturateSigned
-        1918, // NI_PackedSimd_ConvertNarrowingSaturateUnsigned
-        1919, // NI_PackedSimd_ConvertToDoubleLower
-        1920, // NI_PackedSimd_ConvertToInt32Saturate
-        1921, // NI_PackedSimd_ConvertToSingle
-        1922, // NI_PackedSimd_ConvertToUInt32Saturate
-        1923, // NI_PackedSimd_Divide
-        1924, // NI_PackedSimd_Dot
-        1925, // NI_PackedSimd_ExtractScalar
-        1926, // NI_PackedSimd_Floor
-        1927, // NI_PackedSimd_LoadScalarAndInsert
-        1928, // NI_PackedSimd_LoadScalarAndSplatVector128
-        1929, // NI_PackedSimd_LoadScalarVector128
-        1930, // NI_PackedSimd_LoadVector128
-        1931, // NI_PackedSimd_LoadWideningVector128
-        1932, // NI_PackedSimd_Max
-        1933, // NI_PackedSimd_Min
-        1934, // NI_PackedSimd_Multiply
-        1935, // NI_PackedSimd_MultiplyRoundedSaturateQ15
-        1936, // NI_PackedSimd_MultiplyWideningLower
-        1937, // NI_PackedSimd_MultiplyWideningUpper
-        1938, // NI_PackedSimd_Negate
-        1939, // NI_PackedSimd_Not
-        1940, // NI_PackedSimd_Or
-        1941, // NI_PackedSimd_PopCount
-        1942, // NI_PackedSimd_PseudoMax
-        1943, // NI_PackedSimd_PseudoMin
-        1944, // NI_PackedSimd_ReplaceScalar
-        1945, // NI_PackedSimd_RoundToNearest
-        1946, // NI_PackedSimd_ShiftLeft
-        1947, // NI_PackedSimd_ShiftRightArithmetic
-        1948, // NI_PackedSimd_ShiftRightLogical
-        1949, // NI_PackedSimd_Shuffle
-        1950, // NI_PackedSimd_SignExtendWideningLower
-        1951, // NI_PackedSimd_SignExtendWideningUpper
-        1952, // NI_PackedSimd_Splat
-        1953, // NI_PackedSimd_Sqrt
-        1954, // NI_PackedSimd_Store
-        1955, // NI_PackedSimd_StoreSelectedScalar
-        1956, // NI_PackedSimd_Subtract
-        1957, // NI_PackedSimd_SubtractSaturate
-        1958, // NI_PackedSimd_Swizzle
-        1959, // NI_PackedSimd_Truncate
-        1960, // NI_PackedSimd_Xor
-        1961, // NI_PackedSimd_ZeroExtendWideningLower
-        1962, // NI_PackedSimd_ZeroExtendWideningUpper
-        1963, // NI_RelaxedSimd_ConvertToInt32Native
-        1964, // NI_RelaxedSimd_ConvertToUInt32Native
-        1965, // NI_RelaxedSimd_DotProductAddNative
-        1966, // NI_RelaxedSimd_DotProductNative
-        1967, // NI_RelaxedSimd_LaneSelectNative
-        1968, // NI_RelaxedSimd_MaxNative
-        1969, // NI_RelaxedSimd_MinNative
-        1970, // NI_RelaxedSimd_MultiplyAddEstimate
-        1971, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
-        1972, // NI_RelaxedSimd_MultiplyRoundedQ15Native
-        1973, // NI_RelaxedSimd_SwizzleNative
-        1974, // NI_WasmBase_LeadingZeroCount
-        1975, // NI_WasmBase_TrailingZeroCount
+        1905, // NI_PackedSimd_Abs
+        1906, // NI_PackedSimd_Add
+        1907, // NI_PackedSimd_AddPairwiseWidening
+        1908, // NI_PackedSimd_AddSaturate
+        1909, // NI_PackedSimd_AllTrue
+        1910, // NI_PackedSimd_And
+        1911, // NI_PackedSimd_AndNot
+        1912, // NI_PackedSimd_AnyTrue
+        1913, // NI_PackedSimd_AverageRounded
+        1914, // NI_PackedSimd_Bitmask
+        1915, // NI_PackedSimd_BitwiseSelect
+        1916, // NI_PackedSimd_Ceiling
+        1917, // NI_PackedSimd_CompareEqual
+        1918, // NI_PackedSimd_CompareGreaterThan
+        1919, // NI_PackedSimd_CompareGreaterThanOrEqual
+        1920, // NI_PackedSimd_CompareLessThan
+        1921, // NI_PackedSimd_CompareLessThanOrEqual
+        1922, // NI_PackedSimd_CompareNotEqual
+        1923, // NI_PackedSimd_ConvertNarrowingSaturateSigned
+        1924, // NI_PackedSimd_ConvertNarrowingSaturateUnsigned
+        1925, // NI_PackedSimd_ConvertToDoubleLower
+        1926, // NI_PackedSimd_ConvertToInt32Saturate
+        1927, // NI_PackedSimd_ConvertToSingle
+        1928, // NI_PackedSimd_ConvertToUInt32Saturate
+        1929, // NI_PackedSimd_Divide
+        1930, // NI_PackedSimd_Dot
+        1931, // NI_PackedSimd_ExtractScalar
+        1932, // NI_PackedSimd_Floor
+        1933, // NI_PackedSimd_LoadScalarAndInsert
+        1934, // NI_PackedSimd_LoadScalarAndSplatVector128
+        1935, // NI_PackedSimd_LoadScalarVector128
+        1936, // NI_PackedSimd_LoadVector128
+        1937, // NI_PackedSimd_LoadWideningVector128
+        1938, // NI_PackedSimd_Max
+        1939, // NI_PackedSimd_Min
+        1940, // NI_PackedSimd_Multiply
+        1941, // NI_PackedSimd_MultiplyRoundedSaturateQ15
+        1942, // NI_PackedSimd_MultiplyWideningLower
+        1943, // NI_PackedSimd_MultiplyWideningUpper
+        1944, // NI_PackedSimd_Negate
+        1945, // NI_PackedSimd_Not
+        1946, // NI_PackedSimd_Or
+        1947, // NI_PackedSimd_PopCount
+        1948, // NI_PackedSimd_PseudoMax
+        1949, // NI_PackedSimd_PseudoMin
+        1950, // NI_PackedSimd_ReplaceScalar
+        1951, // NI_PackedSimd_RoundToNearest
+        1952, // NI_PackedSimd_ShiftLeft
+        1953, // NI_PackedSimd_ShiftRightArithmetic
+        1954, // NI_PackedSimd_ShiftRightLogical
+        1955, // NI_PackedSimd_Shuffle
+        1956, // NI_PackedSimd_SignExtendWideningLower
+        1957, // NI_PackedSimd_SignExtendWideningUpper
+        1958, // NI_PackedSimd_Splat
+        1959, // NI_PackedSimd_Sqrt
+        1960, // NI_PackedSimd_Store
+        1961, // NI_PackedSimd_StoreSelectedScalar
+        1962, // NI_PackedSimd_Subtract
+        1963, // NI_PackedSimd_SubtractSaturate
+        1964, // NI_PackedSimd_Swizzle
+        1965, // NI_PackedSimd_Truncate
+        1966, // NI_PackedSimd_Xor
+        1967, // NI_PackedSimd_ZeroExtendWideningLower
+        1968, // NI_PackedSimd_ZeroExtendWideningUpper
+        1969, // NI_RelaxedSimd_ConvertToInt32Native
+        1970, // NI_RelaxedSimd_ConvertToUInt32Native
+        1971, // NI_RelaxedSimd_DotProductAddNative
+        1972, // NI_RelaxedSimd_DotProductNative
+        1973, // NI_RelaxedSimd_LaneSelectNative
+        1974, // NI_RelaxedSimd_MaxNative
+        1975, // NI_RelaxedSimd_MinNative
+        1976, // NI_RelaxedSimd_MultiplyAddEstimate
+        1977, // NI_RelaxedSimd_MultiplyAddNegatedEstimate
+        1978, // NI_RelaxedSimd_MultiplyRoundedQ15Native
+        1979, // NI_RelaxedSimd_SwizzleNative
+        1980, // NI_WasmBase_LeadingZeroCount
+        1981, // NI_WasmBase_TrailingZeroCount
     ];
 
 }

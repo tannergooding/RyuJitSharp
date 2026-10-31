@@ -84,8 +84,6 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public bool satisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method) => lpVtbl->Base.Base.satisfiesMethodConstraints((ICorJitInfo*)(Unsafe.AsPointer(ref this)), parent, method) != 0;
 
-    public void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method) => lpVtbl->Base.Base.methodMustBeLoadedBeforeCodeIsRun((ICorJitInfo*)(Unsafe.AsPointer(ref this)), method);
-
     public void getGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal) => lpVtbl->Base.Base.getGSCookie((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pCookieVal, ppCookieVal);
 
     public void setPatchpointInfo(PatchpointInfo* patchpointInfo) => lpVtbl->Base.Base.setPatchpointInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), patchpointInfo);
@@ -123,6 +121,10 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
     public nint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nint bufferSize, nint* pRequiredBufferSize = null) => lpVtbl->Base.Base.printClassName((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, buffer, bufferSize, pRequiredBufferSize);
 
     public bool isValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->Base.Base.isValueClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls) != 0;
+
+    public bool isByRefLike(CORINFO_CLASS_HANDLE cls) => lpVtbl->Base.Base.isByRefLike((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls) != 0;
+
+    public bool isSharedInst(CORINFO_CLASS_HANDLE cls) => lpVtbl->Base.Base.isSharedInst((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls) != 0;
 
     public CorInfoFlag getClassAttribs(CORINFO_CLASS_HANDLE cls) => lpVtbl->Base.Base.getClassAttribs((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
@@ -185,8 +187,6 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
     public void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandler, CORINFO_LOOKUP* pLookup) => lpVtbl->Base.Base.getReadyToRunDelegateCtorHelper((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pTargetMethod, targetConstraint, delegateType, callerHandler, pLookup);
 
     public CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context) => lpVtbl->Base.Base.initClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field, method, context);
-
-    public void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls) => lpVtbl->Base.Base.classMustBeLoadedBeforeCodeIsRun((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
     public CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId) => lpVtbl->Base.Base.getBuiltinClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), classId);
 

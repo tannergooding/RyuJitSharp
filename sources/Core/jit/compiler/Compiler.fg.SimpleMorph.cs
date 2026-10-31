@@ -177,7 +177,7 @@ public partial class Compiler
                     var address = op1;
                     while ((address is not null) && (address.Oper is GT_FIELD_ADDR))
                     {
-                        if (eeIsByrefLike(info.compCompHnd->getFieldClass(address.AsFieldAddr().FldHnd)))
+                        if (eeIsByRefLike(info.compCompHnd->getFieldClass(address.AsFieldAddr().FldHnd)))
                         {
                             JITDUMP($"Marking [{tree.TreeId:D6}] STOREIND as GTF_IND_TGT_NOT_HEAP: field's owner is a byref-like struct\n");
                             tree.Flags |= GTF_IND_TGT_NOT_HEAP;

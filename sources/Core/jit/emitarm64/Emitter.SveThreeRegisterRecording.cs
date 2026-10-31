@@ -59,6 +59,8 @@ public partial class Emitter
                 return;
             }
 
+            case INS_sve_aesd:
+            case INS_sve_aese:
             case INS_sve_sm4e:
             case INS_sve_sqxtnt:
             case INS_sve_uqxtnt:

@@ -476,7 +476,7 @@ internal static unsafe class ValueNumBinaryInterningTests
                 Assert.That(store.GetConstantInt32(folded), Is.EqualTo(expected));
                 Assert.That(store.VNForFunc(TYP_INT, func, first, second), Is.EqualTo(folded));
             }
-            Assert.That(ee.EqualityCalls, Is.EqualTo(2));
+            Assert.That(ee.EqualityCalls, Is.EqualTo(1));
         });
     }
 

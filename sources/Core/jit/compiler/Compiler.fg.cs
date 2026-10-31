@@ -7305,7 +7305,7 @@ public partial class Compiler
     /// <summary>Get the helper call node for a static class constructor.</summary>
     /// <param name="cls">The class handle</param>
     /// <param name="helper">The helper function</param>
-    /// <param name="typeIndex">The static block type index. Used only for CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, or CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2 to cache the static block in an array at index typeIndex.</param>
+    /// <param name="typeIndex">The static block type index. Used only for optimized dynamic thread-static helpers to cache the static block in an array at index typeIndex.</param>
     /// <returns>The call node corresponding to the helper</returns>
     public unsafe GenTreeCall fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, int typeIndex = 0)
     {
@@ -7340,6 +7340,8 @@ public partial class Compiler
             case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             {
                 break;
             }
@@ -7384,7 +7386,9 @@ public partial class Compiler
 
         GenTreeCall result;
 
-        if (helper is CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
+        if (helper is CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED
+                   or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED
+                   or CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
                    or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
                    or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2
                    or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT)

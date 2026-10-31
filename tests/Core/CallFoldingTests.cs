@@ -701,6 +701,7 @@ internal static unsafe class CallFoldingTests
             vtable.Base.Base.getExactClasses = &GetExactClasses;
             vtable.Base.Base.compareTypesForEquality = &CompareTypesForEquality;
             vtable.Base.Base.getClassAttribs = &GetGdvClassAttributes;
+            vtable.Base.Base.isSharedInst = &IsSharedInst;
             vtable.Base.Base.getChildType = &GetChildType;
             vtable.Base.Base.getMethodAttribs = &GetGdvMethodAttributes;
             vtable.Base.Base.isExactType =
@@ -797,6 +798,10 @@ internal static unsafe class CallFoldingTests
 
         return attributes;
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsSharedInst(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
+        => (byte)((s_sharedClassHandle != 0) && ((nint)type == s_sharedClassHandle) ? 1 : 0);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoType GetChildType(

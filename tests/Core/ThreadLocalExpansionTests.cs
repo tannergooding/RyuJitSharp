@@ -31,6 +31,8 @@ internal static unsafe class ThreadLocalExpansionTests
 
     [TestCase(CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)]
     [TestCase(CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)]
+    [TestCase(CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED)]
+    [TestCase(CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED)]
     public static void CoreClrChecksIndexAndCachedBlockBeforeOriginalHelper(CorInfoHelpFunc helper)
     {
         WithCompiler(false, (compiler, entry, body) =>

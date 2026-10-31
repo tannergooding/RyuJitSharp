@@ -1,10 +1,12 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.GenTreeCallFlags;
 using static RyuJitSharp.var_types;
 using BitVecOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
 
@@ -208,6 +210,31 @@ internal static unsafe class ObjectAllocatorGraphTests
             Assert.That(Call<bool>(allocator, "IsLclVarUsed", 2), Is.False);
             Assert.That(Call<bool>(allocator, "MayLclVarPointToStack", 2), Is.True);
             Assert.That(Call<bool>(allocator, "DoesLclVarPointToStack", 2), Is.True);
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(true, true)]
+    public static void ExplicitTailDelegateReceiverEscapes(bool tailPrefixed, bool expectedEscape)
+    {
+        WithAllocator([TYP_REF], false, false, false, (compiler, allocator) => {
+            Call(allocator, "PrepareAnalysis");
+            InitializeGraph(allocator);
+
+            var receiver = compiler.gtNewLclvNode(TYP_REF, 0);
+            var call = new GenTreeCall(TYP_VOID) {
+                _callMoreFlags = GTF_CALL_M_DELEGATE_INV |
+                    (tailPrefixed ? GTF_CALL_M_EXPLICIT_TAILCALL : 0),
+            };
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(receiver)
+                .WithWellKnownArg(WellKnownArg.ThisPointer));
+
+            var parentStack = new Stack<GenTree>();
+            parentStack.Push(call);
+            parentStack.Push(receiver);
+            Call(allocator, "AnalyzeParentStack", parentStack, 0, new BasicBlock(null, null));
+
+            Assert.That(Call<bool>(allocator, "CanLclVarEscape", 0), Is.EqualTo(expectedEscape));
         });
     }
 

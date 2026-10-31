@@ -400,6 +400,7 @@ public partial struct JitConfigValues
         internal int _enableArm64Sha3;
         internal int _enableArm64Sm4;
         internal int _enableArm64SveAes;
+        internal int _enableArm64SvePmull128;
         internal int _enableArm64SveSha3;
         internal int _enableArm64SveSm4;
     }
@@ -2523,6 +2524,7 @@ public partial struct JitConfigValues
     public int EnableArm64Sha3 => _configurationData is { } configurationData ? Configuration.TARGET_ARM64 && configurationData._targetArm64Data is { } sidecarData0 ? sidecarData0._enableArm64Sha3 : default : default;
     public int EnableArm64Sm4 => _configurationData is { } configurationData ? Configuration.TARGET_ARM64 && configurationData._targetArm64Data is { } sidecarData0 ? sidecarData0._enableArm64Sm4 : default : default;
     public int EnableArm64SveAes => _configurationData is { } configurationData ? Configuration.TARGET_ARM64 && configurationData._targetArm64Data is { } sidecarData0 ? sidecarData0._enableArm64SveAes : default : default;
+    public int EnableArm64SvePmull128 => _configurationData is { } configurationData ? Configuration.TARGET_ARM64 && configurationData._targetArm64Data is { } sidecarData0 ? sidecarData0._enableArm64SvePmull128 : default : default;
     public int EnableArm64SveSha3 => _configurationData is { } configurationData ? Configuration.TARGET_ARM64 && configurationData._targetArm64Data is { } sidecarData0 ? sidecarData0._enableArm64SveSha3 : default : default;
     public int EnableArm64SveSm4 => _configurationData is { } configurationData ? Configuration.TARGET_ARM64 && configurationData._targetArm64Data is { } sidecarData0 ? sidecarData0._enableArm64SveSm4 : default : default;
     public int EnableRiscV64Zba => _configurationData is { } configurationData ? Configuration.TARGET_RISCV64 && configurationData._targetRiscV64Data is { } sidecarData0 ? sidecarData0._enableRiscV64Zba : default : default;
@@ -4058,6 +4060,7 @@ public partial struct JitConfigValues
             // _configurationData!._targetArm64Data!._enableArm64Sha3 = unchecked((int)(0xCDCDCDCD));
             // _configurationData!._targetArm64Data!._enableArm64Sm4 = unchecked((int)(0xCDCDCDCD));
             // _configurationData!._targetArm64Data!._enableArm64SveAes = unchecked((int)(0xCDCDCDCD));
+            // _configurationData!._targetArm64Data!._enableArm64SvePmull128 = unchecked((int)(0xCDCDCDCD));
             // _configurationData!._targetArm64Data!._enableArm64SveSha3 = unchecked((int)(0xCDCDCDCD));
             // _configurationData!._targetArm64Data!._enableArm64SveSm4 = unchecked((int)(0xCDCDCDCD));
         }
@@ -4641,6 +4644,7 @@ public partial struct JitConfigValues
             _configurationData!._targetArm64Data!._enableArm64Sha3 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sha3"u8))), 1);
             _configurationData!._targetArm64Data!._enableArm64Sm4 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sm4"u8))), 1);
             _configurationData!._targetArm64Data!._enableArm64SveAes = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64SveAes"u8))), 1);
+            _configurationData!._targetArm64Data!._enableArm64SvePmull128 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64SvePmull128"u8))), 1);
             _configurationData!._targetArm64Data!._enableArm64SveSha3 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64SveSha3"u8))), 1);
             _configurationData!._targetArm64Data!._enableArm64SveSm4 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64SveSm4"u8))), 1);
         }

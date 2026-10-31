@@ -135,7 +135,8 @@ public sealed partial class CodeGen
             else if (data.Oper.IsIntegralConst)
             {
                 var immediate = data.AsIntConCommon().IconValue;
-                dataReg = (targetReg == REG_RISCV64_NA) ? rsGetRsvdReg() : targetReg; // Use tempReg if spilled
+                // The reserved register may be needed to form a large stack-local address.
+                dataReg = (targetReg == REG_RISCV64_NA) ? REG_RISCV64_RA : targetReg;
 
                 if (data.IsIconHandle() && data.AsIntCon().FitsInAddrBase(_compiler) &&
                     data.AsIntCon().AddrNeedsReloc(_compiler))

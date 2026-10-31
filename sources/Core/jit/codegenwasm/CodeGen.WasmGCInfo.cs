@@ -18,7 +18,7 @@ public sealed partial class CodeGen
             }
         }
 
-        var codeSize = unchecked(2 * maxVirtualIP);
+        var codeSize = GetWasmGCInfoCodeSize(maxVirtualIP);
         const uint prologSize = 1;
 
         using var encoder = new GcInfoEncoder(_compiler.info.compCompHnd, _compiler.info.compMethodInfo);
@@ -43,4 +43,7 @@ public sealed partial class CodeGen
         _compiler.compInfoBlkAddr = encoder.Emit();
         _compiler.compInfoBlkSize = unchecked((nint)encoder.GetEncodedGCInfoSize());
     }
+
+    private uint GetWasmGCInfoCodeSize(uint maxVirtualIP)
+        => _compiler.IsNativeAot ? maxVirtualIP : unchecked(2 * maxVirtualIP);
 }

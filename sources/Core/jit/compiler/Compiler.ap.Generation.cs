@@ -95,8 +95,9 @@ public partial class Compiler
                     var lengthVN = optConservativeNormalVN(check.ArrayLength);
                     if ((indexVN != ValueNumStore.NoVN) && (lengthVN != ValueNumStore.NoVN))
                     {
-                        // A successful bounds check establishes index < length and a nonnegative length.
-                        assertionInfo = new(optAddAssertion(AssertionDsc.CreateNoThrowArrBnd(this, indexVN, lengthVN)));
+                        // A successful bounds check establishes index u< length; its length is nonnegative.
+                        assertionInfo = new(optAddAssertion(
+                            AssertionDsc.CreateNoThrowArrBnd(this, indexVN, lengthVN, isLenNeverNegative: true)));
                     }
                 }
 
@@ -153,7 +154,8 @@ public partial class Compiler
                             if (arrayVN != ValueNumStore.NoVN)
                             {
                                 var lengthVN = vnStore.VNForFunc(TYP_INT, VNF_ARR_LENGTH, arrayVN);
-                                assertionInfo = new(optAddAssertion(AssertionDsc.CreateNoThrowArrBnd(this, indexVN, lengthVN)));
+                                assertionInfo = new(optAddAssertion(
+                                    AssertionDsc.CreateNoThrowArrBnd(this, indexVN, lengthVN, isLenNeverNegative: true)));
                             }
                         }
                     }

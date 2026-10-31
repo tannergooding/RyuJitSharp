@@ -229,6 +229,16 @@ public partial class Compiler
                     {
                         tree._vnPair.SetBoth(vnStore.VNForExpr(compCurBB, type));
                     }
+
+                    if (descriptor.IsNeverNegative && (local.Type is TYP_INT))
+                    {
+                        var lengthVN = vnStore.VNNormalValue(tree._vnPair.Conservative);
+                        if (!vnStore.IsVNConstant(lengthVN))
+                        {
+                            vnStore.SetVNIsCheckedBound(lengthVN);
+                        }
+                    }
+
                     break;
                 }
 

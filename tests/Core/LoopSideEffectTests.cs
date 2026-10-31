@@ -272,7 +272,7 @@ internal static unsafe class LoopSideEffectTests
 
     [TestCase(CORINFO_HELP_DIV, false, false)]
     [TestCase(CORINFO_HELP_GET_GCSTATIC_BASE, false, true)]
-    [TestCase(CORINFO_HELP_GET_GCSTATIC_BASE, true, false)]
+    [TestCase(CORINFO_HELP_GET_GCSTATIC_BASE, true, true)]
     [TestCase(CORINFO_HELP_ASSIGN_REF, true, true)]
     public static void HelperCallEffectsRespectHeapAndCctorProperties(
         CorInfoHelpFunc helper, bool hoistable, bool hasHavoc)

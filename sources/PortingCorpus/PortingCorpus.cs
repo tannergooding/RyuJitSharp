@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -59,6 +60,11 @@ internal static class PortingCorpus
         if (FoldHardware(5) != 12)
         {
             return 10;
+        }
+
+        if (VectorDivide(new Vector<int>(8), new Vector<int>(2))[0] != 4)
+        {
+            return 22;
         }
 
         if (PartialVectorCreate(5).GetElement(0) != 1)
@@ -227,6 +233,9 @@ internal static class PortingCorpus
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int FoldHardware(int value) => (Vector128.Create(3) + Vector128.Create(4)).ToScalar() + value;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Vector<int> VectorDivide(Vector<int> dividend, Vector<int> divisor) => dividend / divisor;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static Vector128<int> PartialVectorCreate(int value) => Vector128.Create(1, 2, value, 4);

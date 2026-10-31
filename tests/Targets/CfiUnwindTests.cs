@@ -51,7 +51,7 @@ internal static unsafe class CfiUnwindTests
 
         for (var index = 8; index <= 31; index++)
         {
-            yield return new TestCaseData((regNumber)index, index);
+            yield return new TestCaseData((regNumber)index, index < 16 ? index : index + 114);
         }
     }
 
@@ -65,9 +65,8 @@ internal static unsafe class CfiUnwindTests
             CurrentSize(codeGen.Emitter) = 9;
             compiler.unwindPush(REG_X64_RAX);
             AssertCodes(compiler,
-                new CFI_CODE(5, 0, -1, 8),
-                new CFI_CODE(5, 2, 3, 0),
-                new CFI_CODE(5, 0, -1, 8),
+                new CFI_CODE(5, 0, -1, 16),
+                new CFI_CODE(5, 2, 3, 8),
                 new CFI_CODE(5, 2, 12, 0),
                 new CFI_CODE(9, 0, -1, 8));
         });
@@ -235,7 +234,7 @@ internal static unsafe class CfiUnwindTests
             var hotEnd = new insGroup { igOffs = 32 };
             if (TestConfiguration.IsDebug)
             {
-                InstructionGroupSelf(hotEnd) = hotEnd;
+                hotEnd.igSelf = hotEnd;
             }
             func.endLoc = new emitLocation(hotEnd);
             func.coldStartLoc = new emitLocation(hotEnd);
@@ -282,9 +281,6 @@ internal static unsafe class CfiUnwindTests
         Assert.That(MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(actual)).ToArray(),
             Is.EqualTo(MemoryMarshal.AsBytes(expected.AsSpan()).ToArray()));
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "igSelf")]
-    private static extern ref insGroup? InstructionGroupSelf(insGroup group);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
     private static extern ref int CurrentSize(Emitter emitter);

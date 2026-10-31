@@ -123,6 +123,7 @@ internal static unsafe class BoxPatternTests
         vtable.Base.Base.compareTypesForCast = &Compare;
         vtable.Base.Base.getTypeForPrimitiveValueClass = &GetPrimitive;
         vtable.Base.Base.getClassAttribs = &GetClassAttribs;
+        vtable.Base.Base.isSharedInst = &IsNotSharedInst;
         vtable.Base.Base.isNullableType = &IsNullable;
         vtable.Base.Base.getBoxHelper = &GetBoxHelper;
         TestEE state = new() { Info = new() { lpVtbl = &vtable } };
@@ -164,6 +165,9 @@ internal static unsafe class BoxPatternTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoFlag GetClassAttribs(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsNotSharedInst(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static TypeCompareState IsNullable(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => TypeCompareState.MustNot;

@@ -155,7 +155,11 @@ public partial class Compiler
                     // AND_NOT/OR_NOT are introduced only in lowering so earlier tree optimizations see NOT.
                     op2 = impSIMDPopStack();
                     op1 = impSIMDPopStack();
-                    op2 = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseType, simdSize));
+                    op2 = gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseType, simdSize);
+                    if (intrinsic is NI_AdvSimd_BitwiseClear)
+                    {
+                        op2 = gtFoldExpr(op2);
+                    }
                     retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseType, simdSize);
                     break;
                 }

@@ -73,8 +73,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public bool satisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method) => lpVtbl->satisfiesMethodConstraints((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), parent, method) != 0;
 
-    public void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method) => lpVtbl->methodMustBeLoadedBeforeCodeIsRun((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), method);
-
     public void getGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal) => lpVtbl->getGSCookie((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), pCookieVal, ppCookieVal);
 
     public void setPatchpointInfo(PatchpointInfo* patchpointInfo) => lpVtbl->setPatchpointInfo((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), patchpointInfo);
@@ -112,6 +110,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
     public nint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nint bufferSize, nint* pRequiredBufferSize = null) => lpVtbl->printClassName((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), cls, buffer, bufferSize, pRequiredBufferSize);
 
     public bool isValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->isValueClass((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), cls) != 0;
+
+    public bool isByRefLike(CORINFO_CLASS_HANDLE cls) => lpVtbl->isByRefLike((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), cls) != 0;
+
+    public bool isSharedInst(CORINFO_CLASS_HANDLE cls) => lpVtbl->isSharedInst((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), cls) != 0;
 
     public CorInfoFlag getClassAttribs(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAttribs((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), cls);
 
@@ -174,8 +176,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
     public void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandler, CORINFO_LOOKUP* pLookup) => lpVtbl->getReadyToRunDelegateCtorHelper((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), pTargetMethod, targetConstraint, delegateType, callerHandler, pLookup);
 
     public CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context) => lpVtbl->initClass((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), field, method, context);
-
-    public void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls) => lpVtbl->classMustBeLoadedBeforeCodeIsRun((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), cls);
 
     public CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId) => lpVtbl->getBuiltinClass((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), classId);
 
@@ -477,9 +477,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // Check constraints on method type arguments (only).
         bool satisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method);
 
-        // load and restore the method
-        void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method);
-
         // Returns the global cookie for the /GS unsafe buffer checks
         // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
         void getGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
@@ -567,6 +564,12 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_VALUECLASS, except faster.
         bool isValueClass(CORINFO_CLASS_HANDLE cls);
+
+        // Quick check whether the type is byref-like. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_BYREF_LIKE, except faster.
+        bool isByRefLike(CORINFO_CLASS_HANDLE cls);
+
+        // Quick check whether the type is shared by generic instantiations. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_SHAREDINST, except faster.
+        bool isSharedInst(CORINFO_CLASS_HANDLE cls);
 
         // return flags (a bitfield of CorInfoFlags values)
         CorInfoFlag getClassAttribs(CORINFO_CLASS_HANDLE cls);
@@ -759,18 +762,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         //   Exact context of method
         //
         CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context);
-
-        // This used to be called "loadClass".  This records the fact
-        // that the class must be loaded (including restored if necessary) before we execute the
-        // code that we are currently generating.  When jitting code
-        // the function loads the class immediately.  When zapping code
-        // the zapper will if necessary use the call to record the fact that we have
-        // to do a fixup/restore before running the method currently being generated.
-        //
-        // This is typically used to ensure value types are loaded before zapped
-        // code that manipulates them is executed, so that the GC can access information
-        // about those value types.
-        void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls);
 
         // returns the class handle for the special builtin classes
         CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId);
@@ -1196,8 +1187,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE, byte> satisfiesMethodConstraints;
 
-        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, void> methodMustBeLoadedBeforeCodeIsRun;
-
         public delegate* unmanaged[MemberFunction]<TSelf*, GSCookie*, GSCookie**, void> getGSCookie;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, PatchpointInfo*, void> setPatchpointInfo;
@@ -1235,6 +1224,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, byte*, nint, nint*, nint> printClassName;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, byte> isValueClass;
+
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, byte> isByRefLike;
+
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, byte> isSharedInst;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoFlag> getClassAttribs;
 
@@ -1297,8 +1290,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE, CORINFO_LOOKUP*, void> getReadyToRunDelegateCtorHelper;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_FIELD_HANDLE, CORINFO_METHOD_HANDLE, CORINFO_CONTEXT_HANDLE, CorInfoInitClassResult> initClass;
-
-        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, void> classMustBeLoadedBeforeCodeIsRun;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CorInfoClassId, CORINFO_CLASS_HANDLE> getBuiltinClass;
 

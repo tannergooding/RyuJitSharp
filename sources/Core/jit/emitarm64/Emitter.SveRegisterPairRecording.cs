@@ -393,6 +393,19 @@ public partial class Emitter
                 break;
             }
 
+            case INS_sve_aesimc:
+            case INS_sve_aesmc:
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(insOptsNone(opt) || (opt == INS_OPTS_SCALABLE_B));
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isScalableVectorSize(size));
+                emitInsSve_Mov(INS_sve_mov, EA_SCALABLE_ARM64, reg1, reg2, true, INS_OPTS_SCALABLE_B);
+                emitInsSve_R(ins, attr, reg1, opt);
+                return;
+            }
+
             case INS_sve_fmov:
             {
                 assert(insOptsScalableAtLeastHalf(opt));

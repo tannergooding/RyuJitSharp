@@ -191,17 +191,19 @@ public partial class Compiler
                 optMaxAssertionCount = 64;
             }
 
+            optAssertionTabCapacity = optMaxAssertionCount;
             optAssertionDep = [];
             _ = optAssertionDep.EnsureCapacity(Math.Max(1, lvaCount));
         }
         else
         {
-            optMaxAssertionCount = (AssertionIndex)Math.Max(64, Math.Min(256, (lvaTrackedCount + (3 * fgBBcount) + 48) >> 2));
-            optComplementaryAssertionMap = new AssertionIndex[optMaxAssertionCount + 1];
+            optMaxAssertionCount = 512;
+            optAssertionTabCapacity = 64;
+            optComplementaryAssertionMap = new AssertionIndex[optAssertionTabCapacity + 1];
         }
 
-        optAssertionTabPrivate = new AssertionDsc[optMaxAssertionCount];
-        optAssertionTraitsInit(optMaxAssertionCount);
+        optAssertionTabPrivate = new AssertionDsc[optAssertionTabCapacity];
+        optAssertionTraitsInit(optAssertionTabCapacity);
         optAssertionCount = 0;
         optAssertionOverflow = 0;
         optAssertionPropagated = false;
@@ -314,14 +316,6 @@ public partial class Compiler
             return new(index);
         }
 
-        if (!isUnsignedBound && isUnsigned && (op1 != op2) && !vnStore.IsVNConstant(op1) &&
-            !vnStore.IsVNConstant(op2) && vnStore.IsVNCheckedBoundIndex(op1) && optAssertionHasAssertionsForVN(op2))
-        {
-            var index = optAddAssertion(AssertionDsc.CreateRelopVN(this, func, op1, op2));
-            optCreateComplementaryAssertion(index);
-            return new(index);
-        }
-
         // RangeCheck only consumes equality with the bound itself, not bound-plus-constant forms.
         if (isEquality)
         {
@@ -349,7 +343,13 @@ public partial class Compiler
         {
             var indexVN = vnStore.VNNormalValue(unsignedBound.VNIdx);
             var boundVN = vnStore.VNNormalValue(unsignedBound.VNBound);
-            var index = optAddAssertion(AssertionDsc.CreateNoThrowArrBnd(this, indexVN, boundVN));
+            var op1IsNeverNegative = (optConservativeNormalVN(relop.AsOp().Op1) == boundVN) &&
+                relop.AsOp().Op1.IsNeverNegative(this);
+            var op2IsNeverNegative = (optConservativeNormalVN(relop.AsOp().Op2) == boundVN) &&
+                relop.AsOp().Op2.IsNeverNegative(this);
+            var isBoundNeverNegative = vnStore.IsVNNeverNegative(boundVN) || op1IsNeverNegative || op2IsNeverNegative;
+            var index = optAddAssertion(
+                AssertionDsc.CreateNoThrowArrBnd(this, indexVN, boundVN, isBoundNeverNegative));
             // JTRUE assertions normally hold on the jump edge; >= establishes the bound on the next edge.
             return unsignedBound.CmpOper == VNF_GE_UN ? AssertionInfo.ForNextEdge(index) : new(index);
         }
@@ -369,8 +369,8 @@ public partial class Compiler
             return new(index);
         }
 
-        // Avoid consuming table slots unless a signed VN-to-VN assertion can chain with existing facts.
-        if (!isUnsigned && (op1 != op2) && !vnStore.IsVNConstant(op1) && !vnStore.IsVNConstant(op2) &&
+        // Avoid consuming table slots unless a VN-to-VN assertion can chain with existing facts.
+        if ((op1 != op2) && !vnStore.IsVNConstant(op1) && !vnStore.IsVNConstant(op2) &&
             (optAssertionHasAssertionsForVN(op1) || optAssertionHasAssertionsForVN(op2)))
         {
             var index = optAddAssertion(AssertionDsc.CreateRelopVN(this, func, op1, op2));
@@ -435,6 +435,22 @@ public partial class Compiler
         {
             optAssertionOverflow++;
             return NO_ASSERTION_INDEX;
+        }
+
+        if (optAssertionCount == optAssertionTabCapacity)
+        {
+            assert(!optLocalAssertionProp);
+            var newCapacity = (AssertionIndex)Math.Min(2u * optAssertionTabCapacity, (uint)optMaxAssertionCount);
+
+            var newTable = new AssertionDsc[newCapacity];
+            Array.Copy(optAssertionTabPrivate, newTable, optAssertionCount);
+            optAssertionTabPrivate = newTable;
+
+            var newComplementaryMap = new AssertionIndex[newCapacity + 1];
+            Array.Copy(optComplementaryAssertionMap, newComplementaryMap, optAssertionTabCapacity + 1);
+            optComplementaryAssertionMap = newComplementaryMap;
+
+            optAssertionTabCapacity = newCapacity;
         }
 
         // Immutable descriptors can be shared without changing native value-copy semantics.

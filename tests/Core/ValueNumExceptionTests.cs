@@ -250,6 +250,142 @@ internal static unsafe class ValueNumExceptionTests
         });
     }
 
+    [TestCase(TYP_INT, false, false)]
+    [TestCase(TYP_INT, true, false)]
+    [TestCase(TYP_INT, false, true)]
+    [TestCase(TYP_INT, true, true)]
+    [TestCase(TYP_UINT, false, false)]
+    [TestCase(TYP_UINT, true, false)]
+    [TestCase(TYP_UINT, false, true)]
+    [TestCase(TYP_UINT, true, true)]
+    [TestCase(TYP_LONG, false, false)]
+    [TestCase(TYP_LONG, true, false)]
+    [TestCase(TYP_LONG, false, true)]
+    [TestCase(TYP_LONG, true, true)]
+    [TestCase(TYP_ULONG, false, false)]
+    [TestCase(TYP_ULONG, true, false)]
+    [TestCase(TYP_ULONG, false, true)]
+    [TestCase(TYP_ULONG, true, true)]
+    public static void VectorDivisionExceptionsInspectConstantLanes(
+        var_types simdBaseType, bool hasZero, bool hasMinValueOverMinusOne)
+    {
+        Assume.That(Configuration.FEATURE_SIMD);
+
+        WithStore((compiler, store) =>
+        {
+            simd16_t dividendValue = default;
+            simd16_t divisorValue = default;
+            switch (simdBaseType)
+            {
+                case TYP_INT:
+                {
+                    dividendValue.AsSpan<int>()[..4].Fill(4);
+                    divisorValue.AsSpan<int>()[..4].Fill(2);
+                    if (hasZero)
+                    {
+                        divisorValue.AsSpan<int>()[0] = 0;
+                    }
+                    if (hasMinValueOverMinusOne)
+                    {
+                        dividendValue.AsSpan<int>()[1] = int.MinValue;
+                        divisorValue.AsSpan<int>()[1] = -1;
+                    }
+
+                    break;
+                }
+
+                case TYP_UINT:
+                {
+                    dividendValue.AsSpan<uint>()[..4].Fill(4);
+                    divisorValue.AsSpan<uint>()[..4].Fill(2);
+                    if (hasZero)
+                    {
+                        divisorValue.AsSpan<uint>()[0] = 0;
+                    }
+                    if (hasMinValueOverMinusOne)
+                    {
+                        dividendValue.AsSpan<uint>()[1] = 0x80000000;
+                        divisorValue.AsSpan<uint>()[1] = uint.MaxValue;
+                    }
+
+                    break;
+                }
+
+                case TYP_LONG:
+                {
+                    dividendValue.AsSpan<long>()[..2].Fill(4);
+                    divisorValue.AsSpan<long>()[..2].Fill(2);
+                    if (hasZero)
+                    {
+                        divisorValue.AsSpan<long>()[0] = 0;
+                    }
+                    if (hasMinValueOverMinusOne)
+                    {
+                        dividendValue.AsSpan<long>()[1] = long.MinValue;
+                        divisorValue.AsSpan<long>()[1] = -1;
+                    }
+
+                    break;
+                }
+
+                case TYP_ULONG:
+                {
+                    dividendValue.AsSpan<ulong>()[..2].Fill(4);
+                    divisorValue.AsSpan<ulong>()[..2].Fill(2);
+                    if (hasZero)
+                    {
+                        divisorValue.AsSpan<ulong>()[0] = 0;
+                    }
+                    if (hasMinValueOverMinusOne)
+                    {
+                        dividendValue.AsSpan<ulong>()[1] = 0x8000000000000000;
+                        divisorValue.AsSpan<ulong>()[1] = ulong.MaxValue;
+                    }
+
+                    break;
+                }
+
+                default:
+                {
+                    throw new ArgumentOutOfRangeException(nameof(simdBaseType));
+                }
+            }
+
+            var dividend = Node(TYP_SIMD16, store.VNForSimd16Con(dividendValue));
+            var divisor = Node(TYP_SIMD16, store.VNForSimd16Con(divisorValue));
+            var division = new GenTreeHWIntrinsic(TYP_SIMD16, NamedIntrinsic.NI_Vector_op_Division,
+                simdBaseType, 16, dividend, divisor);
+
+            compiler.fgValueNumberHWIntrinsic(division);
+
+            var expectArithmetic = hasMinValueOverMinusOne && (simdBaseType is TYP_INT or TYP_LONG);
+            Assert.That(HasException(store, store.VNExceptionSet(division._vnPair.Liberal), VNF_DivideByZeroExc),
+                Is.EqualTo(hasZero));
+            Assert.That(HasException(store, store.VNExceptionSet(division._vnPair.Conservative), VNF_DivideByZeroExc),
+                Is.EqualTo(hasZero));
+            Assert.That(HasException(store, store.VNExceptionSet(division._vnPair.Liberal), VNF_ArithmeticExc),
+                Is.EqualTo(expectArithmetic));
+            Assert.That(HasException(store, store.VNExceptionSet(division._vnPair.Conservative), VNF_ArithmeticExc),
+                Is.EqualTo(expectArithmetic));
+        });
+    }
+
+    [Test]
+    public static void NonnegativeIntLocalIsMarkedAsCheckedLength()
+    {
+        WithStore((compiler, store) =>
+        {
+            compiler.lvaCount = 1;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT, IsNeverNegative = true }];
+            var length = compiler.gtNewLclvNode(TYP_INT, 0);
+
+            compiler.fgValueNumberTree(length);
+
+            var lengthVN = store.VNNormalValue(length._vnPair.Conservative);
+            Assert.That(store.IsVNCheckedBound(lengthVN), Is.True);
+        });
+    }
+
     [Test]
     public static void ConservativeArithmeticUsesLiberalDividend()
     {

@@ -254,6 +254,16 @@ public partial class Compiler
             }
         }
 
+        if (id is NI_Vector_op_Division)
+        {
+            assert(count == 2);
+            assert(varTypeIsIntegral(tree.SimdBaseType));
+            var oper = varTypeIsSigned(tree.SimdBaseType) ? GT_DIV : GT_UDIV;
+            var divisionExceptions = fgValueNumberDivisionExceptions(
+                oper, tree.GetOp(1), tree.GetOp(2), tree.SimdBaseType);
+            exceptions = vnStore.VNPExcSetUnion(exceptions, divisionExceptions);
+        }
+
         tree._vnPair = tree.IsConvertMaskToVector
             ? vnStore.VNPUniqueWithExc(tree.Type, exceptions)
             : vnStore.VNPWithExc(normal, exceptions);

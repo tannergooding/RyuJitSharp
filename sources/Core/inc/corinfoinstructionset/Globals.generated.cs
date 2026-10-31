@@ -17,7 +17,7 @@ public partial class Globals
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
-        byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
+        byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
     ];
 
     private static ReadOnlySpan<byte> s_xarch32ManagedInstructionSetOrdinals => [
@@ -37,7 +37,7 @@ public partial class Globals
         32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
-        byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
+        byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
     ];
 
     private static ReadOnlySpan<byte> s_xarch64ManagedInstructionSetOrdinals => [
@@ -57,13 +57,13 @@ public partial class Globals
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, 1,
         2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 17, 18, 19,
         20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
-        36, 37, 38, 39, 40, 41, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
+        36, 37, 38, 39, 40, 41, 42, 43, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
     ];
 
     private static ReadOnlySpan<byte> s_arm64ManagedInstructionSetOrdinals => [
         0, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 23, 58, 59, 60,
         26, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
-        76, 77, 78, 79, 80, 81, 82, 83, 84, 85, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
+        76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
@@ -77,11 +77,11 @@ public partial class Globals
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
-        byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, 1, 2, 3, 4, 5, byte.MaxValue, byte.MaxValue, byte.MaxValue,
+        byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, 1, 2, 3, 4, 5, byte.MaxValue, byte.MaxValue, byte.MaxValue,
     ];
 
     private static ReadOnlySpan<byte> s_riscv64ManagedInstructionSetOrdinals => [
-        0, 86, 87, 88, 89, 90, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
+        0, 88, 89, 90, 91, 92, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
@@ -97,11 +97,11 @@ public partial class Globals
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
-        byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, 1, 2, 4,
+        byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, 1, 2, 4,
     ];
 
     private static ReadOnlySpan<byte> s_wasmManagedInstructionSetOrdinals => [
-        0, 91, 92, 23, 93, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
+        0, 93, 94, 23, 95, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
         byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
@@ -715,6 +715,16 @@ public partial class Globals
                     resultFlags.RemoveInstructionSet(InstructionSet_SveAes_Arm64);
                 }
 
+                if (resultFlags.HasInstructionSet(InstructionSet_SvePmull128) && !resultFlags.HasInstructionSet(InstructionSet_SvePmull128_Arm64))
+                {
+                    resultFlags.RemoveInstructionSet(InstructionSet_SvePmull128);
+                }
+
+                if (resultFlags.HasInstructionSet(InstructionSet_SvePmull128_Arm64) && !resultFlags.HasInstructionSet(InstructionSet_SvePmull128))
+                {
+                    resultFlags.RemoveInstructionSet(InstructionSet_SvePmull128_Arm64);
+                }
+
                 if (resultFlags.HasInstructionSet(InstructionSet_SveSha3) && !resultFlags.HasInstructionSet(InstructionSet_SveSha3_Arm64))
                 {
                     resultFlags.RemoveInstructionSet(InstructionSet_SveSha3);
@@ -823,6 +833,11 @@ public partial class Globals
                 if (resultFlags.HasInstructionSet(InstructionSet_SveAes) && !resultFlags.HasInstructionSet(InstructionSet_Aes))
                 {
                     resultFlags.RemoveInstructionSet(InstructionSet_SveAes);
+                }
+
+                if (resultFlags.HasInstructionSet(InstructionSet_SvePmull128) && !resultFlags.HasInstructionSet(InstructionSet_Sve))
+                {
+                    resultFlags.RemoveInstructionSet(InstructionSet_SvePmull128);
                 }
 
                 if (resultFlags.HasInstructionSet(InstructionSet_SveSha3) && !resultFlags.HasInstructionSet(InstructionSet_Sve))
@@ -965,6 +980,7 @@ public partial class Globals
             InstructionSet_Sha3 => "Sha3",
             InstructionSet_Sm4 => "Sm4",
             InstructionSet_SveAes => "SveAes",
+            InstructionSet_SvePmull128 => "SvePmull128",
             InstructionSet_SveSha3 => "SveSha3",
             InstructionSet_SveSm4 => "SveSm4",
             InstructionSet_Cssc => "Cssc",
@@ -982,6 +998,7 @@ public partial class Globals
             InstructionSet_Sha3_Arm64 => "Sha3_Arm64",
             InstructionSet_Sm4_Arm64 => "Sm4_Arm64",
             InstructionSet_SveAes_Arm64 => "SveAes_Arm64",
+            InstructionSet_SvePmull128_Arm64 => "SvePmull128_Arm64",
             InstructionSet_SveSha3_Arm64 => "SveSha3_Arm64",
             InstructionSet_SveSm4_Arm64 => "SveSm4_Arm64",
             InstructionSet_RiscV64Base => "RiscV64Base",
@@ -1097,6 +1114,7 @@ public partial class Globals
             READYTORUN_INSTRUCTION_Sha3 => InstructionSet_Sha3,
             READYTORUN_INSTRUCTION_Sm4 => InstructionSet_Sm4,
             READYTORUN_INSTRUCTION_SveAes => InstructionSet_SveAes,
+            READYTORUN_INSTRUCTION_SvePmull128 => InstructionSet_SvePmull128,
             READYTORUN_INSTRUCTION_SveSha3 => InstructionSet_SveSha3,
             READYTORUN_INSTRUCTION_SveSm4 => InstructionSet_SveSm4,
             READYTORUN_INSTRUCTION_Cssc => InstructionSet_Cssc,

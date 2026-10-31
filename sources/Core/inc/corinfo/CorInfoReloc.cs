@@ -156,6 +156,6 @@ public enum CorInfoReloc
     /// <summary>Wasm: the method's virtual IP relative to the image virtual IP base as a 4-byte uint32.</summary>
     WASM_METHOD_RELATIVE_VIRTUAL_IP_I32,
 
-    /// <summary>Wasm: negative odd CoreLib runtime-function identity, encoded as a signed varint32.</summary>
+    /// <summary>Wasm: runtime-specific shadow-frame identity, encoded as a signed varint32.</summary>
     WASM_METHOD_FRAME_IDENTITY_SLEB,
 }

@@ -69,7 +69,6 @@ public sealed unsafe partial class WrapICorJitInfo
         vtable->Base.Base.getUnmanagedCallConv = &Thunk_getUnmanagedCallConv;
         vtable->Base.Base.pInvokeMarshalingRequired = &Thunk_pInvokeMarshalingRequired;
         vtable->Base.Base.satisfiesMethodConstraints = &Thunk_satisfiesMethodConstraints;
-        vtable->Base.Base.methodMustBeLoadedBeforeCodeIsRun = &Thunk_methodMustBeLoadedBeforeCodeIsRun;
         vtable->Base.Base.getGSCookie = &Thunk_getGSCookie;
         vtable->Base.Base.setPatchpointInfo = &Thunk_setPatchpointInfo;
         vtable->Base.Base.getOSRInfo = &Thunk_getOSRInfo;
@@ -85,6 +84,8 @@ public sealed unsafe partial class WrapICorJitInfo
         vtable->Base.Base.getMethodInstantiationArgument = &Thunk_getMethodInstantiationArgument;
         vtable->Base.Base.printClassName = &Thunk_printClassName;
         vtable->Base.Base.isValueClass = &Thunk_isValueClass;
+        vtable->Base.Base.isByRefLike = &Thunk_isByRefLike;
+        vtable->Base.Base.isSharedInst = &Thunk_isSharedInst;
         vtable->Base.Base.getClassAttribs = &Thunk_getClassAttribs;
         vtable->Base.Base.getClassAssemblyName = &Thunk_getClassAssemblyName;
         vtable->Base.Base.LongLifetimeMalloc = &Thunk_LongLifetimeMalloc;
@@ -138,7 +139,6 @@ public sealed unsafe partial class WrapICorJitInfo
         vtable->Base.Base.getReadyToRunHelper = &Thunk_getReadyToRunHelper;
         vtable->Base.Base.getReadyToRunDelegateCtorHelper = &Thunk_getReadyToRunDelegateCtorHelper;
         vtable->Base.Base.initClass = &Thunk_initClass;
-        vtable->Base.Base.classMustBeLoadedBeforeCodeIsRun = &Thunk_classMustBeLoadedBeforeCodeIsRun;
         vtable->Base.Base.getBuiltinClass = &Thunk_getBuiltinClass;
         vtable->Base.Base.getTypeForPrimitiveValueClass = &Thunk_getTypeForPrimitiveValueClass;
         vtable->Base.Base.getTypeForPrimitiveNumericClass = &Thunk_getTypeForPrimitiveNumericClass;
@@ -702,20 +702,6 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void Thunk_methodMustBeLoadedBeforeCodeIsRun(ICorJitInfo* self, CORINFO_METHOD_HANDLE method)
-    {
-        try
-        {
-            GetWrapper(self).methodMustBeLoadedBeforeCodeIsRun(method);
-        }
-        catch (Exception exception)
-        {
-            FailFastCallback(exception);
-            return;
-        }
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static void Thunk_getGSCookie(ICorJitInfo* self, GSCookie* pCookieVal, GSCookie** ppCookieVal)
     {
         try
@@ -917,6 +903,34 @@ public sealed unsafe partial class WrapICorJitInfo
         try
         {
             return GetWrapper(self).isValueClass(cls) ? (byte)1 : (byte)0;
+        }
+        catch (Exception exception)
+        {
+            FailFastCallback(exception);
+            return default;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte Thunk_isByRefLike(ICorJitInfo* self, CORINFO_CLASS_HANDLE cls)
+    {
+        try
+        {
+            return GetWrapper(self).isByRefLike(cls) ? (byte)1 : (byte)0;
+        }
+        catch (Exception exception)
+        {
+            FailFastCallback(exception);
+            return default;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte Thunk_isSharedInst(ICorJitInfo* self, CORINFO_CLASS_HANDLE cls)
+    {
+        try
+        {
+            return GetWrapper(self).isSharedInst(cls) ? (byte)1 : (byte)0;
         }
         catch (Exception exception)
         {
@@ -1356,20 +1370,6 @@ public sealed unsafe partial class WrapICorJitInfo
         {
             FailFastCallback(exception);
             return default;
-        }
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void Thunk_classMustBeLoadedBeforeCodeIsRun(ICorJitInfo* self, CORINFO_CLASS_HANDLE cls)
-    {
-        try
-        {
-            GetWrapper(self).classMustBeLoadedBeforeCodeIsRun(cls);
-        }
-        catch (Exception exception)
-        {
-            FailFastCallback(exception);
-            return;
         }
     }
 

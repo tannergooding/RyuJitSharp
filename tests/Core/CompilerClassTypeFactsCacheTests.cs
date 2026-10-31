@@ -22,6 +22,8 @@ internal static unsafe class CompilerClassTypeFactsCacheTests
 
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getClassAttribs = &GetClassAttribs;
+        vtable.Base.Base.isByRefLike = &IsByRefLike;
+        vtable.Base.Base.isSharedInst = &IsSharedInst;
         vtable.Base.Base.isValueClass = &IsValueClass;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
 
@@ -34,7 +36,7 @@ internal static unsafe class CompilerClassTypeFactsCacheTests
 
         Assert.That(firstCompiler.eeGetClassAttribs(firstClass), Is.EqualTo(firstClassAttribs));
         Assert.That(firstCompiler.eeGetClassAttribs(firstClass), Is.EqualTo(firstClassAttribs));
-        Assert.That(firstCompiler.eeIsByrefLike(firstClass), Is.True);
+        Assert.That(firstCompiler.eeIsByRefLike(firstClass), Is.True);
         Assert.That(firstCompiler.eeIsSharedInst(firstClass), Is.True);
         Assert.That(firstCompiler.eeGetClassAttribs(secondClass), Is.EqualTo(CORINFO_FLG_FINAL));
 
@@ -61,6 +63,14 @@ internal static unsafe class CompilerClassTypeFactsCacheTests
              ? CORINFO_FLG_BYREF_LIKE | CORINFO_FLG_SHAREDINST
              : CORINFO_FLG_FINAL;
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsByRefLike(ICorJitInfo* _, CORINFO_CLASS_STRUCT_* classHandle)
+        => (byte)((nint)classHandle == 0x101 ? 1 : 0);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsSharedInst(ICorJitInfo* _, CORINFO_CLASS_STRUCT_* classHandle)
+        => (byte)((nint)classHandle == 0x101 ? 1 : 0);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsValueClass(ICorJitInfo* _, CORINFO_CLASS_STRUCT_* classHandle)

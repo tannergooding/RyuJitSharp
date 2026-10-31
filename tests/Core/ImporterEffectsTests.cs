@@ -21,6 +21,7 @@ internal static unsafe class ImporterEffectsTests
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.isExactType = &IsExactType;
             vtable.Base.Base.getClassAttribs = &GetClassAttributes;
+            vtable.Base.Base.isSharedInst = &IsNotSharedInst;
             vtable.Base.Base.getTypeForBox = &GetTypeForBox;
             vtable.Base.Base.getCastingHelper =
                 (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, bool, CorInfoHelpFunc>)
@@ -65,6 +66,7 @@ internal static unsafe class ImporterEffectsTests
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.isExactType = &IsExactType;
             vtable.Base.Base.getClassAttribs = &GetClassAttributes;
+            vtable.Base.Base.isSharedInst = &IsNotSharedInst;
             vtable.Base.Base.getTypeForBox = &GetTypeForBox;
             vtable.Base.Base.getCastingHelper =
                 (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, bool, CorInfoHelpFunc>)
@@ -101,6 +103,9 @@ internal static unsafe class ImporterEffectsTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoFlag GetClassAttributes(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsNotSharedInst(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CORINFO_CLASS_STRUCT_* GetTypeForBox(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => type;

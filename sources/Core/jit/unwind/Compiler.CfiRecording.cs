@@ -63,9 +63,29 @@ public partial class Compiler
 
     private void unwindPush2Pop2CFI(regNumber reg1, regNumber reg2)
     {
-        // Upstream uses two separate records until the OS supports push2/pop2 unwind codes.
-        unwindPushPopCFI(reg1);
-        unwindPushPopCFI(reg2);
+        assert(UnwindEmitter().emitGeneratingPrologOrFuncletProlog());
+
+        ref var func = ref funCurrentFunc();
+        var cbProlog = unwindGetCurrentOffset(in func);
+        var (calleeSavedMask, _, _, _, registerSize) = GetCfiRegisterPolicy();
+        var relOffsetMask = calleeSavedMask;
+
+        if (Configuration.UNIX_AMD64_ABI && Configuration.ETW_EBP_FRAMED)
+        {
+            relOffsetMask |= new regMaskTP(regMask.SRBM_X64_RBP);
+        }
+
+        createCfiCode(in func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, 2 * registerSize);
+
+        if ((bool)(relOffsetMask & genRegMask(reg1)))
+        {
+            createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapCfiRegNumToDwarfReg(reg1), registerSize);
+        }
+
+        if ((bool)(relOffsetMask & genRegMask(reg2)))
+        {
+            createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapCfiRegNumToDwarfReg(reg2));
+        }
     }
 
     private void unwindBegPrologCFI()
@@ -411,9 +431,15 @@ public partial class Compiler
                 break;
             }
 
-            case >= REG_X64_R8 and <= REG_X64_R31:
+            case >= REG_X64_R8 and <= REG_X64_R15:
             {
                 dwarfReg = (short)reg;
+                break;
+            }
+
+            case >= REG_X64_R16 and <= REG_X64_R31:
+            {
+                dwarfReg = (short)(unchecked((int)reg) + 114);
                 break;
             }
 

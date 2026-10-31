@@ -182,6 +182,24 @@ internal static unsafe class Arm64HWIntrinsicImportTests
     }
 
     [Test]
+    public static void SveBitwiseClearKeepsNotExplicitForVectorConstant()
+    {
+        WithImporter(compiler =>
+        {
+            var first = new GenTreeLclVar(TYP_SIMD16, 0);
+            var second = new GenTreeVecCon(TYP_SIMD16);
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            Push(compiler, first, second);
+            var sig = Signature(2);
+            var node = RequireIntrinsic(Import(compiler, NI_Sve_BitwiseClear, in sig, TYP_INT, TYP_SIMD16, 16));
+
+            var complement = node.GetOp(2).AsHWIntrinsic();
+            Assert.That(complement.HWIntrinsicId, Is.EqualTo(NI_AdvSimd_Not));
+            Assert.That(complement.GetOp(1), Is.SameAs(second));
+        });
+    }
+
+    [Test]
     public static void YieldImportsVoidWithoutTouchingArguments()
     {
         WithImporter(compiler =>

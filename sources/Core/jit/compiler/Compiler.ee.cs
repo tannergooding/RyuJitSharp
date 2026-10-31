@@ -1288,8 +1288,8 @@ public partial class Compiler
         return attributes;
     }
 
-    public unsafe bool eeIsByrefLike(CORINFO_CLASS_HANDLE classHandle)
-        => (eeGetClassAttribs(classHandle) & CORINFO_FLG_BYREF_LIKE) != 0;
+    public unsafe bool eeIsByRefLike(CORINFO_CLASS_HANDLE classHandle)
+        => info.compCompHnd->isByRefLike(classHandle);
 
     public unsafe bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
         => info.compCompHnd->isIntrinsic(ftn);
@@ -1298,7 +1298,7 @@ public partial class Compiler
         => info.compCompHnd->isFieldStatic(fieldHandle);
 
     public unsafe bool eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd)
-        => (eeGetClassAttribs(clsHnd) & CORINFO_FLG_SHAREDINST) != 0;
+        => info.compCompHnd->isSharedInst(clsHnd);
 
     public unsafe bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
     {

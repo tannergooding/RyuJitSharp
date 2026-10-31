@@ -9,6 +9,8 @@ internal static class HelperPropertiesTests
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID, false, false, false, true)]
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_SMALL, false, true, true, false)]
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_JIT_RESUME_AFTER_CATCH, false, false, false, true)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED, true, false, false, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED, true, false, false, false)]
     public static void UpdatedHelpersMatchNativeProperties(CorInfoHelpFunc helper, bool isPure, bool isNoGC, bool mutatesHeap, bool noThrow)
     {
         Assert.Multiple(() => {

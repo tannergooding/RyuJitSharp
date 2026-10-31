@@ -45,8 +45,27 @@ internal static unsafe class RangeAnalysisTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoesBinOpOverflow")]
     private static extern bool DoesBinOpOverflow(RangeCheck analysis, BasicBlock block, GenTreeOp binary, Range range);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddOverflows")]
+    private static extern bool AddOverflows(RangeCheck analysis, Range first, Range second);
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "MergeAssertion")]
     private static extern void MergeAssertion(RangeCheck analysis, BasicBlock block, GenTree tree, ref Range range);
+
+    [Test]
+    public static void AdditionOverflowChecksLowerBoundUnderflow()
+    {
+        WithCompiler((compiler, _) =>
+        {
+            var analysis = compiler.GetRangeCheck();
+            var first = new Range(new Limit(LimitType.Constant, -10), new Limit(LimitType.Constant, -5));
+            var safeSecond = new Range(new Limit(LimitType.Constant, 1), new Limit(LimitType.Constant, 2));
+            var underflowingSecond = new Range(
+                new Limit(LimitType.Constant, int.MinValue), new Limit(LimitType.Constant, 0));
+
+            Assert.That(AddOverflows(analysis, first, safeSecond), Is.False);
+            Assert.That(AddOverflows(analysis, first, underflowingSecond), Is.True);
+        });
+    }
 
     [Test]
     public static void WidenDiagnosticPrintsBlockAndTree()

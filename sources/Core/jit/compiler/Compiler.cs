@@ -1156,7 +1156,7 @@ public partial class Compiler
             }
 
             // Check that the argument is not a byref-like for tailcalls.
-            if ((ciType is CORINFO_TYPE_VALUECLASS) && eeIsByrefLike(classHandle))
+            if ((ciType is CORINFO_TYPE_VALUECLASS) && eeIsByRefLike(classHandle))
             {
                 return false;
             }

@@ -69,7 +69,13 @@ public sealed partial class CodeGen
                     var isDstSigned = !varTypeIsUnsigned(cast.CastType);
                     var excludeMsb = isDstSigned ? 1 : 0;
                     var typeSize = (8 * castSize) - excludeMsb;
-                    GetEmitter().emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, typeSize);
+                    var isSrcInt = desc.CheckSrcSize == 4;
+                    GetEmitter().emitIns_R_R_I(
+                        isSrcInt ? INS_srliw : INS_srli,
+                        isSrcInt ? EA_4BYTE : EA_8BYTE,
+                        tempReg,
+                        reg,
+                        typeSize);
                     genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg, null, REG_RISCV64_R0);
                 }
                 else
@@ -78,7 +84,15 @@ public sealed partial class CodeGen
                     var extensionSize = (8 - castSize) * 8;
                     GetEmitter().emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, reg, extensionSize);
                     GetEmitter().emitIns_R_R_I(INS_srai, EA_8BYTE, tempReg, tempReg, extensionSize);
-                    genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg, null, reg);
+                    if (desc.CheckSrcSize == 4)
+                    {
+                        GetEmitter().emitIns_R_R_R(INS_subw, EA_4BYTE, tempReg, tempReg, reg);
+                        genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg, null, REG_RISCV64_R0);
+                    }
+                    else
+                    {
+                        genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg, null, reg);
+                    }
                 }
                 break;
             }

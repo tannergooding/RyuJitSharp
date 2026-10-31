@@ -62,6 +62,37 @@ internal static unsafe class HardwareComparisonLoweringTests
         });
     }
 
+    [TestCase(NI_X86Base_And, GT_AND, GT_EQ, GenCondition.EQ)]
+    [TestCase(NI_AVX2_AndNotVector, GT_AND_NOT, GT_EQ, GenCondition.C)]
+    [TestCase(NI_AVX2_AndNotVector, GT_AND_NOT, GT_NE, GenCondition.NC)]
+    public static void PtestUnwrapClearsContainedNestedOperand(
+        NamedIntrinsic intrinsic, genTreeOps nestedOper, genTreeOps comparisonOper,
+        GenCondition.CodeKind expectedCondition)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            compiler.lvaTable[1].Type = TYP_SIMD16;
+            var first = compiler.gtNewLclvNode(TYP_SIMD16, 0);
+            var nestedSecond = compiler.gtNewLclvNode(TYP_SIMD16, 1);
+            nestedSecond.IsContained = true;
+            var operation = new GenTreeHWIntrinsic(TYP_SIMD16, intrinsic, TYP_INT, 16, first, nestedSecond);
+            var zero = new GenTreeVecCon(TYP_SIMD16);
+            var comparison = new GenTreeHWIntrinsic(
+                TYP_INT, NI_Vector_op_Equality, TYP_INT, 16, operation, zero);
+            var consumer = new GenTreeUnOp(GT_NEG, TYP_INT, comparison);
+            var block = NewBlock(first, nestedSecond, operation, zero, comparison, consumer);
+
+            _ = LowerHWIntrinsicCmpOp(NewLowering(compiler, block), comparison, comparisonOper);
+
+            Assert.That(nestedSecond.IsContained, Is.False);
+            Assert.That(comparison.GetOp(1), Is.SameAs(first));
+            Assert.That(comparison.GetOp(2), Is.SameAs(nestedSecond));
+            Assert.That(comparison.HWIntrinsicId, Is.EqualTo(NI_X86Base_PTEST));
+            Assert.That(consumer.Op1.AsCC().Condition.Code, Is.EqualTo(expectedCondition));
+            Assert.That(nestedOper, Is.EqualTo(operation.GetOperForHWIntrinsicId(out _)));
+        }, supportsAvx512: false);
+    }
+
     [TestCase(TYP_INT, 0xFFFF, GT_EQ)]
     [TestCase(TYP_INT, 0xFFFF, GT_NE)]
     [TestCase(TYP_FLOAT, 0xF, GT_EQ)]

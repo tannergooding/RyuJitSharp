@@ -8,8 +8,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
@@ -184,6 +186,54 @@ internal static unsafe class Arm64LongJumpOutputTests
         });
     }
 
+    [Test]
+    public static void LongAddressMarksTheDestinationDeadAfterAdrp()
+    {
+        WithEmitter((codeGen, emitter, code, _) =>
+        {
+            emitter.emitFullGCinfo = true;
+            emitter.GCInfo.gcRegPtrSetInit();
+            GcRefRegisters(emitter) = SRBM_ARM64_R3;
+            var offsets = stackalloc int[1];
+            var chunks = stackalloc AllocMemChunk[1];
+            offsets[0] = 0;
+            chunks[0] = new AllocMemChunk { block = code + 4096 + 32, size = 64 };
+            SetDataChunks(emitter, offsets, chunks, 1, 64);
+            var id = View.Data(INS_adr, IF_ARM64_LARGEADR, EA_8BYTE, REG_ARM64_R3, REG_ARM64_NA,
+                shortAddress: false);
+            id.idSetIsBound();
+            var cursor = code + 16;
+
+            var emittedSize = EmitInstruction(emitter, new insGroup(), id, &cursor);
+
+            Assert.That(emittedSize, Is.GreaterThan((nuint)0));
+            Assert.That((nuint)cursor, Is.EqualTo((nuint)(code + 24)));
+            AssertRegisterDeath(emitter, 20, GCT_GCREF, SRBM_ARM64_R3);
+        }, trackFullGcMap: true);
+    }
+
+    [Test]
+    public static void LongDataLoadMarksItsAddressRegisterDeadAfterAdrp()
+    {
+        WithEmitter((_, emitter, code, _) =>
+        {
+            emitter.emitFullGCinfo = true;
+            emitter.GCInfo.gcRegPtrSetInit();
+            GcRefRegisters(emitter) = SRBM_ARM64_R3;
+            var offsets = stackalloc int[1];
+            var chunks = stackalloc AllocMemChunk[1];
+            offsets[0] = 0;
+            chunks[0] = new AllocMemChunk { block = code + 4096 + 32, size = 64 };
+            SetDataChunks(emitter, offsets, chunks, 1, 64);
+            var id = View.Data(INS_ldr, IF_ARM64_LARGELDC, EA_8BYTE, REG_ARM64_R3, REG_ARM64_NA,
+                shortAddress: false);
+
+            _ = Output(emitter, null, code + 16, id);
+
+            AssertRegisterDeath(emitter, 20, GCT_GCREF, SRBM_ARM64_R3);
+        }, trackFullGcMap: true);
+    }
+
     [TestCase(EA_4BYTE, REG_ARM64_R3, REG_ARM64_NA, 0xB0000003u, 0xB9402063u, 0u, 8)]
     [TestCase(EA_8BYTE, REG_ARM64_R3, REG_ARM64_NA, 0xB0000003u, 0xF9401063u, 0u, 8)]
     [TestCase(EA_4BYTE, REG_ARM64_V2, REG_ARM64_R9, 0xB0000009u, 0xB9402129u, 0x1E270122u, 12)]
@@ -343,7 +393,7 @@ internal static unsafe class Arm64LongJumpOutputTests
         emitter.emitConsDsc.dsdOffs = size;
     }
 
-    private static void WithEmitter(OutputTest action)
+    private static void WithEmitter(OutputTest action, bool trackFullGcMap = false)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.recordRelocation = &RecordRelocation;
@@ -357,7 +407,7 @@ internal static unsafe class Arm64LongJumpOutputTests
         JitTls.Compiler = compiler;
         try
         {
-            var codeGen = new CodeGen(compiler);
+            var codeGen = new CodeGen(compiler) { IsFullPtrRegMapRequired = trackFullGcMap };
             compiler.codeGen = codeGen;
             if (Configuration.LATE_DISASM)
             {
@@ -372,6 +422,7 @@ internal static unsafe class Arm64LongJumpOutputTests
             emitter.emitCodeBlock = code;
             emitter.emitTotalHotCodeSize = 128;
             emitter.emitCmpHandle = &callbacks.JitInfo;
+            TestConfiguration.EnableEmitterIssuing(emitter);
             action(compiler, emitter, code, &callbacks);
         }
         finally
@@ -389,6 +440,18 @@ internal static unsafe class Arm64LongJumpOutputTests
         Assert.That(entry.Kind, Is.EqualTo(kind));
         Assert.That(entry.Word, Is.EqualTo(word));
         Assert.That(entry.Delta, Is.Zero);
+    }
+
+    private static void AssertRegisterDeath(
+        Emitter emitter, uint offset, GCInfo.GCtype gcType, regMask register)
+    {
+        var death = RegisterPointerList(ref emitter.GCInfo)
+            ?? throw new AssertionException("Missing register death.");
+        Assert.That(death.rpdOffs, Is.EqualTo(offset));
+        Assert.That(death.rpdGCtype, Is.EqualTo(gcType));
+        Assert.That(death.rpdCompiler.rpdDel, Is.EqualTo(register));
+        Assert.That(death.rpdNext, Is.Null);
+        Assert.That(GcRefRegisters(emitter), Is.EqualTo(SRBM_NONE));
     }
 
     private abstract class View(CodeGen codeGen) : Emitter(codeGen)
@@ -460,12 +523,19 @@ internal static unsafe class Arm64LongJumpOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitOutputLJ")]
     private static extern byte* Output(Emitter emitter, insGroup? group, byte* dst, Emitter.instrDesc id);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitOutputInstrArm64")]
+    private static extern nuint EmitInstruction(
+        Emitter emitter, insGroup group, Emitter.instrDesc id, byte** destination);
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "computeRelPageAddrArm64")]
     private static extern nint PageDelta(Emitter? emitter, nuint target, nuint source);
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitOffsAdj")]
     private static extern ref int OffsetAdjustment(Emitter emitter);
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitFwdJumps")]
     private static extern ref bool ForwardJumps(Emitter emitter);
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
+    private static extern ref regMask GcRefRegisters(Emitter emitter);
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "gcRegPtrList")]
+    private static extern ref GCInfo.regPtrDsc? RegisterPointerList(ref GCInfo info);
 
     private struct Relocation
     {

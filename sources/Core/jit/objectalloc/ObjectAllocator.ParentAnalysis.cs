@@ -293,7 +293,7 @@ public sealed partial class ObjectAllocator
                     {
                         var thisArg = call.Args.ThisArg;
                         assert(thisArg is not null);
-                        if (tree == thisArg.Node)
+                        if (!call.IsTailPrefixedCall && (tree == thisArg.Node))
                         {
                             JITDUMP("Delegate invoke this...\n");
                             canEscape = false;

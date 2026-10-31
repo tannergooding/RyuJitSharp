@@ -330,6 +330,12 @@ public sealed partial class LinearScan
         return false;
     }
 
+    private bool isHomeReg(RegRecord regRecord)
+    {
+        var interval = regRecord.assignedInterval;
+        return interval is not null && isAssignedToInterval(interval, regRecord);
+    }
+
     private weight_t getSpillWeight(RegRecord regRecord)
     {
         var interval = regRecord.assignedInterval;

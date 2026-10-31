@@ -37,6 +37,15 @@ internal static unsafe class HWIntrinsicLookupRangeTests
         else if (Configuration.TARGET_ARM64)
         {
             Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_AdvSimd, "Add"u8), Is.EqualTo(NI_AdvSimd_Add));
+            Assert.That(
+                HWIntrinsicInfo.LookupId(&sig, InstructionSet_SvePmull128, "PolynomialMultiplyWideningEven"u8),
+                Is.EqualTo(NI_SvePmull128_PolynomialMultiplyWideningEven));
+            Assert.That(
+                HWIntrinsicInfo.lookupIns(NI_SvePmull128_PolynomialMultiplyWideningEven, TYP_ULONG, compiler: null),
+                Is.EqualTo(INS_sve_pmullb));
+            Assert.That(
+                HWIntrinsicInfo.lookupIsa(NI_SvePmull128_PolynomialMultiplyWideningEven),
+                Is.EqualTo(InstructionSet_SvePmull128));
         }
         else if (Configuration.TARGET_WASM)
         {
@@ -143,23 +152,23 @@ internal static unsafe class HWIntrinsicLookupRangeTests
             expectedCount = 836;
             if (TestConfiguration.IsDebug)
             {
-                expectedHash = Configuration.TARGET_64BIT ? 0x3E4B226FF246FC63UL : 0x12753D926736CD8EUL;
+                expectedHash = Configuration.TARGET_64BIT ? 0x0DF10172D7F7CCE3UL : 0x12753D926736CD8EUL;
             }
             else
             {
-                expectedHash = Configuration.TARGET_64BIT ? 0x72D2520BCDBCF9B3UL : 0xDCA5B3763809FDE6UL;
+                expectedHash = Configuration.TARGET_64BIT ? 0x8DBB7042D05347F3UL : 0xDCA5B3763809FDE6UL;
             }
         }
         else if (Configuration.TARGET_ARM64)
         {
-            expectedCount = 1209;
+            expectedCount = 1215;
             if (TestConfiguration.IsDebug)
             {
-                expectedHash = 0xFE294BA4C807E11BUL;
+                expectedHash = 0x457B7F410E12DD69UL;
             }
             else
             {
-                expectedHash = 0x4ADC8167113A6932UL;
+                expectedHash = 0xF687533F02513E1DUL;
             }
         }
         else if (Configuration.TARGET_WASM)
@@ -167,11 +176,11 @@ internal static unsafe class HWIntrinsicLookupRangeTests
             expectedCount = 219;
             if (TestConfiguration.IsDebug)
             {
-                expectedHash = 0x30AF92507D4DF48BUL;
+                expectedHash = 0xEA0AB86F2863F123UL;
             }
             else
             {
-                expectedHash = 0xC5CE14001D135046UL;
+                expectedHash = 0x7F9E1049142177D6UL;
             }
         }
         else

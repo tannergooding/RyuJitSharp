@@ -754,6 +754,11 @@ public partial class Compiler
                     instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
                 }
 
+                if (JitConfig.EnableArm64SvePmull128 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_SvePmull128);
+                }
+
                 if (JitConfig.EnableArm64SveSha3 != 0)
                 {
                     instructionSetFlags.AddInstructionSet(InstructionSet_SveSha3);

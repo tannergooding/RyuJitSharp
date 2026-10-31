@@ -192,6 +192,22 @@ internal static class LinearScanGeneralAllocationTests
     }
 
     [Test]
+    public static void ActiveIntervalCanSpillFromAStaleCopyRegister()
+    {
+        WithAllocator((compiler, allocator) => {
+            var interval = NewInterval(allocator, TYP_INT);
+            var reference = allocator.newRefPosition(
+                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 1), SRBM_X64_RAX);
+            interval.recentRefPosition = reference;
+            Assign(allocator, allocator.physRegs[(int)REG_X64_RAX], interval);
+            var staleCopy = allocator.physRegs[(int)REG_X64_RBX];
+            staleCopy.assignedInterval = interval;
+
+            Assert.That(CanSpill(allocator, staleCopy, reference.nodeLocation), Is.True);
+        });
+    }
+
+    [Test]
     public static void RelatedPreferencesTerminateOnACycleAndFavorTheCompatibleRegister()
     {
         WithAllocator((compiler, allocator) => {
@@ -278,6 +294,9 @@ internal static class LinearScanGeneralAllocationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "isMatchingConstant")]
     private static extern bool Matches(LinearScan allocator, RegRecord register, RefPosition reference);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "canSpillReg")]
+    private static extern bool CanSpill(LinearScan allocator, RegRecord register, uint refLocation);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[] BlockInfo(LinearScan allocator);

@@ -32,7 +32,7 @@ internal static unsafe class AsyncTransformationTests
     {
         WithCompiler(compiler => {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-            vtable.Base.Base.getClassAttribs = &GetByRefLikeClassAttributes;
+            vtable.Base.Base.isByRefLike = &IsByRefLike;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
             compiler.info.compRetBuffArg = BAD_VAR_NUM;
@@ -83,8 +83,7 @@ internal static unsafe class AsyncTransformationTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static CorInfoFlag GetByRefLikeClassAttributes(ICorJitInfo* jitInfo, CORINFO_CLASS_STRUCT_* cls)
-        => CorInfoFlag.CORINFO_FLG_BYREF_LIKE;
+    private static byte IsByRefLike(ICorJitInfo* jitInfo, CORINFO_CLASS_STRUCT_* cls) => 1;
 
     [Test]
     public static void RemoveFinalizedAsyncArgumentUnlinksBothListsWithoutResettingAbi()

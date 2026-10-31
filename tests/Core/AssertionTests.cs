@@ -1915,7 +1915,29 @@ internal static unsafe class AssertionTests
             Assert.That(assertion.Kind, Is.EqualTo(OAK_LT_UN));
             Assert.That(assertion.Op1.VN, Is.EqualTo(index));
             Assert.That(assertion.Op2.VN, Is.EqualTo(bound));
-            Assert.That(assertion.Op2.IsVNNeverNegative, Is.True);
+            Assert.That(assertion.Op2.IsVNNeverNegative, Is.False);
+        }, local: false);
+    }
+
+    [TestCase(VNFunc.VNF_LT)]
+    [TestCase(VNFunc.VNF_LT_UN)]
+    public static void RelationalAssertionsChainAcrossSignedAndUnsignedComparisons(VNFunc func)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var index = store.VNForExpr(null, TYP_INT);
+            var bound = store.VNForExpr(null, TYP_INT);
+            var other = store.VNForExpr(null, TYP_INT);
+            _ = compiler.optAddAssertion(AssertionDsc.CreateRelopVN(compiler, VNFunc.VNF_LT, index, other));
+
+            var info = GenerateBounds(compiler, store, func, index, bound);
+
+            Assert.That(info.HasAssertion, Is.True);
+            var assertion = compiler.optGetAssertion(info.AssertionIndex);
+            Assert.That(assertion.Kind, Is.EqualTo(func is VNFunc.VNF_LT_UN ? OAK_LT_UN : OAK_LT));
+            Assert.That(assertion.Op1.VN, Is.EqualTo(index));
+            Assert.That(assertion.Op2.VN, Is.EqualTo(bound));
         }, local: false);
     }
 
@@ -2160,7 +2182,7 @@ internal static unsafe class AssertionTests
             Assert.That(addend, Is.EqualTo(5));
             Assert.That(store.GetVNFunc(constant, ref app), Is.False);
             Assert.That(app.GetArg(0), Is.EqualTo(variable));
-            var bounds = AssertionDsc.CreateNoThrowArrBnd(compiler, sum, bound);
+            var bounds = AssertionDsc.CreateNoThrowArrBnd(compiler, sum, bound, isLenNeverNegative: false);
             var assertion = compiler.optAddAssertion(bounds);
             Assert.That(compiler.optAddAssertion(bounds), Is.EqualTo(assertion));
             Assert.That(compiler.optAssertionHasAssertionsForVN(variable, false), Is.True);
@@ -2169,6 +2191,42 @@ internal static unsafe class AssertionTests
             var nonNull = compiler.optAddAssertion(AssertionDsc.CreateVNNonNullAssertion(compiler, store.VNForExpr(null, TYP_REF)));
             compiler.optCreateComplementaryAssertion(nonNull);
             Assert.That(compiler.optFindComplementary(nonNull), Is.Not.Zero);
+        }, local: false);
+    }
+
+    [Test]
+    public static void GlobalAssertionTableGrowsOnDemandAndStopsAtItsMaximum()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+
+            var firstVN = store.VNForExpr(null, TYP_INT);
+            var first = compiler.optAddAssertion(AssertionDsc.CreateConstantBound(
+                compiler, VNFunc.VNF_GE, firstVN, store.VNZeroForType(TYP_INT)));
+            compiler.optCreateComplementaryAssertion(first);
+
+            for (var index = 0; index < 510; index++)
+            {
+                var vn = store.VNForExpr(null, TYP_INT);
+                var assertion = AssertionDsc.CreateConstantBound(
+                    compiler, VNFunc.VNF_GE, vn, store.VNZeroForType(TYP_INT));
+                Assert.That(compiler.optAddAssertion(assertion), Is.EqualTo(index + 3));
+            }
+
+            Assert.That(compiler.AssertionCount, Is.EqualTo(512));
+            Assert.That(compiler.optFindComplementary(first), Is.EqualTo(2));
+            Assert.That(compiler.optAddAssertion(AssertionDsc.CreateConstantBound(
+                compiler, VNFunc.VNF_GE, store.VNForExpr(null, TYP_INT), store.VNZeroForType(TYP_INT))), Is.Zero);
+            Assert.That(compiler.AssertionCount, Is.EqualTo(512));
+
+            compiler.optAssertionTraitsInit(compiler.AssertionCount);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var active = BitOps.MakeEmpty(traits);
+            BitOps.AddElemD(traits, active, compiler.AssertionCount - 1);
+            Assert.That(BitOps.Count(traits, active), Is.EqualTo((nint)1));
+            Assert.That(compiler.optGetAssertion(compiler.AssertionCount).Op1.VN,
+                Is.Not.EqualTo(ValueNumStore.NoVN));
         }, local: false);
     }
 
@@ -2402,7 +2460,7 @@ internal static unsafe class AssertionTests
             Assert.That(compiler.optAssertionHasAssertionsForVN(0x100, false), Is.True);
             Assert.That(compiler.optAssertionHasAssertionsForVN(ValueNumStore.NoVN, false), Is.False);
             Assert.That(nonNull.Equals(AssertionDsc.CreateVNNonNullAssertion(compiler, 0x100), true), Is.True);
-            var bounds = AssertionDsc.CreateNoThrowArrBnd(compiler, 0x200, 0x300);
+            var bounds = AssertionDsc.CreateNoThrowArrBnd(compiler, 0x200, 0x300, isLenNeverNegative: true);
             Assert.That(bounds.IsBoundsCheckNoThrow, Is.True);
             Assert.That(bounds.Reverse().IsBoundsCheckNoThrow, Is.False);
         }, local: false);
@@ -2413,7 +2471,7 @@ internal static unsafe class AssertionTests
     {
         WithCompiler(compiler => {
             LocalAssertionMode(compiler) = false;
-            var global = AssertionDsc.CreateNoThrowArrBnd(compiler, 101, 202);
+            var global = AssertionDsc.CreateNoThrowArrBnd(compiler, 101, 202, isLenNeverNegative: true);
             var globalOp1 = global.Op1;
             var globalOp2 = global.Op2;
             var reversed = global.Reverse();

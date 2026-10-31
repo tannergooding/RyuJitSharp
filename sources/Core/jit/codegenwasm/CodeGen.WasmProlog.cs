@@ -156,7 +156,7 @@ public sealed partial class CodeGen
             assert(_compiler.lvaWasmFunctionIndex != BAD_VAR_NUM);
 
             Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
-            if (_compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_WASM_MANAGED_HELPER))
+            if (_compiler.IsNativeAot || _compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_WASM_MANAGED_HELPER))
             {
                 Emitter.emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
             }
