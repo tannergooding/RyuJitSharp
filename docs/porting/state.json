@@ -13,7 +13,6 @@
     "nextAction": "Revisit the unresolved dynamic TLS input-ownership boundary only when the EE allocation sequence is reproducible; preserve process-order-sensitive differences without normalization or changing compiler constants. The exact f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d x64 corpus capture covers 23 methods with matching value-numbering, assertion-propagation, index-check, and redundant-branch phases; D015 remains accepted and this does not establish full runtime parity. Wasm GC-info emission remains unverified because the managed encoder is AMD64-only. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
-      "E01: Keep signature traversal direct until a value-owned key captures CORINFO_SIG_INFO instantiation/argument context and EE-buffer lifetime.",
       "E03: Keep isIntrinsicType, primitive mappings, and nullable/enum predicates direct pending type-set stability, repeated-handle evidence, and tri-state/output semantics.",
       "E05: Keep getMethodSig direct while CORINFO_SIG_INFO contains EE-owned pointers with undocumented buffer stability; preserve memberParent context.",
       "E08: Keep eePrintType diagnostic recursion and explicit SuperPMI child-type probes direct to preserve fallback and capture behavior.",
