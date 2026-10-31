@@ -58,6 +58,92 @@ internal static unsafe class WasmSccTests
     }
 
     [Test]
+    public static void ProfilerInstrumentationAddsMethodEntrySamplepoint()
+    {
+        WithCompiler(compiler =>
+        {
+            fixed (byte* methodSetPattern = "*\0"u8)
+            {
+                var previousConfig = JitConfig;
+                ICorJitHost.Vtbl hostVtable = new()
+                {
+                    getIntConfigValue = &GetWasmConfigInt,
+                    getStringConfigValue = &GetWasmConfigString,
+                    freeStringConfigValue = &FreeWasmConfigString,
+                };
+                HostContext hostContext = new()
+                {
+                    Host = new ICorJitHost { lpVtbl = &hostVtable },
+                    MethodSetPattern = methodSetPattern,
+                };
+                var config = default(JitConfigValues);
+                config.initialize(&hostContext.Host);
+                JitConfig = config;
+
+                ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+                vtable.Base.Base.printMethodName = &PrintProfilerMethodName;
+                vtable.Base.Base.runWithSPMIErrorTrap = &RunWithSPMIErrorTrap;
+                ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+                CORINFO_METHOD_INFO methodInfo = default;
+                compiler.info.compCompHnd = &jitInfo;
+                compiler.info.compMethodHnd = (CORINFO_METHOD_STRUCT_*)0x3000;
+                compiler.info.compMethodInfo = &methodInfo;
+
+                try
+                {
+                    var entry = NewBlock(compiler, BBJ_ALWAYS);
+                    var loop = NewBlock(compiler, BBJ_ALWAYS);
+                    var entryValue = compiler.gtNewIconNode(TYP_INT, 1);
+                    var loopValue = compiler.gtNewIconNode(TYP_INT, 2);
+                    entry.InsertAtEnd(entryValue);
+                    loop.InsertAtEnd(loopValue);
+                    Link(compiler, entry, loop);
+                    Connect(compiler, entry, loop);
+                    Connect(compiler, loop, loop);
+                    compiler.fgGlobalMorphDone = true;
+                    compiler.fgFuncletsCreated = true;
+                    compiler.compFuncInfoCount = 1;
+                    compiler.compCurBB = entry;
+
+                    Assert.That(compiler.fgWasmProfInstrument(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+                    var entrySamplepoint = FindProfilerSamplepoint(entry)
+                        ?? throw new AssertionException("Method entry has no profiler samplepoint.");
+                    var loopSamplepoint = FindProfilerSamplepoint(loop)
+                        ?? throw new AssertionException("Loop header has no profiler samplepoint.");
+                    Assert.Multiple(() =>
+                    {
+                        Assert.That(entrySamplepoint.HelperNum,
+                            Is.EqualTo(CorInfoHelpFunc.CORINFO_HELP_WASM_PROF_SAMPLEPOINT));
+                        Assert.That(entrySamplepoint.Next, Is.SameAs(entryValue));
+                        Assert.That(loopSamplepoint.HelperNum,
+                            Is.EqualTo(CorInfoHelpFunc.CORINFO_HELP_WASM_PROF_SAMPLEPOINT));
+                        Assert.That(loopSamplepoint.Next, Is.SameAs(loopValue));
+                    });
+                }
+                finally
+                {
+                    JitConfig = previousConfig;
+                    config.destroy(&hostContext.Host);
+                }
+            }
+        });
+    }
+
+    private static GenTreeCall? FindProfilerSamplepoint(BasicBlock block)
+    {
+        for (var node = block.FirstNode; node is not null; node = node.Next)
+        {
+            if ((node is GenTreeCall call) &&
+                call.IsHelperCall(CorInfoHelpFunc.CORINFO_HELP_WASM_PROF_SAMPLEPOINT))
+            {
+                return call;
+            }
+        }
+
+        return null;
+    }
+
+    [Test]
     public static void TransformPhaseRewritesAnIrreducibleLoop()
     {
         WithCompiler(compiler =>
@@ -555,6 +641,65 @@ internal static unsafe class WasmSccTests
         s_assertions.Add(Marshal.PtrToStringUTF8((nint)expression) ?? "");
 
         return 0;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static nint PrintProfilerMethodName(
+        ICorJitInfo* self,
+        CORINFO_METHOD_STRUCT_* method,
+        byte* buffer,
+        nint bufferSize,
+        nint* requiredBufferSize)
+    {
+        var name = "WasmSccTest"u8;
+        name.CopyTo(new Span<byte>(buffer, name.Length));
+        buffer[name.Length] = 0;
+        *requiredBufferSize = name.Length + 1;
+        return name.Length;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte RunWithSPMIErrorTrap(
+        ICorJitInfo* self,
+        delegate* unmanaged[Cdecl]<void*, void> function,
+        void* parameter)
+    {
+        function(parameter);
+        return 1;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct HostContext
+    {
+        public ICorJitHost Host;
+        public byte* MethodSetPattern;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetWasmConfigInt(ICorJitHost* host, byte* name, int defaultValue)
+        => defaultValue;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte* GetWasmConfigString(ICorJitHost* host, byte* name)
+        => IsWasmConfigName(name, "WasmPerformanceInstrumentation"u8)
+            ? ((HostContext*)host)->MethodSetPattern
+            : null;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void FreeWasmConfigString(ICorJitHost* host, byte* value)
+    {
+        // The fake host returns the test's pinned string rather than allocating a config value.
+    }
+
+    private static bool IsWasmConfigName(byte* name, ReadOnlySpan<byte> expected)
+    {
+        var length = 0;
+        while (name[length] != 0)
+        {
+            length++;
+        }
+
+        return new ReadOnlySpan<byte>(name, length).SequenceEqual(expected);
     }
 
     private static ref int AltJitSkipOnAssert(ref JitConfigValues config)

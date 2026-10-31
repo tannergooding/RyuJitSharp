@@ -661,7 +661,7 @@ internal static unsafe class WasmEmitterOutputTests
     }
 
     [Test]
-    public static void NativeAotTryIntervalsEmitPlainBlocks()
+    public static void NativeAotTryIntervalsUseTryTable()
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -673,13 +673,30 @@ internal static unsafe class WasmEmitterOutputTests
             Assert.That(compiler.IsNativeAot, Is.True);
             var start = new BasicBlock(null, null) { bbPreorderNum = 0 };
             var end = new BasicBlock(null, null) { bbPreorderNum = 1 };
-            compiler.fgIndexToBlockMap = [start, end];
-            compiler.fgWasmIntervals = [new WasmInterval(0, 1, WasmInterval.Kind.Try)];
+            var catchResume = new BasicBlock(null, null) { bbPreorderNum = 2 };
+            start.MakeLir(null, null);
+            start.InsertAtEnd(new GenTree(GT_WASM_JEXCEPT, TYP_VOID));
+            start.Next = end;
+            end.Prev = start;
+            end.Next = catchResume;
+            catchResume.Prev = end;
+            compiler.fgPredsComputed = true;
+            var trueEdge = compiler.fgAddRefPred(catchResume, start);
+            trueEdge.Likelihood = 1.0;
+            var falseEdge = compiler.fgAddRefPred(end, start);
+            falseEdge.Likelihood = 1.0;
+            start.SetCond(trueEdge, falseEdge);
+            compiler.fgIndexToBlockMap = [start, end, catchResume];
+            compiler.fgWasmIntervals =
+            [
+                WasmInterval.NewExnRefWrapper(start, catchResume),
+                WasmInterval.NewTry(start, end),
+            ];
             WasmControlFlowStack(codeGen) = new ArrayStack<WasmInterval>();
 
             EmitStartBlockWasm(codeGen, start);
 
-            var emittedBlock = false;
+            var emittedBlockCount = 0;
             var emittedTryTable = false;
             var emittedInstructions = new List<instruction>();
             for (var group = FirstInstructionGroup(codeGen.Emitter); group is not null; group = group.igNext)
@@ -707,12 +724,13 @@ internal static unsafe class WasmEmitterOutputTests
 
             foreach (var instruction in emittedInstructions)
             {
-                emittedBlock |= instruction is INS_block;
+                emittedBlockCount += instruction is INS_block ? 1 : 0;
                 emittedTryTable |= instruction is INS_try_table;
             }
 
-            Assert.That(emittedBlock, Is.True, $"Emitted instructions: {string.Join(", ", emittedInstructions)}");
-            Assert.That(emittedTryTable, Is.False);
+            Assert.That(emittedBlockCount, Is.EqualTo(1),
+                $"Expected only the exnref wrapper block, got {emittedBlockCount}: {string.Join(", ", emittedInstructions)}");
+            Assert.That(emittedTryTable, Is.True);
         });
     }
 

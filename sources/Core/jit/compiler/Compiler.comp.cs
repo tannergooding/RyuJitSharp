@@ -3841,6 +3841,9 @@ public partial class Compiler
 
             // Transform any strongly connected components into reducible flow.
             DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, fgWasmTransformSccs);
+
+            // Insert EventPipe CPU-sampling samplepoints before lowering.
+            DoPhase(this, PHASE_WASM_PROF_INSTRUMENT, fgWasmProfInstrument);
         }
 
         // Assign registers to variables, etc.

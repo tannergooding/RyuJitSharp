@@ -416,6 +416,7 @@ public partial struct JitConfigValues
     internal sealed class TargetWasmData
     {
         internal int _jitWasmFunclets;
+        internal MethodSet _wasmPerformanceInstrumentation;
     }
 
     internal sealed class TargetXarchData
@@ -3763,6 +3764,7 @@ public partial struct JitConfigValues
         }
     }
     public int JitWasmFunclets => _configurationData is { } configurationData ? Configuration.TARGET_WASM && configurationData._targetWasmData is { } sidecarData0 ? sidecarData0._jitWasmFunclets : default : default;
+    public MethodSet WasmPerformanceInstrumentation => _configurationData is { } configurationData ? Configuration.TARGET_WASM && configurationData._targetWasmData is { } sidecarData0 ? sidecarData0._wasmPerformanceInstrumentation : default : default;
     public int JitEnregStructLocals => _jitEnregStructLocals;
 
     internal Compiler.DebugData.JitConfigValuesData getDebugDataForWrite()
@@ -4316,6 +4318,7 @@ public partial struct JitConfigValues
                 jitHost->freeStringConfigValue(_configurationData!._debugData!._jitR2RUnsupportedRange);
             }
             // _configurationData!._targetWasmData!._jitWasmFunclets = unchecked((int)(0xCDCDCDCD));
+            _configurationData!._targetWasmData!._wasmPerformanceInstrumentation.destroy(jitHost);
         }
         // _jitEnregStructLocals = unchecked((int)(0xCDCDCDCD));
         _isInitialized = false;
@@ -4910,6 +4913,8 @@ public partial struct JitConfigValues
                 _configurationData!._debugData!._jitR2RUnsupportedRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitR2RUnsupportedRange"u8))));
             }
             _configurationData!._targetWasmData!._jitWasmFunclets = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitWasmFunclets"u8))), 1);
+            var wasmPerformanceInstrumentationValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("WasmPerformanceInstrumentation"u8))));
+            _configurationData!._targetWasmData!._wasmPerformanceInstrumentation = new MethodSet(wasmPerformanceInstrumentationValue, jitHost);
         }
         _jitEnregStructLocals = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnregStructLocals"u8))), 1);
         _isInitialized = true;

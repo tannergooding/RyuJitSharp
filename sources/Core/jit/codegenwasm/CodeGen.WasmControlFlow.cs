@@ -272,11 +272,6 @@ public sealed partial class CodeGen
                 {
                     Emitter.emitIns_BlockTy(INS_loop);
                 }
-                else if (interval.IsTry() && _compiler.IsNativeAot)
-                {
-                    // Preserve interval nesting without CoreCLR's catch-resumption tag during NativeAOT bringup.
-                    Emitter.emitIns_BlockTy(INS_block);
-                }
                 else if (interval.IsTry())
                 {
                     var jTrue = block.LastNode;

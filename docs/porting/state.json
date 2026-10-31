@@ -3,9 +3,9 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d",
-    "targetObservedAt": "2026-10-30",
-    "reconciledCommit": "f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d"
+    "targetCommit": "943f55c6cecfb6c8e1826cbd662a7528515fa55b",
+    "targetObservedAt": "2026-10-31",
+    "reconciledCommit": "943f55c6cecfb6c8e1826cbd662a7528515fa55b"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
@@ -1065,6 +1065,26 @@
         "tests\\Core\\AssertionTests.cs"
       ],
       "sourceCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
+    },
+    {
+      "area": "wasm-profiler-samplepoint-phase",
+      "native": [
+        "src\\coreclr\\jit\\fgwasm.cpp",
+        "src\\coreclr\\jit\\compiler.cpp",
+        "src\\coreclr\\jit\\compiler.h",
+        "src\\coreclr\\jit\\compphases.h",
+        "src\\coreclr\\jit\\jitconfigvalues.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.WasmPhases.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.comp.cs",
+        "sources\\Core\\jit\\compiler\\Phases.generated.cs",
+        "sources\\Core\\jit\\compiler\\PhasesExtensions.generated.cs",
+        "sources\\Core\\jit\\jitconfig\\JitConfigValues.generated.cs",
+        "tests\\Targets\\WasmSccTests.cs"
+      ],
+      "disposition": "The profiler phase spans native CFG analysis, phase ordering, and config metadata; the managed implementation is split across compiler partials and generated tables. The native helper body and ReadyToRun registration remain runtime-owned.",
+      "sourceCommit": "943f55c6cecfb6c8e1826cbd662a7528515fa55b"
     }
   ],
   "generatorInputMapping": {
@@ -1075,8 +1095,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d",
-    "reconciledCommit": "f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d",
+    "targetInputCommit": "943f55c6cecfb6c8e1826cbd662a7528515fa55b",
+    "reconciledCommit": "943f55c6cecfb6c8e1826cbd662a7528515fa55b",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

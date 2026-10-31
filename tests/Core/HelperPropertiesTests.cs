@@ -11,6 +11,13 @@ internal static class HelperPropertiesTests
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_JIT_RESUME_AFTER_CATCH, false, false, false, true)]
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED, true, false, false, false)]
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED, true, false, false, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_MON_ENTER, false, false, true, true)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_MON_EXIT, false, false, true, true)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_MEMSET, false, false, true, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_MEMZERO, false, false, true, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_MEMCPY, false, false, true, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_NATIVE_MEMSET, false, false, true, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_WASM_PROF_SAMPLEPOINT, false, true, false, true)]
     public static void UpdatedHelpersMatchNativeProperties(CorInfoHelpFunc helper, bool isPure, bool isNoGC, bool mutatesHeap, bool noThrow)
     {
         Assert.Multiple(() => {

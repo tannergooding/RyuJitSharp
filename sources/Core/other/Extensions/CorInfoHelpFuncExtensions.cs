@@ -85,8 +85,8 @@ public static class CorInfoHelpFuncExtensions
         AlwaysThrow,                                // CORINFO_HELP_METHOD_ACCESS_EXCEPTION
         AlwaysThrow,                                // CORINFO_HELP_FIELD_ACCESS_EXCEPTION
         AlwaysThrow,                                // CORINFO_HELP_CLASS_ACCESS_EXCEPTION
-        None,                                       // CORINFO_HELP_MON_ENTER
-        None,                                       // CORINFO_HELP_MON_EXIT
+        MutatesHeap,                                // CORINFO_HELP_MON_ENTER
+        MutatesHeap,                                // CORINFO_HELP_MON_EXIT
         IsPure,                                     // CORINFO_HELP_GETCLASSFROMMETHODPARAM
         IsPure,                                     // CORINFO_HELP_GETSYNCFROMCLASSHANDLE
         MutatesHeap,                                // CORINFO_HELP_STOP_FOR_GC
@@ -134,10 +134,10 @@ public static class CorInfoHelpFuncExtensions
         // Runtime async methods may resume on another thread.
         None,                                       // CORINFO_HELP_GETCURRENTMANAGEDTHREADID
         IsNoGC,                                     // CORINFO_HELP_INIT_PINVOKE_FRAME
-        IsNoEscape,                                 // CORINFO_HELP_MEMSET
-        IsNoEscape,                                 // CORINFO_HELP_MEMZERO
-        IsNoEscape,                                 // CORINFO_HELP_MEMCPY
-        IsNoEscape,                                 // CORINFO_HELP_NATIVE_MEMSET
+        IsNoEscape | MutatesHeap,                   // CORINFO_HELP_MEMSET
+        IsNoEscape | MutatesHeap,                   // CORINFO_HELP_MEMZERO
+        IsNoEscape | MutatesHeap,                   // CORINFO_HELP_MEMCPY
+        IsNoEscape | MutatesHeap,                   // CORINFO_HELP_NATIVE_MEMSET
         IsPure | NonNullReturn,                     // CORINFO_HELP_RUNTIMEHANDLE_METHOD
         IsPure | NonNullReturn,                     // CORINFO_HELP_RUNTIMEHANDLE_CLASS
         IsPure | NonNullReturn,                     // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE
@@ -209,6 +209,7 @@ public static class CorInfoHelpFuncExtensions
         IsAllocator | MutatesHeap,                  // CORINFO_HELP_ALLOC_CONTINUATION
         IsAllocator | MutatesHeap,                  // CORINFO_HELP_ALLOC_CONTINUATION_METHOD
         IsAllocator | MutatesHeap,                  // CORINFO_HELP_ALLOC_CONTINUATION_CLASS
+        IsNoGC,                                     // CORINFO_HELP_WASM_PROF_SAMPLEPOINT
     ];
 
     private static ReadOnlySpan<ExceptionSetFlags> s_thrownExceptions => [
@@ -409,6 +410,7 @@ public static class CorInfoHelpFuncExtensions
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_ALLOC_CONTINUATION
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_ALLOC_CONTINUATION_METHOD
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_ALLOC_CONTINUATION_CLASS
+        ExceptionSetFlags.None,                     // CORINFO_HELP_WASM_PROF_SAMPLEPOINT
     ];
 
     extension(CorInfoHelpFunc helperId)

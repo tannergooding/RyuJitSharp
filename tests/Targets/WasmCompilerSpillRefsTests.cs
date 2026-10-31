@@ -37,7 +37,7 @@ internal static unsafe class WasmCompilerSpillRefsTests
                 block.MakeLir(null, null);
                 var definition = new GenTreeCall(type);
                 definition._lirFlags |= LIR.Flags.MultiplyUsed;
-                var call = new GenTreeCall(TYP_VOID);
+                var call = NewPotentialGCSafeCall();
                 var use = compiler.gtNewStoreLclVarNode(0, definition);
                 block.InsertAtEnd(definition);
                 block.InsertAtEnd(call);
@@ -113,7 +113,7 @@ internal static unsafe class WasmCompilerSpillRefsTests
             var block = new BasicBlock(null, null) { Kind = BBJ_THROW };
             block.MakeLir(null, null);
             var definition = compiler.gtNewLclVarNode(type, 0);
-            var call = new GenTreeCall(TYP_VOID);
+            var call = NewPotentialGCSafeCall();
             var use = compiler.gtNewStoreLclVarNode(0, definition);
             block.InsertAtEnd(definition);
             block.InsertAtEnd(call);
@@ -126,6 +126,31 @@ internal static unsafe class WasmCompilerSpillRefsTests
             Assert.That(definition.Next, Is.SameAs(call));
             Assert.That(use.Data, Is.SameAs(definition));
             Assert.That(block.LastNode, Is.SameAs(use));
+        });
+    }
+
+    [Test]
+    public static void NoGcProfilerSamplepointDoesNotForceReferenceSpills()
+    {
+        WithCompiler(TYP_REF, compiler =>
+        {
+            var block = new BasicBlock(null, null) { Kind = BBJ_RETURN };
+            block.MakeLir(null, null);
+            var definition = new GenTreeCall(TYP_REF);
+            var samplepoint = compiler.gtNewHelperCallNode(
+                TYP_VOID,
+                CorInfoHelpFunc.CORINFO_HELP_WASM_PROF_SAMPLEPOINT);
+            var use = compiler.gtNewStoreLclVarNode(0, definition);
+            block.InsertAtEnd(definition);
+            block.InsertAtEnd(samplepoint);
+            block.InsertAtEnd(use);
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+
+            Assert.That(compiler.fgWasmSpillRefs(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(compiler.lvaCount, Is.EqualTo(1));
+            Assert.That(definition.Next, Is.SameAs(samplepoint));
+            Assert.That(use.Data, Is.SameAs(definition));
         });
     }
 
@@ -152,7 +177,7 @@ internal static unsafe class WasmCompilerSpillRefsTests
             var block = new BasicBlock(null, null) { Kind = BBJ_THROW };
             block.MakeLir(null, null);
             var definition = compiler.gtNewLclVarNode(TYP_REF, 0);
-            var call = new GenTreeCall(TYP_VOID);
+            var call = NewPotentialGCSafeCall();
             var use = compiler.gtNewStoreLclVarNode(0, definition);
             block.InsertAtEnd(definition);
             block.InsertAtEnd(call);
@@ -230,7 +255,7 @@ internal static unsafe class WasmCompilerSpillRefsTests
                 bbLiveIn = liveIn,
             };
             block.MakeLir(null, null);
-            block.InsertAtEnd(new GenTreeCall(TYP_VOID));
+            block.InsertAtEnd(NewPotentialGCSafeCall());
             compiler.fgFirstBB = block;
             compiler.fgLastBB = block;
 
@@ -253,7 +278,7 @@ internal static unsafe class WasmCompilerSpillRefsTests
             var block = new BasicBlock(null, null) { Kind = BBJ_THROW };
             block.MakeLir(null, null);
             var definition = new GenTreeCall(TYP_REF);
-            var call = new GenTreeCall(TYP_VOID);
+            var call = NewPotentialGCSafeCall();
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(definition));
             block.InsertAtEnd(definition);
             block.InsertAtEnd(call);
@@ -281,7 +306,7 @@ internal static unsafe class WasmCompilerSpillRefsTests
             var referenceDefinition = compiler.gtNewLclVarNode(TYP_REF, 0);
             var secondReferenceDefinition = compiler.gtNewLclVarNode(TYP_REF, 1);
             var byRefDefinition = compiler.gtNewLclVarNode(TYP_BYREF, 2);
-            var call = new GenTreeCall(TYP_VOID);
+            var call = NewPotentialGCSafeCall();
             var referenceUse = compiler.gtNewStoreLclVarNode(0, referenceDefinition);
             var secondReferenceUse = compiler.gtNewStoreLclVarNode(1, secondReferenceDefinition);
             var byRefUse = compiler.gtNewStoreLclVarNode(2, byRefDefinition);
@@ -409,6 +434,13 @@ internal static unsafe class WasmCompilerSpillRefsTests
     private static void WithCompiler(var_types type, Action<Compiler> action)
     {
         WithCompiler([type], action);
+    }
+
+    private static GenTreeCall NewPotentialGCSafeCall()
+    {
+        var call = new GenTreeCall(TYP_VOID);
+        call.Flags |= GenTreeFlags.GTF_CALL;
+        return call;
     }
 
     private static void WithCompiler(var_types[] types, Action<Compiler> action)

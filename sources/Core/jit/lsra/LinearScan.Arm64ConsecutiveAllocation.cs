@@ -171,13 +171,13 @@ public sealed partial class LinearScan
                 case 3:
                 {
                     var fromV30 = SRBM_ARM64_V0 | SRBM_ARM64_V30 | SRBM_ARM64_V31;
-                    if ((candidates & fromV30) != SRBM_NONE)
+                    if ((candidates & fromV30) == fromV30)
                     {
                         starts |= unchecked((ulong)SRBM_ARM64_V30);
                         all |= unchecked((ulong)fromV30);
                     }
                     var fromV31 = SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V31;
-                    if ((candidates & fromV31) != SRBM_NONE)
+                    if ((candidates & fromV31) == fromV31)
                     {
                         starts |= unchecked((ulong)SRBM_ARM64_V31);
                         all |= unchecked((ulong)fromV31);
@@ -187,19 +187,19 @@ public sealed partial class LinearScan
                 case 4:
                 {
                     var fromV29 = SRBM_ARM64_V0 | SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31;
-                    if ((candidates & fromV29) != SRBM_NONE)
+                    if ((candidates & fromV29) == fromV29)
                     {
                         starts |= unchecked((ulong)SRBM_ARM64_V29);
                         all |= unchecked((ulong)fromV29);
                     }
-                    var fromV30 = SRBM_ARM64_V0 | SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31;
-                    if ((candidates & fromV30) != SRBM_NONE)
+                    var fromV30 = SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V30 | SRBM_ARM64_V31;
+                    if ((candidates & fromV30) == fromV30)
                     {
                         starts |= unchecked((ulong)SRBM_ARM64_V30);
                         all |= unchecked((ulong)fromV30);
                     }
-                    var fromV31 = SRBM_ARM64_V0 | SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31;
-                    if ((candidates & fromV31) != SRBM_NONE)
+                    var fromV31 = SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V31;
+                    if ((candidates & fromV31) == fromV31)
                     {
                         starts |= unchecked((ulong)SRBM_ARM64_V31);
                         all |= unchecked((ulong)fromV31);

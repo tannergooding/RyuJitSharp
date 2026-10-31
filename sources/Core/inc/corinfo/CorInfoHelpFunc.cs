@@ -606,5 +606,8 @@ public enum CorInfoHelpFunc
 
     CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
+    /// <summary>Cooperative EventPipe CPU-sampling samplepoint for WebAssembly.</summary>
+    CORINFO_HELP_WASM_PROF_SAMPLEPOINT,
+
     CORINFO_HELP_COUNT,
 }

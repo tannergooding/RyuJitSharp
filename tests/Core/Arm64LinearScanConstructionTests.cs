@@ -455,7 +455,9 @@ internal static unsafe class Arm64LinearScanConstructionTests
         SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V30 | SRBM_ARM64_V31)]
     [TestCase(SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31, 4u,
         SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31,
-        SRBM_ARM64_V0 | SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31)]
+        SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31)]
+    [TestCase(SRBM_ARM64_V0 | SRBM_ARM64_V2 | SRBM_ARM64_V31, 3u, SRBM_NONE, SRBM_NONE)]
+    [TestCase(SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V3 | SRBM_ARM64_V31, 4u, SRBM_NONE, SRBM_NONE)]
     [TestCase(SRBM_ARM64_V0 | SRBM_ARM64_V2 | SRBM_ARM64_V4, 2u, SRBM_NONE, SRBM_NONE)]
     public static void ConsecutiveCandidateStartsStayInFloatBank(
         regMask candidates, uint count, regMask starts, regMask all)

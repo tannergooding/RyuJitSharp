@@ -457,6 +457,10 @@ public static partial class PhasesExtensions
             {
                 return "Wasm virtual IP";
             }
+            case Phases.PHASE_WASM_PROF_INSTRUMENT:
+            {
+                return "Wasm profiler instrumentation";
+            }
             case Phases.PHASE_ASYNC:
             {
                 return "Transform async";
@@ -652,6 +656,7 @@ public static partial class PhasesExtensions
         false, // PHASE_WASM_IDENTIFY_GCSAFE_LOCALS
         false, // PHASE_WASM_SPILL_REFS
         false, // PHASE_WASM_VIRTUAL_IP
+        false, // PHASE_WASM_PROF_INSTRUMENT
         false, // PHASE_ASYNC
         true, // PHASE_LCLVARLIVENESS
         false, // PHASE_LCLVARLIVENESS_INIT
@@ -784,6 +789,7 @@ public static partial class PhasesExtensions
         (Phases)(-1), // PHASE_WASM_IDENTIFY_GCSAFE_LOCALS
         (Phases)(-1), // PHASE_WASM_SPILL_REFS
         (Phases)(-1), // PHASE_WASM_VIRTUAL_IP
+        (Phases)(-1), // PHASE_WASM_PROF_INSTRUMENT
         (Phases)(-1), // PHASE_ASYNC
         (Phases)(-1), // PHASE_LCLVARLIVENESS
         PHASE_LCLVARLIVENESS, // PHASE_LCLVARLIVENESS_INIT
@@ -916,6 +922,7 @@ public static partial class PhasesExtensions
         false, // PHASE_WASM_IDENTIFY_GCSAFE_LOCALS
         false, // PHASE_WASM_SPILL_REFS
         false, // PHASE_WASM_VIRTUAL_IP
+        false, // PHASE_WASM_PROF_INSTRUMENT
         true, // PHASE_ASYNC
         false, // PHASE_LCLVARLIVENESS
         false, // PHASE_LCLVARLIVENESS_INIT

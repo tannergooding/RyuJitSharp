@@ -45,6 +45,9 @@ internal static unsafe class RangeAnalysisTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoesBinOpOverflow")]
     private static extern bool DoesBinOpOverflow(RangeCheck analysis, BasicBlock block, GenTreeOp binary, Range range);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ComputeDoesOverflow")]
+    private static extern bool ComputeDoesOverflow(RangeCheck analysis, BasicBlock block, GenTree tree, Range range);
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddOverflows")]
     private static extern bool AddOverflows(RangeCheck analysis, Range first, Range second);
 
@@ -64,6 +67,43 @@ internal static unsafe class RangeAnalysisTests
 
             Assert.That(AddOverflows(analysis, first, safeSecond), Is.False);
             Assert.That(AddOverflows(analysis, first, underflowingSecond), Is.True);
+        });
+    }
+
+    [TestCase(genTreeOps.GT_BSWAP)]
+    [TestCase(genTreeOps.GT_BSWAP16)]
+    public static void ByteSwapOverflowCheckUsesItsOperandDefinitionChain(genTreeOps operation)
+    {
+        WithCompiler((compiler, _) =>
+        {
+            compiler.lvaTable = [
+                new LclVarDsc { Type = TYP_INT, lvIsParam = true },
+                new LclVarDsc { Type = TYP_INT, lvIsParam = true },
+            ];
+            compiler.lvaCount = 2;
+            ref var leftDescriptor = ref compiler.lvaTable[0];
+            var leftSsaNumber = leftDescriptor.lvPerSsaData.AllocSsaNum();
+            ref var rightDescriptor = ref compiler.lvaTable[1];
+            var rightSsaNumber = rightDescriptor.lvPerSsaData.AllocSsaNum();
+            var left = compiler.gtNewLclvNode(TYP_INT, 0);
+            left.SsaNum = leftSsaNumber;
+            var right = compiler.gtNewLclvNode(TYP_INT, 1);
+            right.SsaNum = rightSsaNumber;
+            var add = compiler.gtNewBinaryNode(genTreeOps.GT_ADD, TYP_INT, left, right);
+            var byteSwap = compiler.gtNewUnaryNode(operation, TYP_INT, add);
+            var analysis = compiler.GetRangeCheck();
+            var rangeMapField = typeof(RangeCheck).GetField("_rangeMap", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("RangeCheck range map was not found.");
+            var rangeMap = (Dictionary<GenTree, Range>)(rangeMapField.GetValue(analysis)
+                ?? throw new InvalidOperationException("RangeCheck range map was not initialized."));
+            rangeMap[left] = new Range(new Limit(LimitType.Constant, 1), new Limit(LimitType.Constant, 2));
+            rangeMap[right] = new Range(new Limit(LimitType.Constant, 3), new Limit(LimitType.Constant, 4));
+
+            Assert.That(ComputeDoesOverflow(
+                analysis,
+                new BasicBlock(null, null),
+                byteSwap,
+                new Range(new Limit(LimitType.Constant, 0), new Limit(LimitType.Constant, 10))), Is.False);
         });
     }
 

@@ -93,7 +93,7 @@ public partial class Compiler
                         return GenTree.VisitResult.Continue;
                     });
 
-                    if (defs.Count != 0)
+                    if ((defs.Count != 0) && IsPotentialGCSafePoint(tree))
                     {
                         // Keep references not consumed by this call in pinned stack slots so the GC cannot move them.
                         _wasmSpillSlots ??= [];
