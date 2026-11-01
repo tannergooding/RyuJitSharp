@@ -112,7 +112,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls) => lpVtbl->Base.Base.asCorInfoType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public byte* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, byte** namespaceName) => lpVtbl->Base.Base.getClassNameFromMetadata((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, namespaceName);
+    public byte* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, byte** namespaceName) => Compiler.eeGetClassNameFromMetadataFromJitInfo(ref this, JitTls.Compiler, cls, namespaceName);
 
     public CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, int index) => lpVtbl->Base.Base.getTypeInstantiationArgument((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, index);
 
@@ -280,11 +280,11 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public CORINFO_ARG_LIST_HANDLE getArgNext(CORINFO_ARG_LIST_HANDLE args) => lpVtbl->Base.Base.getArgNext((ICorJitInfo*)(Unsafe.AsPointer(ref this)), args);
 
-    public CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet) => lpVtbl->Base.Base.getArgType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), sig, args, vcTypeRet);
+    public CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet) => Compiler.eeGetArgTypeFromJitInfo(ref this, JitTls.Compiler, sig, args, vcTypeRet);
 
     public int getExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet) => lpVtbl->Base.Base.getExactClasses((ICorJitInfo*)(Unsafe.AsPointer(ref this)), baseType, maxExactClasses, exactClsRet);
 
-    public CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args) => lpVtbl->Base.Base.getArgClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), sig, args);
+    public CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args) => Compiler.eeGetArgClassFromJitInfo(ref this, JitTls.Compiler, sig, args);
 
     public CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass) => lpVtbl->Base.Base.getHFAType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), hClass);
 

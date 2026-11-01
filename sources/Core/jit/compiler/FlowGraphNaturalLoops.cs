@@ -156,7 +156,7 @@ public sealed partial class FlowGraphNaturalLoops
     public static FlowGraphNaturalLoops Find(FlowGraphDfsTree dfsTree)
     {
         var comp = dfsTree.GetCompiler();
-        comp._blockToEHPreds = null;
+        comp.fgInvalidateFlowGraphAnalysis(Compiler.FlowGraphAnalysisInvalidation.ExceptionalPredecessors);
         if (Configuration.DEBUG)
         {
             JITDUMP("Identifying loops in DFS tree with following reverse post order:\n");

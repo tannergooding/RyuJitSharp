@@ -2646,7 +2646,8 @@ public partial class Compiler
     /// </remarks>
     public void fgAdjustForAddressExposedOrWrittenThis()
     {
-        ref var thisVarDsc = ref lvaGetDesc(info.compThisArg);
+        var thisVarNum = info.compThisArg;
+        ref var thisVarDsc = ref lvaGetDesc(thisVarNum);
 
         // Optionally enable adjustment during stress.
         if (compStressCompile(STRESS_GENERIC_VARN, 15))
@@ -2660,14 +2661,15 @@ public partial class Compiler
         {
             // If there is a "ldarga 0" or "starg 0", grab and use the temp.
             lvaArg0Var = lvaGrabTemp(false, "Address-exposed, or written this pointer");
-            noway_assert(lvaArg0Var > (uint)info.compThisArg);
+            noway_assert(lvaArg0Var > (uint)thisVarNum);
+            thisVarDsc = ref lvaGetDesc(thisVarNum);
             ref var arg0varDsc = ref lvaGetDesc(lvaArg0Var);
             arg0varDsc.Type = thisVarDsc.Type;
-            SetLocalAddressExposed(lvaArg0Var, thisVarDsc.IsAddressExposed, GetLocalAddressExposedReason(info.compThisArg));
+            SetLocalAddressExposed(lvaArg0Var, thisVarDsc.IsAddressExposed, GetLocalAddressExposedReason(thisVarNum));
             arg0varDsc.lvDoNotEnregister = thisVarDsc.lvDoNotEnregister;
             if (Configuration.DEBUG)
             {
-                CopyLocalDebugData(info.compThisArg, lvaArg0Var, LocalDebugDataCopyFlags.DoNotEnregisterReason);
+                CopyLocalDebugData(thisVarNum, lvaArg0Var, LocalDebugDataCopyFlags.DoNotEnregisterReason);
             }
             arg0varDsc.lvHasILStoreOp = thisVarDsc.lvHasILStoreOp;
 
@@ -10243,15 +10245,51 @@ public partial class Compiler
         }
     }
 
-    public void fgInvalidateDfsTree()
+    [Flags]
+    internal enum FlowGraphAnalysisInvalidation : ushort
     {
-        _dfsTree = null;
-        _loops = null;
-        _domTree = null;
-        _domFrontiers = null;
-        _reachabilitySets = null;
-        fgSsaValid = false;
+        DfsDerived = 1 << 0,
+        ExceptionalPredecessors = 1 << 1,
+        DominancePredecessors = 1 << 2,
+        SsaValidity = 1 << 3,
+        LoopMemoryBlockMap = 1 << 4,
     }
+
+    internal void fgInvalidateFlowGraphAnalysis(FlowGraphAnalysisInvalidation invalidation)
+    {
+        if ((invalidation & FlowGraphAnalysisInvalidation.DfsDerived) != 0)
+        {
+            _dfsTree = null;
+            _loops = null;
+            _domTree = null;
+            _domFrontiers = null;
+            _reachabilitySets = null;
+        }
+
+        if ((invalidation & FlowGraphAnalysisInvalidation.ExceptionalPredecessors) != 0)
+        {
+            _blockToEHPreds = null;
+        }
+
+        if ((invalidation & FlowGraphAnalysisInvalidation.DominancePredecessors) != 0)
+        {
+            _dominancePreds = null;
+        }
+
+        if ((invalidation & FlowGraphAnalysisInvalidation.SsaValidity) != 0)
+        {
+            fgSsaValid = false;
+        }
+
+        if ((invalidation & FlowGraphAnalysisInvalidation.LoopMemoryBlockMap) != 0)
+        {
+            _nodeToLoopMemoryBlockMap = null;
+        }
+    }
+
+    public void fgInvalidateDfsTree()
+        => fgInvalidateFlowGraphAnalysis(
+            FlowGraphAnalysisInvalidation.DfsDerived | FlowGraphAnalysisInvalidation.SsaValidity);
 
     public BlockToFlowEdgeMap GetBlockToEHPreds() => _blockToEHPreds ??= [];
 
@@ -10416,7 +10454,8 @@ public partial class Compiler
         var visited = BitVecOps.MakeEmpty(traits);
         var preOrderIndex = 0;
         var postOrderIndex = 0;
-        var pending = new Stack<(BasicBlock Block, List<BasicBlock> Successors, int Next)>();
+        var successors = new List<BasicBlock>();
+        var pending = new Stack<(BasicBlock Block, int SuccessorStart, int SuccessorCount, int Next)>();
 
         assert(entries.Count > 0);
         foreach (var entry in entries)
@@ -10427,25 +10466,31 @@ public partial class Compiler
             }
 
             BitVecOps.AddElemD(traits, visited, entry.bbNum);
-            pending.Push((entry, fgGetAllSuccessors(entry, useProfile), 0));
+            var entrySuccessorStart = successors.Count;
+            var entrySuccessorCount = fgAppendSuccessors(entry, successors, useProfile);
+            pending.Push((entry, entrySuccessorStart, entrySuccessorCount, 0));
             visitor.PreOrderVisit(entry, preOrderIndex++);
 
             while (pending.Count > 0)
             {
-                var (block, successors, next) = pending.Pop();
+                var (block, frameSuccessorStart, frameSuccessorCount, next) = pending.Pop();
 
-                if (next == successors.Count)
+                if (next == frameSuccessorCount)
                 {
                     visitor.PostOrderVisit(block, postOrderIndex++);
+                    assert(successors.Count == (frameSuccessorStart + frameSuccessorCount));
+                    successors.RemoveRange(frameSuccessorStart, frameSuccessorCount);
                     continue;
                 }
 
-                pending.Push((block, successors, next + 1));
-                var successor = successors[next];
+                pending.Push((block, frameSuccessorStart, frameSuccessorCount, next + 1));
+                var successor = successors[frameSuccessorStart + next];
 
                 if (BitVecOps.TryAddElemD(traits, visited, successor.bbNum))
                 {
-                    pending.Push((successor, fgGetAllSuccessors(successor, useProfile), 0));
+                    var childSuccessorStart = successors.Count;
+                    var childSuccessorCount = fgAppendSuccessors(successor, successors, useProfile);
+                    pending.Push((successor, childSuccessorStart, childSuccessorCount, 0));
                     visitor.PreOrderVisit(successor, preOrderIndex++);
                 }
 
@@ -10456,6 +10501,15 @@ public partial class Compiler
         assert(preOrderIndex == postOrderIndex);
 
         return preOrderIndex;
+    }
+
+    private int fgAppendSuccessors(BasicBlock block, List<BasicBlock> successors, bool useProfile)
+    {
+        var successorStart = successors.Count;
+        var visitor = new SuccessorListVisitor(successors);
+        _ = block.VisitAllSuccs(this, ref visitor, useProfile);
+
+        return successors.Count - successorStart;
     }
 
     internal List<BasicBlock> fgGetAllSuccessors(BasicBlock block, bool useProfile = false)
@@ -15271,7 +15325,7 @@ public partial class Compiler
         }
         else
         {
-            _blockToEHPreds = null;
+            fgInvalidateFlowGraphAnalysis(FlowGraphAnalysisInvalidation.ExceptionalPredecessors);
             var dfs = _dfsTree;
             assert(dfs is not null);
             _loops = FlowGraphNaturalLoops.Find(dfs);

@@ -46,7 +46,7 @@ public partial class Compiler
                 continue;
             }
 
-            if (info.compCompHnd->isIntrinsicType(argClass))
+            if (eeIsIntrinsicType(argClass))
             {
                 var className = getClassNameFromMetadata(argClass, out var namespaceName);
                 if (namespaceName is "System.Runtime.InteropServices.Swift")

@@ -28,6 +28,11 @@ internal static unsafe class StructPromotionTests
 
             Assert.That(Promote(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(compiler.lvaTable, Is.Not.SameAs(original));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(original[0].lvPromoted, Is.False);
+            }
+
             Assert.That(compiler.lvaCount, Is.EqualTo(7));
             Assert.That(metadata->LayoutQueries, Is.EqualTo(1));
             for (var parent = 0; parent <= 2; parent += 2)

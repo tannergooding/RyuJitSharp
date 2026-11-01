@@ -125,7 +125,7 @@ internal static class CompilerOptionsDebugDataTests
             Is.Not.Null);
         Assert.That(
             typeof(Compiler.DebugData.CompStressData).GetField(
-                "ModeNames",
+                "ModeNamesUtf8",
                 BindingFlags.Static | BindingFlags.NonPublic),
             Is.Not.Null);
         Assert.That(

@@ -12,11 +12,11 @@ internal static class JitHashTableTests
     [Test]
     public static void LookupAndSetPreserveValues()
     {
-        var table = new JitHashTable<uint, string>(new ConstantHashInfo());
+        var table = new JitHashTable<uint, string, ConstantHashInfo>(default);
         table.Reallocate(7);
 
         Assert.That(table.Set(1, "first"), Is.False);
-        Assert.That(table.Set(1, "updated", JitHashTable<uint, string>.SetKind.Overwrite), Is.True);
+        Assert.That(table.Set(1, "updated", JitHashTable<uint, string, ConstantHashInfo>.SetKind.Overwrite), Is.True);
         Assert.That(table.Lookup(1, out var value), Is.True);
         Assert.That(value, Is.EqualTo("updated"));
 
@@ -29,7 +29,7 @@ internal static class JitHashTableTests
     [Test]
     public static void ReallocationAndGrowthPreserveNativeChainOrder()
     {
-        var table = new JitHashTable<uint, uint>(new ConstantHashInfo());
+        var table = new JitHashTable<uint, uint, ConstantHashInfo>(default);
         table.Reallocate(7);
 
         for (uint key = 0; key < 6; key++)
@@ -47,7 +47,7 @@ internal static class JitHashTableTests
     [Test]
     public static void RemoveAndRemoveAllInvalidateValueReferences()
     {
-        var table = new JitHashTable<uint, string>(new ConstantHashInfo());
+        var table = new JitHashTable<uint, string, ConstantHashInfo>(default);
         table.Reallocate(7);
         Assert.That(table.Set(1, "value"), Is.False);
         var value = table.LookupPointer(1) ?? throw new AssertionException("Missing value reference.");
@@ -68,15 +68,23 @@ internal static class JitHashTableTests
     [Test]
     public static void ComparerDefinesKeyEqualityAndHashing()
     {
-        var table = new JitHashTable<string, int>(
-            new CaseInsensitiveHashInfo());
+        var table = new JitHashTable<string, int, CaseInsensitiveHashInfo>(default);
         table.Reallocate(7);
 
         Assert.That(table.Set("first", 1), Is.False);
-        Assert.That(table.Set("FIRST", 2, JitHashTable<string, int>.SetKind.Overwrite), Is.True);
+        Assert.That(table.Set("FIRST", 2, JitHashTable<string, int, CaseInsensitiveHashInfo>.SetKind.Overwrite), Is.True);
         Assert.That(table.Lookup("First", out var value), Is.True);
         Assert.That(value, Is.EqualTo(2));
         Assert.That(table.GetCount(), Is.EqualTo(1));
+    }
+
+    [Test]
+    public static void DefaultEqualityPreservesFloatingPointOperatorSemantics()
+    {
+        Assert.That(JitKeyFuncsDefEquals<float>.Equals(float.NaN, float.NaN), Is.False);
+        Assert.That(JitKeyFuncsDefEquals<float>.Equals(0.0f, -0.0f), Is.True);
+        Assert.That(JitKeyFuncsDefEquals<double>.Equals(double.NaN, double.NaN), Is.False);
+        Assert.That(JitKeyFuncsDefEquals<double>.Equals(0.0, -0.0), Is.True);
     }
 
     [Test]
@@ -106,7 +114,7 @@ internal static class JitHashTableTests
         Assert.That(objectKeyFuncs.GetHashCode(first),
             Is.EqualTo(unchecked((uint)RuntimeHelpers.GetHashCode(first))));
 
-        var objectTable = new JitHashTable<IdentityKey, int>(objectKeyFuncs);
+        var objectTable = new JitHashTable<IdentityKey, int, JitPtrKeyFuncs<IdentityKey>>(objectKeyFuncs);
         objectTable.Reallocate(7);
         Assert.That(objectTable.Set(first, 1), Is.False);
         Assert.That(objectTable.Set(second, 2), Is.False);
@@ -138,12 +146,14 @@ internal static class JitHashTableTests
         Assert.That(blockKeyFuncs.GetHashCode(block), Is.EqualTo(unchecked((uint)block.GetHashCode())));
     }
 
-    private sealed class ConstantHashInfo : JitKeyFuncsDefEquals<uint>
+    private readonly struct ConstantHashInfo : IHashTableInfo<uint>
     {
-        public override uint GetHashCode(uint key) => 0;
+        public bool Equals(uint x, uint y) => JitKeyFuncsDefEquals<uint>.Equals(x, y);
+
+        public uint GetHashCode(uint key) => 0;
     }
 
-    private sealed class CaseInsensitiveHashInfo : IHashTableInfo<string>
+    private readonly struct CaseInsensitiveHashInfo : IHashTableInfo<string>
     {
         public bool Equals(string x, string y) => StringComparer.OrdinalIgnoreCase.Equals(x, y);
 

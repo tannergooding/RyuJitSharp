@@ -95,6 +95,9 @@ public partial class Compiler
     private Dictionary<ClassLayoutQueryKey, int>? _classLayoutQueryCache;
     private Dictionary<nint, CorInfoFlag>? _classAttribsCache;
     private Dictionary<nint, bool>? _valueClassCache;
+    private nint _lastIntrinsicTypeCacheClassHandle;
+    private bool _lastIntrinsicTypeCacheResult;
+    private bool _hasLastIntrinsicTypeCacheResult;
     private Dictionary<nint, nint>? _methodClassCache;
     private Dictionary<nint, CorInfoHFAElemType>? _hfaTypeCache;
     private Dictionary<nint, CorInfoWasmType>? _wasmLoweringCache;
@@ -1290,6 +1293,21 @@ public partial class Compiler
 
     public unsafe bool eeIsByRefLike(CORINFO_CLASS_HANDLE classHandle)
         => info.compCompHnd->isByRefLike(classHandle);
+
+    internal unsafe bool eeIsIntrinsicType(CORINFO_CLASS_HANDLE classHandle)
+    {
+        var key = (nint)classHandle;
+        if (_hasLastIntrinsicTypeCacheResult && (_lastIntrinsicTypeCacheClassHandle == key))
+        {
+            return _lastIntrinsicTypeCacheResult;
+        }
+
+        var isIntrinsicType = info.compCompHnd->isIntrinsicType(classHandle);
+        _lastIntrinsicTypeCacheClassHandle = key;
+        _lastIntrinsicTypeCacheResult = isIntrinsicType;
+        _hasLastIntrinsicTypeCacheResult = true;
+        return isIntrinsicType;
+    }
 
     public unsafe bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
         => info.compCompHnd->isIntrinsic(ftn);

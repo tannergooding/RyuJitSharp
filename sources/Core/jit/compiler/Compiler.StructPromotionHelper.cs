@@ -541,7 +541,7 @@ public partial class Compiler
 
                 // lvaGrabTemp can reallocate the lvaTable, so
                 // refresh the cached varDsc for lclNum.
-                varDsc = _compiler.lvaGetDesc(lclNum);
+                varDsc = ref _compiler.lvaGetDesc(lclNum);
 
                 ref var fieldVarDsc = ref _compiler.lvaGetDesc(varNum);
                 fieldVarDsc.Type = fieldInfo.fldType;

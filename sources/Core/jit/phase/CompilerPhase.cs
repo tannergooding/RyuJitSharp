@@ -24,3 +24,8 @@ public sealed class CompilerPhase : Phase
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 }
+
+internal interface ICompilerPhaseAction
+{
+    PhaseStatus Invoke(Compiler compiler);
+}

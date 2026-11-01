@@ -10,13 +10,16 @@ namespace RyuJitSharp;
 
 internal sealed class AddCodeDscMap
 {
-    private sealed class KeyFuncs : JitKeyFuncsDefEquals<Compiler.AddCodeDscKey>
+    private readonly struct KeyFuncs : IHashTableInfo<Compiler.AddCodeDscKey>
     {
-        public override uint GetHashCode(Compiler.AddCodeDscKey key) => unchecked((uint)key.GetHashCode());
+        public bool Equals(Compiler.AddCodeDscKey x, Compiler.AddCodeDscKey y) =>
+            JitKeyFuncsDefEquals<Compiler.AddCodeDscKey>.Equals(x, y);
+
+        public uint GetHashCode(Compiler.AddCodeDscKey key) => unchecked((uint)key.GetHashCode());
     }
 
-    private readonly JitHashTable<Compiler.AddCodeDscKey, Compiler.AddCodeDsc> _table =
-        new(new KeyFuncs());
+    private readonly JitHashTable<Compiler.AddCodeDscKey, Compiler.AddCodeDsc, KeyFuncs> _table =
+        new(default);
 
     internal int Count => checked((int)_table.GetCount());
 

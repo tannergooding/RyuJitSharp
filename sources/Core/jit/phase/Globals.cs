@@ -20,4 +20,10 @@ public partial class Globals
         var actionPhase = new CompilerPhaseWithStatus(compiler, phase, action);
         actionPhase.Run();
     }
+
+    internal static void DoPhase<TAction>(Compiler compiler, Phases phase, TAction action)
+        where TAction : struct, ICompilerPhaseAction
+    {
+        Phase.Run(compiler, phase, action);
+    }
 }

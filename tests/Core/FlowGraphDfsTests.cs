@@ -345,6 +345,57 @@ internal static unsafe class FlowGraphDfsTests
         }
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void NestedSuccessorFramesPreserveTreeNumbering(bool useProfile)
+    {
+        var compiler = CreateCompiler();
+        using var jitTls = TestConfiguration.CreateJitTls();
+        var previous = JitTls.Compiler;
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            var entry = BasicBlock.New(compiler, BBJ_COND);
+            var first = BasicBlock.New(compiler, BBJ_COND);
+            var second = BasicBlock.New(compiler, BBJ_ALWAYS);
+            var left = BasicBlock.New(compiler, BBJ_RETURN);
+            var shared = BasicBlock.New(compiler, BBJ_RETURN);
+            var unreachable = BasicBlock.New(compiler, BBJ_RETURN);
+
+            entry.Next = first;
+            first.Next = second;
+            second.Next = left;
+            left.Next = shared;
+            shared.Next = unreachable;
+            compiler.fgFirstBB = entry;
+            compiler.fgLastBB = unreachable;
+
+            entry.FalseEdge = new FlowEdge(entry, first, null) { Likelihood = 0.8 };
+            entry.TrueEdge = new FlowEdge(entry, second, null) { Likelihood = 0.2 };
+            first.FalseEdge = new FlowEdge(first, left, null) { Likelihood = 0.8 };
+            first.TrueEdge = new FlowEdge(first, shared, null) { Likelihood = 0.2 };
+            second.SetKindAndTargetEdge(BBJ_ALWAYS, new FlowEdge(second, shared, null));
+
+            var dfs = ComputeDfs(compiler, useProfile);
+            BasicBlock[] expectedPostOrder = useProfile
+                ? [shared, second, left, first, entry]
+                : [left, shared, first, second, entry];
+
+            Assert.That(dfs.PostOrderCount, Is.EqualTo(expectedPostOrder.Length));
+            for (var index = 0; index < expectedPostOrder.Length; index++)
+            {
+                Assert.That(dfs.GetPostOrder(index), Is.SameAs(expectedPostOrder[index]));
+            }
+
+            Assert.That(dfs.Contains(unreachable), Is.False);
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [Test]
     public static void DetectsBackedgesAndPreservesBlockNumbersOnInvalidation()
     {
@@ -386,6 +437,51 @@ internal static unsafe class FlowGraphDfsTests
         {
             JitTls.Compiler = previous;
         }
+    }
+
+    [Test]
+    public static void AnalysisInvalidationClearsOnlyRequestedCacheGroups()
+    {
+        var compiler = CreateCompiler();
+        compiler._dfsTree = (FlowGraphDfsTree)RuntimeHelpers.GetUninitializedObject(typeof(FlowGraphDfsTree));
+        compiler._loops = (FlowGraphNaturalLoops)RuntimeHelpers.GetUninitializedObject(typeof(FlowGraphNaturalLoops));
+        compiler._domTree = (FlowGraphDominatorTree)RuntimeHelpers.GetUninitializedObject(typeof(FlowGraphDominatorTree));
+        compiler._domFrontiers = (FlowGraphDominanceFrontiers)RuntimeHelpers.GetUninitializedObject(typeof(FlowGraphDominanceFrontiers));
+        compiler._reachabilitySets = (BlockReachabilitySets)RuntimeHelpers.GetUninitializedObject(typeof(BlockReachabilitySets));
+        var ehPredecessors = new Dictionary<BasicBlock, FlowEdge?>();
+        var dominancePredecessors = new Dictionary<BasicBlock, FlowEdge?>();
+        var loopMemoryMap = new Dictionary<GenTree, BasicBlock>();
+        compiler._blockToEHPreds = ehPredecessors;
+        compiler._dominancePreds = dominancePredecessors;
+        compiler._nodeToLoopMemoryBlockMap = loopMemoryMap;
+        compiler.fgSsaValid = true;
+
+        compiler.fgInvalidateFlowGraphAnalysis(
+            Compiler.FlowGraphAnalysisInvalidation.DfsDerived |
+            Compiler.FlowGraphAnalysisInvalidation.SsaValidity);
+
+        Assert.Multiple(() => {
+            Assert.That(compiler._dfsTree, Is.Null);
+            Assert.That(compiler._loops, Is.Null);
+            Assert.That(compiler._domTree, Is.Null);
+            Assert.That(compiler._domFrontiers, Is.Null);
+            Assert.That(compiler._reachabilitySets, Is.Null);
+            Assert.That(compiler.fgSsaValid, Is.False);
+            Assert.That(compiler._blockToEHPreds, Is.SameAs(ehPredecessors));
+            Assert.That(compiler._dominancePreds, Is.SameAs(dominancePredecessors));
+            Assert.That(compiler._nodeToLoopMemoryBlockMap, Is.SameAs(loopMemoryMap));
+        });
+
+        compiler.fgInvalidateFlowGraphAnalysis(
+            Compiler.FlowGraphAnalysisInvalidation.ExceptionalPredecessors |
+            Compiler.FlowGraphAnalysisInvalidation.DominancePredecessors |
+            Compiler.FlowGraphAnalysisInvalidation.LoopMemoryBlockMap);
+
+        Assert.Multiple(() => {
+            Assert.That(compiler._blockToEHPreds, Is.Null);
+            Assert.That(compiler._dominancePreds, Is.Null);
+            Assert.That(compiler._nodeToLoopMemoryBlockMap, Is.Null);
+        });
     }
 
     [Test]

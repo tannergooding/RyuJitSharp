@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.genTreeOps;
 
@@ -360,45 +361,7 @@ public partial class Compiler
             JITDUMP("--------------\n\n");
         }
 
-        bool ComesBefore(WasmInterval left, WasmInterval right)
-        {
-            var leftChain = left.Chain();
-            var rightChain = right.Chain();
-
-            if (leftChain.Start() != rightChain.Start())
-            {
-                return leftChain.Start() < rightChain.Start();
-            }
-
-            if (left.End() != right.End())
-            {
-                return left.End() > right.End();
-            }
-
-            if (left.IsLoop() != right.IsLoop())
-            {
-                return left.IsLoop();
-            }
-
-            if (left.IsLoop() && right.IsLoop())
-            {
-                return false;
-            }
-
-            if (left.IsBlock() != right.IsBlock())
-            {
-                return left.IsBlock();
-            }
-
-            if (left.IsBlock() && (left.IsExnRefWrapper() != right.IsExnRefWrapper()))
-            {
-                return right.IsExnRefWrapper();
-            }
-
-            return false;
-        }
-
-        fgWasmIntervals.Sort((left, right) => ComesBefore(left, right) ? -1 : ComesBefore(right, left) ? 1 : 0);
+        CollectionsMarshal.AsSpan(fgWasmIntervals).Sort(new WasmIntervalOrderComparer());
 
         if (Configuration.DEBUG && verbose)
         {
@@ -536,5 +499,50 @@ public partial class Compiler
         }
 
         return PhaseStatus.MODIFIED_EVERYTHING;
+    }
+}
+
+internal readonly struct WasmIntervalOrderComparer : IComparer<WasmInterval>
+{
+    public int Compare(WasmInterval? left, WasmInterval? right)
+    {
+        var lhs = left!;
+        var rhs = right!;
+        var leftChain = lhs.Chain();
+        var rightChain = rhs.Chain();
+
+        var chainStart = leftChain.Start().CompareTo(rightChain.Start());
+        if (chainStart != 0)
+        {
+            return chainStart;
+        }
+
+        var end = rhs.End().CompareTo(lhs.End());
+        if (end != 0)
+        {
+            return end;
+        }
+
+        if (lhs.IsLoop() != rhs.IsLoop())
+        {
+            return lhs.IsLoop() ? -1 : 1;
+        }
+
+        if (lhs.IsLoop())
+        {
+            return 0;
+        }
+
+        if (lhs.IsBlock() != rhs.IsBlock())
+        {
+            return lhs.IsBlock() ? -1 : 1;
+        }
+
+        if (lhs.IsBlock() && (lhs.IsExnRefWrapper() != rhs.IsExnRefWrapper()))
+        {
+            return lhs.IsExnRefWrapper() ? 1 : -1;
+        }
+
+        return 0;
     }
 }

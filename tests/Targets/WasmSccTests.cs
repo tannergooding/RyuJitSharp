@@ -205,6 +205,172 @@ internal static unsafe class WasmSccTests
     }
 
     [Test]
+    public static void SpanIntervalSortPreservesListSortTieOrder()
+    {
+        WithCompiler(compiler =>
+        {
+            var roots = new WasmInterval[4];
+            for (var i = 0; i < roots.Length; i++)
+            {
+                roots[i] = new WasmInterval((uint)i, (uint)(i + 1), WasmInterval.Kind.Try);
+            }
+
+            var intervals = new List<WasmInterval>();
+            for (var i = 0; i < 96; i++)
+            {
+                var start = (uint)(i * 5 % 8);
+                var end = start + (uint)(i % 4) + 1;
+                var interval = new WasmInterval(
+                    start,
+                    end,
+                    (WasmInterval.Kind)(i % 3));
+                interval.SetChain(roots[i * 7 % roots.Length]);
+                intervals.Add(interval);
+            }
+
+            var wrapperStart = NewBlock(compiler, BBJ_RETURN);
+            wrapperStart.bbPreorderNum = 2;
+            var wrapperEnd = NewBlock(compiler, BBJ_RETURN);
+            wrapperEnd.bbPreorderNum = 5;
+            var wrapper = WasmInterval.NewExnRefWrapper(wrapperStart, wrapperEnd);
+            wrapper.SetChain(roots[1]);
+            intervals.Add(wrapper);
+            intervals.Add(new WasmInterval(2, 5, WasmInterval.Kind.Block));
+            intervals[^1].SetChain(roots[1]);
+
+            for (var iteration = 0; iteration < 32; iteration++)
+            {
+                var expected = new List<WasmInterval>(intervals);
+                for (var i = expected.Count - 1; i > 0; i--)
+                {
+                    var swapIndex = ((i * 17) + (iteration * 13) + 5) % (i + 1);
+                    (expected[i], expected[swapIndex]) = (expected[swapIndex], expected[i]);
+                }
+
+                var actual = new List<WasmInterval>(expected);
+                expected.Sort((left, right) =>
+                    ComesBefore(left, right) ? -1 : ComesBefore(right, left) ? 1 : 0);
+                CollectionsMarshal.AsSpan(actual).Sort(new WasmIntervalOrderComparer());
+
+                Assert.That(actual, Is.EqualTo(expected), $"Iteration {iteration}");
+            }
+
+            var tieIntervals = new List<WasmInterval>();
+            for (var i = 0; i < 3; i++)
+            {
+                var interval = new WasmInterval(0, 5, WasmInterval.Kind.Block);
+                interval.SetChain(roots[0]);
+                tieIntervals.Add(interval);
+            }
+
+            for (var i = 0; i < 2; i++)
+            {
+                var interval = new WasmInterval(1, 5, WasmInterval.Kind.Loop);
+                interval.SetChain(roots[1]);
+                tieIntervals.Add(interval);
+            }
+
+            for (var i = 0; i < 2; i++)
+            {
+                var interval = new WasmInterval(2, 5, WasmInterval.Kind.Try);
+                interval.SetChain(roots[2]);
+                tieIntervals.Add(interval);
+            }
+
+            var tieWrapperStart = NewBlock(compiler, BBJ_RETURN);
+            tieWrapperStart.bbPreorderNum = 0;
+            var tieWrapperEnd = NewBlock(compiler, BBJ_RETURN);
+            tieWrapperEnd.bbPreorderNum = 5;
+            var tieWrapper = WasmInterval.NewExnRefWrapper(tieWrapperStart, tieWrapperEnd);
+            tieWrapper.SetChain(roots[0]);
+            tieIntervals.Add(tieWrapper);
+
+            var order = Enumerable.Range(0, tieIntervals.Count).ToArray();
+            var expectedTies = new List<WasmInterval>(tieIntervals);
+            var actualTies = new List<WasmInterval>(tieIntervals);
+            do
+            {
+                for (var i = 0; i < order.Length; i++)
+                {
+                    expectedTies[i] = tieIntervals[order[i]];
+                    actualTies[i] = tieIntervals[order[i]];
+                }
+
+                expectedTies.Sort((left, right) =>
+                    ComesBefore(left, right) ? -1 : ComesBefore(right, left) ? 1 : 0);
+                CollectionsMarshal.AsSpan(actualTies).Sort(new WasmIntervalOrderComparer());
+
+                if (!actualTies.SequenceEqual(expectedTies))
+                {
+                    Assert.Fail("Span sorting changed the ordering of equal Wasm intervals.");
+                }
+            } while (MoveToNextPermutation(order));
+        });
+
+        static bool MoveToNextPermutation(int[] values)
+        {
+            var pivot = values.Length - 2;
+            while ((pivot >= 0) && (values[pivot] >= values[pivot + 1]))
+            {
+                pivot--;
+            }
+
+            if (pivot < 0)
+            {
+                return false;
+            }
+
+            var successor = values.Length - 1;
+            while (values[successor] <= values[pivot])
+            {
+                successor--;
+            }
+
+            (values[pivot], values[successor]) = (values[successor], values[pivot]);
+            Array.Reverse(values, pivot + 1, values.Length - pivot - 1);
+            return true;
+        }
+
+        static bool ComesBefore(WasmInterval left, WasmInterval right)
+        {
+            var leftChain = left.Chain();
+            var rightChain = right.Chain();
+
+            if (leftChain.Start() != rightChain.Start())
+            {
+                return leftChain.Start() < rightChain.Start();
+            }
+
+            if (left.End() != right.End())
+            {
+                return left.End() > right.End();
+            }
+
+            if (left.IsLoop() != right.IsLoop())
+            {
+                return left.IsLoop();
+            }
+
+            if (left.IsLoop() && right.IsLoop())
+            {
+                return false;
+            }
+
+            if (left.IsBlock() != right.IsBlock())
+            {
+                return left.IsBlock();
+            }
+
+            if (left.IsBlock() && (left.IsExnRefWrapper() != right.IsExnRefWrapper()))
+            {
+                return right.IsExnRefWrapper();
+            }
+
+            return false;
+        }
+    }
+
+    [Test]
     public static void ControlFlowPhaseReversesConditionalBranchForFallthrough()
     {
         WithCompiler(compiler =>

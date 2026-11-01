@@ -11474,7 +11474,7 @@ public partial class Compiler
                         retCls = sig.retTypeClass;
                     }
 
-                    if ((retCls != NO_CLASS_HANDLE) && compiler.info.compCompHnd->isIntrinsicType(retCls))
+                    if ((retCls != NO_CLASS_HANDLE) && compiler.eeIsIntrinsicType(retCls))
                     {
                         byte* pNamespaceName;
                         var pClassName = compiler.info.compCompHnd->getClassNameFromMetadata(retCls, &pNamespaceName);
@@ -15219,15 +15219,15 @@ public partial class Compiler
     public static unsafe bool impMatchStlocLdloca(ref byte* codeAddr, byte* codeEndp, out int lclNum)
     {
         lclNum = BAD_VAR_NUM;
-        var code = codeAddr;
-
-        if (code >= codeEndp)
+        if (codeAddr >= codeEndp)
         {
             return false;
         }
 
+        var code = new ReadOnlySpan<byte>(codeAddr, unchecked((int)(codeEndp - codeAddr)));
+        var offset = 0;
         int matchedLclNum;
-        var opcode = (OPCODE)(*code++);
+        var opcode = (OPCODE)code[offset++];
 
         if (opcode is >= CEE_STLOC_0 and <= CEE_STLOC_3)
         {
@@ -15235,71 +15235,71 @@ public partial class Compiler
         }
         else if (opcode is CEE_STLOC_S)
         {
-            if (code >= codeEndp)
+            if (offset >= code.Length)
             {
                 return false;
             }
 
-            matchedLclNum = *code++;
+            matchedLclNum = code[offset++];
         }
         else if (opcode is CEE_PREFIX1)
         {
-            if (code >= codeEndp)
+            if (offset >= code.Length)
             {
                 return false;
             }
 
-            var wideOpcode = (OPCODE)(256 + *code++);
+            var wideOpcode = (OPCODE)(256 + code[offset++]);
 
-            if ((wideOpcode is not CEE_STLOC) || (code + 1 >= codeEndp))
+            if ((wideOpcode is not CEE_STLOC) || ((code.Length - offset) < sizeof(ushort)))
             {
                 return false;
             }
 
-            matchedLclNum = BinaryPrimitives.ReadUInt16LittleEndian(new ReadOnlySpan<byte>(code, sizeof(ushort)));
-            code += 2;
+            matchedLclNum = BinaryPrimitives.ReadUInt16LittleEndian(code.Slice(offset, sizeof(ushort)));
+            offset += sizeof(ushort);
         }
         else
         {
             return false;
         }
 
-        if (code >= codeEndp)
+        if (offset >= code.Length)
         {
             return false;
         }
 
-        opcode = (OPCODE)(*code++);
+        opcode = (OPCODE)code[offset++];
 
         if (opcode is CEE_LDLOCA_S)
         {
-            if ((code >= codeEndp) || (*code != matchedLclNum))
+            if ((offset >= code.Length) || (code[offset] != matchedLclNum))
             {
                 return false;
             }
 
-            code++;
+            offset++;
         }
         else if (opcode is CEE_PREFIX1)
         {
-            if (code >= codeEndp)
+            if (offset >= code.Length)
             {
                 return false;
             }
 
-            var wideOpcode = (OPCODE)(256 + *code++);
+            var wideOpcode = (OPCODE)(256 + code[offset++]);
 
-            if ((wideOpcode is not CEE_LDLOCA) || (code + 1 >= codeEndp))
+            if ((wideOpcode is not CEE_LDLOCA) || ((code.Length - offset) < sizeof(ushort)))
             {
                 return false;
             }
 
-            if (BinaryPrimitives.ReadUInt16LittleEndian(new ReadOnlySpan<byte>(code, sizeof(ushort))) != matchedLclNum)
+            if (BinaryPrimitives.ReadUInt16LittleEndian(code.Slice(offset, sizeof(ushort))) != matchedLclNum)
             {
                 return false;
             }
 
-            code += 2;
+            offset += sizeof(ushort);
         }
         else
         {
@@ -15307,7 +15307,7 @@ public partial class Compiler
         }
 
         lclNum = matchedLclNum;
-        codeAddr = code;
+        codeAddr += offset;
         return true;
     }
 
@@ -15319,24 +15319,31 @@ public partial class Compiler
     public unsafe bool impMatchAsyncVersionTailCall(byte* codeAddr, byte* codeEndp, ref int prefixFlags, out int numBytesMatched)
     {
         numBytesMatched = 0;
-        var nextOpcode = codeAddr;
+        if (codeAddr >= codeEndp)
+        {
+            return false;
+        }
 
-        if ((nextOpcode < codeEndp) && (*nextOpcode == (byte)CEE_RET))
+        var code = new ReadOnlySpan<byte>(codeAddr, unchecked((int)(codeEndp - codeAddr)));
+        var offset = 0;
+
+        if ((offset < code.Length) && (code[offset] == (byte)CEE_RET))
         {
             numBytesMatched = 1;
             return true;
         }
 
-        if ((nextOpcode < codeEndp) && (*nextOpcode == (byte)CEE_NEWOBJ))
+        if ((offset < code.Length) && (code[offset] == (byte)CEE_NEWOBJ))
         {
-            nextOpcode++;
+            offset++;
 
-            if ((nextOpcode + sizeof(int) >= codeEndp) || (nextOpcode[sizeof(int)] != (byte)CEE_RET))
+            if (((code.Length - offset) <= sizeof(int)) ||
+                (code[offset + sizeof(int)] != (byte)CEE_RET))
             {
                 return false;
             }
 
-            impResolveToken(nextOpcode, out var ctorToken, CORINFO_TOKENKIND_NewObj);
+            impResolveToken(codeAddr + offset, out var ctorToken, CORINFO_TOKENKIND_NewObj);
 
             if (!eeIsIntrinsic(ctorToken.hMethod))
             {
@@ -15370,27 +15377,30 @@ public partial class Compiler
                 }
             }
 
-            nextOpcode += sizeof(int) + 1;
+            offset += sizeof(int) + 1;
             JITDUMP("Matched \"return new ValueTask(TaskReturn())\"\n");
-            numBytesMatched = (int)(nextOpcode - codeAddr);
+            numBytesMatched = offset;
             return true;
         }
 
+        var nextOpcode = codeAddr;
         if (impMatchStlocLdloca(ref nextOpcode, codeEndp, out _))
         {
-            if ((nextOpcode >= codeEndp) || (*nextOpcode != (byte)CEE_CALL))
+            offset = unchecked((int)(nextOpcode - codeAddr));
+            if ((offset >= code.Length) || (code[offset] != (byte)CEE_CALL))
             {
                 return false;
             }
 
-            nextOpcode++;
+            offset++;
 
-            if ((nextOpcode + sizeof(int) >= codeEndp) || (nextOpcode[sizeof(int)] != (byte)CEE_RET))
+            if (((code.Length - offset) <= sizeof(int)) ||
+                (code[offset + sizeof(int)] != (byte)CEE_RET))
             {
                 return false;
             }
 
-            impResolveToken(nextOpcode, out var callToken, CORINFO_TOKENKIND_Method);
+            impResolveToken(codeAddr + offset, out var callToken, CORINFO_TOKENKIND_Method);
 
             if (!eeIsIntrinsic(callToken.hMethod))
             {
@@ -15404,10 +15414,10 @@ public partial class Compiler
                 return false;
             }
 
-            nextOpcode += sizeof(int) + 1;
+            offset += sizeof(int) + 1;
             JITDUMP("Matched \"return ValueTaskReturn().AsTask()\"\n");
             prefixFlags |= PREFIX_IS_ADAPTED_FROM_VALUETASK;
-            numBytesMatched = (int)(nextOpcode - codeAddr);
+            numBytesMatched = offset;
             return true;
         }
 

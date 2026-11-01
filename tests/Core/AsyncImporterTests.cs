@@ -523,6 +523,46 @@ internal static unsafe class AsyncImporterTests
         }
     }
 
+    [Test]
+    public static void AsyncVersionTailCallPatternRejectsTruncationsWithoutChangingOutputs()
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        byte[][] patterns = [
+            [0x73, 0, 0, 0, 0, 0x00],
+            [0x13, 1, 0x12, 1, 0x28, 0, 0, 0, 0, 0x00],
+        ];
+
+        foreach (var pattern in patterns)
+        {
+            fixed (byte* start = pattern)
+            {
+                for (var length = 0; length <= pattern.Length; length++)
+                {
+                    var prefixFlags = 0x1234;
+                    var matched = compiler.impMatchAsyncVersionTailCall(
+                        start, start + length, ref prefixFlags, out var numBytesMatched);
+
+                    Assert.That(matched, Is.False, $"Input length {length}");
+                    Assert.That(numBytesMatched, Is.Zero, $"Input length {length}");
+                    Assert.That(prefixFlags, Is.EqualTo(0x1234), $"Input length {length}");
+                }
+            }
+        }
+
+        const byte ReturnOpcode = 0x2A;
+        byte[] returnBytes = [ReturnOpcode];
+        fixed (byte* start = returnBytes)
+        {
+            var prefixFlags = 0x1234;
+            var matched = compiler.impMatchAsyncVersionTailCall(
+                start, start + returnBytes.Length, ref prefixFlags, out var numBytesMatched);
+
+            Assert.That(matched, Is.True);
+            Assert.That(numBytesMatched, Is.EqualTo(1));
+            Assert.That(prefixFlags, Is.EqualTo(0x1234));
+        }
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
