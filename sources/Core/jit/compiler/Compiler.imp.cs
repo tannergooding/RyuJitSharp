@@ -16198,9 +16198,10 @@ public partial class Compiler
                 // insert any widening or narrowing casts for backwards compatibility
                 argNode = impImplicitIorI4Cast(argNode, jitSigType);
 
-                if ((compAppleArm64Abi() || TargetArchitecture.IsArm32 || TargetArchitecture.IsWasm) && call.IsUnmanaged && varTypeIsSmall(jitSigType))
+                if ((compAppleArm64Abi() || TargetArchitecture.IsArm32 || TargetArchitecture.IsWasm ||
+                     TargetArchitecture.IsLoongArch64) && call.IsUnmanaged && varTypeIsSmall(jitSigType))
                 {
-                    // Apple arm64, arm32, and Wasm ABIs require arguments to be zero/sign
+                    // These native ABIs require arguments to be zero/sign
                     // extended up to 32 bit. The managed ABI does not require
                     // this.
 

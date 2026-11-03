@@ -134,6 +134,47 @@ internal static unsafe class ImporterCallTests
         }
     }
 
+    [TestCase(CorInfoType.CORINFO_TYPE_BYTE, var_types.TYP_BYTE)]
+    [TestCase(CorInfoType.CORINFO_TYPE_UBYTE, var_types.TYP_UBYTE)]
+    public static void SmallUnmanagedLoongArchArgumentsAreExtendedToInt32(
+        CorInfoType signatureType, var_types expectedCastType)
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64, "This test requires the LoongArch64 target.");
+
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getArgType = &GetPrimitiveArgumentType;
+        vtable.Base.Base.getArgNext = &GetNextArgument;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+        using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info = new Compiler.Info { compCompHnd = &jitInfo, compMaxStack = 1 };
+        compiler.compCurBB = new BasicBlock(null, null);
+        compiler.stackState.esStack = new StackEntry[1];
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            var argument = compiler.gtNewIconNode(var_types.TYP_INT, 1);
+            compiler.impPushOnStack(argument, new typeInfo(var_types.TYP_INT));
+            var signature = new CORINFO_SIG_INFO { numArgs = 1, retType = signatureType };
+            var call = compiler.gtNewCallNode(var_types.TYP_VOID, gtCallTypes.CT_INDIRECT, null);
+            call.Flags |= GenTreeFlags.GTF_CALL_UNMANAGED;
+
+            PopCallArguments(compiler, signature, call);
+
+            var widenedArgument = call.Args.GetArgByIndex(0)?.Node
+                ?? throw new InvalidOperationException("The unmanaged call argument was not imported.");
+            Assert.That(widenedArgument.Oper, Is.EqualTo(genTreeOps.GT_CAST));
+            Assert.That(widenedArgument.Type, Is.EqualTo(var_types.TYP_INT));
+            Assert.That(widenedArgument.AsCast().CastType, Is.EqualTo(expectedCastType));
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [TestCaseSource(nameof(SignedLog2FallbackTypes))]
     public static void SignedLog2FallbackTracksUnknownExceptions(CorInfoType type)
     {
@@ -198,6 +239,9 @@ internal static unsafe class ImporterCallTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "impStmtList")]
     private static extern ref Statement? ImporterStatements(Compiler compiler);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "impPopCallArgs")]
+    private static extern void PopCallArguments(Compiler compiler, in CORINFO_SIG_INFO sigInfo, GenTreeCall call);
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoTypeWithMod GetPrimitiveArgumentType(ICorJitInfo* self, CORINFO_SIG_INFO* signature,
         CORINFO_ARG_LIST_STRUCT_* argument, CORINFO_CLASS_STRUCT_** type)
@@ -205,6 +249,10 @@ internal static unsafe class ImporterCallTests
         *type = null;
         return (CorInfoTypeWithMod)signature->retType;
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_ARG_LIST_STRUCT_* GetNextArgument(ICorJitInfo* self, CORINFO_ARG_LIST_STRUCT_* argument)
+        => null;
 
     [TestCase(var_types.TYP_INT, genTreeOps.GT_ROL)]
     [TestCase(var_types.TYP_INT, genTreeOps.GT_ROR)]

@@ -639,33 +639,23 @@ public sealed partial class BasicBlock : LIR.Range
 
         assert(enclosing.HasFilter);
 
-        // Enclosed regions are contiguous immediately before the enclosing region.
         for (var index = thisHndIndex - 1; index >= 0; index--)
         {
-            var enclosingIndex = comp.ehGetEnclosingRegionIndex((ushort)index, out var inTry);
-            var isEnclosed = false;
-
-            while (enclosingIndex != EHblkDsc.NO_ENCLOSING_INDEX)
+            ref var enclosed = ref comp.ehGetDsc((ushort)index);
+            if (!enclosed.HasFinallyOrFaultHandler)
             {
-                if (enclosingIndex == thisHndIndex)
-                {
-                    isEnclosed = true;
-                    break;
-                }
-
-                enclosingIndex = comp.ehGetEnclosingRegionIndex(enclosingIndex, out inTry);
+                continue;
             }
 
-            if (!isEnclosed)
+            var enclosingIndex = enclosed.ebdEnclosingTryIndex;
+            while (enclosingIndex < thisHndIndex)
             {
-                break;
+                enclosingIndex = comp.ehGetEnclosingTryIndex(enclosingIndex);
             }
 
-            if (inTry)
+            if (enclosingIndex == thisHndIndex)
             {
-                ref var enclosed = ref comp.ehGetDsc((ushort)index);
-
-                if (enclosed.HasFinallyOrFaultHandler && (visitor.Visit(enclosed.ebdHndBeg) is BasicBlockVisit.Abort))
+                if (visitor.Visit(enclosed.ebdHndBeg) is BasicBlockVisit.Abort)
                 {
                     return BasicBlockVisit.Abort;
                 }

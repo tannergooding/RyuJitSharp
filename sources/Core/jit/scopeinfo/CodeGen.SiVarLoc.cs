@@ -210,8 +210,39 @@ public sealed partial class CodeGen
             return ICorDebugInfo.REGNUM_COUNT;
         }
 
+        private static ICorDebugInfo.RegNum siWasmDebugRegNum(regNumber reg)
+        {
+            return (ICorDebugInfo.RegNum)unchecked(ICorDebugInfo.WASM_LOCAL_REGNUM_BASE +
+                (int)regNumberExtensions.WasmRegToIndex(reg));
+        }
+
         public void storeVariableInRegisters(regNumber reg, regNumber otherReg)
         {
+            if (Configuration.TARGET_WASM)
+            {
+                if (reg == REG_NA)
+                {
+                    vlType = VLT_INVALID;
+                    return;
+                }
+
+                assert(genIsValidReg(reg));
+
+                if (otherReg == REG_NA)
+                {
+                    vlType = VLT_REG;
+                    vlReg.vlrReg = siWasmDebugRegNum(reg);
+                }
+                else
+                {
+                    assert(genIsValidReg(otherReg));
+                    vlType = VLT_REG_REG;
+                    vlRegReg.vlrrReg1 = siWasmDebugRegNum(reg);
+                    vlRegReg.vlrrReg2 = siWasmDebugRegNum(otherReg);
+                }
+                return;
+            }
+
             if (otherReg == REG_NA)
             {
                 if (genIsValidFloatReg(reg))
@@ -437,6 +468,13 @@ public sealed partial class CodeGen
         private void siFillRegisterVarLoc(in LclVarDsc varDsc, var_types type, regNumber baseReg, int offset,
             bool isFramePointerUsed)
         {
+            if (Configuration.TARGET_WASM)
+            {
+                vlType = VLT_REG;
+                vlReg.vlrReg = siWasmDebugRegNum(varDsc.RegNum);
+                return;
+            }
+
             switch (type)
             {
                 case TYP_INT:

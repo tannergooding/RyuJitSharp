@@ -47,7 +47,30 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            // Native Wasm defers scopes because structured control flow need not follow IL offset order.
+            if (_compiler.opts.OptimizationDisabled && !siWasmScopesOpened)
+            {
+                siWasmScopesOpened = true;
+
+                for (var i = 0; i < _compiler.info.compVarScopesCount; i++)
+                {
+                    var varScope = _compiler.info.compVarScopes[i];
+                    assert(varScope.vsdLifeBeg == 0);
+
+                    ref var local = ref _compiler.lvaGetDesc(varScope.vsdVarNum);
+
+                    if (_compiler.opts.compDbgCode || (local.lvRefCnt() > 0))
+                    {
+                        JITDUMP($"Scope info: opening scope, LVnum={varScope.vsdLVnum} " +
+                            $"[{varScope.vsdLifeBeg:X3}..{varScope.vsdLifeEnd:X3})\n");
+                        getVariableLiveKeeper().siStartVariableLiveRange(in local, varScope.vsdVarNum);
+                    }
+                    else
+                    {
+                        JITDUMP($"Skipping open scope for V{varScope.vsdVarNum:D2}, unreferenced\n");
+                    }
+                }
+            }
+
             return;
         }
 

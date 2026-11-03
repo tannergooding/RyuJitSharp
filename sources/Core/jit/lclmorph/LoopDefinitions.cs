@@ -108,29 +108,6 @@ internal sealed class LoopDefinitions
             }
 
             _map.Set(local.LclNum);
-            ref var varDsc = ref _compiler.lvaGetDesc(local.LclNum);
-
-            if (_compiler.lvaIsImplicitByRefLocal(local.LclNum) && varDsc.lvPromoted)
-            {
-                // Implicit-byref retyping created a promoted struct local whose
-                // stores will be rewritten later by morph.
-                assert(varDsc.lvFieldLclStart is not 0);
-                _map.Set(varDsc.lvFieldLclStart);
-                varDsc = ref _compiler.lvaGetDesc(varDsc.lvFieldLclStart);
-            }
-
-            if (varDsc.lvPromoted)
-            {
-                for (var i = 0; i < varDsc.lvFieldCnt; i++)
-                {
-                    _map.Set(varDsc.lvFieldLclStart + i);
-                }
-            }
-            else if (varDsc.lvIsStructField)
-            {
-                _map.Set(varDsc.lvParentLcl);
-            }
-
             return Compiler.WALK_CONTINUE;
         }
 

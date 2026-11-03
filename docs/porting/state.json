@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "943f55c6cecfb6c8e1826cbd662a7528515fa55b",
-    "targetObservedAt": "2026-10-31",
-    "reconciledCommit": "943f55c6cecfb6c8e1826cbd662a7528515fa55b"
+    "targetCommit": "6e83aff28689ff67a7caa5108286786a52d8f256",
+    "targetObservedAt": "2026-11-03",
+    "reconciledCommit": "6e83aff28689ff67a7caa5108286786a52d8f256"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Revisit the unresolved dynamic TLS input-ownership boundary only when the EE allocation sequence is reproducible; preserve process-order-sensitive differences without normalization or changing compiler constants. The exact f1fdb6054b48e25f8a274bd6469d4fe482a9ca9d x64 corpus capture covers 23 methods with matching value-numbering, assertion-propagation, index-check, and redundant-branch phases; D015 remains accepted and this does not establish full runtime parity. Wasm GC-info emission remains unverified because the managed encoder is AMD64-only. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "The 6e83aff28689ff67a7caa5108286786a52d8f256 oracle refresh reconciles all 20 changed native hunks and matches the exact pinned x64 Checked 35-method Redundant branch opts capture; this is phase evidence only, not codegen or execution parity. Continue full-runtime parity verification by preserving process-order-sensitive differences at the unresolved dynamic TLS input-ownership boundary; revisit only after a new capture or upstream correction gives a reproducible EE allocation sequence, without normalization or compiler-constant changes. D015 remains accepted. Wasm GC-info emission remains unverified because the managed encoder is AMD64-only. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
       "E03: isIntrinsicType now uses a per-Compiler last-handle boolean cache; the pinned repeated-handle profile is under artifacts\\e03-isintrinsictype. Keep primitive mappings and nullable/enum predicates direct pending repeated-handle evidence and complete output/tri-state semantics.",
@@ -1084,6 +1084,68 @@
       ],
       "disposition": "The profiler phase spans native CFG analysis, phase ordering, and config metadata; the managed implementation is split across compiler partials and generated tables. The native helper body and ReadyToRun registration remain runtime-owned.",
       "sourceCommit": "943f55c6cecfb6c8e1826cbd662a7528515fa55b"
+    },
+    {
+      "area": "exceptional-predecessor-filter-successors",
+      "native": [
+        "src\\coreclr\\jit\\compiler.hpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\block\\BasicBlock.cs"
+      ],
+      "disposition": "The native EH-filter successor walk in the broad compiler header is implemented by the corresponding BasicBlock traversal helper.",
+      "sourceCommit": "6e83aff28689ff67a7caa5108286786a52d8f256"
+    },
+    {
+      "area": "wasm-hidden-argument-scope-index",
+      "native": [
+        "src\\coreclr\\jit\\compiler.cpp",
+        "src\\coreclr\\jit\\lclvars.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.comp.cs"
+      ],
+      "disposition": "Wasm scope enablement and portable-entry-point hidden-argument IL numbering are implemented in the shared Compiler partial.",
+      "sourceCommit": "6e83aff28689ff67a7caa5108286786a52d8f256"
+    },
+    {
+      "area": "wasm-debug-register-locations",
+      "native": [
+        "src\\coreclr\\inc\\cordebuginfo.h",
+        "src\\coreclr\\jit\\ee_il_dll.cpp",
+        "src\\coreclr\\jit\\scopeinfo.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\inc\\cordebuginfo\\ICorDebugInfo.cs",
+        "sources\\Core\\jit\\scopeinfo\\CodeGen.SiVarLoc.cs",
+        "sources\\Core\\jit\\scopeinfo\\CodeGen.VariableLiveKeeper.Diagnostics.cs"
+      ],
+      "disposition": "The EE DLL's native Wasm location formatting is implemented in the managed scope-info diagnostics partial, using the matching Wasm debug-register encoding.",
+      "sourceCommit": "6e83aff28689ff67a7caa5108286786a52d8f256"
+    },
+    {
+      "area": "wasm-scope-lifecycle",
+      "native": [
+        "src\\coreclr\\jit\\codegen.h",
+        "src\\coreclr\\jit\\scopeinfo.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\scopeinfo\\CodeGen.BlockScopes.cs",
+        "sources\\Core\\jit\\scopeinfo\\CodeGen.ScopeInitialization.cs"
+      ],
+      "disposition": "Wasm's per-CodeGen scope-opened state and one-time method-wide scope reporting are implemented in separate managed scope-info partials.",
+      "sourceCommit": "6e83aff28689ff67a7caa5108286786a52d8f256"
+    },
+    {
+      "area": "redundant-branch-dominating-compare-limit",
+      "native": [
+        "src\\coreclr\\jit\\redundantbranchopts.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.RedundantBranches.Dispatch.cs"
+      ],
+      "disposition": "The native dominating-compare traversal maps to this Compiler partial; generated configuration provenance is recorded in generatorInputMapping.",
+      "sourceCommit": "6e83aff28689ff67a7caa5108286786a52d8f256"
     }
   ],
   "generatorInputMapping": {
@@ -1094,8 +1156,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "943f55c6cecfb6c8e1826cbd662a7528515fa55b",
-    "reconciledCommit": "943f55c6cecfb6c8e1826cbd662a7528515fa55b",
+    "targetInputCommit": "6e83aff28689ff67a7caa5108286786a52d8f256",
+    "reconciledCommit": "6e83aff28689ff67a7caa5108286786a52d8f256",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

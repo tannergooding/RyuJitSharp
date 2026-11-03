@@ -381,6 +381,43 @@ internal static unsafe class NaturalLoopTests
     }
 
     [Test]
+    public static void LoopDefinitionsDoNotExpandPromotedLocalsOrStructFields()
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_COND, BBJ_COND, BBJ_COND, BBJ_ALWAYS, BBJ_RETURN);
+            _ = Jump(blocks[0], blocks[1]);
+            blocks[1].SetCond(Connect(blocks[1], blocks[2]), Connect(blocks[1], blocks[5]));
+            blocks[2].SetCond(Connect(blocks[2], blocks[2]), Connect(blocks[2], blocks[3]));
+            blocks[3].SetCond(Connect(blocks[3], blocks[3]), Connect(blocks[3], blocks[4]));
+            _ = Jump(blocks[4], blocks[1]);
+            compiler.lvaCount = 3;
+            compiler.lvaTable = new LclVarDsc[3];
+            compiler.lvaTable[0].Type = TYP_STRUCT;
+            compiler.lvaTable[0].lvPromoted = true;
+            compiler.lvaTable[0].lvFieldLclStart = 1;
+            compiler.lvaTable[0].lvFieldCnt = 2;
+            compiler.lvaTable[1].Type = TYP_INT;
+            compiler.lvaTable[1].lvIsStructField = true;
+            compiler.lvaTable[1].lvParentLcl = 0;
+            compiler.lvaTable[2].Type = TYP_INT;
+            compiler.lvaTable[2].lvIsStructField = true;
+            compiler.lvaTable[2].lvParentLcl = 0;
+
+            var promotedStore = compiler.gtNewStoreLclVarNode(0, compiler.gtNewLclvNode(TYP_STRUCT, 0));
+            compiler.fgInsertStmtAtEnd(blocks[1], compiler.gtNewStmt(promotedStore));
+            var fieldStore = compiler.gtNewStoreLclVarNode(1, compiler.gtNewIconNode(TYP_INT, 1));
+            compiler.fgInsertStmtAtEnd(blocks[2], compiler.gtNewStmt(fieldStore));
+
+            var loops = Find(compiler);
+            var definitions = new LoopDefinitions(loops);
+            var locals = new List<int>();
+            definitions.VisitDefinedLocalNums(loops.GetLoopByIndex(0), locals.Add);
+
+            Assert.That(locals, Is.EquivalentTo([0, 1]));
+        });
+    }
+
+    [Test]
     public static void LocalAddressAssertionsDistinguishOutgoingAndAlwaysTrueFacts()
     {
         WithCompiler(compiler => {

@@ -193,6 +193,7 @@ public partial class Compiler
             internal int _jitDoRangeAnalysis;
             internal int _jitDoVNBasedDeadStoreRemoval;
             internal int _jitDoRedundantBranchOpts;
+            internal int _jitRboDominatorLimit;
             internal unsafe byte* _jitEnableRboRange;
             internal unsafe byte* _jitEnableHeadTailMergeRange;
             internal unsafe byte* _jitEnableVNBasedDeadStoreRemovalRange;
@@ -2836,6 +2837,19 @@ public partial struct JitConfigValues
             return default!;
         }
     }
+    public int JitRboDominatorLimit
+    {
+        get
+        {
+            if (Configuration.DEBUG)
+            {
+                var debugData = _configurationData?._debugData;
+                return debugData is null ? default! : debugData._jitRboDominatorLimit;
+            }
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRboDominatorLimit" : default);
+            return default!;
+        }
+    }
     public unsafe byte* JitEnableRboRange
     {
         get
@@ -4129,6 +4143,7 @@ public partial struct JitConfigValues
         // _configurationData!._debugData!._jitDoRangeAnalysis = unchecked((int)(0xCDCDCDCD));
         // _configurationData!._debugData!._jitDoVNBasedDeadStoreRemoval = unchecked((int)(0xCDCDCDCD));
         // _configurationData!._debugData!._jitDoRedundantBranchOpts = unchecked((int)(0xCDCDCDCD));
+        // _configurationData!._debugData!._jitRboDominatorLimit = unchecked((int)(0xCDCDCDCD));
         if (Configuration.DEBUG)
         {
             jitHost->freeStringConfigValue(_configurationData!._debugData!._jitEnableRboRange);
@@ -4719,6 +4734,7 @@ public partial struct JitConfigValues
             _configurationData!._debugData!._jitDoRangeAnalysis = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoRangeAnalysis"u8))), 1);
             _configurationData!._debugData!._jitDoVNBasedDeadStoreRemoval = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoVNBasedDeadStoreRemoval"u8))), 1);
             _configurationData!._debugData!._jitDoRedundantBranchOpts = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoRedundantBranchOpts"u8))), 1);
+            _configurationData!._debugData!._jitRboDominatorLimit = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRboDominatorLimit"u8))), 128);
             _configurationData!._debugData!._jitEnableRboRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableRboRange"u8))));
             _configurationData!._debugData!._jitEnableHeadTailMergeRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableHeadTailMergeRange"u8))));
             _configurationData!._debugData!._jitEnableVNBasedDeadStoreRemovalRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableVNBasedDeadStoreRemovalRange"u8))));

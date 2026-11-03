@@ -2410,12 +2410,6 @@ public partial class Compiler
 
         opts.compScopeInfo = opts.compDbgInfo;
 
-        if (Configuration.TARGET_WASM)
-        {
-            // Wasm virtual registers cannot be represented by ICorDebugInfo.
-            opts.compScopeInfo = false;
-        }
-
         if (Configuration.LATE_DISASM)
         {
             codeGen.Disassembler.disOpenForLateDisAsm(
@@ -5393,7 +5387,8 @@ public partial class Compiler
             return ICorDebugInfo.ASYNC_CONTINUATION_ILNUM;
         }
 
-        if (Configuration.TARGET_WASM && (varNum == lvaWasmSpArg))
+        if (Configuration.TARGET_WASM &&
+            ((varNum == lvaWasmSpArg) || (varNum == lvaWasmPortableEntryPointArg)))
         {
             return ICorDebugInfo.UNKNOWN_ILNUM;
         }
@@ -5426,6 +5421,12 @@ public partial class Compiler
 
         if (Configuration.TARGET_WASM && (lvaWasmSpArg >= 0) && (lvaWasmSpArg < originalVarNum) &&
             lvaGetDesc(lvaWasmSpArg).lvIsParam)
+        {
+            varNum--;
+        }
+
+        if (Configuration.TARGET_WASM && (lvaWasmPortableEntryPointArg != BAD_VAR_NUM) &&
+            (originalVarNum > lvaWasmPortableEntryPointArg))
         {
             varNum--;
         }

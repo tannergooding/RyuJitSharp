@@ -26,6 +26,9 @@ public partial struct ICorDebugInfo
     /// <summary>Unknown variable.</summary>
     public const int UNKNOWN_ILNUM = -6;
 
+    /// <summary>First debug register number used to encode a WebAssembly local index.</summary>
+    public const int WASM_LOCAL_REGNUM_BASE = (int)RegNum.REGNUM_WASM_AMBIENT_SP + 1;
+
     // Sentinel value.
     // This should be set to the largest magnitude value in the enum so that the compression routines know the enum's range.
     public const int MAX_ILNUM = -6;

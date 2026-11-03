@@ -35,12 +35,14 @@ internal static unsafe class JitConfigValuesTests
 
             if (TestConfiguration.IsDebug)
             {
+                Assert.That(config.JitRboDominatorLimit, Is.EqualTo(128));
                 Assert.That(config.JitStress, Is.Zero);
                 Assert.That(context.DebugIntegerReads, Is.EqualTo(1));
                 Assert.That(context.DebugRangeReads, Is.EqualTo(1));
             }
             else
             {
+                _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitRboDominatorLimit);
                 _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitStress);
                 Assert.That(context.DebugIntegerReads, Is.Zero);
                 Assert.That(context.DebugRangeReads, Is.Zero);

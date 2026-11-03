@@ -204,6 +204,37 @@ internal static unsafe class ExceptionalPredecessorTests
         });
     }
 
+    [Test]
+    public static void FilterSuccessorsContinuePastUnenclosedInterveningHandlerRegions()
+    {
+        WithCompiler(compiler => {
+            var blocks = CreateBlocks(compiler, BBJ_RETURN, BBJ_RETURN, BBJ_RETURN, BBJ_RETURN,
+                BBJ_RETURN, BBJ_RETURN, BBJ_RETURN, BBJ_RETURN);
+            compiler.compHndBBtab = [
+                Clause(EH_HANDLER_CATCH, blocks[0], blocks[1], blocks[1]),
+                Clause(EH_HANDLER_FINALLY, blocks[0], blocks[2], blocks[2]),
+                Clause(EH_HANDLER_FAULT, blocks[0], blocks[3], blocks[3]),
+                Clause(EH_HANDLER_FINALLY, blocks[0], blocks[4], blocks[4]),
+                Clause(EH_HANDLER_FILTER, blocks[0], blocks[7], blocks[7]),
+            ];
+            compiler.compHndBBtabCount = 5;
+            compiler.compHndBBtab[1].ebdEnclosingTryIndex = 4;
+            compiler.compHndBBtab[3].ebdEnclosingTryIndex = 4;
+            compiler.compHndBBtab[4].ebdFilter = blocks[5];
+            blocks[5].HndIndex = 4;
+            blocks[6].HndIndex = 4;
+
+            var visited = new List<BasicBlock>();
+            var result = blocks[5].VisitEHEnclosedHandlerSecondPassSuccs(compiler, block => {
+                visited.Add(block);
+                return BasicBlockVisit.Continue;
+            });
+
+            Assert.That(result, Is.EqualTo(BasicBlockVisit.Continue));
+            Assert.That(visited, Is.EqualTo([blocks[4], blocks[2]]));
+        });
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]

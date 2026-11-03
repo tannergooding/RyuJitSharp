@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 
 namespace RyuJitSharp.UnitTests;
@@ -41,6 +42,9 @@ internal static unsafe class RedundantBranchTests
     private static readonly MethodInfo s_relopImplies = typeof(Compiler).GetMethod(
         "optRelopImpliesRelop", BindingFlags.NonPublic | BindingFlags.Instance)
         ?? throw new MissingMethodException(nameof(Compiler), "optRelopImpliesRelop");
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optRedundantBranch")]
+    private static extern bool OptRedundantBranch(Compiler compiler, BasicBlock block);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "optRboBlockHasSideEffects")]
     private static extern bool BlockHasSideEffects(Compiler? _, BasicBlock block);
@@ -113,6 +117,79 @@ internal static unsafe class RedundantBranchTests
             Assert.That(compiler._domTree, Is.Null);
             Assert.That(compiler.fgSsaValid, Is.False);
         });
+    }
+
+    [TestCase(0, false)]
+    [TestCase(1, true)]
+    public static void DominatorCompareInspectionHonorsConfiguredLimit(int limit, bool expected)
+    {
+        Assume.That(TestConfiguration.IsDebug, "This test requires the debug RBO limit.");
+
+        var previousConfig = JitConfig;
+        try
+        {
+            TestConfiguration.SetJitConfigValue(ref JitConfig, "_jitRboDominatorLimit", limit);
+
+            WithCompiler(compiler => {
+                var blocks = new[] {
+                    BasicBlock.New(compiler, BBJ_COND),
+                    BasicBlock.New(compiler, BBJ_COND),
+                    BasicBlock.New(compiler, BBJ_RETURN),
+                    BasicBlock.New(compiler, BBJ_RETURN),
+                };
+                for (var i = 1; i < blocks.Length; i++)
+                {
+                    blocks[i - 1].Next = blocks[i];
+                    blocks[i].Prev = blocks[i - 1];
+                }
+
+                compiler.fgFirstBB = blocks[0];
+                compiler.fgLastBB = blocks[^1];
+                compiler.fgPredsComputed = true;
+                blocks[0].bbRefs = 1;
+                blocks[1].bbRefs = 0;
+                blocks[2].bbRefs = 0;
+                blocks[3].bbRefs = 0;
+                compiler.lvaCount = 2;
+                compiler.lvaTable = [new LclVarDsc { Type = var_types.TYP_INT }, new LclVarDsc { Type = var_types.TYP_INT }];
+                blocks[0].SetCond(compiler.fgAddRefPred(blocks[1], blocks[0]),
+                    compiler.fgAddRefPred(blocks[2], blocks[0]));
+                blocks[1].SetCond(compiler.fgAddRefPred(blocks[2], blocks[1]),
+                    compiler.fgAddRefPred(blocks[3], blocks[1]));
+                compiler.fgNodeThreading = NodeThreading.AllTrees;
+
+                var store = new ValueNumStore(compiler);
+                compiler.vnStore = store;
+                var leftVN = store.VNForExpr(null, var_types.TYP_INT);
+                var rightVN = store.VNForExpr(null, var_types.TYP_INT);
+                var comparisonVN = store.VNForFunc(var_types.TYP_INT, VNFunc.VNF_EQ, leftVN, rightVN);
+
+                for (var i = 0; i < 2; i++)
+                {
+                    var block = blocks[i];
+                    var left = compiler.gtNewLclvNode(var_types.TYP_INT, 0);
+                    var right = compiler.gtNewLclvNode(var_types.TYP_INT, 1);
+                    left._vnPair.SetBoth(leftVN);
+                    right._vnPair.SetBoth(rightVN);
+                    var comparison = compiler.gtNewBinaryNode(GT_EQ, var_types.TYP_INT, left, right);
+                    comparison.Flags |= GenTreeFlags.GTF_RELOP_JMP_USED;
+                    comparison._vnPair.SetBoth(comparisonVN);
+                    var statement = compiler.gtNewStmt(
+                        compiler.gtNewUnaryNode(GT_JTRUE, var_types.TYP_VOID, comparison));
+                    compiler.fgInsertStmtAtEnd(block, statement);
+                    compiler.fgSetStmtSeq(statement);
+                }
+
+                compiler._domTree = FlowGraphDominatorTree.Build(compiler.fgComputeDfs());
+
+                Assert.That(OptRedundantBranch(compiler, blocks[1]), Is.EqualTo(expected));
+                Assert.That(blocks[1].Kind == BBJ_ALWAYS, Is.EqualTo(expected));
+            });
+        }
+        finally
+        {
+            JitConfig = previousConfig;
+        }
     }
 
     [TestCase(GT_GE, 100L, GT_LE, 10L, "AlwaysFalse")]

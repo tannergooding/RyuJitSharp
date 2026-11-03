@@ -128,6 +128,10 @@ public partial class Compiler
         var domCmpExcVN = ValueNumStore.NoVN;
         var matchCount = 0;
         const int matchLimit = 4;
+        var domCompareCount = 0u;
+        var domCompareLimit = Configuration.DEBUG
+            ? unchecked((uint)JitConfig.JitRboDominatorLimit)
+            : 128u;
         vnStore.VNUnpackExc(tree._vnPair.Liberal, out var treeNormVN, out treeExcVN);
 
         if (vnStore.IsVNConstant(treeNormVN))
@@ -171,6 +175,12 @@ public partial class Compiler
                 var domCmpTree = domJumpTree.AsUnOp().Op1;
                 if (domCmpTree.Oper.IsCompare)
                 {
+                    if (++domCompareCount > domCompareLimit)
+                    {
+                        JITDUMP($"Bailing out; inspected {domCompareLimit} dominating compares\n");
+                        break;
+                    }
+
                     var info = new RelopImplicationInfo {
                         TreeNormVN = treeNormVN,
                     };

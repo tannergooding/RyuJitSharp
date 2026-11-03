@@ -153,10 +153,12 @@ internal static unsafe partial class IndirectCallTransformationTests
                     Assert.That(info.preexistingSpillTemp, Is.EqualTo(temp));
                     Assert.That(hotStatements[2].RootNode.AsLclVar().LclNum, Is.EqualTo(temp));
                     Assert.That(hotStatements[2].RootNode.AsLclVar().Data, Is.SameAs(info.retExpr));
+                    Assert.That(hotStatements[2].DebugInfo.Location, Is.EqualTo(stmt.DebugInfo.Location));
                 }
                 else
                 {
                     Assert.That(hotStatements[1].RootNode.AsLclVar().LclNum, Is.EqualTo(temp));
+                    Assert.That(hotStatements[1].DebugInfo.Location, Is.EqualTo(stmt.DebugInfo.Location));
                 }
             }
             else if (retExpr is not null)

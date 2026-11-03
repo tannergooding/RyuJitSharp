@@ -22,7 +22,14 @@ public sealed partial class CodeGen
             case VLT_REG:
             case VLT_REG_BYREF:
             {
-                jitprintf(((regNumber)varLoc.vlReg.vlrReg).Name);
+                if (Configuration.TARGET_WASM)
+                {
+                    jitprintf($"${(int)varLoc.vlReg.vlrReg - ICorDebugInfo.WASM_LOCAL_REGNUM_BASE}");
+                }
+                else
+                {
+                    jitprintf(((regNumber)varLoc.vlReg.vlrReg).Name);
+                }
                 if (varLoc.vlType == VLT_REG_BYREF)
                 {
                     jitprintf(" byref");

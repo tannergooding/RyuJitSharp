@@ -9,6 +9,7 @@ public sealed partial class CodeGen
 {
     private bool siInFuncletRegion;
     private IL_OFFSET siLastEndOffs;
+    private bool siWasmScopesOpened;
 
     private void siInit()
     {
@@ -22,5 +23,10 @@ public sealed partial class CodeGen
 
         siLastEndOffs = 0;
         _compiler.compResetScopeLists();
+
+        if (Configuration.TARGET_WASM)
+        {
+            siWasmScopesOpened = false;
+        }
     }
 }

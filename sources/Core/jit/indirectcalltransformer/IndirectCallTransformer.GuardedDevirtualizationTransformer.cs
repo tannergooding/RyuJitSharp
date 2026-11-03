@@ -345,7 +345,7 @@ public sealed partial class IndirectCallTransformer
                 if (_returnTemp != BAD_VAR_NUM)
                 {
                     var returnStore = _compiler.gtNewTempStore(_returnTemp, call);
-                    _compiler.fgInsertStmtAtEnd(block, _compiler.gtNewStmt(returnStore));
+                    _compiler.fgInsertStmtAtEnd(block, _compiler.gtNewStmt(returnStore, _stmt.DebugInfo));
                 }
                 else
                 {
@@ -387,7 +387,7 @@ public sealed partial class IndirectCallTransformer
                         newRetExpr = _compiler.gtUnusedValNode(newRetExpr);
                     }
 
-                    _compiler.fgInsertStmtAtEnd(block, _compiler.gtNewStmt(newRetExpr));
+                    _compiler.fgInsertStmtAtEnd(block, _compiler.gtNewStmt(newRetExpr, _stmt.DebugInfo));
                 }
             }
         }
