@@ -231,6 +231,11 @@ public partial class Emitter
                             noway_assert(!_compiler.opts.compReloc);
                             noway_assert(codeGen.genAddrRelocTypeHint((nuint)addr) != CorInfoReloc.RELATIVE32);
                             noway_assert(unchecked((int)(nint)addr) == (nint)addr);
+                            if (ins == INS_tail_i_jmp)
+                            {
+                                code = AddRexWPrefix(id, code);
+                                dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, ref code);
+                            }
                             dst += emitOutputWord(dst, (long)(code | 0x0400));
                             dst += emitOutputByte(dst, 0x25);
                         }

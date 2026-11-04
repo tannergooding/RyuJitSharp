@@ -164,6 +164,10 @@ public partial class Emitter
                 {
                     noway_assert(unchecked((nuint)(nint)(int)(nint)parameters.addr) == (nuint)parameters.addr);
                     size++;
+                    if (ins == INS_tail_i_jmp)
+                    {
+                        size++;
+                    }
                 }
             }
             else

@@ -162,6 +162,51 @@ internal static unsafe class AsyncTransformationTests
     }
 
     [Test]
+    public static void DiscardedReferenceReturnIsClearedOnResumption()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaCount = 2;
+            compiler.lvaAsyncContinuationArg = 1;
+            compiler.lvaTable[1].Type = TYP_REF;
+            compiler.fgNodeThreading = NodeThreading.LIR;
+            compiler.codeGen = new CodeGen(compiler);
+
+            var callBlock = BasicBlock.New(compiler, BBJ_RETURN);
+            callBlock.SetFlags(BasicBlockFlags.BBF_IS_LIR);
+            var resumeBlock = BasicBlock.New(compiler, BBJ_RETURN);
+            resumeBlock.SetFlags(BasicBlockFlags.BBF_IS_LIR);
+
+            var call = new GenTreeCall(TYP_REF) { _returnType = TYP_REF };
+            call.SetIsAsync(new AsyncCallInfo {
+                CallAsyncDebugInfo = new DebugInfo(null,
+                    new ILLocation(0, ICorDebugInfo.SOURCE_TYPE_INVALID)),
+            });
+            var layout = new AsyncContinuationLayout();
+            layout.Returns.Add(new AsyncReturnInfo(new AsyncReturnTypeInfo(TYP_REF, null)) {
+                Offset = 16,
+            });
+            var builder = new AsyncContinuationLayoutBuilder(compiler);
+
+            var transformation = NewTransformation(compiler);
+            var transformationType = typeof(Compiler).GetNestedType("AsyncTransformation",
+                BindingFlags.NonPublic) ?? throw new AssertionException("Missing async transformation");
+            var definitionType = transformationType.GetNestedType("AsyncCallDefinitionInfo",
+                BindingFlags.NonPublic) ?? throw new AssertionException("Missing async call definition");
+            var definition = Activator.CreateInstance(definitionType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null, [], null) ?? throw new AssertionException("Could not create async call definition");
+            var createResumption = transformationType.GetMethod("CreateResumption",
+                BindingFlags.Instance | BindingFlags.NonPublic) ??
+                throw new AssertionException("Missing async resumption creation");
+
+            _ = createResumption.Invoke(transformation,
+                [callBlock, call, resumeBlock, definition, layout, builder]);
+
+            Assert.That(resumeBlock.LastNode, Is.TypeOf<GenTreeStoreInd>());
+        });
+    }
+
+    [Test]
     public static void ContinuationOffsetHelpersDefaultToNonfaultingMemoryAccess()
     {
         WithCompiler(compiler => {

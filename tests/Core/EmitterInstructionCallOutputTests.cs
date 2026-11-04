@@ -68,6 +68,30 @@ internal static unsafe class EmitterInstructionCallOutputTests
         });
     }
 
+    [Test]
+    public static void AbsoluteIndirectTailJumpUsesRexWPrefixForUnwindRecognition()
+    {
+        WithCall(EmitCallType.EC_FUNC_TOKEN_INDIR, false, EA_PTRSIZE, false, false,
+            (_, emitter, id, buffer, callbacks) =>
+            {
+                Assert.That(id.idIns(), Is.EqualTo(instruction.INS_tail_i_jmp));
+                Assert.That(id.idIsDspReloc(), Is.False);
+                Assert.That(id.idCodeSize(), Is.EqualTo(8u));
+
+                var end = buffer + 8;
+                var group = emitter.emitCurIG ?? throw new AssertionException("Missing call group.");
+                var size = emitter.emitOutputInstr(group, id, &end);
+
+                Assert.That(size, Is.EqualTo((nuint)id.NativeLogicalSize));
+                Assert.That(new ReadOnlySpan<byte>(buffer + 8, 8).ToArray(),
+                    Is.EqualTo(Convert.FromHexString("48FF242534120000")));
+                Assert.That((nuint)end, Is.EqualTo((nuint)(buffer + 16)));
+                Assert.That(buffer[16], Is.EqualTo(0xA5));
+                Assert.That(callbacks->Relocations, Is.Zero);
+                Assert.That(callbacks->Assertions, Is.Zero);
+            }, compReloc: false, isJump: true);
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void NoGcCallsStillPublishCallSitesButNotGcCallRecords(bool large)
@@ -175,13 +199,13 @@ internal static unsafe class EmitterInstructionCallOutputTests
     }
 
     private static void WithCall(EmitCallType type, bool large, emitAttr retSize, bool asyncReturn,
-        bool noSafePoint, CallTest test, bool fullPtrMap = false)
+        bool noSafePoint, CallTest test, bool fullPtrMap = false, bool compReloc = true, bool isJump = false)
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.targetAbi = CORINFO_CORECLR_ABI;
-            compiler.opts.compReloc = true;
+            compiler.opts.compReloc = compReloc;
             compiler.info.compMatchedVM = true;
             codeGen.IsFullPtrRegMapRequired = fullPtrMap;
             var emitter = codeGen.Emitter;
@@ -200,6 +224,7 @@ internal static unsafe class EmitterInstructionCallOutputTests
                 byrefRegs = new(large ? SRBM_R12 : SRBM_NONE),
                 retSize = retSize,
                 hasAsyncRet = asyncReturn,
+                isJump = isJump,
                 noSafePoint = noSafePoint,
                 sigInfo = TestConfiguration.IsDebug ? new StrongBox<CORINFO_SIG_INFO>() : null,
             };
@@ -223,11 +248,13 @@ internal static unsafe class EmitterInstructionCallOutputTests
             vtable.recordCallSite = &RecordCallSite;
             vtable.recordRelocation = &RecordRelocation;
             vtable.doAssert = &RecordAssertion;
+            vtable.getRelocTypeHint = &NoRelocation;
             var callbacks = new CallbackContext
             {
                 JitInfo = new ICorJitInfo { lpVtbl = &vtable },
             };
             emitter.emitCmpHandle = &callbacks.JitInfo;
+            compiler.info.compCompHnd = &callbacks.JitInfo;
             test(compiler, emitter, id, buffer, &callbacks);
         });
     }
@@ -367,4 +394,7 @@ internal static unsafe class EmitterInstructionCallOutputTests
         ((CallbackContext*)info)->Assertions++;
         return 0;
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoReloc NoRelocation(ICorJitInfo* _, void* address) => CorInfoReloc.NONE;
 }

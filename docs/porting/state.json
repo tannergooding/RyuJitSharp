@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "6e83aff28689ff67a7caa5108286786a52d8f256",
-    "targetObservedAt": "2026-11-03",
-    "reconciledCommit": "6e83aff28689ff67a7caa5108286786a52d8f256"
+    "targetCommit": "1e8e623dc1563ce2779c1253ad986d7c2e448453",
+    "targetObservedAt": "2026-11-04",
+    "reconciledCommit": "1e8e623dc1563ce2779c1253ad986d7c2e448453"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "The 6e83aff28689ff67a7caa5108286786a52d8f256 oracle refresh reconciles all 20 changed native hunks and matches the exact pinned x64 Checked 35-method Redundant branch opts capture; this is phase evidence only, not codegen or execution parity. Continue full-runtime parity verification by preserving process-order-sensitive differences at the unresolved dynamic TLS input-ownership boundary; revisit only after a new capture or upstream correction gives a reproducible EE allocation sequence, without normalization or compiler-constant changes. D015 remains accepted. Wasm GC-info emission remains unverified because the managed encoder is AMD64-only. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested.",
+    "nextAction": "The 1e8e623dc1563ce2779c1253ad986d7c2e448453 oracle delta for discarded async reference-return clearing and AMD64 absolute tail-jump REX.W emission is reconciled and validated by focused Debug/Release and explicit win-x64 tests; no mapped table inputs changed. The available native JIT binary was built from 032b849d22cbf2eee40f63eb2c6156c2f54846e5, not this pin; obtain a matched binary before codegen/execution parity. Continue full-runtime parity verification while preserving the unresolved dynamicTlsInputBoundary; revisit only with a reproducible EE allocation sequence or upstream correction. D015 remains accepted. Wasm GC-info emission remains unverified because the managed encoder is AMD64-only. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested.",
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
       "E03: isIntrinsicType now uses a per-Compiler last-handle boolean cache; the pinned repeated-handle profile is under artifacts\\e03-isintrinsictype. Keep primitive mappings and nullable/enum predicates direct pending repeated-handle evidence and complete output/tri-state semantics.",
@@ -136,6 +136,19 @@
       ],
       "disposition": "The target-neutral emitter request enum is separate from xarch opcode metadata. Emission states use uint values 0/1/2, keeping DONT_CARE distinct for ARM selection; xarch metadata remains a 64-bit bitmask with unchanged values. No observable deviation is accepted.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750"
+    },
+    {
+      "area": "amd64-absolute-tail-jump-rex-prefix",
+      "native": [
+        "src\\coreclr\\jit\\emitxarch.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\emit\\Emitter.CallInstructions.cs",
+        "sources\\Core\\jit\\emit\\Emitter.InstructionOutput.cs",
+        "tests\\Core\\EmitterInstructionCallOutputTests.cs"
+      ],
+      "disposition": "AMD64 absolute method-pointer tail jumps include REX.W for epilog unwind recognition, and sizing accounts for the emitted prefix.",
+      "sourceCommit": "1e8e623dc1563ce2779c1253ad986d7c2e448453"
     },
     {
       "area": "universal-instruction-option-identities",
@@ -1023,6 +1036,20 @@
       "sourceCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
     },
     {
+      "area": "async-resumption-return-clearing",
+      "native": [
+        "src\\coreclr\\jit\\async.cpp",
+        "src\\coreclr\\jit\\async.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.AsyncTransformation.Shared.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.AsyncTransformation.Resumption.cs",
+        "tests\\Core\\AsyncTransformationTests.cs"
+      ],
+      "disposition": "CreateResumption resolves return metadata for every non-void async result and clears GC references after copying or discarding it; the managed Compiler partials split the native transformation and helper implementation.",
+      "sourceCommit": "1e8e623dc1563ce2779c1253ad986d7c2e448453"
+    },
+    {
       "area": "nullable-r2r-boxing",
       "native": [
         "src\\coreclr\\jit\\importer.cpp"
@@ -1157,7 +1184,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "6e83aff28689ff67a7caa5108286786a52d8f256",
-    "reconciledCommit": "6e83aff28689ff67a7caa5108286786a52d8f256",
+    "reconciledCommit": "1e8e623dc1563ce2779c1253ad986d7c2e448453",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

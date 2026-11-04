@@ -188,9 +188,8 @@ public partial class Compiler
         }
 
         private unsafe void CopyReturnValueOnResumption(GenTreeCall call,
-            AsyncCallDefinitionInfo definition, AsyncContinuationLayout layout, BasicBlock block)
+            AsyncCallDefinitionInfo definition, AsyncReturnInfo resultInfo, BasicBlock block)
         {
-            var resultInfo = layout.FindReturn(_compiler, call);
             GenTree resultBase = _compiler.gtNewLclvNode(TYP_REF, _compiler.lvaAsyncContinuationArg);
             var offset = OFFSETOF__CORINFO_Continuation__data + resultInfo.Offset;
             var target = definition.DefinitionNode;
@@ -268,13 +267,12 @@ public partial class Compiler
                     : _compiler.gtNewStoreLclFldNode(target.Type, target.LclNum, target.LclOffs, value);
                 block.InsertAtEnd(LIR.SeqTree(_compiler, store));
             }
-
-            ClearReturnValueOnResumption(resultInfo, offset, block);
         }
 
-        private void ClearReturnValueOnResumption(
-            AsyncReturnInfo result, int resultOffset, BasicBlock block)
+        private void ClearReturnValueOnResumption(AsyncReturnInfo result, BasicBlock block)
         {
+            var resultOffset = OFFSETOF__CORINFO_Continuation__data + result.Offset;
+
             void ClearReference(int offset, var_types type)
             {
                 var continuation = _compiler.gtNewLclvNode(TYP_REF, _compiler.lvaAsyncContinuationArg);

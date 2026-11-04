@@ -261,9 +261,15 @@ public partial class Compiler
             var resultBlock = subLayout.NeedsException
                 ? RethrowExceptionOnResumption(callBlock, layout, resumption)
                 : resumption;
-            if ((call._returnType is not TYP_VOID) && (definition.DefinitionNode is not null))
+            if (call._returnType is not TYP_VOID)
             {
-                CopyReturnValueOnResumption(call, definition, layout, resultBlock);
+                var resultInfo = layout.FindReturn(_compiler, call);
+                if (definition.DefinitionNode is not null)
+                {
+                    CopyReturnValueOnResumption(call, definition, resultInfo, resultBlock);
+                }
+
+                ClearReturnValueOnResumption(resultInfo, resultBlock);
             }
         }
     }
