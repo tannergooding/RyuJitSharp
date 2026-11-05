@@ -82,11 +82,12 @@ public partial struct ICorJitInfo
         // Compressed get likely method data
         GetLikelyMethod = (DescriptorMin * 7) | MethodHandle,
 
-        // Same as type/method histograms, but for generic integer values
+        // Same as type/method histograms, but for generic integer values.
+        // Values are recorded as 32-bit ints on all targets (wider values are truncated).
         ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
 
         ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
 
-        ValueHistogram = (DescriptorMin * 9) | EightByte,
+        ValueHistogram = (DescriptorMin * 9) | FourByte,
     }
 }

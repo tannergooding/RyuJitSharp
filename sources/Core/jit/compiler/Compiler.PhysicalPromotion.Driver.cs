@@ -27,14 +27,14 @@ public partial class Compiler
         for (var index = dfsTree.PostOrderCount; index > 0; index--)
         {
             var block = dfsTree.GetPostOrder(index - 1);
-            var first = replacer.StartBlock(block);
+            replacer.StartBlock(block);
             JITDUMP("\nReplacing in ");
             if (Configuration.DEBUG && verbose)
             {
                 block.dspBlockHeader();
             }
             JITDUMP("\n");
-            foreach (var statement in new StatementList(first))
+            foreach (var statement in block.Statements)
             {
                 replacer.StartStatement(statement);
                 DISPSTMT(statement);

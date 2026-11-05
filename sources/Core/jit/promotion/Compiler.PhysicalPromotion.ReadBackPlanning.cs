@@ -12,27 +12,39 @@ public partial class Compiler
         public void PrepareReadBacks()
         {
             var index = 0;
-            var hasPlannedReadBackCandidates = false;
+            foreach (var aggregate in _aggregates.Aggregates)
+            {
+                for (var replacementIndex = 0; replacementIndex < aggregate.Replacements.Count; replacementIndex++)
+                {
+                    aggregate.Replacements[replacementIndex].ReplacementIndex = index++;
+                }
+            }
+
+            _replacementTraits = new BitVecTraits(_compiler, index);
+            _pendingReadBacksByBlock = new BitVec[_dfsTree.PostOrderCount];
+            _currentStructFields = new BitVec[_dfsTree.PostOrderCount];
+            _requiresAlreadyReadBackOnEntry = BitVecOps.MakeEmpty(_postOrderTraits);
+            _requiresReadBackOnExit = BitVecOps.MakeEmpty(_postOrderTraits);
+            _needsReadBack = BitVecOps.MakeEmpty(ReplacementTraits);
+            _structCurrent = BitVecOps.MakeEmpty(ReplacementTraits);
+            _reconcileReadBacks = BitVecOps.MakeEmpty(ReplacementTraits);
+            _entryReadBacks = BitVecOps.MakeEmpty(ReplacementTraits);
+            _replacementInfo = new ReplacementInfo[index];
+
             foreach (var aggregate in _aggregates.Aggregates)
             {
                 ref readonly var descriptor = ref _compiler.lvaGetDesc(aggregate.LclNum);
                 for (var replacementIndex = 0; replacementIndex < aggregate.Replacements.Count; replacementIndex++)
                 {
-                    aggregate.Replacements[replacementIndex].ReadBackIndex = index++;
-                    if (!hasPlannedReadBackCandidates && (descriptor.lvIsParam || descriptor.lvIsOSRLocal) &&
+                    var replacement = aggregate.Replacements[replacementIndex];
+                    _replacementInfo[replacement.ReplacementIndex] = new(aggregate, replacementIndex);
+                    if ((descriptor.lvIsParam || descriptor.lvIsOSRLocal) &&
                         _liveness.IsReplacementLiveIn(_compiler.fgFirstBB!, aggregate.LclNum, replacementIndex))
                     {
-                        hasPlannedReadBackCandidates = true;
+                        BitVecOps.AddElemD(ReplacementTraits, _entryReadBacks, replacement.ReplacementIndex);
                     }
                 }
             }
-
-            _readBackTraits = new BitVecTraits(_compiler, index);
-            _pendingReadBacksByBlock = new BitVec[_dfsTree.PostOrderCount];
-            _currentStructFields = new BitVec[_dfsTree.PostOrderCount];
-            _processedBlocks = BitVecOps.MakeEmpty(_postOrderTraits);
-            _requiresAlreadyReadBackOnEntry = BitVecOps.MakeEmpty(_postOrderTraits);
-            _requiresReadBackOnExit = BitVecOps.MakeEmpty(_postOrderTraits);
 
             for (var blockIndex = 0; blockIndex < _dfsTree.PostOrderCount; blockIndex++)
             {
@@ -63,7 +75,7 @@ public partial class Compiler
                 }
             }
 
-            if (hasPlannedReadBackCandidates)
+            if (!BitVecOps.IsEmpty(ReplacementTraits, _entryReadBacks))
             {
                 PlanReadBacks();
             }
@@ -113,9 +125,8 @@ public partial class Compiler
                         {
                             var anyPending = false;
                             var allPending = true;
-                            foreach (var edge in block.PredEdges)
+                            foreach (var predecessor in block.PredBlocks)
                             {
-                                var predecessor = edge.SourceBlock;
                                 if (!_dfsTree.Contains(predecessor))
                                 {
                                     continue;
@@ -131,9 +142,8 @@ public partial class Compiler
                             if (anyPending && !allPending)
                             {
                                 hasReconciliation = true;
-                                foreach (var edge in block.PredEdges)
+                                foreach (var predecessor in block.PredBlocks)
                                 {
-                                    var predecessor = edge.SourceBlock;
                                     if (_dfsTree.Contains(predecessor) &&
                                         BitVecOps.IsMember(_postOrderTraits, pendingOut, predecessor.bbPostorderNum))
                                     {
@@ -192,20 +202,19 @@ public partial class Compiler
 
                     BasicBlock? common = null;
                     weight_t oldWeight = 0;
-                    var iterator = new BitVecOps.Iter(_postOrderTraits, sites);
-                    uint siteIndex = 0;
-                    while (iterator.NextElem(ref siteIndex))
+                    _ = BitVecOps.VisitBits(_postOrderTraits, sites, siteIndex =>
                     {
-                        var block = _dfsTree.GetPostOrder(checked((int)siteIndex));
+                        var block = _dfsTree.GetPostOrder(siteIndex);
                         if (!placementDfs.Contains(block))
                         {
                             common = null;
-                            break;
+                            return false;
                         }
 
                         common = common is null ? block : domTree.Intersect(common, block);
                         oldWeight += block.getBBWeight(_compiler);
-                    }
+                        return true;
+                    });
 
                     if (common is null)
                     {

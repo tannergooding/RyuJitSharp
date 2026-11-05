@@ -842,9 +842,9 @@ public partial class Globals
 
             // We currently re-use existing infrastructure for type handles for simplicity.
             //
-            var isIntHistogramCount = (schema.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.ValueHistogramIntCount);
-            var isLongHistogramCount = (schema.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.ValueHistogramLongCount);
-            var isHistogramCount = isIntHistogramCount || isLongHistogramCount;
+            var isHistogramCount =
+                (schema.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.ValueHistogramIntCount) ||
+                (schema.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.ValueHistogramLongCount);
 
             if (isHistogramCount && (schema.Count == 1) && ((i + 1) < schemas.Length))
             {
@@ -852,9 +852,8 @@ public partial class Globals
 
                 if (nextSchema.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.ValueHistogram)
                 {
-                    var h = isIntHistogramCount
-                          ? new LikelyClassMethodHistogram(new Span<int>((int*)(pInstrumentationData + nextSchema.Offset), nextSchema.Count))
-                          : new LikelyClassMethodHistogram(new Span<nint>((nint*)(pInstrumentationData + nextSchema.Offset), nextSchema.Count));
+                    var h = new LikelyClassMethodHistogram(
+                        new Span<int>((int*)(pInstrumentationData + nextSchema.Offset), nextSchema.Count));
 
                     Unsafe.SkipInit(out InlineArrayHistogramMaxSizeCount<LikelyClassMethodHistogramEntry> inlineSortedEntries);
                     var sortedEntries = (Span<LikelyClassMethodHistogramEntry>)(inlineSortedEntries);

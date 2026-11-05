@@ -11,6 +11,6 @@ public partial struct ICorJitInfo
     {
         public int Count;
 
-        public InlineArrayHistogramTableSize<nint> ValueTable;
+        public InlineArrayHistogramTableSize<int> ValueTable;
     }
 }

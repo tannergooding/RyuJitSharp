@@ -228,7 +228,7 @@ public partial class Compiler
             }
 
             if ((entry.FromReplacement is not null) && (entry.ToReplacement is null) &&
-                (remainder.Kind is RemainderKind.FullBlock) && !entry.FromReplacement.NeedsWriteBack)
+                (remainder.Kind is RemainderKind.FullBlock) && !replacer.NeedsWriteBack(entry.FromReplacement))
             {
                 if (Configuration.DEBUG && dump)
                 {
@@ -358,7 +358,7 @@ public partial class Compiler
                 foreach (var entry in _entries)
                 {
                     if ((entry.FromReplacement is { AccessType: TYP_REF } replacement) &&
-                        replacement.NeedsWriteBack)
+                        replacer.NeedsWriteBack(replacement))
                     {
                         statements.AddStatement(compiler.PhysicalPromotionCreateWriteBack(
                             source.AsLclVarCommon().LclNum, replacement));

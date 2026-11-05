@@ -666,6 +666,20 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         });
     }
 
+    [Test]
+    public static void FrameFinalizationPairsArm64CalleeSavedRegisters()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            codeGen.RegSet.rsSetRegsModified(Mask(REG_ARM64_R19, REG_ARM64_V8));
+
+            AddCalleeSavedRegisterPairs(codeGen);
+
+            Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(),
+                Is.EqualTo(Mask(REG_ARM64_R19, REG_ARM64_R20, REG_ARM64_V8, REG_ARM64_V9)));
+        });
+    }
+
     private static regMaskTP Mask(params regNumber[] registers)
     {
         var mask = RBM_NONE;
@@ -768,6 +782,9 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genPrologSaveRegPairArm64")]
     private static extern void SavePair(CodeGen codeGen, regNumber first, regNumber second, int offset, int delta,
         bool useSaveNextPair, regNumber scratch, bool* zeroed);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genAddCalleeSavedRegisterPairsArm64")]
+    private static extern void AddCalleeSavedRegisterPairs(CodeGen codeGen);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genPrologSaveRegArm64")]
     private static extern void SaveSingle(CodeGen codeGen, regNumber reg, int offset, int delta,

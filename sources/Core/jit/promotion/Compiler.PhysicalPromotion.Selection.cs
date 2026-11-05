@@ -25,12 +25,8 @@ public partial class Compiler
         public int Offset = offset;
         public var_types AccessType = accessType;
         public int LclNum = BAD_VAR_NUM;
-        // Dense index into the inter-block pending-readback sets.
-        public int ReadBackIndex = BAD_VAR_NUM;
+        public int ReplacementIndex = BAD_VAR_NUM;
         public string Description = "";
-        public bool NeedsWriteBack = true;
-        // May remain true across blocks when all incoming paths have a current struct field.
-        public bool NeedsReadBack;
 
         public bool Overlaps(int otherStart, int otherSize)
         {

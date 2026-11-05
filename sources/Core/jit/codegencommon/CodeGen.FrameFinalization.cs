@@ -44,19 +44,11 @@ public sealed partial class CodeGen
             {
                 JITDUMP("Setting genReverseAndPairCalleeSavedRegisters = true");
                 genReverseAndPairCalleeSavedRegisters = true;
+            }
 
-                // Pair adjacent saves to use STP while retaining 16-byte stack alignment.
-                var modified = _regSet.rsGetModifiedRegsMask();
-                var evenFloat = new regMaskTP(SRBM_ARM64_V8 | SRBM_ARM64_V10 | SRBM_ARM64_V12 | SRBM_ARM64_V14);
-                var oddInt = new regMaskTP(SRBM_ARM64_R19 | SRBM_ARM64_R21 | SRBM_ARM64_R23
-                    | SRBM_ARM64_R25 | SRBM_ARM64_R27);
-                var pairedBits = (unchecked((ulong)(modified & evenFloat).Lower) << 1)
-                    | (unchecked((ulong)(modified & oddInt).Lower) << 1);
-                var paired = new regMaskTP(unchecked((regMask)pairedBits));
-                if (paired.IsNonEmpty)
-                {
-                    _regSet.rsSetRegsModified(paired);
-                }
+            if (Configuration.TARGET_ARM64)
+            {
+                genAddCalleeSavedRegisterPairsArm64();
             }
 
             if (Configuration.TARGET_ARM64 && _compiler.compUsesUnknownSizeFrame)
@@ -214,6 +206,22 @@ public sealed partial class CodeGen
             (_compiler.dspCode || _compiler.opts.disAsm || _compiler.disAsm2 || _verbose))
         {
             _compiler.lvaTableDump();
+        }
+    }
+
+    private void genAddCalleeSavedRegisterPairsArm64()
+    {
+        // Complete odd-sized saved-register pairs so frame saves can use pair instructions.
+        var modified = _regSet.rsGetModifiedRegsMask();
+        var evenFloat = new regMaskTP(SRBM_ARM64_V8 | SRBM_ARM64_V10 | SRBM_ARM64_V12 | SRBM_ARM64_V14);
+        var oddInt = new regMaskTP(SRBM_ARM64_R19 | SRBM_ARM64_R21 | SRBM_ARM64_R23
+            | SRBM_ARM64_R25 | SRBM_ARM64_R27);
+        var pairedBits = (unchecked((ulong)(modified & evenFloat).Lower) << 1)
+            | (unchecked((ulong)(modified & oddInt).Lower) << 1);
+        var paired = new regMaskTP(unchecked((regMask)pairedBits));
+        if (paired.IsNonEmpty)
+        {
+            _regSet.rsSetRegsModified(paired);
         }
     }
 }

@@ -53,7 +53,7 @@ internal static class PhysicalPromotionTests
             var aggregates = new Compiler.PhysicalPromotionAggregateInfoMap(compiler.lvaCount);
             var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregates);
             var visitor = CreateReplaceVisitor(compiler, aggregates, liveness);
-            _ = visitor.StartBlock(block);
+            visitor.StartBlock(block);
             visitor.StartStatement(statement);
 
             visitor.WalkTree(ref statement.RootNodeRef);
@@ -982,7 +982,8 @@ internal static class PhysicalPromotionTests
             Assert.That(secondDeaths.IsRemainderDying(), Is.True);
 
             var replacer = CreateReplaceVisitor(compiler, aggregates, liveness);
-            for (var statement = replacer.StartBlock(block); statement is not null; statement = statement.NextStmt)
+            replacer.StartBlock(block);
+            for (var statement = block.FirstStmt; statement is not null; statement = statement.NextStmt)
             {
                 replacer.StartStatement(statement);
                 replacer.WalkTree(ref statement.RootNodeRef);
@@ -1313,14 +1314,14 @@ internal static class PhysicalPromotionTests
             for (var index = dfs.PostOrderCount; index > 0; index--)
             {
                 var block = dfs.GetPostOrder(index - 1);
-                var first = visitor.StartBlock(block);
+                visitor.StartBlock(block);
                 if (block == blocks[3])
                 {
-                    Assert.That(replacement.NeedsReadBack, Is.False);
-                    Assert.That(replacement.NeedsWriteBack, Is.EqualTo(storeOnOtherPath));
+                    Assert.That(visitor.NeedsReadBack(replacement), Is.False);
+                    Assert.That(visitor.NeedsWriteBack(replacement), Is.EqualTo(storeOnOtherPath));
                 }
 
-                RewritePromotionStatements(visitor, first);
+                RewritePromotionStatements(visitor, block.FirstStmt);
                 visitor.EndBlock();
             }
 
@@ -1472,9 +1473,9 @@ internal static class PhysicalPromotionTests
             aggregates.Add(first);
             aggregates.Add(second);
             var visitor = PreparePromotion(compiler, aggregates);
-            Assert.That(first.Replacements.Select(replacement => replacement.ReadBackIndex),
+            Assert.That(first.Replacements.Select(replacement => replacement.ReplacementIndex),
                 Is.EqualTo(Enumerable.Range(0, 64)));
-            Assert.That(second.Replacements[0].ReadBackIndex, Is.EqualTo(64));
+            Assert.That(second.Replacements[0].ReplacementIndex, Is.EqualTo(64));
 
             RewritePromotionBlocks(compiler, visitor);
 
@@ -1750,9 +1751,9 @@ internal static class PhysicalPromotionTests
             var fieldUse = AddPromotionStatement(compiler, blocks[0],
                 compiler.gtNewLclFldNode(type, 0, checked((ushort)offset)));
             var visitor = PreparePromotion(compiler, aggregates);
-            _ = visitor.StartBlock(blocks[0]);
+            visitor.StartBlock(blocks[0]);
             Assert.That(blocks[0].FirstStmt, Is.SameAs(fieldUse));
-            Assert.That(replacement.NeedsReadBack, Is.True);
+            Assert.That(visitor.NeedsReadBack(replacement), Is.True);
             RewritePromotionStatements(visitor, fieldUse);
             visitor.EndBlock();
             AssertReadBack(blocks[0].FirstStmt!, 0, replacement);
@@ -1812,9 +1813,9 @@ internal static class PhysicalPromotionTests
             var fieldUse = AddPromotionStatement(compiler, blocks[0],
                 compiler.gtNewLclFldNode(type, 0, checked((ushort)offset)));
             var visitor = PreparePromotion(compiler, aggregates);
-            _ = visitor.StartBlock(blocks[0]);
+            visitor.StartBlock(blocks[0]);
             Assert.That(blocks[0].FirstStmt, Is.SameAs(fieldUse));
-            Assert.That(replacement.NeedsReadBack, Is.True);
+            Assert.That(visitor.NeedsReadBack(replacement), Is.True);
 
             RewritePromotionStatements(visitor, fieldUse);
             visitor.EndBlock();
@@ -1943,8 +1944,9 @@ internal static class PhysicalPromotionTests
         var dfs = compiler._dfsTree!;
         for (var index = dfs.PostOrderCount; index > 0; index--)
         {
-            var first = visitor.StartBlock(dfs.GetPostOrder(index - 1));
-            RewritePromotionStatements(visitor, first);
+            var block = dfs.GetPostOrder(index - 1);
+            visitor.StartBlock(block);
+            RewritePromotionStatements(visitor, block.FirstStmt);
             visitor.EndBlock();
         }
     }
@@ -2007,18 +2009,18 @@ internal static class PhysicalPromotionTests
             Assert.That(liveness.IsReplacementLiveOut(first, 0, 0), Is.True);
 
             var visitor = CreateReplaceVisitor(compiler, aggregates, liveness);
-            _ = visitor.StartBlock(first);
+            visitor.StartBlock(first);
             visitor.ClearNeedsWriteBack(replacement);
             visitor.SetNeedsReadBack(replacement);
             visitor.EndBlock();
 
             Assert.That(first.LastStmt, Is.SameAs(firstStatement));
-            Assert.That(replacement.NeedsReadBack, Is.False);
-            Assert.That(replacement.NeedsWriteBack, Is.True);
+            Assert.That(visitor.NeedsReadBack(replacement), Is.True);
+            Assert.That(visitor.NeedsWriteBack(replacement), Is.False);
 
-            _ = visitor.StartBlock(second);
-            Assert.That(replacement.NeedsReadBack, Is.True);
-            Assert.That(replacement.NeedsWriteBack, Is.False);
+            visitor.StartBlock(second);
+            Assert.That(visitor.NeedsReadBack(replacement), Is.True);
+            Assert.That(visitor.NeedsWriteBack(replacement), Is.False);
             visitor.StartStatement(use);
             AssertReadBack(second.FirstStmt!, 0, replacement);
             visitor.WalkTree(ref use.RootNodeRef);

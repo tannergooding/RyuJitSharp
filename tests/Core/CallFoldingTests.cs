@@ -241,15 +241,19 @@ internal static unsafe class CallFoldingTests
     public static void ProfiledLengthSpecializesTheOwnedArgumentAndPreservesFallback(
         [Values("Memmove", "SequenceEqual")] string method,
         [Values(false, true)] bool inlineCandidate,
-        [Values(false, true)] bool constantLength)
+        [Values(false, true)] bool constantLength,
+        [Values(
+            ICorJitInfo.PgoInstrumentationKind.ValueHistogramIntCount,
+            ICorJitInfo.PgoInstrumentationKind.ValueHistogramLongCount)]
+        ICorJitInfo.PgoInstrumentationKind histogramCountKind)
     {
         WithCompiler("SpanHelpers", method, (compiler, call) =>
         {
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBOPT);
             compiler.lvaTable[0].Type = TYP_I_IMPL;
-            var data = stackalloc nint[4] { 8, 8, 8, 8 };
+            var data = stackalloc int[4] { 8, 8, 8, 8 };
             var schema = stackalloc ICorJitInfo.PgoInstrumentationSchema[2] {
-                new() { ILOffset = 12, Count = 1, InstrumentationKind = ICorJitInfo.PgoInstrumentationKind.ValueHistogramLongCount },
+                new() { ILOffset = 12, Count = 1, InstrumentationKind = histogramCountKind },
                 new() { ILOffset = 12, Count = 4, InstrumentationKind = ICorJitInfo.PgoInstrumentationKind.ValueHistogram },
             };
             compiler.fgPgoData = (byte*)data;

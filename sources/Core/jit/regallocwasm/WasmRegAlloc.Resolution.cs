@@ -13,6 +13,10 @@ public sealed partial class WasmRegAlloc
 {
     private readonly HashSet<GenTree> _nodesWithInternalRegisters = [with(ReferenceEqualityComparer.Instance)];
 
+    internal static bool canReuseAbiReg(regNumber virtualRegister, regNumber abiRegister) =>
+        genIsValidReg(virtualRegister) &&
+        (regNumberExtensions.WasmRegToType(virtualRegister) == regNumberExtensions.WasmRegToType(abiRegister));
+
     private void ResolveReferences()
     {
         var trackedIndexByLocalNumber = new int[_compiler.lvaCount];
@@ -92,7 +96,8 @@ public sealed partial class WasmRegAlloc
                             indexBase = uint.Max(indexBase, unchecked(argIndex + 1));
 
                             ref var argLocal = ref _compiler.lvaGetDesc(argLocalNumber);
-                            if ((argLocal.RegNum == argRegister) || (argLocalNumber == _compiler.lvaWasmSpArg))
+                            if (canReuseAbiReg(argLocal.RegNum, argRegister) ||
+                                (argLocalNumber == _compiler.lvaWasmSpArg))
                             {
                                 assert(abiInfo.HasExactlyOneRegisterSegment);
                                 ref var regBank = ref virtualToPhysicalRegMap[(int)argType];
@@ -101,7 +106,7 @@ public sealed partial class WasmRegAlloc
 
                             var mapping = _compiler.FindParameterRegisterLocalMappingByRegister(argRegister);
                             if ((mapping is ParameterRegisterLocalMapping registerMapping) &&
-                                (_compiler.lvaGetDesc(registerMapping.LclNum).RegNum == argRegister))
+                                canReuseAbiReg(_compiler.lvaGetDesc(registerMapping.LclNum).RegNum, argRegister))
                             {
                                 ref var regBank = ref virtualToPhysicalRegMap[(int)argType];
                                 regBank.DeclaredCount = unchecked(regBank.DeclaredCount - 1);
@@ -163,8 +168,7 @@ public sealed partial class WasmRegAlloc
                             var abiInfo = _compiler.lvaGetParameterAbiInfo(rootLocalNumber);
                             assert(abiInfo.HasExactlyOneRegisterSegment);
                             var abiRegister = abiInfo.Segments[0].Register;
-                            if (regNumberExtensions.WasmRegToType(virtualRegister) ==
-                                regNumberExtensions.WasmRegToType(abiRegister))
+                            if (canReuseAbiReg(virtualRegister, abiRegister))
                             {
                                 physicalRegister = abiRegister;
                             }
@@ -178,8 +182,7 @@ public sealed partial class WasmRegAlloc
                             }
                             var mapping = parameterMapping.Value;
                             var abiRegister = mapping.RegisterSegment.Register;
-                            if (regNumberExtensions.WasmRegToType(virtualRegister) ==
-                                regNumberExtensions.WasmRegToType(abiRegister))
+                            if (canReuseAbiReg(virtualRegister, abiRegister))
                             {
                                 physicalRegister = abiRegister;
                             }
@@ -339,7 +342,9 @@ public sealed partial class WasmRegAlloc
 
             for (var type = WasmValueType.First; type < WasmValueType.Count; type = (WasmValueType)((uint)type + 1))
             {
-                var declaredCount = virtualToPhysicalRegMap[(int)type].DeclaredCount;
+                ref var registers = ref virtualToPhysicalRegMap[(int)type];
+                assert(registers.Index <= unchecked(registers.IndexBase + registers.DeclaredCount));
+                var declaredCount = registers.DeclaredCount;
                 if (declaredCount != 0)
                 {
                     localDeclarations.Add(new FuncInfoDsc.WasmLocalsDecl

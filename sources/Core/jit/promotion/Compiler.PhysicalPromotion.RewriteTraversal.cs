@@ -150,7 +150,7 @@ public partial class Compiler
 
         private PhysicalPromotionDecompositionStatementList? InsertMidTreeReadBacks(GenTree use)
         {
-            if ((_pendingReadBacks == 0) || !_compiler.ehBlockHasExnFlowDsc(CurrentBlock) ||
+            if (BitVecOps.IsEmpty(ReplacementTraits, _needsReadBack) || !_compiler.ehBlockHasExnFlowDsc(CurrentBlock) ||
                 ((use.Flags & (GTF_EXCEPT | GTF_CALL)) == 0) || !use.MayThrow(_compiler))
             {
                 return null;
@@ -163,7 +163,7 @@ public partial class Compiler
             {
                 foreach (var replacement in aggregate.Replacements)
                 {
-                    if (replacement.NeedsReadBack)
+                    if (NeedsReadBack(replacement))
                     {
                         JITDUMP($"  V{aggregate.LclNum:D2}.[{replacement.Offset:D3}.." +
                             $"{replacement.Offset + replacement.AccessType.Size:D3}) -> " +
@@ -176,7 +176,7 @@ public partial class Compiler
                 }
             }
 
-            assert(_pendingReadBacks == 0);
+            assert(BitVecOps.IsEmpty(ReplacementTraits, _needsReadBack));
             return readBacks.Count == 0 ? null : readBacks;
         }
 
@@ -234,7 +234,7 @@ public partial class Compiler
             {
                 var replacement = aggregate.Replacements[index];
                 GenTree value;
-                if (replacement.NeedsReadBack)
+                if (NeedsReadBack(replacement))
                 {
                     value = _compiler.gtNewLclFldNode(replacement.AccessType, local.LclNum,
                         checked((ushort)replacement.Offset));
@@ -396,7 +396,7 @@ public partial class Compiler
                 ClearNeedsReadBack(replacementLocal);
                 SetNeedsWriteBack(replacementLocal);
             }
-            else if (replacementLocal.NeedsReadBack)
+            else if (NeedsReadBack(replacementLocal))
             {
                 JITDUMP("  ..needs a read back\n");
                 use = _compiler.gtNewCommaNode(use.Type,
@@ -423,7 +423,7 @@ public partial class Compiler
             }
             foreach (var replacement in aggregate.Replacements)
             {
-                if (replacement.NeedsReadBack)
+                if (NeedsReadBack(replacement))
                 {
                     return false;
                 }

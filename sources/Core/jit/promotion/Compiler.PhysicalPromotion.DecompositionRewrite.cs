@@ -122,13 +122,13 @@ public partial class Compiler
             {
                 var dst = dstIndex < dstEnd ? dstAggregate!.Replacements[dstIndex] : null;
                 var src = srcIndex < srcEnd ? srcAggregate!.Replacements[srcIndex] : null;
-                if ((src is not null) && src.NeedsReadBack)
+                if ((src is not null) && NeedsReadBack(src))
                 {
                     JITDUMP($"  Source replacement V{src.LclNum:D2} ({src.Description}) " +
                         "is stale. Will read it back before copy.\n");
                     statements.AddStatement(_compiler.PhysicalPromotionCreateReadBack(srcLocal!.LclNum, src));
                     ClearNeedsReadBack(src);
-                    assert(!src.NeedsWriteBack);
+                    assert(!NeedsWriteBack(src));
                 }
 
                 if ((dst is not null) && (src is not null))
@@ -273,7 +273,7 @@ public partial class Compiler
                         var replacement = dstAggregate.Replacements[dstFirst++];
                         JITDUMP("*** Block operation partially overlaps with start replacement " +
                             $"of destination V{replacement.LclNum:D2} ({replacement.Description})\n");
-                        if (replacement.NeedsWriteBack)
+                        if (NeedsWriteBack(replacement))
                         {
                             result.AddStatement(_compiler.PhysicalPromotionCreateWriteBack(dstLocal.LclNum, replacement));
                             ClearNeedsWriteBack(replacement);
@@ -290,7 +290,7 @@ public partial class Compiler
                         var replacement = dstAggregate.Replacements[--dstEnd];
                         JITDUMP("*** Block operation partially overlaps with end replacement " +
                             $"of destination V{replacement.LclNum:D2} ({replacement.Description})\n");
-                        if (replacement.NeedsWriteBack)
+                        if (NeedsWriteBack(replacement))
                         {
                             result.AddStatement(_compiler.PhysicalPromotionCreateWriteBack(dstLocal.LclNum, replacement));
                             ClearNeedsWriteBack(replacement);
@@ -317,7 +317,7 @@ public partial class Compiler
                         var replacement = srcAggregate.Replacements[srcFirst++];
                         JITDUMP("*** Block operation partially overlaps with start replacement " +
                             $"of source V{replacement.LclNum:D2} ({replacement.Description})\n");
-                        if (replacement.NeedsWriteBack)
+                        if (NeedsWriteBack(replacement))
                         {
                             result.AddStatement(_compiler.PhysicalPromotionCreateWriteBack(srcLocal.LclNum, replacement));
                             ClearNeedsWriteBack(replacement);
@@ -331,7 +331,7 @@ public partial class Compiler
                         var replacement = srcAggregate.Replacements[--srcEnd];
                         JITDUMP("*** Block operation partially overlaps with end replacement " +
                             $"of source V{replacement.LclNum:D2} ({replacement.Description})\n");
-                        if (replacement.NeedsWriteBack)
+                        if (NeedsWriteBack(replacement))
                         {
                             result.AddStatement(_compiler.PhysicalPromotionCreateWriteBack(srcLocal.LclNum, replacement));
                             ClearNeedsWriteBack(replacement);

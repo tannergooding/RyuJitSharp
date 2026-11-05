@@ -17,6 +17,18 @@ internal static unsafe class WasmRegAllocTests
     }
 
     [Test]
+    public static void AbiRegisterReuseRequiresAValidVirtualRegisterOfMatchingType()
+    {
+        var abiRegister = regNumberExtensions.MakeWasmReg(4, WasmValueType.I32);
+
+        Assert.That(WasmRegAlloc.canReuseAbiReg(regNumberExtensions.MakeWasmReg(5, WasmValueType.I32), abiRegister),
+            Is.True);
+        Assert.That(WasmRegAlloc.canReuseAbiReg(REG_NA, abiRegister), Is.False);
+        Assert.That(WasmRegAlloc.canReuseAbiReg(regNumberExtensions.MakeWasmReg(5, WasmValueType.F32), abiRegister),
+            Is.False);
+    }
+
+    [Test]
     public static void NonFixedRegisterStatePreservesFuncletAndNodeAssociations()
     {
         WithCompiler(compiler =>

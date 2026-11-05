@@ -39,138 +39,158 @@ public partial class Compiler
         private readonly PhysicalPromotionLiveness _liveness = liveness;
         private readonly FlowGraphDfsTree _dfsTree = dfsTree;
         private readonly BitVecTraits _postOrderTraits = dfsTree.PostOrderTraits();
-        private BitVecTraits? _readBackTraits;
+        private BitVecTraits? _replacementTraits;
         private BitVec[] _pendingReadBacksByBlock = [];
         private BitVec[] _currentStructFields = [];
-        private BitVec _processedBlocks = [];
         private BitVec _requiresAlreadyReadBackOnEntry = [];
         private BitVec _requiresReadBackOnExit = [];
-        private int _pendingReadBacks;
+        private BitVec _needsReadBack = [];
+        private BitVec _structCurrent = [];
+        private BitVec _reconcileReadBacks = [];
+        private BitVec _entryReadBacks = [];
+        private ReplacementInfo[] _replacementInfo = [];
         private BasicBlock? _currentBlock;
         private Statement? _currentStatement;
         private bool _madeChanges;
         private bool _mayHaveForwardSub;
-        private BasicBlock CurrentBlock {
-    get
-    {
-        var currentBlock = _currentBlock;
-        if (currentBlock is null)
+        private readonly record struct ReplacementInfo(PhysicalPromotionAggregateInfo Aggregate, int Index);
+
+        private BasicBlock CurrentBlock
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotStartedABlock);
+            get
+            {
+                var currentBlock = _currentBlock;
+                if (currentBlock is null)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotStartedABlock);
+                }
+
+                return currentBlock;
+            }
         }
 
-        return currentBlock;
-    }
-}        private Statement CurrentStatement {
-    get
-    {
-        var currentStatement = _currentStatement;
-        if (currentStatement is null)
+        private Statement CurrentStatement
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotStartedAStatement);
+            get
+            {
+                var currentStatement = _currentStatement;
+                if (currentStatement is null)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotStartedAStatement);
+                }
+
+                return currentStatement;
+            }
         }
 
-        return currentStatement;
-    }
-}        private BitVecTraits ReadBackTraits {
-    get
-    {
-        var readBackTraits = _readBackTraits;
-        if (readBackTraits is null)
+        private BitVecTraits ReplacementTraits
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotPreparedReadbacks);
+            get
+            {
+                var replacementTraits = _replacementTraits;
+                if (replacementTraits is null)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotPreparedReadbacks);
+                }
+
+                return replacementTraits;
+            }
         }
 
-        return readBackTraits;
-    }
-}
-        public Statement? StartBlock(BasicBlock block)
+        public void StartBlock(BasicBlock block)
         {
             _currentBlock = block;
-            assert(_pendingReadBacks == 0);
-            foreach (var aggregate in _aggregates.Aggregates)
+
+            if (block == _compiler.fgFirstBB)
             {
-                ref readonly var descriptor = ref _compiler.lvaGetDesc(aggregate.LclNum);
-                for (var index = 0; index < aggregate.Replacements.Count; index++)
-                {
-                    var replacement = aggregate.Replacements[index];
-                    assert(!replacement.NeedsReadBack);
-                    assert(replacement.NeedsWriteBack);
-                    if (!_liveness.IsReplacementLiveIn(block, aggregate.LclNum, index))
-                    {
-                        continue;
-                    }
-
-                    var pending = false;
-                    var structCurrent = false;
-                    if (block == _compiler.fgFirstBB)
-                    {
-                        pending = descriptor.lvIsParam || descriptor.lvIsOSRLocal;
-                        structCurrent = pending;
-                    }
-                    else if (!BitVecOps.IsMember(_postOrderTraits, _requiresAlreadyReadBackOnEntry,
-                                 block.bbPostorderNum))
-                    {
-                        var hasPred = false;
-                        pending = true;
-                        structCurrent = true;
-                        foreach (var edge in block.PredEdges)
-                        {
-                            var predecessor = edge.SourceBlock;
-                            if (!_dfsTree.Contains(predecessor))
-                            {
-                                continue;
-                            }
-
-                            assert(BitVecOps.IsMember(_postOrderTraits, _processedBlocks,
-                                predecessor.bbPostorderNum));
-                            hasPred = true;
-                            pending &= BitVecOps.IsMember(ReadBackTraits,
-                                _pendingReadBacksByBlock[predecessor.bbPostorderNum], replacement.ReadBackIndex);
-                            structCurrent &= BitVecOps.IsMember(ReadBackTraits,
-                                _currentStructFields[predecessor.bbPostorderNum], replacement.ReadBackIndex);
-                        }
-
-                        pending &= hasPred;
-                        structCurrent &= hasPred;
-                    }
-
-                    if (structCurrent)
-                    {
-                        ClearNeedsWriteBack(replacement);
-                    }
-
-                    if (pending)
-                    {
-                        assert(structCurrent);
-                        SetNeedsReadBack(replacement);
-                    }
-                    else
-                    {
-                        // Only pending predecessors have current struct fields. A join load could
-                        // overwrite a replacement updated on another path with a stale field.
-                        foreach (var edge in block.PredEdges)
-                        {
-                            var predecessor = edge.SourceBlock;
-                            if (!_dfsTree.Contains(predecessor))
-                            {
-                                continue;
-                            }
-
-                            if (BitVecOps.IsMember(_postOrderTraits, _processedBlocks, predecessor.bbPostorderNum) &&
-                                BitVecOps.IsMember(ReadBackTraits,
-                                    _pendingReadBacksByBlock[predecessor.bbPostorderNum], replacement.ReadBackIndex))
-                            {
-                                InsertReadBackAtEnd(predecessor, aggregate.LclNum, replacement);
-                                BitVecOps.RemoveElemD(ReadBackTraits,
-                                    _pendingReadBacksByBlock[predecessor.bbPostorderNum], replacement.ReadBackIndex);
-                            }
-                        }
-                    }
-                }
+                BitVecOps.Assign(ReplacementTraits, ref _needsReadBack, _entryReadBacks);
+                BitVecOps.Assign(ReplacementTraits, ref _structCurrent, _entryReadBacks);
+                return;
             }
 
-            return block.FirstStmt;
+            if (BitVecOps.IsMember(_postOrderTraits, _requiresAlreadyReadBackOnEntry, block.bbPostorderNum))
+            {
+                BitVecOps.ClearD(ReplacementTraits, _needsReadBack);
+                BitVecOps.ClearD(ReplacementTraits, _structCurrent);
+                return;
+            }
+
+            var first = true;
+            BitVecOps.ClearD(ReplacementTraits, _reconcileReadBacks);
+            foreach (var predecessor in block.PredBlocks)
+            {
+                if (!_dfsTree.Contains(predecessor))
+                {
+                    continue;
+                }
+
+                assert(predecessor.bbPostorderNum > block.bbPostorderNum);
+                BitVecOps.UnionD(ReplacementTraits, _reconcileReadBacks,
+                    _pendingReadBacksByBlock[predecessor.bbPostorderNum]);
+                if (first)
+                {
+                    BitVecOps.Assign(ReplacementTraits, ref _needsReadBack,
+                        _pendingReadBacksByBlock[predecessor.bbPostorderNum]);
+                    BitVecOps.Assign(ReplacementTraits, ref _structCurrent,
+                        _currentStructFields[predecessor.bbPostorderNum]);
+                }
+                else
+                {
+                    BitVecOps.IntersectionD(ReplacementTraits, _needsReadBack,
+                        _pendingReadBacksByBlock[predecessor.bbPostorderNum]);
+                    BitVecOps.IntersectionD(ReplacementTraits, _structCurrent,
+                        _currentStructFields[predecessor.bbPostorderNum]);
+                }
+
+                first = false;
+            }
+
+            if (first)
+            {
+                BitVecOps.ClearD(ReplacementTraits, _needsReadBack);
+                BitVecOps.ClearD(ReplacementTraits, _structCurrent);
+            }
+            else
+            {
+                BitVecOps.DiffD(ReplacementTraits, _reconcileReadBacks, _needsReadBack);
+                _ = BitVecOps.VisitBits(ReplacementTraits, _structCurrent, replacementIndex =>
+                {
+                    var info = _replacementInfo[replacementIndex];
+                    if (!_liveness.IsReplacementLiveIn(block, info.Aggregate.LclNum, info.Index))
+                    {
+                        BitVecOps.RemoveElemD(ReplacementTraits, _structCurrent, replacementIndex);
+                        BitVecOps.RemoveElemD(ReplacementTraits, _needsReadBack, replacementIndex);
+                    }
+
+                    return true;
+                });
+            }
+
+            _ = BitVecOps.VisitBits(ReplacementTraits, _reconcileReadBacks, replacementIndex =>
+            {
+                var info = _replacementInfo[replacementIndex];
+                var aggregate = info.Aggregate;
+                if (!_liveness.IsReplacementLiveIn(block, aggregate.LclNum, info.Index))
+                {
+                    return true;
+                }
+
+                foreach (var predecessor in block.PredBlocks)
+                {
+                    if (_dfsTree.Contains(predecessor) &&
+                        (predecessor.bbPostorderNum > block.bbPostorderNum) &&
+                        BitVecOps.IsMember(ReplacementTraits,
+                            _pendingReadBacksByBlock[predecessor.bbPostorderNum], replacementIndex))
+                    {
+                        InsertReadBackAtEnd(predecessor, aggregate.LclNum, aggregate.Replacements[info.Index]);
+                        BitVecOps.RemoveElemD(ReplacementTraits,
+                            _pendingReadBacksByBlock[predecessor.bbPostorderNum], replacementIndex);
+                    }
+                }
+
+                return true;
+            });
+
         }
 
         private void InsertReadBackAtEnd(BasicBlock block, int structLclNum, PhysicalPromotionReplacement replacement)
@@ -198,54 +218,38 @@ public partial class Compiler
 
         public void EndBlock()
         {
+            assert(BitVecOps.IsSubset(ReplacementTraits, _needsReadBack, _structCurrent));
             var materialize = BitVecOps.IsMember(_postOrderTraits, _requiresReadBackOnExit,
                 CurrentBlock.bbPostorderNum);
-            var pendingReadBacks = _pendingReadBacksByBlock[CurrentBlock.bbPostorderNum] =
-                BitVecOps.MakeEmpty(ReadBackTraits);
-            var currentStructFields = _currentStructFields[CurrentBlock.bbPostorderNum] =
-                BitVecOps.MakeEmpty(ReadBackTraits);
-            BitVecOps.AddElemD(_postOrderTraits, _processedBlocks, CurrentBlock.bbPostorderNum);
 
-            foreach (var aggregate in _aggregates.Aggregates)
+            _ = BitVecOps.VisitBits(ReplacementTraits, _needsReadBack, replacementIndex =>
             {
-                for (var index = 0; index < aggregate.Replacements.Count; index++)
+                var info = _replacementInfo[replacementIndex];
+                var aggregate = info.Aggregate;
+                var replacement = aggregate.Replacements[info.Index];
+                if (_liveness.IsReplacementLiveOut(CurrentBlock, aggregate.LclNum, info.Index))
                 {
-                    var replacement = aggregate.Replacements[index];
-                    assert(!replacement.NeedsReadBack || !replacement.NeedsWriteBack);
-                    if (replacement.NeedsReadBack)
+                    if (materialize || (replacement.ReadBackPlacement == CurrentBlock))
                     {
-                        if (_liveness.IsReplacementLiveOut(CurrentBlock, aggregate.LclNum, index))
-                        {
-                            if (materialize || (replacement.ReadBackPlacement == CurrentBlock))
-                            {
-                                InsertReadBackAtEnd(CurrentBlock, aggregate.LclNum, replacement);
-                            }
-                            else
-                            {
-                                BitVecOps.AddElemD(ReadBackTraits, pendingReadBacks, replacement.ReadBackIndex);
-                            }
-                        }
-                        else
-                        {
-                            JITDUMP($"Skipping reading back dead replacement V{aggregate.LclNum:D2}." +
-                                $"[{replacement.Offset:D3}..{replacement.Offset + replacement.AccessType.Size:D3}) " +
-                                $"-> V{replacement.LclNum:D2} near the end of {FMT_BB(CurrentBlock.bbNum)}\n");
-                        }
-
+                        InsertReadBackAtEnd(CurrentBlock, aggregate.LclNum, replacement);
                         ClearNeedsReadBack(replacement);
                     }
-
-                    if (!replacement.NeedsWriteBack)
-                    {
-                        // Reading back leaves the original current until a replacement store invalidates it.
-                        BitVecOps.AddElemD(ReadBackTraits, currentStructFields, replacement.ReadBackIndex);
-                    }
-
-                    SetNeedsWriteBack(replacement);
                 }
-            }
+                else
+                {
+                    JITDUMP($"Skipping reading back dead replacement V{aggregate.LclNum:D2}." +
+                        $"[{replacement.Offset:D3}..{replacement.Offset + replacement.AccessType.Size:D3}) " +
+                        $"-> V{replacement.LclNum:D2} near the end of {FMT_BB(CurrentBlock.bbNum)}\n");
+                    ClearNeedsReadBack(replacement);
+                }
 
-            assert(_pendingReadBacks == 0);
+                return true;
+            });
+
+            BitVecOps.Assign(ReplacementTraits, ref _pendingReadBacksByBlock[CurrentBlock.bbPostorderNum],
+                _needsReadBack);
+            BitVecOps.Assign(ReplacementTraits, ref _currentStructFields[CurrentBlock.bbPostorderNum],
+                _structCurrent);
         }
 
         public void StartStatement(Statement statement)
@@ -273,7 +277,7 @@ public partial class Compiler
 
         private void InsertPreStatementReadBacks()
         {
-            if (_pendingReadBacks == 0)
+            if (BitVecOps.IsEmpty(ReplacementTraits, _needsReadBack))
             {
                 return;
             }
@@ -319,7 +323,7 @@ public partial class Compiler
 
         private void InsertPreStatementReadBackIfNecessary(int local, PhysicalPromotionReplacement replacement)
         {
-            if (replacement.NeedsReadBack)
+            if (NeedsReadBack(replacement))
             {
                 JITDUMP($"Reading back replacement V{local:D2}.[{replacement.Offset:D3}.." +
                     $"{replacement.Offset + replacement.AccessType.Size:D3}) -> V{replacement.LclNum:D2} " +
@@ -334,33 +338,30 @@ public partial class Compiler
 
         public void SetNeedsWriteBack(PhysicalPromotionReplacement replacement)
         {
-            replacement.NeedsWriteBack = true;
-            assert(!replacement.NeedsReadBack);
+            BitVecOps.RemoveElemD(ReplacementTraits, _structCurrent, replacement.ReplacementIndex);
+            assert(!NeedsReadBack(replacement));
         }
 
         public void ClearNeedsWriteBack(PhysicalPromotionReplacement replacement)
         {
-            replacement.NeedsWriteBack = false;
+            BitVecOps.AddElemD(ReplacementTraits, _structCurrent, replacement.ReplacementIndex);
         }
 
         public void SetNeedsReadBack(PhysicalPromotionReplacement replacement)
         {
-            if (!replacement.NeedsReadBack)
-            {
-                replacement.NeedsReadBack = true;
-                _pendingReadBacks++;
-            }
+            BitVecOps.AddElemD(ReplacementTraits, _needsReadBack, replacement.ReplacementIndex);
         }
 
         public void ClearNeedsReadBack(PhysicalPromotionReplacement replacement)
         {
-            if (replacement.NeedsReadBack)
-            {
-                assert(_pendingReadBacks > 0);
-                replacement.NeedsReadBack = false;
-                _pendingReadBacks--;
-            }
+            BitVecOps.RemoveElemD(ReplacementTraits, _needsReadBack, replacement.ReplacementIndex);
         }
+
+        public bool NeedsReadBack(PhysicalPromotionReplacement replacement) =>
+            BitVecOps.IsMember(ReplacementTraits, _needsReadBack, replacement.ReplacementIndex);
+
+        public bool NeedsWriteBack(PhysicalPromotionReplacement replacement) =>
+            !BitVecOps.IsMember(ReplacementTraits, _structCurrent, replacement.ReplacementIndex);
 
         private void VisitOverlappingReplacements<TVisitor>(int local, int offset, int size, ref TVisitor visitor)
             where TVisitor : struct, IReplacementVisitor<TVisitor>
@@ -403,7 +404,7 @@ public partial class Compiler
 
         private bool WriteBackBeforeCurrentStatement(int local, PhysicalPromotionReplacement replacement)
         {
-            if (replacement.NeedsWriteBack)
+            if (NeedsWriteBack(replacement))
             {
                 var tree = _compiler.PhysicalPromotionCreateWriteBack(local, replacement);
                 var statement = _compiler.fgNewStmtFromTree(tree);
@@ -425,7 +426,7 @@ public partial class Compiler
         private bool WriteBackBeforeUse(PhysicalPromotionDecompositionStatementList prefix, int local,
             PhysicalPromotionReplacement replacement)
         {
-            if (replacement.NeedsWriteBack)
+            if (NeedsWriteBack(replacement))
             {
                 prefix.AddStatement(_compiler.PhysicalPromotionCreateWriteBack(local, replacement));
                 ClearNeedsWriteBack(replacement);
