@@ -327,25 +327,31 @@ internal static unsafe class AsyncTransformationTests
         });
     }
 
-    [Test]
-    public static void TailAwaitRunCreatesSuspensionAndSplitsContinuationPath()
+    [TestCase(0, 10, 0, 1)]
+    [TestCase(5, 10, 0, 5)]
+    [TestCase(0, 10, 12, 10)]
+    public static void TailAwaitRunCreatesSuspensionAndClampsDebugInfoSplitOffset(
+        int blockStart, int blockEnd, int awaitOffset, int expectedSplitOffset)
     {
         WithCompiler(compiler => {
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_ASYNC);
             var entry = BasicBlock.New(compiler, BBJ_RETURN);
             entry.SetFlags(BasicBlockFlags.BBF_IS_LIR);
-            entry.bbCodeOffs = 0;
-            entry.bbCodeOffsEnd = 10;
+            entry.bbCodeOffs = blockStart;
+            entry.bbCodeOffsEnd = blockEnd;
             compiler.fgFirstBB = entry;
             compiler.fgLastBB = entry;
             compiler.compCurBB = entry;
+            var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
+            var inlineContext = new InlineContext(strategy);
 
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC,
                 (CORINFO_METHOD_STRUCT_*)1);
             call.SetIsAsync(new AsyncCallInfo {
                 IsTailAwait = true,
                 AlwaysSuspends = true,
-                CallAsyncDebugInfo = new DebugInfo(null, new ILLocation(0, ICorDebugInfo.SOURCE_TYPE_INVALID)),
+                CallAsyncDebugInfo = new DebugInfo(inlineContext,
+                    new ILLocation(awaitOffset, ICorDebugInfo.SOURCE_TYPE_INVALID)),
             });
             entry.InsertAtEnd(call);
 
@@ -354,6 +360,8 @@ internal static unsafe class AsyncTransformationTests
             Assert.That(result, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(entry.Kind, Is.EqualTo(BBJ_ALWAYS));
             Assert.That(entry.Target.FirstLIRNode?.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(entry.bbCodeOffsEnd, Is.EqualTo(expectedSplitOffset));
+            Assert.That(entry.Next?.bbCodeOffs, Is.EqualTo(expectedSplitOffset));
             Assert.That(compiler.Blocks, Has.Some.Matches<BasicBlock>(
                 block => block.Kind is BBJ_RETURN && block.LastNode?.Oper is GT_RETURN_SUSPEND));
         });

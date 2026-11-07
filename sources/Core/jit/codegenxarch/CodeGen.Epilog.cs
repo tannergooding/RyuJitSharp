@@ -391,12 +391,6 @@ public sealed partial class CodeGen
                     stackArgumentSize = unchecked((uint)_compiler.lvaParameterStackSize);
                     noway_assert(stackArgumentSize < 0x10000);
                 }
-                if (Configuration.UNIX_X86_ABI &&
-                    (_compiler.info.compCallConv == CorInfoCallConvExtension.C) &&
-                    (_compiler.info.compRetBuffArg != BAD_VAR_NUM))
-                {
-                    stackArgumentSize += (uint)Configuration.TARGET_POINTER_SIZE;
-                }
             }
 
             instGen_ReturnXarch(stackArgumentSize);

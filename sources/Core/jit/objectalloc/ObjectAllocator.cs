@@ -153,6 +153,7 @@ public sealed partial class ObjectAllocator : Phase
         if (helperHasSideEffects)
         {
             helperCall._callMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
+            helperCall.Flags |= GTF_GLOB_REF;
         }
 
         if (Configuration.FEATURE_READYTORUN)

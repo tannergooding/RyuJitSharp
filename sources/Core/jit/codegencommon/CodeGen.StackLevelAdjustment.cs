@@ -20,12 +20,6 @@ public sealed partial class CodeGen
             return;
         }
 
-        if (Configuration.UNIX_X86_ABI && IsFramePointerUsed && _compiler.fgIsThrowHlpBlk(block))
-        {
-            // A throw reached while pushing arguments may have an unaligned SP even with a frame pointer.
-            Emitter.emitIns_R_AR(INS_lea, EA_PTRSIZE, TargetRuntimeMetadata.StackPointerBaseRegister, TargetRuntimeMetadata.FramePointerBaseRegister, unchecked(-genSPtoFPdelta));
-        }
-
         if (!IsFramePointerUsed && _compiler.fgIsThrowHlpBlk(block))
         {
             noway_assert(block.HasFlag(BBF_HAS_LABEL));

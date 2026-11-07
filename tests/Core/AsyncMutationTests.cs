@@ -29,6 +29,7 @@ internal static unsafe class AsyncMutationTests
             address.Flags |= GTF_VAR_DEF;
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             call.SetIsAsync(default);
+            call.GetAsyncInfo().DefinesResumedIndicator = true;
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address)
                 .WithWellKnownArg(WellKnownArg.AsyncResumedDef));
             var mutated = VarSetOps.MakeEmpty(compiler);

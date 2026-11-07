@@ -21,33 +21,4 @@ public sealed partial class CodeGen
     {
         AddStackLevel(unchecked((uint)Configuration.REGSIZE_BYTES));
     }
-
-    private uint maxNestedAlignment;
-
-    private void SubtractNestedAlignment(uint adjustment)
-    {
-        assert(curNestedAlignment >= adjustment);
-        var newNestedAlignment = curNestedAlignment - adjustment;
-        if (curNestedAlignment != newNestedAlignment)
-        {
-            JITDUMP($"Adjusting stack nested alignment from {unchecked((int)curNestedAlignment)} to {unchecked((int)newNestedAlignment)}\n");
-        }
-        curNestedAlignment = newNestedAlignment;
-    }
-
-    private void AddNestedAlignment(uint adjustment)
-    {
-        var newNestedAlignment = unchecked(curNestedAlignment + adjustment);
-        if (curNestedAlignment != newNestedAlignment)
-        {
-            JITDUMP($"Adjusting stack nested alignment from {unchecked((int)curNestedAlignment)} to {unchecked((int)newNestedAlignment)}\n");
-        }
-        curNestedAlignment = newNestedAlignment;
-
-        if (curNestedAlignment > maxNestedAlignment)
-        {
-            JITDUMP($"Max stack nested alignment changed from {unchecked((int)maxNestedAlignment)} to {unchecked((int)curNestedAlignment)}\n");
-            maxNestedAlignment = curNestedAlignment;
-        }
-    }
 }

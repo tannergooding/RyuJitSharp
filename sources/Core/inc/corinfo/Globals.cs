@@ -103,13 +103,6 @@ public partial class Globals
             return default!;
         }
 
-        if (Configuration.UNIX_X86_ABI)
-        {
-            return callConv is CorInfoCallConvExtension.Managed
-                            or CorInfoCallConvExtension.C
-                            or CorInfoCallConvExtension.CMemberFunction;
-        }
-
         return callConv is CorInfoCallConvExtension.C
                         or CorInfoCallConvExtension.CMemberFunction;
     }

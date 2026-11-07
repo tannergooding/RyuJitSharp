@@ -683,7 +683,6 @@ public partial class Compiler
             }
         }
 
-        fgAssignSetVarDef(call);
         if (call.RequiresAsgFlag)
         {
             call.Flags |= GTF_ASG;

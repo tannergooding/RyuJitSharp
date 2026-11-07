@@ -177,6 +177,7 @@ internal static unsafe class TreeLifeUpdaterTests
             retbuf.Flags |= GTF_VAR_DEF;
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             call.SetIsAsync(default);
+            call.GetAsyncInfo().DefinesResumedIndicator = true;
             call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(resumed).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(retbuf).WithWellKnownArg(WellKnownArg.RetBuffer));

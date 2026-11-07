@@ -275,7 +275,7 @@ public sealed class TreeLifeUpdater
         }
         else if (tree.Oper == GT_CALL)
         {
-            _ = tree.VisitPhysicalLocalDefNodes(_compiler, local =>
+            _ = tree.AsCall().VisitCallLocalDefNodes(_compiler, local =>
             {
                 UpdateLifeVar(tree, local.AsLclVarCommon());
                 return GenTree.VisitResult.Continue;

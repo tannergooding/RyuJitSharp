@@ -50,6 +50,7 @@ internal static unsafe class ICorJitInfoWrapperTests
             vtable.Base.Base.isIntrinsic = &IsIntrinsic;
             vtable.Base.getHelperFtn = &GetHelperFtn;
             vtable.setEHcount = &SetEHCount;
+            vtable.recordWasmVirtualFunctionPointerLookup = &RecordWasmVirtualFunctionPointerLookup;
             vtable.allocGCInfo = &AllocGCInfo;
             var jitInfo = new ICorJitInfo { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
@@ -76,6 +77,11 @@ internal static unsafe class ICorJitInfoWrapperTests
             proxy->setEHcount(17);
             Assert.That(s_observedApi, Is.EqualTo(API_setEHcount));
             Assert.That(s_observedArgument, Is.EqualTo((nint)17));
+            Assert.That(ActiveApi(s_timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
+            proxy->recordWasmVirtualFunctionPointerLookup((CORINFO_METHOD_STRUCT_*)0x789A);
+            Assert.That(s_observedApi, Is.EqualTo(API_recordWasmVirtualFunctionPointerLookup));
+            Assert.That(s_observedReceiver, Is.EqualTo((nint)(&jitInfo)));
+            Assert.That(s_observedArgument, Is.EqualTo((nint)0x789A));
             Assert.That(ActiveApi(s_timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
             Assert.That((nint)proxy->allocGCInfo(29), Is.EqualTo((nint)456));
             Assert.That(s_observedApi, Is.EqualTo(API_allocGCInfo));
@@ -107,10 +113,11 @@ internal static unsafe class ICorJitInfoWrapperTests
             Assert.That(ActiveApi(s_timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
 
             ref var info = ref TimerInfo(s_timer);
-            Assert.That(info._allClrApiCalls, Is.EqualTo(7));
-            Assert.That(info._invokesByPhase[(int)PHASE_CLR_API], Is.EqualTo(7));
+            Assert.That(info._allClrApiCalls, Is.EqualTo(8));
+            Assert.That(info._invokesByPhase[(int)PHASE_CLR_API], Is.EqualTo(8));
             Assert.That(info._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(2));
             Assert.That(info._perClrApiCalls[(int)API_setEHcount], Is.EqualTo(1));
+            Assert.That(info._perClrApiCalls[(int)API_recordWasmVirtualFunctionPointerLookup], Is.EqualTo(1));
             Assert.That(info._perClrApiCalls[(int)API_allocGCInfo], Is.EqualTo(1));
             Assert.That(info._perClrApiCalls[(int)API_getHelperFtn], Is.EqualTo(3));
 
@@ -124,7 +131,7 @@ internal static unsafe class ICorJitInfoWrapperTests
                 Assert.That((ulong)info._maxClrApiCycles[index], Is.InRange(0UL, info._perClrApiCycles[index]));
             }
 
-            Assert.That(calls, Is.EqualTo(7));
+            Assert.That(calls, Is.EqualTo(8));
             Assert.That(cycles, Is.EqualTo(info._allClrApiCycles));
             Assert.That(info._cyclesByPhase[(int)PHASE_CLR_API], Is.EqualTo((ulong)cycles));
             Assert.That((nint)compiler.info.compCompHnd, Is.EqualTo((nint)proxy));
@@ -175,6 +182,12 @@ internal static unsafe class ICorJitInfoWrapperTests
         {
             *method = (CORINFO_METHOD_STRUCT_*)0x5678;
         }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void RecordWasmVirtualFunctionPointerLookup(ICorJitInfo* receiver, CORINFO_METHOD_STRUCT_* method)
+    {
+        Observe(receiver, (nint)method);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

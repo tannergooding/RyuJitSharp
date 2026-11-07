@@ -435,8 +435,7 @@ internal static unsafe class CallArgumentMorphTests
     {
         WithCompiler(compiler => {
             compiler.lvaTable[0].Type = localType;
-            var store = new GenTreeLclFld(TYP_INT, 0, 0, compiler.gtNewIconNode(TYP_INT, 42), null);
-            compiler.fgAssignSetVarDef(store);
+            var store = compiler.gtNewStoreLclFldNode(TYP_INT, 0, 0, compiler.gtNewIconNode(TYP_INT, 42));
             Assert.That(store.Flags & GTF_VAR_DEF, Is.EqualTo(GTF_VAR_DEF));
             Assert.That((store.Flags & GTF_VAR_USEASG) != 0, Is.EqualTo(partial));
         });
@@ -599,6 +598,21 @@ internal static unsafe class CallArgumentMorphTests
             Assert.That(receiver.NeedTmp, Is.EqualTo(enabled));
             Assert.That(effect.NeedTmp, Is.EqualTo(enabled));
             Assert.That(constant.NeedTmp, Is.False);
+        });
+    }
+
+    [Test]
+    public static void MorphingAddressExposedLocalStoresAddsGlobalReference()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_INT;
+            var store = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 1));
+            compiler.lvaSetVarAddrExposed(0, AddressExposedReason.ESCAPE_ADDRESS);
+
+            var morphed = compiler.fgMorphTree(store);
+
+            Assert.That(morphed.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+            Assert.That(morphed.Flags & GTF_GLOB_REF, Is.EqualTo(GTF_GLOB_REF));
         });
     }
 

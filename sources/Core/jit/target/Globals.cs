@@ -273,12 +273,6 @@ public static partial class Globals
             || (TargetArchitecture.IsArm64 && TargetOS.IsWindows);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool compUnixX86Abi()
-    {
-        return TargetArchitecture.IsX86 && TargetOS.IsUnix;
-    }
-
     /// <summary>Return true if the register number is valid</summary>
     /// <param name="reg"></param>
     /// <returns></returns>

@@ -20,7 +20,7 @@ public sealed unsafe partial class WrapICorJitInfo
         var vtable = (ICorJitInfo.Vtbl<ICorJitInfo>*)RuntimeHelpers.AllocateTypeAssociatedMemory(
             typeof(WrapICorJitInfo), sizeof(ICorJitInfo.Vtbl<ICorJitInfo>));
 
-        if (sizeof(ICorJitInfo.Vtbl<ICorJitInfo>) != 183 * sizeof(nint))
+        if (sizeof(ICorJitInfo.Vtbl<ICorJitInfo>) != 184 * sizeof(nint))
         {
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ICorJitInfoVTableLayoutMismatch);
             return default;
@@ -292,6 +292,7 @@ public sealed unsafe partial class WrapICorJitInfo
         vtable->allocPgoInstrumentationBySchema = &Thunk_allocPgoInstrumentationBySchema;
         vtable->recordCallSite = &Thunk_recordCallSite;
         vtable->recordWasmManagedCallSig = &Thunk_recordWasmManagedCallSig;
+        vtable->recordWasmVirtualFunctionPointerLookup = &Thunk_recordWasmVirtualFunctionPointerLookup;
         vtable->recordRelocation = &Thunk_recordRelocation;
         vtable->getRelocTypeHint = &Thunk_getRelocTypeHint;
         vtable->getExpectedTargetArchitecture = &Thunk_getExpectedTargetArchitecture;
@@ -2799,6 +2800,20 @@ public sealed unsafe partial class WrapICorJitInfo
         try
         {
             GetWrapper(self).recordWasmManagedCallSig(callSig);
+        }
+        catch (Exception exception)
+        {
+            FailFastCallback(exception);
+            return;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void Thunk_recordWasmVirtualFunctionPointerLookup(ICorJitInfo* self, CORINFO_METHOD_HANDLE method)
+    {
+        try
+        {
+            GetWrapper(self).recordWasmVirtualFunctionPointerLookup(method);
         }
         catch (Exception exception)
         {

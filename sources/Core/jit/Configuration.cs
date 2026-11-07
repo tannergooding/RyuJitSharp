@@ -75,8 +75,6 @@ internal static class Configuration
 
     internal static bool WINDOWS_AMD64_ABI => GetFeatureSwitch(nameof(WINDOWS_AMD64_ABI));
 
-    internal static bool UNIX_X86_ABI => GetFeatureSwitch(nameof(UNIX_X86_ABI));
-
     internal static bool ALIGN_SIMD_TYPES => TARGET_XARCH || TARGET_ARM64;
 
     internal static bool CPU_HAS_BYTE_REGS => TARGET_X86;
@@ -384,7 +382,7 @@ internal static class Configuration
         FP_REGSIZE_BYTES_WASM);
 
     internal static int STACK_ALIGN =>
-        TARGET_ARM ? 8 : TARGET_X86 ? (UNIX_X86_ABI ? 16 : 4) : 16;
+        TARGET_ARM ? 8 : TARGET_X86 ? 4 : 16;
 
     internal static int EMIT_JUMPKIND_COUNT
     {

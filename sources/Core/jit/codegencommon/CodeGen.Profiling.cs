@@ -190,12 +190,6 @@ public sealed partial class CodeGen
         if (Configuration.TARGET_X86)
         {
             var savedStackLevel = genStackLevel;
-            if (Configuration.UNIX_X86_ABI)
-            {
-                Emitter.emitIns_R_I(INS_sub, EA_4BYTE, TargetRuntimeMetadata.StackPointerBaseRegister, 0xC);
-                AddStackLevel(0xC);
-                AddNestedAlignment(0xC);
-            }
             if (_compiler.compProfilerMethHndIndirected)
             {
                 Emitter.emitIns_AR_R(INS_push, EA_PTRSIZE | EA_DSP_RELOC_FLG, REG_NA, REG_NA,
@@ -207,14 +201,7 @@ public sealed partial class CodeGen
             }
             genSinglePush();
 
-            var argSize = Configuration.UNIX_X86_ABI ? -Configuration.REGSIZE_BYTES : Configuration.REGSIZE_BYTES;
-            genEmitHelperCall(helper, argSize, EA_UNKNOWN);
-            if (Configuration.UNIX_X86_ABI)
-            {
-                Emitter.emitIns_R_I(INS_add, EA_4BYTE, TargetRuntimeMetadata.StackPointerBaseRegister, 0x10);
-                SubtractStackLevel(0x10);
-                SubtractNestedAlignment(0xC);
-            }
+            genEmitHelperCall(helper, Configuration.REGSIZE_BYTES, EA_UNKNOWN);
             SetStackLevel(savedStackLevel);
             return;
         }

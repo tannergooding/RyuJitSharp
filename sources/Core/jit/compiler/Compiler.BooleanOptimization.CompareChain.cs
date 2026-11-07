@@ -126,10 +126,7 @@ public partial class Compiler
             var removedLikelihood = removed.Likelihood;
             var retainedLikelihood = retained.Likelihood;
             var removedTarget = removed.DestinationBlock;
-            if (_second.hasProfileWeight)
-            {
-                _second.increaseBBProfileWeight(removed.LikelyWeight);
-            }
+            _second.inheritWeight(_first);
 
             _compiler.fgRemoveRefPred(removed);
             _first.SetKindAndTargetEdge(BBJ_ALWAYS, retained);

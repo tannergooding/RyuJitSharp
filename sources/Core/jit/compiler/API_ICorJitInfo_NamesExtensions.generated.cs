@@ -187,6 +187,7 @@ public static partial class API_ICorJitInfo_NamesExtensions
         "allocPgoInstrumentationBySchema",
         "recordCallSite",
         "recordWasmManagedCallSig",
+        "recordWasmVirtualFunctionPointerLookup",
         "recordRelocation",
         "getRelocTypeHint",
         "getExpectedTargetArchitecture",

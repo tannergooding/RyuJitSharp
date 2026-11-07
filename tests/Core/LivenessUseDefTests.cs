@@ -299,6 +299,7 @@ internal static unsafe class LivenessUseDefTests
             if (async)
             {
                 call.SetIsAsync(default);
+                call.GetAsyncInfo().DefinesResumedIndicator = true;
             }
             else
             {
@@ -449,6 +450,7 @@ internal static unsafe class LivenessUseDefTests
             if (async)
             {
                 call.SetIsAsync(default);
+                call.GetAsyncInfo().DefinesResumedIndicator = true;
             }
             else
             {

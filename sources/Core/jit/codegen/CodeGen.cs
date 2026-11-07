@@ -63,9 +63,6 @@ public sealed partial class CodeGen : ICodeGen
             _stkArgVarNum = BAD_VAR_NUM;
         }
 
-        curNestedAlignment = 0;
-        maxNestedAlignment = 0;
-
         _cgEmitter = new Emitter(this);
         _calleeRegArgMaskLiveIn = RBM_NONE;
 

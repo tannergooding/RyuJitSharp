@@ -887,12 +887,6 @@ public partial class Compiler
 
             compiler.impCheckForPInvokeCall(call, methHnd, sigInfo, mflags, compiler.compCurBB);
 
-            if (Configuration.UNIX_X86_ABI && ((call.Flags & GTF_CALL_UNMANAGED) is 0))
-            {
-                // On Unix x86 we use caller-cleaned convention.
-                call.Flags |= GTF_CALL_POP_ARGS;
-            }
-
             if ((call.Flags & GTF_CALL_UNMANAGED) is not 0)
             {
                 // We set up the unmanaged call by linking the frame, disabling GC, etc

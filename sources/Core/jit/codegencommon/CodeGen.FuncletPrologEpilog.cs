@@ -293,11 +293,7 @@ public sealed partial class CodeGen
             _compiler.unwindEndProlog();
             if (Configuration.TARGET_X86)
             {
-                if (Configuration.UNIX_X86_ABI)
-                {
-                    inst_RV_IV(INS_sub, TargetRuntimeMetadata.StackPointerBaseRegister, 12, EA_PTRSIZE);
-                }
-                else if (!_compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                if (!_compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
                     instGen(INS_nop);
                 }
@@ -530,10 +526,6 @@ public sealed partial class CodeGen
             if (Configuration.TARGET_AMD64)
             {
                 inst_RV_IV(INS_add, TargetRuntimeMetadata.StackPointerBaseRegister, (nint)genFuncletInfo.fiSpDelta, EA_PTRSIZE);
-            }
-            else if (Configuration.UNIX_X86_ABI)
-            {
-                inst_RV_IV(INS_add, TargetRuntimeMetadata.StackPointerBaseRegister, 12, EA_PTRSIZE);
             }
             instGen_Return(0);
         }

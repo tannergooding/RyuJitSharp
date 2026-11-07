@@ -1505,6 +1505,13 @@ public sealed unsafe partial class WrapICorJitInfo
         wrapComp.CLR_API_Leave(API_recordWasmManagedCallSig);
     }
 
+    public void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_HANDLE method)
+    {
+        wrapComp.CLR_API_Enter(API_recordWasmVirtualFunctionPointerLookup);
+        wrapHnd->recordWasmVirtualFunctionPointerLookup(method);
+        wrapComp.CLR_API_Leave(API_recordWasmVirtualFunctionPointerLookup);
+    }
+
     public void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int addlDelta = 0)
     {
         wrapComp.CLR_API_Enter(API_recordRelocation);

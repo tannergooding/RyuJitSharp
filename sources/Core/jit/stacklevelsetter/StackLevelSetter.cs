@@ -123,11 +123,7 @@ public sealed class StackLevelSetter : Phase
                 if (node.Oper.IsCall)
                 {
                     var call = node.AsCall();
-                    var usedStackSlotsCount = PopArgumentsFromCall(call);
-                    if (Configuration.UNIX_X86_ABI)
-                    {
-                        call.Args.SetStkSizeBytes(unchecked(usedStackSlotsCount * (uint)Configuration.TARGET_POINTER_SIZE));
-                    }
+                    PopArgumentsFromCall(call);
                 }
             }
 
@@ -314,11 +310,7 @@ public sealed class StackLevelSetter : Phase
         {
             if (add.acdStkLvlInit)
             {
-                if (Configuration.UNIX_X86_ABI)
-                {
-                    _framePointerRequired = true;
-                }
-                else if (unchecked((uint)add.acdStkLvl) != _currentStackLevel)
+                if (unchecked((uint)add.acdStkLvl) != _currentStackLevel)
                 {
                     _framePointerRequired = true;
                 }
@@ -343,9 +335,8 @@ public sealed class StackLevelSetter : Phase
         }
     }
 
-    private uint PopArgumentsFromCall(GenTreeCall call)
+    private void PopArgumentsFromCall(GenTreeCall call)
     {
-        var usedStackSlotsCount = 0u;
         if (call.Args.HasStackArgs)
         {
             foreach (var arg in call.Args.Args)
@@ -372,13 +363,10 @@ public sealed class StackLevelSetter : Phase
                     }
                     var putArgNumSlots = _putArgNumSlots ??= [];
                     putArgNumSlots[putArg] = slotCount;
-                    usedStackSlotsCount = unchecked(usedStackSlotsCount + slotCount);
                     AddStackLevel(slotCount);
                 }
             }
         }
-
-        return usedStackSlotsCount;
     }
 
     private void AddStackLevel(uint value)

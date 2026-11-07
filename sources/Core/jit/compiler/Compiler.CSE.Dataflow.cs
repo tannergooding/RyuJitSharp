@@ -38,6 +38,11 @@ public partial class Compiler
             var index = descriptor.csdIndex;
             for (var occurrence = descriptor.csdTreeList; occurrence is not null; occurrence = occurrence.tslNext)
             {
+                if (!IS_CSE_INDEX(occurrence.tslTree._cseNum))
+                {
+                    continue;
+                }
+
                 var block = occurrence.tslBlock;
                 assert(block.bbCseGen is not null);
                 BitVecOps.AddElemD(cseLivenessTraits, block.bbCseGen, getCSEAvailBit(index));

@@ -59,30 +59,6 @@ internal static class X86ProfilingCallbackTests
         });
     }
 
-    [Test]
-    public static void NestedAlignmentTracksCurrentAndHighWaterMarkIndependently()
-    {
-        Assume.That(Configuration.TARGET_X86 && Configuration.PROFILING_SUPPORTED);
-        Assume.That(Configuration.UNIX_X86_ABI);
-
-        X86EmitterStaticOutputTests.WithEmitter((compiler, _) =>
-        {
-            var codeGen = compiler.codeGen as CodeGen
-                ?? throw new AssertionException("Missing x86 code generator.");
-            Assert.That(NestedAlignment(codeGen), Is.Zero);
-            Assert.That(MaxNestedAlignment(codeGen), Is.Zero);
-
-            AddNestedAlignment(codeGen, 12);
-            AddNestedAlignment(codeGen, 4);
-            Assert.That(NestedAlignment(codeGen), Is.EqualTo(16u));
-            Assert.That(MaxNestedAlignment(codeGen), Is.EqualTo(16u));
-
-            SubtractNestedAlignment(codeGen, 16);
-            Assert.That(NestedAlignment(codeGen), Is.Zero);
-            Assert.That(MaxNestedAlignment(codeGen), Is.EqualTo(16u));
-        });
-    }
-
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "genStackLevel")]
     private static extern ref uint StackLevel(CodeGen codeGen);
 
@@ -95,15 +71,4 @@ internal static class X86ProfilingCallbackTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddStackLevel")]
     private static extern void AddStackLevel(CodeGen codeGen, uint adjustment);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "<curNestedAlignment>k__BackingField")]
-    private static extern ref uint NestedAlignment(CodeGen codeGen);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "maxNestedAlignment")]
-    private static extern ref uint MaxNestedAlignment(CodeGen codeGen);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddNestedAlignment")]
-    private static extern void AddNestedAlignment(CodeGen codeGen, uint adjustment);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SubtractNestedAlignment")]
-    private static extern void SubtractNestedAlignment(CodeGen codeGen, uint adjustment);
 }

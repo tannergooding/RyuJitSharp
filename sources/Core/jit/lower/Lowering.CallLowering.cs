@@ -215,6 +215,24 @@ public sealed partial class Lowering
         }
         LowerArgsForCall(call);
 
+        if (Configuration.TARGET_WASM && compiler.IsReadyToRun &&
+            call.IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
+        {
+            var methodHandleArg = call.Args.FindWellKnownArg(WellKnownArg.RuntimeMethodHandle);
+            assert(methodHandleArg is not null);
+            var methodHandle = methodHandleArg!.Node;
+            if (methodHandle.Oper is GT_IND)
+            {
+                methodHandle = methodHandle.AsIndir().Addr;
+            }
+
+            if (methodHandle.IsIconHandle() && (methodHandle.AsIntCon().CompileTimeHandle != 0))
+            {
+                compiler.info.compCompHnd->recordWasmVirtualFunctionPointerLookup(
+                    (CORINFO_METHOD_HANDLE)methodHandle.AsIntCon().CompileTimeHandle);
+            }
+        }
+
         GenTree? controlExpr = null;
         var callWasExpandedEarly = false;
         if (call.IsDelegateInvoke)

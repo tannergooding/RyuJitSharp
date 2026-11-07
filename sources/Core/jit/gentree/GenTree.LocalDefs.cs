@@ -8,30 +8,24 @@ namespace RyuJitSharp;
 public partial class GenTree
 {
     public static VisitResult VisitPromotedRangeLocalDefs<TVisitor>(Compiler compiler, GenTreeLclVarCommon def,
-        in LclVarDsc varDsc, nint offset, ValueSize storeSize, ref TVisitor visitor)
+        in LclVarDsc varDsc, nint offset, ValueSize storeSize, out bool needsBaseDef, ref TVisitor visitor)
         where TVisitor : struct, ILocalDefVisitor
     {
-        var fieldLclNum = compiler.lvaGetFieldLocal(varDsc, unchecked((uint)offset));
-
-        if (fieldLclNum != BAD_VAR_NUM)
-        {
-            ref var fieldVarDsc = ref compiler.lvaGetDesc(fieldLclNum);
-
-            if (fieldVarDsc.lvValueSize == storeSize)
-            {
-                var index = fieldLclNum - varDsc.lvFieldLclStart;
-                return visitor.Visit(new PromotedRangeLocalDef(def, fieldLclNum, index, true, 0, storeSize, 0, storeSize));
-            }
-        }
-
+        needsBaseDef = false;
+        var coveredSize = 0u;
         for (var index = 0; index < varDsc.lvFieldCnt; index++)
         {
-            fieldLclNum = varDsc.lvFieldLclStart + index;
+            var fieldLclNum = varDsc.lvFieldLclStart + index;
             ref var fieldVarDsc = ref compiler.lvaGetDesc(fieldLclNum);
 
             if (!compiler.gtStoreMayDefineField(fieldVarDsc, offset, storeSize, out var fieldStoreOffset, out var fieldStoreSize))
             {
                 continue;
+            }
+
+            if (fieldStoreSize.IsExact)
+            {
+                coveredSize = unchecked(coveredSize + fieldStoreSize.ExactSize);
             }
 
             var isEntire = (fieldStoreOffset == 0) && (fieldStoreSize == fieldVarDsc.lvValueSize);
@@ -44,33 +38,8 @@ public partial class GenTree
             }
         }
 
+        needsBaseDef = varDsc.lvContainsHoles && (new ValueSize(coveredSize) != storeSize) && varDsc.lvDoNotEnregister;
         return VisitResult.Continue;
-    }
-
-    public unsafe bool IsEntireLocalDef(Compiler compiler, GenTreeLclVarCommon def)
-    {
-        if (Oper is GT_STORE_LCL_VAR)
-        {
-            return true;
-        }
-
-        if (Oper is GT_STORE_LCL_FLD)
-        {
-            return !def.AsLclFld().IsPartial(compiler);
-        }
-
-        assert(Oper is GT_CALL);
-        var call = AsCall();
-
-        if (def == compiler.gtCallGetDefinedAsyncResumedLclAddr(call))
-        {
-            return compiler.lvaLclExactSize(def.LclNum) == Configuration.TARGET_POINTER_SIZE;
-        }
-
-        assert(def == compiler.gtCallGetDefinedRetBufLclAddr(call));
-        var storeSize = new ValueSize(compiler.typGetObjLayout(call.RetClsHnd).Size);
-
-        return compiler.IsEntireAccess(def.LclNum, def.LclOffs, storeSize);
     }
 
     public VisitResult VisitLocalDef<TVisitor>(Compiler compiler, GenTreeLclVarCommon def, ref TVisitor visitor)
@@ -94,6 +63,11 @@ public partial class GenTree
             }
         }
 
+        if (varDsc.lvContainsHoles && varDsc.lvDoNotEnregister)
+        {
+            return visitor.Visit(new StoreLclVarDef(def));
+        }
+
         return VisitResult.Continue;
     }
 
@@ -102,13 +76,23 @@ public partial class GenTree
     {
         assert(Oper is GT_CALL);
         ref var varDsc = ref compiler.lvaGetDesc(def.LclNum);
+        var needsBaseDef = true;
 
-        if (!varDsc.lvPromoted)
+        if (varDsc.lvPromoted)
+        {
+            if (VisitPromotedRangeLocalDefs(compiler, def, varDsc, offset, size, out needsBaseDef, ref visitor) ==
+                VisitResult.Abort)
+            {
+                return VisitResult.Abort;
+            }
+        }
+
+        if (needsBaseDef)
         {
             return visitor.Visit(new CallLocalDef(def, isEntire, offset, size));
         }
 
-        return VisitPromotedRangeLocalDefs(compiler, def, varDsc, offset, size, ref visitor);
+        return VisitResult.Continue;
     }
 
     /// <summary>Visit logical definitions, including promoted fields and locals defined via call arguments.</summary>
@@ -125,13 +109,18 @@ public partial class GenTree
         {
             var fld = AsLclFld();
             ref var varDsc = ref compiler.lvaGetDesc(fld.LclNum);
+            var needsBaseDef = true;
 
-            if (!varDsc.lvPromoted)
+            if (varDsc.lvPromoted)
             {
-                return visitor.Visit(new StoreLclFldDef(fld));
+                if (VisitPromotedRangeLocalDefs(compiler, fld, varDsc, fld.LclOffs, fld.ValueSize,
+                    out needsBaseDef, ref visitor) == VisitResult.Abort)
+                {
+                    return VisitResult.Abort;
+                }
             }
 
-            return VisitPromotedRangeLocalDefs(compiler, fld, varDsc, fld.LclOffs, fld.ValueSize, ref visitor);
+            return needsBaseDef ? visitor.Visit(new StoreLclFldDef(fld)) : VisitResult.Continue;
         }
 
         if (Oper is GT_CALL)
@@ -164,6 +153,14 @@ public partial class GenTree
         return VisitResult.Continue;
     }
 
+    private struct HasAnyLocalDefVisitor : ILocalDefVisitor
+    {
+        public readonly VisitResult Visit<TDef>(TDef def) where TDef : struct, ILocalDef => VisitResult.Abort;
+    }
+
     public bool HasAnyLocalDefs(Compiler compiler)
-        => VisitPhysicalLocalDefNodes(compiler, static _ => VisitResult.Abort) == VisitResult.Abort;
+    {
+        var visitor = default(HasAnyLocalDefVisitor);
+        return VisitLogicalLocalDefs(compiler, ref visitor) == VisitResult.Abort;
+    }
 }

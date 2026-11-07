@@ -98,7 +98,7 @@ public sealed class PatchpointTransformer
         var ilOffsetNode = _compiler.gtNewIconNode(TYP_INT, ilOffset);
         var counterAddr = _compiler.gtNewLclVarAddrNode(TYP_I_IMPL, _ppCounterLclNum);
         var patchpoint = _compiler.gtNewBinaryNode(GT_PATCHPOINT, TYP_VOID, counterAddr, ilOffsetNode);
-        patchpoint.Flags |= GTF_CALL;
+        patchpoint.Flags |= GTF_CALL | GTF_GLOB_REF;
         _compiler.fgInsertStmtAtEnd(helperBlock, _compiler.gtNewStmt(patchpoint));
     }
 
@@ -129,7 +129,7 @@ public sealed class PatchpointTransformer
         block.SetKindAndTargetEdge(BBJ_THROW, null);
         var ilOffsetNode = _compiler.gtNewIconNode(TYP_INT, ilOffset);
         var patchpoint = _compiler.gtNewUnaryNode(GT_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
-        patchpoint.Flags |= GTF_CALL;
+        patchpoint.Flags |= GTF_CALL | GTF_GLOB_REF;
         _compiler.fgInsertStmtAtEnd(block, _compiler.gtNewStmt(patchpoint));
     }
 }

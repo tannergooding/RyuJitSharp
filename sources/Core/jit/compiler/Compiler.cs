@@ -1734,15 +1734,6 @@ public partial class Compiler
                 }
             }
         }
-        else if (Configuration.UNIX_X86_ABI)
-        {
-            if ((callConv is not CorInfoCallConvExtension.Managed) && !isNativePrimitiveStructType(clsHnd))
-            {
-                canReturnInRegister = false;
-                howToReturnStruct = SPK_ByReference;
-                useType = TYP_UNKNOWN;
-            }
-        }
         else if ((Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64) &&
             (structSize <= (Configuration.TARGET_POINTER_SIZE * 2)))
         {

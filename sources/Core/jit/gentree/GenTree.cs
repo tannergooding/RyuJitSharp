@@ -1043,7 +1043,8 @@ public partial class GenTree
         GT_CMPXCHG => true,
         GT_STOREIND => true,
         GT_STORE_BLK => true,
-        GT_CALL => AsCall().IsOptimizingRetBufAsLocal,
+        GT_CALL => AsCall().IsOptimizingRetBufAsLocal ||
+            (AsCall().IsAsync && AsCall().GetAsyncInfo().DefinesResumedIndicator),
         GT_HWINTRINSIC => Configuration.FEATURE_HW_INTRINSICS && AsHWIntrinsic().IsMemoryStoreOrBarrier,
         _ => false,
     };
@@ -2941,37 +2942,6 @@ public partial class GenTree
         assert(!oper.IsMultiOp);
 
         _oper = oper;
-    }
-
-    public VisitResult VisitPhysicalLocalDefNodes(Compiler comp, GenTreeVisitorFunc visitor)
-    {
-        if (_oper is GT_STORE_LCL_VAR)
-        {
-            return visitor(AsLclVarCommon());
-        }
-        else if (_oper is GT_STORE_LCL_FLD)
-        {
-            return visitor(AsLclFld());
-        }
-        else if (_oper is GT_CALL)
-        {
-            var call = AsCall();
-            var asyncResumedLclAddr = comp.gtCallGetDefinedAsyncResumedLclAddr(call);
-
-            if ((asyncResumedLclAddr is not null) && (visitor(asyncResumedLclAddr) is VisitResult.Abort))
-            {
-                return VisitResult.Abort;
-            }
-
-            var lclAddr = comp.gtCallGetDefinedRetBufLclAddr(call);
-
-            if (lclAddr is not null)
-            {
-                return visitor(lclAddr);
-            }
-        }
-
-        return VisitResult.Continue;
     }
 
     // Visits each operand of this node. The operand must be either a lambda, function, or functor with the signature

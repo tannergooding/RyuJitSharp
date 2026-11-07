@@ -32,11 +32,6 @@ public sealed partial class CodeGen
             Emitter.RequireSupportedInstructionRecording();
         }
         var useThrowHelperBlocks = _compiler.fgUseThrowHelperBlocks();
-        if (Configuration.UNIX_X86_ABI)
-        {
-            // Funclets must throw inline so their frames can be unwound.
-            useThrowHelperBlocks = useThrowHelperBlocks && (_compiler.funCurrentFunc().funKind == FuncKind.FUNC_ROOT);
-        }
         if (useThrowHelperBlocks)
         {
             assert(_compiler.compCurBB is not null);

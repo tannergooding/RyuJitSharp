@@ -546,7 +546,7 @@ internal static unsafe class LocalMorphTests
     }
 
     [Test]
-    public static void VolatileIndirectionsRetainTheNativeDereferencedFieldQuirk()
+    public static void VolatileIndirectionsAlwaysRetainTheIndirection()
     {
         WithCompiler(compiler => {
             InitializePromotedPair(compiler);
@@ -560,8 +560,9 @@ internal static unsafe class LocalMorphTests
             Assert.That(tree.AsIndir().Addr, Is.SameAs(address));
 
             address.Flags |= GTF_FLD_DEREFERENCED;
-            Assert.That(visitor.MorphStructField(ref tree, user: null), Is.True);
-            Assert.That(tree.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(visitor.MorphStructField(ref tree, user: null), Is.False);
+            Assert.That(tree, Is.SameAs(original));
+            Assert.That(tree.AsIndir().Addr, Is.SameAs(address));
         });
     }
 

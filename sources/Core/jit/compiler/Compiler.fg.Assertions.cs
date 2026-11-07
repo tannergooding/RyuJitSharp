@@ -7,6 +7,15 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private struct AssertionKillDefVisitor(Compiler compiler, GenTree tree) : ILocalDefVisitor
+    {
+        public readonly GenTree.VisitResult Visit<TDef>(TDef def) where TDef : struct, ILocalDef
+        {
+            compiler.fgKillDependentAssertions(def.LclNum, tree);
+            return GenTree.VisitResult.Continue;
+        }
+    }
+
     public unsafe void fgAssertionGen(GenTree tree)
     {
         assert(optLocalAssertionProp);
@@ -125,10 +134,8 @@ public partial class Compiler
 
         if (optAssertionCount > 0)
         {
-            _ = tree.VisitPhysicalLocalDefNodes(this, def => {
-                fgKillDependentAssertions(def.AsLclVarCommon().LclNum, tree);
-                return GenTree.VisitResult.Continue;
-            });
+            var visitor = new AssertionKillDefVisitor(this, tree);
+            _ = tree.VisitLogicalLocalDefs(this, ref visitor);
         }
 
         fgAssertionGen(tree);

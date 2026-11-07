@@ -68,11 +68,6 @@ public partial class Compiler
             call._callSig = default;
         }
         call.ClearInlineInfo();
-        if (Configuration.UNIX_X86_ABI)
-        {
-            call.Flags |= GTF_CALL_POP_ARGS;
-        }
-
         if (Configuration.FEATURE_READYTORUN)
         {
             call._entryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };

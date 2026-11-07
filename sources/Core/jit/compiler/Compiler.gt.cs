@@ -77,7 +77,7 @@ public partial class Compiler
 
     public GenTreeLclVarCommon? gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall call)
     {
-        if (!call.IsAsync)
+        if (!call.IsAsync || !call.GetAsyncInfo().DefinesResumedIndicator)
         {
             return null;
         }
@@ -8506,11 +8506,6 @@ public partial class Compiler
         node._inlineContext = compInlineContext;
         node.Flags |= (GTF_CALL | GTF_GLOB_REF);
 
-        if (Configuration.UNIX_X86_ABI && (callType is CT_INDIRECT or CT_HELPER))
-        {
-            node.Flags |= GTF_CALL_POP_ARGS;
-        }
-
         node.ClearInlineInfo();
 
         if (node.CallExceptions() != ExceptionSetFlags.None)
@@ -9034,7 +9029,13 @@ public partial class Compiler
 
     public GenTreeLclFld gtNewLclFldNode(var_types type, int lclNum, ushort lclOffs, ClassLayout? layout = null)
     {
-        return new GenTreeLclFld(GT_LCL_FLD, type, lclNum, lclOffs, layout);
+        var local = new GenTreeLclFld(GT_LCL_FLD, type, lclNum, lclOffs, layout);
+        if (lvaGetDesc(lclNum).RequiresGlobRefFlag)
+        {
+            local.Flags |= GTF_GLOB_REF;
+        }
+
+        return local;
     }
 
     public GenTreeLclVar gtNewLclVarNode(var_types type, int lclNum)
@@ -9053,7 +9054,7 @@ public partial class Compiler
 
         var lclVar = gtNewLclvNode(type, lclNum);
 
-        if (varDsc.IsAddressExposed)
+        if (varDsc.RequiresGlobRefFlag)
         {
             lclVar.Flags |= GTF_GLOB_REF;
         }
@@ -13498,7 +13499,7 @@ public partial class Compiler
         {
             storeLclFld.Flags |= GTF_VAR_USEASG;
         }
-        if (lvaGetDesc(lclNum).IsAddressExposed)
+        if (lvaGetDesc(lclNum).RequiresGlobRefFlag)
         {
             storeLclFld.Flags |= GTF_GLOB_REF;
         }
@@ -13529,7 +13530,7 @@ public partial class Compiler
         var store = new GenTreeLclVar(type, lclNum, value);
         store.Flags |= (GTF_VAR_DEF | GTF_ASG);
 
-        if (varDsc.IsAddressExposed)
+        if (varDsc.RequiresGlobRefFlag)
         {
             store.Flags |= GTF_GLOB_REF;
         }
@@ -13877,11 +13878,6 @@ public partial class Compiler
             _callMethHnd = eeFindHelper(helper),
         };
         call.ClearInlineInfo();
-
-        if (Configuration.UNIX_X86_ABI)
-        {
-            call.Flags |= GTF_CALL_POP_ARGS;
-        }
 
         if (Configuration.DEBUG)
         {

@@ -48,9 +48,6 @@
     <RyuJitTargetIsApple Condition="$(RyuJitTestTargetRuntimeIdentifier.StartsWith('osx-')) or $(RyuJitTestTargetRuntimeIdentifier.StartsWith('ios-')) or $(RyuJitTestTargetRuntimeIdentifier.StartsWith('tvos-')) or $(RyuJitTestTargetRuntimeIdentifier.StartsWith('maccatalyst-'))">true</RyuJitTargetIsApple>
     <RyuJitTargetOSRuntimeDetermined Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetOSRuntimeDetermined>
     <RyuJitUnixOSRuntimeDetermined Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitUnixOSRuntimeDetermined>
-    <RyuJitUnixX86Abi Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitUnixX86Abi>
-    <RyuJitUnixX86Abi Condition="$(RyuJitTestTargetRuntimeIdentifier.StartsWith('linux-')) and $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-x86'))">true</RyuJitUnixX86Abi>
-    <RyuJitUnixX86Abi Condition="'$(RyuJitUnixX86Abi)' == ''">false</RyuJitUnixX86Abi>
     <RyuJitFeatureSimd Condition="'$(RyuJitTargetIsXarch)' == 'true' or '$(RyuJitTargetIsArm64)' == 'true' or '$(RyuJitTargetIsWasm)' == 'true'">true</RyuJitFeatureSimd>
     <RyuJitFeatureSimd Condition="'$(RyuJitFeatureSimd)' == ''">false</RyuJitFeatureSimd>
     <RyuJitFeatureHwIntrinsics Condition="'$(RyuJitTargetIsXarch)' == 'true' or '$(RyuJitTargetIsArm64)' == 'true' or '$(RyuJitTargetIsWasm)' == 'true'">true</RyuJitFeatureHwIntrinsics>
@@ -74,7 +71,12 @@
     <RyuJitFeatureProfilingSupported Condition="'$(RyuJitFeatureProfilingSupported)' == ''">false</RyuJitFeatureProfilingSupported>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArmV6)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsArmArch)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != '' and '$(RyuJitTargetIsWindows)' != '' and '$(RyuJitWindowsAmd64Abi)' != '' and '$(RyuJitTargetIsUnix)' != '' and '$(RyuJitTargetIsApple)' != '' and '$(RyuJitTargetOSRuntimeDetermined)' != '' and '$(RyuJitUnixOSRuntimeDetermined)' != '' and '$(RyuJitFeatureSimd)' != '' and '$(RyuJitFeatureHwIntrinsics)' != '' and '$(RyuJitFeatureMaskedHwIntrinsics)' != '' and '$(RyuJitFeatureLoopAlign)' != '' and '$(RyuJitFeatureMultiRegRet)' != '' and '$(RyuJitFeatureVnDumpFuncArgs)' != '' and '$(RyuJitFeatureArmSoftFp)' != '' and '$(RyuJitUnixX86Abi)' != '' and '$(RyuJitFeatureLateDisasm)' != '' and '$(RyuJitFeatureDisasmDebug)' != '' and '$(RyuJitFeatureProfilingSupported)' != ''">
+  <Target Name="RejectUnsupportedUnixX86TestTarget" BeforeTargets="CoreCompile"
+          Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-x86')) and '$(RyuJitTargetIsUnix)' == 'true'">
+    <Error Text="Unix x86 is no longer a supported RyuJitSharp test target." />
+  </Target>
+
+  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArmV6)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsArmArch)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != '' and '$(RyuJitTargetIsWindows)' != '' and '$(RyuJitWindowsAmd64Abi)' != '' and '$(RyuJitTargetIsUnix)' != '' and '$(RyuJitTargetIsApple)' != '' and '$(RyuJitTargetOSRuntimeDetermined)' != '' and '$(RyuJitUnixOSRuntimeDetermined)' != '' and '$(RyuJitFeatureSimd)' != '' and '$(RyuJitFeatureHwIntrinsics)' != '' and '$(RyuJitFeatureMaskedHwIntrinsics)' != '' and '$(RyuJitFeatureLoopAlign)' != '' and '$(RyuJitFeatureMultiRegRet)' != '' and '$(RyuJitFeatureVnDumpFuncArgs)' != '' and '$(RyuJitFeatureArmSoftFp)' != '' and '$(RyuJitFeatureLateDisasm)' != '' and '$(RyuJitFeatureDisasmDebug)' != '' and '$(RyuJitFeatureProfilingSupported)' != ''">
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HW_INTRINSICS" Value="$(RyuJitFeatureHwIntrinsics)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_MASKED_HW_INTRINSICS" Value="$(RyuJitFeatureMaskedHwIntrinsics)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HAS_ZERO_REG" Value="$(RyuJitFeatureHasZeroReg)" />
@@ -100,7 +102,6 @@
     <RuntimeHostConfigurationOption Include="RyuJitSharp.WINDOWS_AMD64_ABI" Value="$(RyuJitWindowsAmd64Abi)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_OS_RUNTIMEDETERMINED" Value="$(RyuJitTargetOSRuntimeDetermined)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_UNIX_OS_RUNTIMEDETERMINED" Value="$(RyuJitUnixOSRuntimeDetermined)" />
-    <RuntimeHostConfigurationOption Include="RyuJitSharp.UNIX_X86_ABI" Value="$(RyuJitUnixX86Abi)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.LATE_DISASM" Value="$(RyuJitFeatureLateDisasm)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.DISASM_DEBUG" Value="$(RyuJitFeatureDisasmDebug)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.PROFILING_SUPPORTED" Value="$(RyuJitFeatureProfilingSupported)" />

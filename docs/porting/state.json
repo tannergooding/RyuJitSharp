@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "4f4cbe49cc5ef3ecfb4c67ef7aa7057bcf82391b",
-    "targetObservedAt": "2026-11-04",
-    "reconciledCommit": "4f4cbe49cc5ef3ecfb4c67ef7aa7057bcf82391b"
+    "targetCommit": "59e1f8f3a9501c931f6e0dbd41e8956506f3fd44",
+    "targetObservedAt": "2026-11-07",
+    "reconciledCommit": "59e1f8f3a9501c931f6e0dbd41e8956506f3fd44"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Obtain or build the native JIT from 4f4cbe49cc5ef3ecfb4c67ef7aa7057bcf82391b before resuming codegen/execution parity; do not use the 032b849d22cbf2eee40f63eb2c6156c2f54846e5 binary for this pin. Preserve dynamicTlsInputBoundary and revisit it only with a reproducible EE allocation sequence or upstream correction. D015 remains accepted. Wasm GC-info emission remains unverified because the managed encoder is AMD64-only. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested.",
+    "nextAction": "Continue phase-dump, codegen, and execution parity verification against reconciled commit 59e1f8f3a9501c931f6e0dbd41e8956506f3fd44. The matched Checked x64 corpus covers 35 methods through Importation completion; 34/35 phase-prefix comparisons are equal, with the sole difference the accepted D015/B322 diagnostic. Preserve dynamicTlsInputBoundary unchanged and revisit only with a reproducible EE allocation sequence or upstream correction. Wasm GC-info emission remains unverified. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested, and keep AMD64 unwind-V3 encoders deferred until the native path is wired.",
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
       "E03: isIntrinsicType now uses a per-Compiler last-handle boolean cache; the pinned repeated-handle profile is under artifacts\\e03-isintrinsictype. Keep primitive mappings and nullable/enum predicates direct pending repeated-handle evidence and complete output/tri-state semantics.",
@@ -1193,6 +1193,18 @@
       ],
       "disposition": "Physical-promotion replacement readback and struct-home state uses dense replacement indexes and bitvectors; planning, CFG predecessor reconciliation, decomposition consumers, and block snapshots are implemented in the listed partials.",
       "sourceCommit": "4f4cbe49cc5ef3ecfb4c67ef7aa7057bcf82391b"
+    },
+    {
+      "area": "outgoing-struct-global-reference",
+      "native": [
+        "src\\coreclr\\jit\\morph.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.fg.Arguments.cs",
+        "tests\\Core\\CallArgumentMorphTests.cs"
+      ],
+      "disposition": "A by-reference outgoing struct temporary is address-exposed before its copy store is constructed and globally morphed, so the store receives GTF_GLOB_REF; by-value copies remain unchanged.",
+      "sourceCommit": "59e1f8f3a9501c931f6e0dbd41e8956506f3fd44"
     }
   ],
   "generatorInputMapping": {
@@ -1204,7 +1216,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "6e83aff28689ff67a7caa5108286786a52d8f256",
-    "reconciledCommit": "4f4cbe49cc5ef3ecfb4c67ef7aa7057bcf82391b",
+    "reconciledCommit": "59e1f8f3a9501c931f6e0dbd41e8956506f3fd44",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

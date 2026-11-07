@@ -305,11 +305,6 @@ public partial class Compiler
             _ = tlsRefCall.Args.PushBack(NewCallArg.CreateForPrimitive(tlsArg));
             _ = fgMorphArgs(tlsRefCall);
             tlsRefCall.Flags |= GTF_EXCEPT | (tlsGetAddr.Flags & GTF_GLOB_EFFECT);
-            if (Configuration.UNIX_X86_ABI)
-            {
-                tlsRefCall.Flags &= ~GTF_CALL_POP_ARGS;
-            }
-
             tlsValue = tlsRefCall;
         }
         else if (TargetOS.IsUnix &&

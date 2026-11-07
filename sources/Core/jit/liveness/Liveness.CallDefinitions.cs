@@ -33,7 +33,7 @@ public partial class Liveness<TLiveness>
             current = use.User();
             if (current.Oper is GT_CALL)
             {
-                return current.VisitPhysicalLocalDefNodes(_compiler, definition =>
+                return current.AsCall().VisitCallLocalDefNodes(_compiler, definition =>
                     ReferenceEquals(node, definition) ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue)
                     is GenTree.VisitResult.Abort;
             }

@@ -67,7 +67,8 @@ internal static unsafe class AllocationLoweringTests
             Assert.That(call.HelperNum, Is.EqualTo(CORINFO_HELP_NEWSFAST));
             Assert.That(call.Args.CountUserArgs(), Is.EqualTo(1));
             Assert.That(call.Args.GetUserArgByIndex(0)?.Node, Is.SameAs(handle));
-            Assert.That(call.Flags, Is.EqualTo(GTF_CALL | GTF_ORDER_SIDEEFF));
+            Assert.That(call.Flags, Is.EqualTo(GTF_CALL | GTF_ORDER_SIDEEFF |
+                (sideEffects ? GTF_GLOB_REF : GTF_EMPTY)));
             Assert.That(call._callMoreFlags.HasFlag(GTF_CALL_M_ALLOC_SIDE_EFFECTS), Is.EqualTo(sideEffects));
             Assert.That(call._vnPair, Is.EqualTo(allocation._vnPair));
             Assert.That(allocation.Oper, Is.EqualTo(GT_ALLOCOBJ));

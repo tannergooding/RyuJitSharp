@@ -259,6 +259,10 @@ public partial class Compiler
             assert(newSsaNum != SsaConfig.RESERVED_SSA_NUM);
             tree.LclNum = newLclNum;
             tree.SsaNum = newSsaNum;
+            if (newLclVarDsc.RequiresGlobRefFlag)
+            {
+                tree.Flags |= GTF_GLOB_REF;
+            }
 
             if (newLclDefVN != lclDefVN)
             {

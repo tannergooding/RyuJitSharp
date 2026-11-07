@@ -39,7 +39,7 @@ public partial class Compiler
 
     public bool fgCanTailCallViaJitHelper(GenTreeCall call)
     {
-        if (!Configuration.TARGET_X86 || Configuration.UNIX_X86_ABI)
+        if (!Configuration.TARGET_X86)
         {
             // Only Windows x86 has the faster JIT-helper mechanism.
             return false;

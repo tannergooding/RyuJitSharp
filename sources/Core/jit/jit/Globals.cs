@@ -62,12 +62,6 @@ public partial class Globals
             FatalJitException.ThrowFatalJitException(FatalJitErrorCode.WhenUNIXAMD64ABIIsEnabledTARGETAMD64MustBeEnabled);
             return;
         }
-
-        if (Configuration.UNIX_X86_ABI && !Configuration.TARGET_X86)
-        {
-            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.WhenUNIXX86ABIIsEnabledTARGETX86MustBeEnabled);
-            return;
-        }
     }
 
     internal static void EnsureClrApiTimingSupported()

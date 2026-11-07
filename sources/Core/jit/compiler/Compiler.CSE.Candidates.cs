@@ -324,6 +324,115 @@ public partial class Compiler
         }
 
         optCSEstop();
+        if (Configuration.TARGET_XARCH)
+        {
+            optValnumCSE_ScreenMemoryUpdates();
+        }
+
         return true;
+    }
+
+    private struct CSEMemoryUpdate
+    {
+        public GenTree Load;
+        public GenTree Op;
+        public int CseIndex;
+
+        public CSEMemoryUpdate(GenTree load, GenTree op, int cseIndex)
+        {
+            Load = load;
+            Op = op;
+            CseIndex = cseIndex;
+        }
+    }
+
+    private unsafe GenTree? optValnumCSE_GetMemoryUpdateOp(treeStmtLst occurrence)
+    {
+        var load = occurrence.tslTree;
+        if ((load.Oper is not GT_IND) || !varTypeIsIntegral(load.Type))
+        {
+            return null;
+        }
+
+        var op = gtFindLink(occurrence.tslStmt, load).parent;
+        var store = (op is not null) ? gtFindLink(occurrence.tslStmt, op).parent : null;
+        if ((store is null) || (store.Oper is not GT_STOREIND) || (store.AsIndir().Data != op))
+        {
+            return null;
+        }
+
+        if (op!.HasOverflowCheckEx)
+        {
+            return null;
+        }
+
+        if ((op.Oper is not (GT_NOT or GT_NEG)) &&
+            (!op.Oper.IsBinary || !op.Oper.IsRmwMemOp ||
+             ((op.AsOp().Op1 != load) && !op.Oper.IsCommutative)))
+        {
+            return null;
+        }
+
+        return GenTree.Compare(store.AsIndir().Addr, load.AsIndir().Addr) ? op : null;
+    }
+
+    private void optValnumCSE_ScreenMemoryUpdates()
+    {
+        assert(optCSEtab is not null);
+        var cseTable = optCSEtab!;
+        var updates = new ArrayStack<CSEMemoryUpdate>();
+
+        for (var index = 0; index < optCSECandidateCount; index++)
+        {
+            var descriptor = cseTable[index];
+            noway_assert(descriptor is not null);
+            for (var occurrence = descriptor.csdTreeList; occurrence is not null;
+                 occurrence = occurrence.tslNext)
+            {
+                var op = optValnumCSE_GetMemoryUpdateOp(occurrence);
+                if (op is not null)
+                {
+                    updates.Push(new CSEMemoryUpdate(occurrence.tslTree, op, occurrence.tslTree._cseNum));
+                    occurrence.tslTree._cseNum = NO_CSE;
+                }
+            }
+        }
+
+        var changed = !updates.Empty();
+        while (changed)
+        {
+            changed = false;
+            foreach (var update in updates.BottomUpOrder())
+            {
+                if (IS_CSE_INDEX(update.Load._cseNum) || !IS_CSE_INDEX(update.Op._cseNum))
+                {
+                    continue;
+                }
+
+                var descriptor = optCSEfindDsc(GET_CSE_INDEX(update.Op._cseNum));
+                for (var occurrence = descriptor.csdTreeList; occurrence is not null;
+                     occurrence = occurrence.tslNext)
+                {
+                    if ((occurrence.tslTree != update.Op) && IS_CSE_INDEX(occurrence.tslTree._cseNum))
+                    {
+                        update.Load._cseNum = checked((sbyte)update.CseIndex);
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (Configuration.DEBUG)
+        {
+            foreach (var update in updates.BottomUpOrder())
+            {
+                if (!IS_CSE_INDEX(update.Load._cseNum))
+                {
+                    JITDUMP($"Removed {FMT_CSE(update.CseIndex)} occurrence [{update.Load.TreeId:D6}]: " +
+                        "source of an in-place memory update\n");
+                }
+            }
+        }
     }
 }

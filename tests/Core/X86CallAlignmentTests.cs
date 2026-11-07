@@ -11,31 +11,10 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class X86CallAlignmentTests
 {
-    [TestCase(0u, 0u)]
-    [TestCase(4u, 12u)]
-    [TestCase(12u, 4u)]
-    [TestCase(16u, 0u)]
-    [TestCase(uint.MaxValue, 1u)]
-    public static void CallAlignmentRetainsUnsignedPadAndStackArgumentSize(uint level, uint expectedPad)
-    {
-        if (!Configuration.TARGET_X86 || !Configuration.UNIX_X86_ABI)
-        {
-            Assert.Ignore("Unsigned call alignment cases require the Unix x86 target.");
-        }
-
-        CallArgs args = default;
-        args.SetStkSizeBytes(4);
-        args.ComputeStackAlignment(level);
-
-        Assert.That(args.GetStkSizeBytes(), Is.EqualTo(4u));
-        Assert.That(args.GetStkAlign(), Is.EqualTo(expectedPad));
-        Assert.That(args.IsStkAlignmentDone, Is.False);
-    }
-
     [Test]
-    public static void WindowsCallAlignmentDoesNotChangeTheStackOrEmitInstructions()
+    public static void WindowsCallCleanupWithoutBiasDoesNotChangeTheStackOrEmitInstructions()
     {
-        if (!Configuration.TARGET_X86 || Configuration.UNIX_X86_ABI)
+        if (!Configuration.TARGET_X86)
         {
             Assert.Ignore("The no-op alignment case requires the Windows x86 target.");
         }
@@ -48,7 +27,6 @@ internal static class X86CallAlignmentTests
             var group = emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
             StackLevel(codeGen) = 12;
 
-            Align(codeGen, call);
             Remove(codeGen, call, 0);
 
             Assert.That(codeGen.getCurrentStackLevel(), Is.EqualTo(12u));
@@ -62,9 +40,6 @@ internal static class X86CallAlignmentTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGinsCnt")]
     private static extern ref int CurrentCount(Emitter emitter);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genAlignStackBeforeCall")]
-    private static extern void Align(CodeGen codeGen, GenTreeCall call);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genRemoveAlignmentAfterCall")]
     private static extern void Remove(CodeGen codeGen, GenTreeCall call, uint bias);

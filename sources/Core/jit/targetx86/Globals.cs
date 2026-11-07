@@ -47,9 +47,9 @@ public partial class Globals
 
     public const int FIRST_ARG_STACK_OFFS_X86 = 2 * REGSIZE_BYTES_X86;
 
-    public static int STACK_ALIGN_X86 => Configuration.UNIX_X86_ABI ? 16 : 4;
+    public const int STACK_ALIGN_X86 = 4;
 
-    public static int STACK_ALIGN_SHIFT_X86 => Configuration.UNIX_X86_ABI ? 4 : 2;
+    public const int STACK_ALIGN_SHIFT_X86 = 2;
 
     public const regNumber REG_FPBASE_X86 = REG_X86_EBP;
 

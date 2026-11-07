@@ -162,11 +162,14 @@ public partial class Compiler
             JITDUMP($"  Remainder is {FMT_BB(remainder.bbNum)}\n");
 
             var debugInfo = call.GetAsyncInfo().CallAsyncDebugInfo.GetRoot();
-            if (!debugInfo.GetParent(out _))
+            if (debugInfo.IsValid)
             {
                 var awaitOffset = debugInfo.Location.Offset;
-                block.bbCodeOffsEnd = awaitOffset + 1;
-                remainder.bbCodeOffs = awaitOffset + 1;
+                var splitOffset = unchecked((int)Math.Min(
+                    Math.Max(unchecked((uint)awaitOffset + 1u), unchecked((uint)block.bbCodeOffs)),
+                    unchecked((uint)remainder.bbCodeOffsEnd)));
+                block.bbCodeOffsEnd = splitOffset;
+                remainder.bbCodeOffs = splitOffset;
             }
 
             if (alwaysSuspends)

@@ -265,7 +265,7 @@ public partial class Compiler
             if (node.Oper.IsCall)
             {
                 var locals = Locals;
-                _ = node.VisitPhysicalLocalDefNodes(_compiler, definition => {
+                _ = node.AsCall().VisitCallLocalDefNodes(_compiler, definition => {
                     assert(definition.Oper.IsAnyLocal);
                     locals.Add(definition);
                     return GenTree.VisitResult.Continue;
@@ -276,7 +276,7 @@ public partial class Compiler
         }
 
         private readonly bool IsDefinedByCall(GenTreeCall call, GenTree node)
-            => call.VisitPhysicalLocalDefNodes(_compiler, definition => node == definition
+            => call.VisitCallLocalDefNodes(_compiler, definition => node == definition
                 ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue) is GenTree.VisitResult.Abort;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)

@@ -58,23 +58,6 @@ public partial class Compiler
         return false;
     }
 
-    public void fgAssignSetVarDef(GenTree tree)
-    {
-        _ = tree.VisitPhysicalLocalDefNodes(this, def => {
-            if (tree.IsEntireLocalDef(this, def.AsLclVarCommon()))
-            {
-                def.Flags |= GTF_VAR_DEF;
-            }
-            else
-            {
-                // A partial definition also uses the value from preceding definitions.
-                def.Flags |= GTF_VAR_DEF | GTF_VAR_USEASG;
-            }
-
-            return GenTree.VisitResult.Continue;
-        });
-    }
-
     public bool FieldsMatchAbi(in LclVarDsc variable, AbiPassingInformation abiInfo)
     {
         if (variable.lvFieldCnt != abiInfo.CountRegsAndStackSlots())

@@ -167,16 +167,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.DEBUG && !Configuration.FEATURE_FIXED_OUT_ARGS)
         {
-            if (Configuration.UNIX_X86_ABI)
-            {
-                assert((unchecked((uint)target.bbTgtStkDepth * sizeof(int)) == genStackLevel - curNestedAlignment) ||
-                    IsFramePointerUsed);
-            }
-            else
-            {
-                assert((unchecked((uint)target.bbTgtStkDepth * sizeof(int)) == genStackLevel) ||
-                    IsFramePointerUsed);
-            }
+            assert((unchecked((uint)target.bbTgtStkDepth * sizeof(int)) == genStackLevel) ||
+                IsFramePointerUsed);
         }
         Emitter.emitIns_J(RyuJitSharp.Emitter.emitJumpKindToIns(jump), target, false, isRemovableJmpCandidate);
     }

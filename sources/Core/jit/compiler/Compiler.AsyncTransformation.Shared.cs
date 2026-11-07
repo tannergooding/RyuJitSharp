@@ -47,6 +47,7 @@ public partial class Compiler
 
                 state.CallBlock.Remove(argument.Node);
                 state.Call.Args.RemoveUnsafe(argument);
+                state.Call.GetAsyncInfo().DefinesResumedIndicator = false;
             }
 
             return common;

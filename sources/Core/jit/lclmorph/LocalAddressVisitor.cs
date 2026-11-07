@@ -96,6 +96,7 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
 
                 if ((resumedDef is not null) && (value.Node == resumedDef.Node))
                 {
+                    call.GetAsyncInfo().DefinesResumedIndicator = true;
                     defSize = (uint)Configuration.TARGET_POINTER_SIZE;
                 }
             }
@@ -547,12 +548,10 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
     internal bool MorphStructField(ref GenTree use, GenTree? user)
     {
         var node = use.AsIndir();
-        var addr = node.Addr;
 
-        if (node.IsVolatile && ((addr.Oper is not GT_FIELD_ADDR) || ((addr.Flags & GTF_FLD_DEREFERENCED) == 0)))
+        if (node.IsVolatile)
         {
-            // TODO-Bug: transforming volatile indirections like this is not legal.
-            // The native FIELD_ADDR exception above is a compatibility quirk.
+            // A volatile indirection must stay an indirection, so the address escapes and the struct gets exposed.
             return false;
         }
 

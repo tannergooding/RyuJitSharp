@@ -105,6 +105,11 @@ public partial class Compiler
             expectedFlags |= GTF_CALL;
         }
 
+        if (fgGlobalMorphDone && tree.RequiresGlobRefFlag(this))
+        {
+            expectedFlags |= GTF_GLOB_REF;
+        }
+
         if ((tree.Flags & GTF_REVERSE_OPS) != 0)
         {
             assert(fgOperSupportsReverseOpEvalOrder(tree));

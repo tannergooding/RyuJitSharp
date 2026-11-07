@@ -14,7 +14,6 @@ public sealed partial class CodeGen
             Emitter.RequireSupportedInstructionRecording();
         }
 
-        genAlignStackBeforeCall(call);
         genCallPlaceRegArgs(call);
 
         var stackArgBytes = 0;
@@ -213,49 +212,11 @@ public sealed partial class CodeGen
         genRemoveAlignmentAfterCall(call, stackAdjustBias);
     }
 
-    private void genAlignStackBeforeCall(GenTreePutArgStk putArgStk)
-    {
-        if (Configuration.UNIX_X86_ABI)
-        {
-            var call = putArgStk.Call;
-            assert(call is not null);
-            genAlignStackBeforeCall(call);
-        }
-    }
-
-    private void genAlignStackBeforeCall(GenTreeCall call)
-    {
-        if (Configuration.UNIX_X86_ABI && !call.Args.IsStkAlignmentDone)
-        {
-            var stackLevel = unchecked(genStackLevel + call.Args.GetStkSizeBytes());
-            call.Args.ComputeStackAlignment(stackLevel);
-            var padding = call.Args.GetStkAlign();
-            if (padding != 0)
-            {
-                inst_RV_IV(INS_sub, REG_X86_ESP, unchecked((nint)padding), EA_PTRSIZE);
-                AddStackLevel(padding);
-                AddNestedAlignment(padding);
-            }
-            call.Args.IsStkAlignmentDone = true;
-        }
-    }
-
     private void genRemoveAlignmentAfterCall(GenTreeCall call, uint bias = 0)
     {
         if (Configuration.TARGET_X86)
         {
-            if (Configuration.UNIX_X86_ABI)
-            {
-                var padding = call.Args.GetStkAlign();
-                var adjustment = unchecked(padding + bias);
-                if (adjustment != 0)
-                {
-                    inst_RV_IV(INS_add, REG_X86_ESP, unchecked((nint)adjustment), EA_PTRSIZE);
-                    SubtractStackLevel(padding);
-                    SubtractNestedAlignment(padding);
-                }
-            }
-            else if (bias != 0)
+            if (bias != 0)
             {
                 if (bias == sizeof(int))
                 {

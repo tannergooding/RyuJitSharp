@@ -443,12 +443,15 @@ public partial class Compiler
         }
 
         call.Args.SetNeedsTemp(argument);
+        if (argument.AbiInfo.IsPassedByReference)
+        {
+            lvaSetVarAddrExposed(temporary, AddressExposedReason.ESCAPE_ADDRESS);
+        }
         var copy = fgMorphCopyBlock(gtNewStoreLclVarNode(temporary, value));
         GenTree argumentNode;
         if (argument.AbiInfo.IsPassedByReference)
         {
             argumentNode = gtNewLclVarAddrNode(TYP_I_IMPL, temporary);
-            lvaSetVarAddrExposed(temporary, AddressExposedReason.ESCAPE_ADDRESS);
         }
         else
         {

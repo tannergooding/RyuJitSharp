@@ -924,6 +924,9 @@ public partial struct LclVarDsc
 
     public readonly bool IsAddressExposed => _addrExposed;
 
+    public readonly bool RequiresGlobRefFlag =>
+        IsAddressExposed || (Compiler.SupportsImplicitByRefs && lvIsLastUseCopyOmissionCandidate);
+
     public regNumber RegNum
     {
         readonly get

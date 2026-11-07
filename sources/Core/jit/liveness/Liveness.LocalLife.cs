@@ -50,7 +50,7 @@ public partial class Liveness<TLiveness>
         }
 
         GenTreeLclVarCommon? partialDef = null;
-        _ = call.VisitPhysicalLocalDefNodes(_compiler, definition => {
+        _ = call.VisitCallLocalDefNodes(_compiler, definition => {
             if ((definition.Flags & GTF_VAR_USEASG) != 0)
             {
                 assert(partialDef is null);

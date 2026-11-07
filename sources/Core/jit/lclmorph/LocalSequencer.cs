@@ -102,7 +102,7 @@ public struct LocalSequencer : IGenTreeVisitor<LocalSequencer>
     public void SequenceCall(GenTreeCall call)
     {
         var sequencer = this;
-        _ = call.VisitPhysicalLocalDefNodes(_compiler, node => {
+        _ = call.VisitCallLocalDefNodes(_compiler, node => {
             sequencer.MoveNodeToEnd(node);
             return GenTree.VisitResult.Continue;
         });

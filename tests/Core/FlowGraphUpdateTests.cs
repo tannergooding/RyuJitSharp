@@ -66,6 +66,31 @@ internal static unsafe class FlowGraphUpdateTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void RemovesLowFanInEmptyBlockBeforeSharedTarget(bool lir)
+    {
+        FlowGraphCleanupTests.WithCompiler(lir ? NodeThreading.LIR : NodeThreading.None, compiler => {
+            compiler.compRationalIRForm = lir;
+            var entry = Block(compiler);
+            var source = Block(compiler);
+            var firstOtherPred = Block(compiler, protect: true);
+            var secondOtherPred = Block(compiler, protect: true);
+            var target = Block(compiler, protect: true);
+            Link(compiler, entry, source, firstOtherPred, secondOtherPred, target);
+            _ = Conditional(compiler, entry, source, firstOtherPred);
+            Jump(compiler, source, target);
+            _ = Conditional(compiler, firstOtherPred, target, secondOtherPred);
+            Jump(compiler, secondOtherPred, target);
+
+            Assert.That(compiler.fgUpdateFlowGraphPhase(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(source.HasFlag(BBF_REMOVED), Is.True);
+            Assert.That(entry.TrueTarget, Is.SameAs(target));
+            Assert.That(target.CountOfInEdges, Is.EqualTo(3));
+            Assert.That(compiler.fgUpdateFlowGraphPhase(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+        });
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]

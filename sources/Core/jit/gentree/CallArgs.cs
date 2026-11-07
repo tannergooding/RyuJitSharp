@@ -471,9 +471,7 @@ public partial struct CallArgs
         assert((_head is null) && (_lateHead is null));
         _argsStackSize = other._argsStackSize;
 
-        _flags = Configuration.UNIX_X86_ABI
-            ? other._flags & ~Flags.AlignmentDone
-            : other._flags;
+        _flags = other._flags;
 
 #nullable disable
         ref var tail = ref _head;

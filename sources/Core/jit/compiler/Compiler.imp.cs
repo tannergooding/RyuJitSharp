@@ -1289,7 +1289,7 @@ public partial class Compiler
         {
             var fieldAddr = addr.AsFieldAddr();
 
-            if (fieldAddr.IsInstance && (fieldAddr.FldObj.Oper is GT_LCL_ADDR))
+            if (!indir.IsVolatile && fieldAddr.IsInstance && (fieldAddr.FldObj.Oper is GT_LCL_ADDR))
             {
                 indir.Flags &= ~GTF_GLOB_REF;
 
@@ -12009,11 +12009,6 @@ public partial class Compiler
         var call = gtNewIndCallNode(callRetTyp, fptr, di);
 
         call.Flags |= fptr.Flags & GTF_ALL_EFFECT;
-        if (Configuration.UNIX_X86_ABI)
-        {
-            call.Flags &= ~GTF_CALL_POP_ARGS;
-        }
-
         return call;
     }
 
@@ -19365,8 +19360,8 @@ public partial class Compiler
 
                 ref var args = ref call.Args;
 
-                // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
-                if (!Configuration.TARGET_ARM && (TargetOS.IsWindows || compUnixX86Abi()) && call.IsUnmanaged)
+                // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
+                if (!Configuration.TARGET_ARM && TargetOS.IsWindows && call.IsUnmanaged)
                 {
                     if (callConvIsInstanceMethodCallConv(call.UnmanagedCallConv))
                     {

@@ -7,8 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private uint curNestedAlignment { get; set; }
-
     public BasicBlock genCreateTempLabel()
     {
         if (Configuration.DEBUG)
@@ -29,14 +27,7 @@ public sealed partial class CodeGen
         block.CopyFlags(_compiler.compCurBB, BBF_COLD);
         if (Configuration.DEBUG)
         {
-            if (Configuration.UNIX_X86_ABI)
-            {
-                block.bbTgtStkDepth = unchecked((int)((genStackLevel - curNestedAlignment) / sizeof(int)));
-            }
-            else
-            {
-                block.bbTgtStkDepth = unchecked((int)(genStackLevel / sizeof(int)));
-            }
+            block.bbTgtStkDepth = unchecked((int)(genStackLevel / sizeof(int)));
         }
         return block;
     }

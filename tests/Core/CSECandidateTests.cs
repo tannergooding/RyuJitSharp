@@ -26,6 +26,9 @@ internal static unsafe class CSECandidateTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optCSEstop")]
     private static extern void Stop(Compiler compiler);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optValnumCSE_ScreenMemoryUpdates")]
+    private static extern void ScreenMemoryUpdates(Compiler compiler);
+
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "Encode_Shared_Const_CSE_Value")]
     private static extern nuint EncodeSharedCseConstant(Compiler? _, nuint key);
 
@@ -501,6 +504,54 @@ internal static unsafe class CSECandidateTests
                 Assert.That(descriptor.csdTreeList.tslTree, Is.SameAs(first));
                 Assert.That(descriptor.csdTreeLast.tslTree, Is.SameAs(second));
             });
+        });
+    }
+
+    [TestCase(false, 0)]
+    [TestCase(true, 1)]
+    public static void ScreensMemoryUpdateLoadsUnlessTheOperationHasAnotherCseOccurrence(
+        bool operationHasAnotherOccurrence, int expectedLoadCseIndex)
+    {
+        Assume.That(Configuration.TARGET_XARCH, Is.True);
+
+        WithCompiler(compiler => {
+            var block = BasicBlock.New(compiler, BBJ_RETURN);
+            var loadAddress = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0x1234);
+            var load = compiler.gtNewIndir(TYP_INT, loadAddress);
+            var operation = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, load, compiler.gtNewIconNode(TYP_INT, 1));
+            var store = compiler.gtNewStoreValueNode(TYP_INT,
+                compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0x1234), operation);
+            var statement = compiler.gtNewStmt(store);
+            load._cseNum = 1;
+            var loadDescriptor = new CSEdsc(load, statement, block)
+            {
+                csdIndex = 1,
+            };
+
+            if (operationHasAnotherOccurrence)
+            {
+                var otherOperation = compiler.gtNewBinaryNode(GT_ADD,
+                    TYP_INT, compiler.gtNewIconNode(TYP_INT, 2), compiler.gtNewIconNode(TYP_INT, 3));
+                var otherStatement = compiler.gtNewStmt(otherOperation);
+                operation._cseNum = -2;
+                otherOperation._cseNum = 2;
+                var operationDescriptor = new CSEdsc(operation, statement, block)
+                {
+                    csdIndex = 2,
+                };
+                operationDescriptor.csdTreeLast.tslNext = new treeStmtLst(otherOperation, otherStatement, block);
+                Table(compiler) = [loadDescriptor, operationDescriptor];
+                CandidateCount(compiler) = 2;
+            }
+            else
+            {
+                Table(compiler) = [loadDescriptor];
+                CandidateCount(compiler) = 1;
+            }
+
+            ScreenMemoryUpdates(compiler);
+
+            Assert.That(load._cseNum, Is.EqualTo(expectedLoadCseIndex));
         });
     }
 

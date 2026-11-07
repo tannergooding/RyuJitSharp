@@ -155,10 +155,6 @@ public sealed partial class CodeGen
             // The x86 helper consumes its pushed handle and preserves all registers.
             // Keep the caller's tracked stack level unchanged across the naked helper.
             var savedStackLevel = genStackLevel;
-            if (Configuration.UNIX_X86_ABI)
-            {
-                Emitter.emitIns_R_I(INS_sub, EA_4BYTE, TargetRuntimeMetadata.StackPointerBaseRegister, 0xC);
-            }
             if (_compiler.compProfilerMethHndIndirected)
             {
                 Emitter.emitIns_AR_R(INS_push, EA_PTRSIZE | EA_DSP_RELOC_FLG, REG_NA, REG_NA,
@@ -170,10 +166,6 @@ public sealed partial class CodeGen
             }
 
             genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
-            if (Configuration.UNIX_X86_ABI)
-            {
-                Emitter.emitIns_R_I(INS_add, EA_4BYTE, TargetRuntimeMetadata.StackPointerBaseRegister, 0x10);
-            }
             SetStackLevel(savedStackLevel);
             return;
         }

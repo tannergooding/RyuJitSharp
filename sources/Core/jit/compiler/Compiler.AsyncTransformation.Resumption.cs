@@ -90,6 +90,7 @@ public partial class Compiler
             StoreResumedDef(definition, resumeBlock);
             callBlock.Remove(definition);
             call.Args.RemoveUnsafe(argument);
+            call.GetAsyncInfo().DefinesResumedIndicator = false;
         }
 
         private void StoreResumedDef(GenTreeLclVarCommon definition, BasicBlock block)

@@ -41,11 +41,6 @@ internal static unsafe class CodeGenSharedGenerationTests
             {
                 Assert.That(codeGen.HasTailCalls, Is.False);
             }
-            if (Configuration.UNIX_X86_ABI)
-            {
-                Assert.That(CurrentNestedAlignment(codeGen), Is.EqualTo(0u));
-                Assert.That(MaximumNestedAlignment(codeGen), Is.EqualTo(0u));
-            }
             if (Configuration.TARGET_ARM64)
             {
                 Assert.That(codeGen.IsSaveFpLrWithAllCalleeSavedRegisters, Is.False);
@@ -328,11 +323,5 @@ internal static unsafe class CodeGenSharedGenerationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_stkArgVarNum")]
     private static extern ref int StackArgumentVariable(CodeGen codeGen);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_curNestedAlignment")]
-    private static extern uint CurrentNestedAlignment(CodeGen codeGen);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "maxNestedAlignment")]
-    private static extern ref uint MaximumNestedAlignment(CodeGen codeGen);
 
 }

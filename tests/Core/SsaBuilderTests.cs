@@ -240,7 +240,7 @@ internal static class SsaBuilderTests
             var builder = new SsaBuilder(compiler);
             var store = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 1));
 
-            RenamePushMemoryDef(builder, store, first);
+            RenamePushLocalMemoryDef(builder, store, first);
 
             Assert.That(handler.bbMemorySsaPhiFunc[0]!.SsaNum, Is.EqualTo(1));
             Assert.That(handler.bbMemorySsaPhiFunc[1], Is.SameAs(BasicBlock.EmptyMemoryPhiDef));
@@ -541,6 +541,9 @@ internal static class SsaBuilderTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RenamePushMemoryDef")]
     private static extern void RenamePushMemoryDef(SsaBuilder builder, GenTree node, BasicBlock block);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RenamePushLocalMemoryDef")]
+    private static extern void RenamePushLocalMemoryDef(SsaBuilder builder, GenTree node, BasicBlock block);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RenamePushDef")]
     private static extern int RenamePushDef(SsaBuilder builder, GenTree node, BasicBlock block, int lclNum, bool isFullDef);

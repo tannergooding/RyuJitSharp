@@ -27,6 +27,8 @@ public struct AsyncCallInfo
     /// <summary>Tail awaits do not generate suspension points and the JIT instead directly returns the callee's continuation to the caller.</summary>
     public bool IsTailAwait;
 
+    public bool DefinesResumedIndicator;
+
     /// <summary>Whether this async helper always suspends, allowing the caller to skip a null-continuation check.</summary>
     public bool AlwaysSuspends;
 

@@ -61,6 +61,7 @@ internal static unsafe class LivenessCallDefinitionTests
             var address = Address(compiler);
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             call.SetIsAsync(default);
+            call.GetAsyncInfo().DefinesResumedIndicator = true;
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
             var block = Block(address, call);
 

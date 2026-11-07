@@ -35,8 +35,7 @@ internal static class FeatureConfigurationTests
     public static void TargetFrameConfigurationMatchesTheRuntimeTarget()
     {
         var expectedPointerSize = Configuration.TARGET_64BIT ? 8 : 4;
-        var expectedStackAlignment = Configuration.TARGET_ARM ? 8 :
-            Configuration.TARGET_X86 ? (Configuration.UNIX_X86_ABI ? 16 : 4) : 16;
+        var expectedStackAlignment = Configuration.TARGET_ARM ? 8 : Configuration.TARGET_X86 ? 4 : 16;
 
         Assert.That(Configuration.TARGET_POINTER_SIZE, Is.EqualTo(expectedPointerSize));
         Assert.That(Configuration.REGSIZE_BYTES, Is.EqualTo(expectedPointerSize));

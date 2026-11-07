@@ -402,6 +402,7 @@ internal static unsafe class LivenessBackwardLIRTests
             if (async)
             {
                 call.SetIsAsync(default);
+                call.GetAsyncInfo().DefinesResumedIndicator = true;
             }
             else
             {

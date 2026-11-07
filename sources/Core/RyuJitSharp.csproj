@@ -64,6 +64,11 @@
            Text="VERIFY_GC_TABLES requires the Debug configuration." />
   </Target>
 
+  <Target Name="RejectUnsupportedUnixX86Target" BeforeTargets="CoreCompile"
+          Condition="'$(RyuJitTargetArchitecture)' == 'x86' and '$(RyuJitTargetIsUnix)' == 'true'">
+    <Error Text="Unix x86 is no longer a supported RyuJitSharp target." />
+  </Target>
+
   <!-- Extract the OS and architecture from the host runtime identifier -->
 
   <PropertyGroup>
@@ -194,8 +199,7 @@
     <RyuJitConfigMinArgAreaForCall>0</RyuJitConfigMinArgAreaForCall>
     <RyuJitConfigRegNumBits>6</RyuJitConfigRegNumBits>
     <RyuJitConfigFpRegSizeBytes>16</RyuJitConfigFpRegSizeBytes>
-    <RyuJitConfigStackAlign Condition="'$(RyuJitTargetIsUnix)' == 'true'">16</RyuJitConfigStackAlign>
-    <RyuJitConfigStackAlign Condition="'$(RyuJitTargetIsUnix)' != 'true'">4</RyuJitConfigStackAlign>
+    <RyuJitConfigStackAlign>4</RyuJitConfigStackAlign>
     <RyuJitConfigEmitJumpKindCount>18</RyuJitConfigEmitJumpKindCount>
   </PropertyGroup>
 
@@ -436,7 +440,6 @@
     <RyuJitSubstitutionEnabled Include="OSX_ARM64_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'arm64' and '$(RyuJitTargetIsApple)' == 'true'" />
     <RyuJitSubstitutionEnabled Include="UNIX_AMD64_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'" />
     <RyuJitSubstitutionEnabled Include="WINDOWS_AMD64_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' != 'true'" />
-    <RyuJitSubstitutionEnabled Include="UNIX_X86_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'x86' and '$(RyuJitTargetIsUnix)' == 'true'" />
     <RyuJitSubstitutionEnabled Include="CONFIGURABLE_ARM_ABI"
                                Condition="'$(RyuJitTargetIsArm)' == 'true' and ('$(RyuJitTargetOS)' == 'anyos' or '$(RyuJitTargetOS)' == 'unix')" />
 
@@ -853,7 +856,6 @@
     <RyuJitSubstitution Include="OSX_ARM64_ABI" />
     <RyuJitSubstitution Include="UNIX_AMD64_ABI" />
     <RyuJitSubstitution Include="WINDOWS_AMD64_ABI" />
-    <RyuJitSubstitution Include="UNIX_X86_ABI" />
     <RyuJitSubstitution Include="ALIGN_SIMD_TYPES" />
     <RyuJitSubstitution Include="CPU_HAS_BYTE_REGS" />
     <RyuJitSubstitution Include="CPU_LOAD_STORE_ARCH" />

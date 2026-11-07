@@ -186,6 +186,7 @@ public enum API_ICorJitInfo_Names
     API_allocPgoInstrumentationBySchema,
     API_recordCallSite,
     API_recordWasmManagedCallSig,
+    API_recordWasmVirtualFunctionPointerLookup,
     API_recordRelocation,
     API_getRelocTypeHint,
     API_getExpectedTargetArchitecture,

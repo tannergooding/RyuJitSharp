@@ -3755,8 +3755,6 @@ public enum FatalJitErrorCode
     TargetBitnessDoesNotMatchTheSelectedArchitecture = 1926,
     /// <summary>When UNIX_AMD64_ABI is enabled, TARGET_AMD64 must be enabled.</summary>
     WhenUNIXAMD64ABIIsEnabledTARGETAMD64MustBeEnabled = 1927,
-    /// <summary>When UNIX_X86_ABI is enabled, TARGET_X86 must be enabled.</summary>
-    WhenUNIXX86ABIIsEnabledTARGETX86MustBeEnabled = 1928,
     /// <summary>IL instruction dumping is only available in Debug builds.</summary>
     ILInstructionDumpingIsOnlyAvailableInDebugBuilds = 1929,
     /// <summary>JitTls scopes are only available in Debug builds.</summary>
@@ -7092,7 +7090,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.ExactlyOneTargetArchitectureMustBeSelected => "Exactly one target architecture must be selected.",
             FatalJitErrorCode.TargetBitnessDoesNotMatchTheSelectedArchitecture => "Target bitness does not match the selected architecture.",
             FatalJitErrorCode.WhenUNIXAMD64ABIIsEnabledTARGETAMD64MustBeEnabled => "When UNIX_AMD64_ABI is enabled, TARGET_AMD64 must be enabled.",
-            FatalJitErrorCode.WhenUNIXX86ABIIsEnabledTARGETX86MustBeEnabled => "When UNIX_X86_ABI is enabled, TARGET_X86 must be enabled.",
             FatalJitErrorCode.ILInstructionDumpingIsOnlyAvailableInDebugBuilds => "IL instruction dumping is only available in Debug builds.",
             FatalJitErrorCode.JitTlsScopesAreOnlyAvailableInDebugBuilds => "JitTls scopes are only available in Debug builds.",
             FatalJitErrorCode.ImporterDebugStateIsOnlyAvailableInDebugBuilds => "Importer debug state is only available in Debug builds.",

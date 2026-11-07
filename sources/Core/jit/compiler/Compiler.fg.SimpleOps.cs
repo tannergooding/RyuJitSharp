@@ -28,6 +28,12 @@ public partial class Compiler
     {
         assert(indirection.Oper.IsIndir);
         var address = indirection.Addr;
+        if ((address.Oper is GT_LCL_VAR or GT_LCL_FLD) &&
+            lvaGetDesc(address.AsLclVarCommon().LclNum).RequiresGlobRefFlag)
+        {
+            address.Flags |= GTF_GLOB_REF;
+        }
+
         if (Configuration.TARGET_ARM && varTypeIsFloating(indirection.Type))
         {
             var effectiveAddress = address.EffectiveVal;

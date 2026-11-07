@@ -17,6 +17,38 @@ namespace RyuJitSharp.Target.UnitTests;
 [NonParallelizable]
 internal static unsafe class WasmCallLoweringTests
 {
+    private static nint s_observedMethodHandle;
+
+    [Test]
+    public static void ReadyToRunVirtualFunctionPointerLookupIsReportedAfterLowering()
+    {
+        WithLowering((compiler, lowering, block) => {
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
+
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.recordWasmVirtualFunctionPointerLookup = &RecordVirtualFunctionPointerLookup;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+
+            var methodHandle = compiler.gtNewIconEmbHndNode(
+                (void*)0x1234, null, GTF_ICON_METHOD_HDL, (void*)0x1234);
+            var call = compiler.gtNewCallNode(TYP_I_IMPL, CT_HELPER,
+                Compiler.eeFindHelper(CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR));
+            var methodArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(methodHandle)
+                .WithWellKnownArg(WellKnownArg.RuntimeMethodHandle));
+            methodArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(compiler,
+                AbiPassingSegment.InRegister(regNumberExtensions.MakeWasmReg(0, WasmValueType.I),
+                    0, TARGET_POINTER_SIZE));
+            block.InsertAtEnd(methodHandle);
+            block.InsertAtEnd(call);
+            s_observedMethodHandle = 0;
+
+            Assert.That(compiler.IsReadyToRun, Is.True);
+            Assert.That(LowerCall(lowering, call), Is.Null);
+            Assert.That(s_observedMethodHandle, Is.EqualTo((nint)0x1234));
+        });
+    }
+
     [TestCase(IAT_VALUE, true)]
     [TestCase(IAT_VALUE, false)]
     [TestCase(IAT_PVALUE, true)]
@@ -207,6 +239,12 @@ internal static unsafe class WasmCallLoweringTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsIntrinsicType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* handle) => 0;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void RecordVirtualFunctionPointerLookup(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method)
+    {
+        s_observedMethodHandle = (nint)method;
+    }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetAlignment(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* handle, byte doubleAlign) => 4;

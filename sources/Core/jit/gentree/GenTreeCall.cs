@@ -296,6 +296,18 @@ public sealed class GenTreeCall : GenTree
 
     public ref CallArgs Args => ref _args;
 
+    public VisitResult VisitCallLocalDefNodes(Compiler compiler, GenTreeVisitorFunc visitor)
+    {
+        var asyncResumedLclAddr = compiler.gtCallGetDefinedAsyncResumedLclAddr(this);
+        if ((asyncResumedLclAddr is not null) && (visitor(asyncResumedLclAddr) is VisitResult.Abort))
+        {
+            return VisitResult.Abort;
+        }
+
+        var retBufLclAddr = compiler.gtCallGetDefinedRetBufLclAddr(this);
+        return (retBufLclAddr is not null) ? visitor(retBufLclAddr) : VisitResult.Continue;
+    }
+
     public static unsafe bool Equals(GenTreeCall c1, GenTreeCall c2)
     {
         assert(c1.Oper == c2.Oper);
@@ -326,7 +338,8 @@ public sealed class GenTreeCall : GenTree
             ref var i2 = ref c2.GetAsyncInfo();
 
             if ((i1.ContinuationContextHandling != i2.ContinuationContextHandling) ||
-                (i1.IsValueTaskAsTask != i2.IsValueTaskAsTask) || (i1.IsTailAwait != i2.IsTailAwait))
+                (i1.IsValueTaskAsTask != i2.IsValueTaskAsTask) || (i1.IsTailAwait != i2.IsTailAwait) ||
+                (i1.DefinesResumedIndicator != i2.DefinesResumedIndicator))
             {
                 return false;
             }

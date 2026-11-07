@@ -263,6 +263,18 @@ public partial class Compiler
 
                 if (fgCanCompactBlock(block))
                 {
+                    var target = block.Target;
+                    if ((target.CountOfInEdges > 1) &&
+                        (block.CountOfInEdges < (target.CountOfInEdges - 1)) &&
+                        !block.HasFlag(BBF_DONT_REMOVE) &&
+                        fgOptimizeEmptyBlock(block))
+                    {
+                        assert(block.HasFlag(BBF_REMOVED));
+                        change = true;
+                        modified = true;
+                        continue;
+                    }
+
                     fgCompactBlock(block);
                     change = true;
                     modified = true;

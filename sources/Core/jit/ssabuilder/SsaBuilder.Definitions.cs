@@ -16,6 +16,7 @@ public sealed partial class SsaBuilder
         private readonly BasicBlock _block;
 
         public bool AnyDefs { get; private set; }
+        public GenTree? LastMemoryDef { get; private set; }
 
         public RenameDefVisitor(SsaBuilder builder, GenTree defNode, BasicBlock block)
         {
@@ -40,6 +41,11 @@ public sealed partial class SsaBuilder
                 def.SetSsaNum(_builder._compiler, ssaNum);
                 assert(!varDsc.IsAddressExposed);
             }
+            else if (varDsc.IsAddressExposed && (localDefNode != LastMemoryDef))
+            {
+                _builder.RenamePushLocalMemoryDef(localDefNode, _block);
+                LastMemoryDef = localDefNode;
+            }
 
             return GenTree.VisitResult.Continue;
         }
@@ -51,14 +57,6 @@ public sealed partial class SsaBuilder
 
         var visitor = new RenameDefVisitor(this, defNode, block);
         _ = defNode.VisitLogicalLocalDefs(_compiler, ref visitor);
-        _ = defNode.VisitPhysicalLocalDefNodes(_compiler, lcl => {
-            if (_compiler.lvaGetDesc(lcl.AsLclVarCommon().LclNum).IsAddressExposed)
-            {
-                RenamePushMemoryDef(lcl, block);
-            }
-
-            return GenTree.VisitResult.Continue;
-        });
 
         if (!visitor.AnyDefs)
         {
@@ -100,53 +98,58 @@ public sealed partial class SsaBuilder
         return ssaNum;
     }
 
+    private void RenamePushLocalMemoryDef(GenTree defNode, BasicBlock block)
+    {
+        var gcHeapAndByrefHavoc = (1 << (int)GcHeap) | (1 << (int)ByrefExposed);
+        if (((block.bbMemoryHavoc & gcHeapAndByrefHavoc) != 0) || !_compiler.ehBlockHasExnFlowDsc(block))
+        {
+            return;
+        }
+
+        _ = RenamePushMemoryDefForKind(defNode, block, ByrefExposed);
+    }
+
     private void RenamePushMemoryDef(GenTree defNode, BasicBlock block)
     {
+        assert(!defNode.Oper.IsAnyLocal);
         if (((block.bbMemoryHavoc & (1 << (int)GcHeap)) != 0) || !_compiler.ehBlockHasExnFlowDsc(block))
         {
             return;
         }
 
         var hasByrefHavoc = (block.bbMemoryHavoc & (1 << (int)ByrefExposed)) != 0;
-        if (defNode.Oper.IsAnyLocal && hasByrefHavoc)
-        {
-            return;
-        }
-
-        var ssaNum = _compiler.AllocMemorySsaNum();
+        var ssaNum = SsaConfig.RESERVED_SSA_NUM;
         if (!hasByrefHavoc)
         {
-            _renameStack.PushMemory(ByrefExposed, block, ssaNum);
-            _compiler.GetMemorySsaMap(ByrefExposed)[defNode] = ssaNum;
-            if (Configuration.DEBUG && _compiler.verboseSsa)
-            {
-                jitprintf("Node ");
-                Compiler.printTreeId(defNode);
-                jitprintf($" (in try block) may define memory; ssa # = {ssaNum}.\n");
-            }
-            AddMemoryDefToEHSuccessorPhis(ByrefExposed, block, ssaNum);
+            ssaNum = RenamePushMemoryDefForKind(defNode, block, ByrefExposed);
         }
 
-        if (!defNode.Oper.IsAnyLocal)
+        if (_compiler.byrefStatesMatchGcHeapStates)
         {
-            if (_compiler.byrefStatesMatchGcHeapStates)
-            {
-                assert(!hasByrefHavoc);
-                assert(_compiler.GetMemorySsaMap(GcHeap)[defNode] == ssaNum);
-                assert(block.bbMemorySsaPhiFunc[(int)GcHeap] == block.bbMemorySsaPhiFunc[(int)ByrefExposed]);
-            }
-            else
-            {
-                if (!hasByrefHavoc)
-                {
-                    ssaNum = _compiler.AllocMemorySsaNum();
-                }
-
-                _renameStack.PushMemory(GcHeap, block, ssaNum);
-                _compiler.GetMemorySsaMap(GcHeap)[defNode] = ssaNum;
-                AddMemoryDefToEHSuccessorPhis(GcHeap, block, ssaNum);
-            }
+            assert(!hasByrefHavoc);
+            assert(_compiler.GetMemorySsaMap(GcHeap)[defNode] == ssaNum);
+            assert(block.bbMemorySsaPhiFunc[(int)GcHeap] == block.bbMemorySsaPhiFunc[(int)ByrefExposed]);
         }
+        else
+        {
+            _ = RenamePushMemoryDefForKind(defNode, block, GcHeap);
+        }
+    }
+
+    private int RenamePushMemoryDefForKind(GenTree defNode, BasicBlock block, MemoryKind memoryKind)
+    {
+        var ssaNum = _compiler.AllocMemorySsaNum();
+        _renameStack.PushMemory(memoryKind, block, ssaNum);
+        _compiler.GetMemorySsaMap(memoryKind)[defNode] = ssaNum;
+        if ((memoryKind is ByrefExposed) && Configuration.DEBUG && _compiler.verboseSsa)
+        {
+            jitprintf("Node ");
+            Compiler.printTreeId(defNode);
+            jitprintf($" (in try block) may define memory; ssa # = {ssaNum}.\n");
+        }
+
+        AddMemoryDefToEHSuccessorPhis(memoryKind, block, ssaNum);
+        return ssaNum;
     }
 
     private void RenameLclUse(GenTreeLclVarCommon lclNode, BasicBlock block)

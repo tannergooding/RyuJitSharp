@@ -90,7 +90,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
                 return;
             }
 
-            Flags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
+            Flags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL | GTF_GLOB_REF);
             _methodHandle = value;
         }
     }

@@ -44,7 +44,7 @@ internal static unsafe class AbiHeaderTests
     [Test]
     public static void JitEeVersionIdentifierMatchesTheNativeContract()
     {
-        Assert.That(JITEEVersionIdentifier, Is.EqualTo(new Guid("6FE71AB2-CEDB-4F39-815D-2EAFF70271FF")));
+        Assert.That(JITEEVersionIdentifier, Is.EqualTo(new Guid("01882B0B-A86E-434D-9F0E-DF84F3032062")));
     }
 
     [Test]
@@ -66,10 +66,10 @@ internal static unsafe class AbiHeaderTests
     public static void JitEeVersionIdentifierMatchesThePinnedNativeContract()
     {
         Assert.That(JITEEVersionIdentifier, Is.EqualTo(new Guid(
-            0x6FE71AB2,
-            0xCEDB,
-            0x4F39,
-            0x81, 0x5D, 0x2E, 0xAF, 0xF7, 0x02, 0x71, 0xFF)));
+            0x01882B0B,
+            0xA86E,
+            0x434D,
+            0x9F, 0x0E, 0xDF, 0x84, 0xF3, 0x03, 0x20, 0x62)));
     }
 
     [TestCase(0)]

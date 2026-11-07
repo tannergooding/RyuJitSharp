@@ -9,7 +9,7 @@ public partial class Compiler
 {
     public bool isSIMDTypeLocalAligned(int varNum)
     {
-        if (Configuration.FEATURE_SIMD && Configuration.ALIGN_SIMD_TYPES && !Configuration.UNIX_X86_ABI)
+        if (Configuration.FEATURE_SIMD && Configuration.ALIGN_SIMD_TYPES)
         {
             ref var local = ref lvaGetDesc(varNum);
 

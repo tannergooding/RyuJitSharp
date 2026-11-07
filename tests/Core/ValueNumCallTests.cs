@@ -282,6 +282,7 @@ internal static unsafe class ValueNumCallTests
             var call = new GenTreeCall(TYP_VOID) { _callType = CT_USER_FUNC };
             call._callMoreFlags |= GTF_CALL_M_ASYNC;
             call.GetAsyncInfo().AlwaysSuspends = alwaysSuspends;
+            call.GetAsyncInfo().DefinesResumedIndicator = true;
             var def = compiler.gtNewLclVarAddrNode(TYP_BYREF, 0);
             def.SsaNum = ssa;
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(def)

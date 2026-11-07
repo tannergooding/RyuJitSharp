@@ -127,7 +127,7 @@ public partial class Liveness<TLiveness>
                     }
                 }
 
-                _ = call.VisitPhysicalLocalDefNodes(_compiler, local => {
+                _ = call.VisitCallLocalDefNodes(_compiler, local => {
                     MarkUseDef(local.AsLclVarCommon());
                     return GenTree.VisitResult.Continue;
                 });

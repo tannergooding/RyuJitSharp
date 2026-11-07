@@ -162,6 +162,8 @@ internal static unsafe class BooleanOptimizationTests
             var second = NewBlock(compiler, BBJ_COND);
             var matched = NewBlock(compiler, BBJ_RETURN);
             var unmatched = NewBlock(compiler, BBJ_RETURN);
+            first.setBBProfileWeight(100);
+            second.setBBProfileWeight(25);
             first.Next = second;
             second.Next = matched;
             matched.Next = unmatched;
@@ -197,6 +199,7 @@ internal static unsafe class BooleanOptimizationTests
             Assert.That(first.LastStmt?.RootNode.AsUnOp().Op1.CostEx, Is.LessThanOrEqualTo(7));
             Assert.That(second.LastStmt?.RootNode.AsUnOp().Op1.CostEx, Is.LessThanOrEqualTo(7));
             Assert.That(method.Invoke(descriptor, null), Is.EqualTo(true));
+            Assert.That(second.bbWeight, Is.EqualTo(first.bbWeight));
             Assert.That(first.Kind, Is.EqualTo(BBJ_COND));
             var jump = first.LastStmt?.RootNode.AsUnOp().Op1.AsOp();
             Assert.That(jump?.Oper, Is.EqualTo(GT_NE));

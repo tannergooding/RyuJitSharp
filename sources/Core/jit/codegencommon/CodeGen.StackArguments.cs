@@ -16,8 +16,6 @@ public sealed partial class CodeGen
             assert(targetType != TYP_LONG);
             assert((putArgStk.StackByteSize % Configuration.TARGET_POINTER_SIZE) == 0);
 
-            genAlignStackBeforeCall(putArgStk);
-
             if (data.Oper is GT_FIELD_LIST)
             {
                 genPutArgStkFieldList(putArgStk);

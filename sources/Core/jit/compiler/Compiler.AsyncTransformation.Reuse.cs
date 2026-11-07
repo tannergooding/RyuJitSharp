@@ -219,6 +219,7 @@ public partial class Compiler
 
         private static void HandleReusedSuspension(BasicBlock block, GenTreeCall call)
         {
+            call.GetAsyncInfo().DefinesResumedIndicator = false;
             WellKnownArg[] kinds = [
                 WellKnownArg.AsyncAwaiter,
                 WellKnownArg.AsyncResumedUse,

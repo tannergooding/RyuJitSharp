@@ -79,7 +79,7 @@ public sealed partial class Lowering
         {
             var frameAddress = compiler.gtNewLclVarAddrNode(TYP_BYREF, compiler.lvaInlinedPInvokeFrameVar);
             GenTreeCall helper;
-            if (Configuration.TARGET_X86 && !Configuration.UNIX_X86_ABI)
+            if (Configuration.TARGET_X86)
             {
                 var stackBytes = compiler.gtNewIconNode(TYP_INT, call.Args.OutgoingArgsStackSize);
                 helper = compiler.gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_PINVOKE_BEGIN,

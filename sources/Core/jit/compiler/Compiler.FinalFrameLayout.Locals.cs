@@ -774,13 +774,6 @@ public partial class Compiler
                 }
 
                 var adjustFrameSize = compLclFrameSize;
-                if (Configuration.UNIX_X86_ABI)
-                {
-                    var isEbpPushed = lvaDoubleAlignOrFramePointerUsed();
-                    var adjustCount = compCalleeRegsPushed + 1 + (isEbpPushed ? 1 : 0);
-                    adjustFrameSize += (adjustCount * Configuration.REGSIZE_BYTES) % Configuration.STACK_ALIGN;
-                }
-
                 if ((adjustFrameSize % Configuration.STACK_ALIGN) != 0)
                 {
                     lvaIncrementFrameSize(Configuration.STACK_ALIGN -

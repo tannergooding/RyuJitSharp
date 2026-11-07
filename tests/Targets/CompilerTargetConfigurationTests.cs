@@ -173,7 +173,7 @@ internal static unsafe class CompilerTargetConfigurationTests
     }
 
     [Test]
-    public static void CallPopArgsFlagUsesConfiguredUnixX86Abi()
+    public static void CallPopArgsFlagUsesWindowsX86Conventions()
     {
         WithCompiler(compiler => {
             var helperHandle = Compiler.eeFindHelper(CorInfoHelpFunc.CORINFO_HELP_THROW);
@@ -182,9 +182,9 @@ internal static unsafe class CompilerTargetConfigurationTests
             var source = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             var helperReplacement = compiler.gtNewHelperCallNode(source, CorInfoHelpFunc.CORINFO_HELP_THROW);
 
-            Assert.That(indirectCall.CallerPop, Is.EqualTo(Configuration.UNIX_X86_ABI));
-            Assert.That(helperCall.CallerPop, Is.EqualTo(Configuration.UNIX_X86_ABI));
-            Assert.That(helperReplacement.CallerPop, Is.EqualTo(Configuration.UNIX_X86_ABI));
+            Assert.That(indirectCall.CallerPop, Is.False);
+            Assert.That(helperCall.CallerPop, Is.False);
+            Assert.That(helperReplacement.CallerPop, Is.False);
         });
     }
 

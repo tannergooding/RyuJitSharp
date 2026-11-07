@@ -906,11 +906,15 @@ internal static unsafe class ImporterEffectsTests
         });
     }
 
-    [TestCase(false, false)]
-    [TestCase(false, true)]
-    [TestCase(true, false)]
-    [TestCase(true, true)]
-    public static void LocalFieldAnnotationPreservesStoredGlobalReads(bool store, bool globalRead)
+    [TestCase(false, false, false)]
+    [TestCase(false, false, true)]
+    [TestCase(false, true, false)]
+    [TestCase(false, true, true)]
+    [TestCase(true, false, false)]
+    [TestCase(true, false, true)]
+    [TestCase(true, true, false)]
+    [TestCase(true, true, true)]
+    public static void LocalFieldAnnotationPreservesVolatileAndStoredGlobalReads(bool store, bool globalRead, bool isVolatile)
     {
         WithCompiler(compiler => {
             var address = new GenTreeFieldAddr(var_types.TYP_BYREF,
@@ -921,11 +925,16 @@ internal static unsafe class ImporterEffectsTests
             var indir = store
                 ? compiler.gtNewStoreIndNode(var_types.TYP_INT, address, value)
                 : compiler.gtNewIndir(var_types.TYP_INT, address);
+            if (isVolatile)
+            {
+                indir.Flags |= GenTreeFlags.GTF_IND_VOLATILE;
+            }
 
             compiler.impAnnotateFieldIndir(indir);
 
             Assert.Multiple(() => {
-                Assert.That((indir.Flags & GenTreeFlags.GTF_GLOB_REF) != 0, Is.EqualTo(store && globalRead));
+                Assert.That((indir.Flags & GenTreeFlags.GTF_GLOB_REF) != 0,
+                    Is.EqualTo(isVolatile || (store && globalRead)));
                 Assert.That((address.Flags & GenTreeFlags.GTF_FLD_DEREFERENCED) != 0, Is.True);
             });
         });

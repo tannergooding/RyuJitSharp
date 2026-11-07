@@ -37,7 +37,7 @@ public partial class GenTree
             case GT_STORE_LCL_VAR:
             case GT_STORE_LCL_FLD:
             {
-                return compiler.lvaGetDesc(AsLclVarCommon().LclNum).IsAddressExposed;
+                return compiler.lvaGetDesc(AsLclVarCommon().LclNum).RequiresGlobRefFlag;
             }
             case GT_IND:
             case GT_BLK:
@@ -80,7 +80,7 @@ public partial class GenTree
             }
             default:
             {
-                assert(!RequiresCallFlag(compiler) || (Oper is GT_INTRINSIC));
+                assert(!RequiresCallFlag(compiler) || (Oper is GT_INTRINSIC or GT_LSH or GT_RSH or GT_RSZ));
                 assert((!Oper.IsIndir || (Oper is GT_NULLCHECK)) && !RequiresAsgFlag);
                 return false;
             }

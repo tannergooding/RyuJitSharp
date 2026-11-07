@@ -583,7 +583,7 @@ internal static unsafe class UseEdgeIteratorTests
             var result = store.VisitLogicalLocalDefs(compiler, ref visitor);
             Assert.That(visitor.Locals, Is.EqualTo(expected));
             Assert.That(result, Is.EqualTo(abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue));
-            Assert.That(store.HasAnyLocalDefs(compiler), Is.True);
+            Assert.That(store.HasAnyLocalDefs(compiler), Is.EqualTo(expected.Length != 0));
 
             foreach (var entry in visitor.Definitions)
             {
@@ -644,6 +644,7 @@ internal static unsafe class UseEdgeIteratorTests
             var resumed = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 8);
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             call.SetIsAsync(default);
+            call.GetAsyncInfo().DefinesResumedIndicator = true;
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(resumed).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
             var visitor = new DefinitionVisitor(compiler, abort);
             Assert.That(call.VisitLogicalLocalDefs(compiler, ref visitor), Is.EqualTo(abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue));
@@ -655,7 +656,6 @@ internal static unsafe class UseEdgeIteratorTests
             Assert.That(def.Entire, Is.False);
             Assert.That(def.Offset, Is.EqualTo(8));
             Assert.That(def.Size, Is.EqualTo(Globals.TARGET_POINTER_SIZE));
-            Assert.That(call.IsEntireLocalDef(compiler, resumed), Is.False);
         });
     }
 
@@ -698,6 +698,7 @@ internal static unsafe class UseEdgeIteratorTests
             var read = compiler.gtNewLclvNode(TYP_INT, 2);
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             call.SetIsAsync(default);
+            call.GetAsyncInfo().DefinesResumedIndicator = true;
 
             if (retBuffer)
             {
@@ -709,7 +710,7 @@ internal static unsafe class UseEdgeIteratorTests
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(read));
 
             List<GenTree> definitions = [];
-            var result = call.VisitPhysicalLocalDefNodes(compiler, node => {
+            var result = call.VisitCallLocalDefNodes(compiler, node => {
                 definitions.Add(node);
                 return abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue;
             });
