@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "59e1f8f3a9501c931f6e0dbd41e8956506f3fd44",
-    "targetObservedAt": "2026-11-07",
-    "reconciledCommit": "59e1f8f3a9501c931f6e0dbd41e8956506f3fd44"
+    "targetCommit": "4b73d784df79a696fd0487b2e66f9e51efc955f3",
+    "targetObservedAt": "2026-11-08",
+    "reconciledCommit": "4b73d784df79a696fd0487b2e66f9e51efc955f3"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Continue phase-dump, codegen, and execution parity verification against reconciled commit 59e1f8f3a9501c931f6e0dbd41e8956506f3fd44. The matched Checked x64 corpus covers 35 methods through Importation completion; 34/35 phase-prefix comparisons are equal, with the sole difference the accepted D015/B322 diagnostic. Preserve dynamicTlsInputBoundary unchanged and revisit only with a reproducible EE allocation sequence or upstream correction. Wasm GC-info emission remains unverified. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested, and keep AMD64 unwind-V3 encoders deferred until the native path is wired.",
+    "nextAction": "Resume phase-dump, codegen, and execution parity against reconciled commit 4b73d784df79a696fd0487b2e66f9e51efc955f3. The previous 35-method Checked x64 Importation capture is from 59e1f8f3a9501c931f6e0dbd41e8956506f3fd44 (34/35 phase-prefix comparisons equal; the sole difference is accepted D015/B322) and is not evidence for this revision. The next parity boundary is a matched recursive-tail-call-to-loop capture with an early setup following an earlier argument save. Preserve dynamicTlsInputBoundary unchanged and revisit only with a reproducible EE allocation sequence or upstream correction. Wasm GC-info emission remains unverified. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested; AMD64 unwind-V3 encoders remain deferred until the native path is wired.",
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
       "E03: isIntrinsicType now uses a per-Compiler last-handle boolean cache; the pinned repeated-handle profile is under artifacts\\e03-isintrinsictype. Keep primitive mappings and nullable/enum predicates direct pending repeated-handle evidence and complete output/tri-state semantics.",
@@ -1205,6 +1205,18 @@
       ],
       "disposition": "A by-reference outgoing struct temporary is address-exposed before its copy store is constructed and globally morphed, so the store receives GTF_GLOB_REF; by-value copies remain unchanged.",
       "sourceCommit": "59e1f8f3a9501c931f6e0dbd41e8956506f3fd44"
+    },
+    {
+      "area": "recursive-tailcall-setup-order",
+      "native": [
+        "src\\coreclr\\jit\\morph.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.fg.TailCalls.cs",
+        "tests\\Core\\TailCallMorphTests.cs"
+      ],
+      "disposition": "Early argument setup nodes are inserted before caller-parameter assignments but after required temporary saves, preserving argument evaluation order during recursive tail-call-to-loop conversion.",
+      "sourceCommit": "4b73d784df79a696fd0487b2e66f9e51efc955f3"
     }
   ],
   "generatorInputMapping": {
@@ -1216,7 +1228,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "6e83aff28689ff67a7caa5108286786a52d8f256",
-    "reconciledCommit": "59e1f8f3a9501c931f6e0dbd41e8956506f3fd44",
+    "reconciledCommit": "4b73d784df79a696fd0487b2e66f9e51efc955f3",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

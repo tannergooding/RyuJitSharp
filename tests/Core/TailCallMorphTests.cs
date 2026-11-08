@@ -99,7 +99,7 @@ internal static unsafe class TailCallMorphTests
     }
 
     [Test]
-    public static void EarlySetupPrecedesLateParameterAssignments()
+    public static void EarlySetupRunsAfterTempsButBeforeParameterAssignments()
     {
         WithCompiler((compiler, entry, block) => {
             compiler.lvaTable = [
@@ -109,22 +109,19 @@ internal static unsafe class TailCallMorphTests
             ];
             compiler.lvaCount = 3;
             var call = NewRecursiveCall(compiler);
-            var first = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_INT, 1)));
-            var setup = compiler.gtNewStoreLclVarNode(2, first.Node);
-            first.EarlyNode = setup;
-            first.LateNode = compiler.gtNewLclvNode(TYP_INT, 2);
-            var second = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_INT, 0)));
-            second.LateNode = second.EarlyNode;
-            second.EarlyNode = null;
-            LateHead(ref call.Args) = first;
-            first.LateNext = second;
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_INT, 1)));
+            var second = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_INT, 2)));
+            var setup = compiler.gtNewStoreLclVarNode(2, compiler.gtNewLclvNode(TYP_INT, 0));
+            second.EarlyNode = setup;
+            second.LateNode = compiler.gtNewLclvNode(TYP_INT, 2);
+            LateHead(ref call.Args) = second;
             compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(call));
             compiler.fgMorphRecursiveFastTailCallIntoLoop(block, call);
 
             var stores = block.Statements.Select(statement => statement.RootNode.AsLclVar()).ToArray();
-            Assert.That(stores.Select(store => store.LclNum), Is.EqualTo((int[])[2, 3, 0, 1]));
-            Assert.That(stores[0], Is.SameAs(setup));
-            Assert.That(stores.Select(store => store.Data.AsLclVar().LclNum), Is.EqualTo((int[])[1, 0, 2, 3]));
+            Assert.That(stores.Select(store => store.LclNum), Is.EqualTo((int[])[3, 2, 0, 1]));
+            Assert.That(stores[1], Is.SameAs(setup));
+            Assert.That(stores.Select(store => store.Data.AsLclVar().LclNum), Is.EqualTo((int[])[1, 0, 3, 2]));
             Assert.That(compiler.lvaCount, Is.EqualTo(4));
         });
     }

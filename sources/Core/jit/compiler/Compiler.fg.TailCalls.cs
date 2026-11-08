@@ -288,7 +288,8 @@ public partial class Compiler
             assert(earlyNode is not null);
             if (argument.LateNode is not null)
             {
-                fgInsertStmtBefore(block, lastStatement, gtNewStmt(earlyNode, callDebugInfo));
+                // Hoist setup nodes before any parameter assignments.
+                fgInsertStmtBefore(block, tempInsertionPoint, gtNewStmt(earlyNode, callDebugInfo));
             }
             else if (!argument.IsArgAddedLate)
             {
