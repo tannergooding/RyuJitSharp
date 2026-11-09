@@ -94,7 +94,7 @@ public partial class Compiler
         }
 
         assert(srcLenU8 <= maxU8BufferSizeInBytes);
-        if (srcLenU8 > GetUnrollThreshold(Memcpy))
+        if (unchecked((uint)srcLenU8) > unchecked((uint)GetUnrollThreshold(Memcpy)))
         {
             JITDUMP("ReadUtf8: srcLenU8 is out of unrollable range\n");
             return false;
