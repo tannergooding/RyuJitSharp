@@ -72,7 +72,7 @@ public partial class Emitter
 
         var id = new T();
         emitLastIns = id;
-        if (Configuration.TARGET_XARCH)
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_WASM)
         {
             emitCurIG.igLastIns = id;
         }
@@ -81,7 +81,7 @@ public partial class Emitter
             emitCurIG.igLastIns = id;
         }
         assert(size >= (nuint)nint.Size);
-        if (Configuration.TARGET_XARCH)
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_WASM)
         {
             id.idSetPrevSize(unchecked((uint)emitLastInsFullSize));
             emitLastInsFullSize = (int)fullSize;

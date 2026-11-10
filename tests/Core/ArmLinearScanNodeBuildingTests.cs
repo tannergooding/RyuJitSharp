@@ -400,7 +400,7 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
             var index = compiler.gtNewIconNode(TYP_INT, 3);
             _ = Build(allocator, array);
             _ = Build(allocator, index);
-            var node = new GenTreeIndexAddr(array, index, TYP_INT, null, 4, 8, 16, true);
+            var node = new GenTreeIndexAddr(array, index, TYP_INT, null, new ValueSize(4), 8, 16, true);
 
             Assert.That(Build(allocator, node), Is.EqualTo(2));
             Assert.That(InternalDefinitionCount(allocator), Is.EqualTo(1));

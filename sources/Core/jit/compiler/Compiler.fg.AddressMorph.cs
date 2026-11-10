@@ -50,7 +50,7 @@ public partial class Compiler
         const int MaxArrayComplexity = 4;
         const int MaxIndexComplexity = 4;
         var elementType = indexAddress.ElemType;
-        var elementSize = unchecked((uint)indexAddress.ElemSize);
+        var elementSize = indexAddress.ElemSize;
         var elementOffset = unchecked((byte)indexAddress.ElemOffset);
         var elementClass = indexAddress.StructElemClass;
         noway_assert(!varTypeIsStruct(elementType) || (elementClass != NO_CLASS_HANDLE));
@@ -143,10 +143,10 @@ public partial class Compiler
         }
 
         GenTree address;
-        if (elementSize > 1)
+        if (!elementSize.IsExact || (elementSize.ExactSize > 1))
         {
             // Lowering expects the scale to remain a constant, not a CSE local.
-            var size = gtNewIconNode(TYP_I_IMPL, unchecked((nint)elementSize));
+            var size = gtNewValueSize(elementSize, TYP_I_IMPL);
             size.Flags |= GTF_DONT_CSE;
             address = gtNewBinaryNode(GT_MUL, TYP_I_IMPL, index, size);
         }

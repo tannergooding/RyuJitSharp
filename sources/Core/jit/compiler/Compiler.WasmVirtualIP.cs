@@ -264,7 +264,8 @@ public partial class Compiler
                 ref var data = ref blockData[block.bbNum];
                 data.requiredVip = virtualIP;
                 data.funcIndex = virtualIPFuncIndex;
-                data.isRequired = !block.isEmpty() || (block.Kind is BBJ_CALLFINALLY);
+                data.isRequired = !block.HasFlag(BBF_THROW_HELPER) &&
+                    (!block.isEmpty() || (block.Kind is BBJ_CALLFINALLY));
                 if (firstBlockInFunc)
                 {
                     data.isFuncEntry = true;

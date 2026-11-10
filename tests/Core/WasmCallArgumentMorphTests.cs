@@ -147,7 +147,7 @@ internal static unsafe class WasmCallArgumentMorphTests
             var array = compiler.gtNewLclvNode(TYP_REF, 0);
             var index = compiler.gtNewLclvNode(TYP_INT, 1);
             var address = MorphIndexAddress(compiler,
-                new GenTreeIndexAddr(array, index, TYP_INT, null, 4, 8, 12, boundsCheck: false));
+                new GenTreeIndexAddr(array, index, TYP_INT, null, new ValueSize(4), 8, 12, boundsCheck: false));
             var arrayAddress = address as GenTreeArrAddr
                 ?? throw new AssertionException("Missing array-address wrapper.");
             var offset = arrayAddress.Addr.AsOp();

@@ -960,8 +960,11 @@ public sealed partial class CodeGen
             assert(genIsValidReg(varDsc.RegNum));
             var type = varDsc.GetRegisterType(tree);
             var wasmLclIndex = regNumberExtensions.WasmRegToIndex(varDsc.RegNum);
+            var isLastUse = varDsc.lvTracked && tree.IsLastUse(0) &&
+                ((tree._lirFlags & LIR.Flags.MultiplyUsed) == LIR.Flags.None);
 
-            GetEmitter().emitIns_I(INS_local_get, type.EmitSize, unchecked((nint)wasmLclIndex));
+            GetEmitter().emitIns_I(
+                INS_local_get, type.EmitSize, unchecked((nint)wasmLclIndex), isLastUse);
 
             // A register local may have a different type than the tree, so truncate when needed.
             if (tree.Type is TYP_INT && varDsc.Type is TYP_LONG)
@@ -1819,10 +1822,10 @@ public sealed partial class CodeGen
         }
 
         // The result is the address of the array element.
-        var scale = tree.ElemSize;
+        var scale = tree.GetElemSize();
         if (scale > 1)
         {
-            GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, scale);
+            GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)scale));
             GetEmitter().emitIns(WasmInstructions.INS_I_mul);
         }
 

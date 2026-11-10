@@ -99,7 +99,7 @@ internal static unsafe class LinearScanNodeBuildingTests
             var index = compiler.gtNewIconNode(TYP_INT, 3);
             _ = Build(allocator, array);
             _ = Build(allocator, index);
-            var address = new GenTreeIndexAddr(array, index, TYP_INT, null, elemSize, 8, 16, true);
+            var address = new GenTreeIndexAddr(array, index, TYP_INT, null, new ValueSize(elemSize), 8, 16, true);
 
             Assert.That(Build(allocator, address), Is.EqualTo(2));
             Assert.That(InternalDefinitionCount(allocator), Is.EqualTo(needsTemporary ? 1 : 0));
@@ -311,7 +311,7 @@ internal static unsafe class LinearScanNodeBuildingTests
             var index = compiler.gtNewIconNode(TYP_INT, 3);
             _ = Build(allocator, array);
             _ = Build(allocator, index);
-            var address = new GenTreeIndexAddr(array, index, TYP_INT, null, 4, 8, 16, true);
+            var address = new GenTreeIndexAddr(array, index, TYP_INT, null, new ValueSize(4), 8, 16, true);
 
             Assert.That(Build(allocator, address), Is.EqualTo(2));
             Assert.That(InternalDefinitionCount(allocator), Is.EqualTo(1));

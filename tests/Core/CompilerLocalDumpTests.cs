@@ -75,7 +75,7 @@ internal static unsafe class CompilerLocalDumpTests
             compiler.info.compCompHnd = &jitInfo;
             var elementClass = elementType is TYP_STRUCT ? (CORINFO_CLASS_STRUCT_*)0x1000 : null;
             var address = new GenTreeIndexAddr(compiler.gtNewNull(), compiler.gtNewIconNode(TYP_INT, 0),
-                elementType, elementClass, 4, 8, 16, false);
+                elementType, elementClass, new ValueSize(4), 8, 16, false);
             GenTree tree = wrapped ? new GenTreeArrAddr(address, elementType, elementClass, 16) : address;
 
             var output = CodeGenLifeTransitionTests.Capture(() => compiler.gtDispTree(tree, topOnly: true));

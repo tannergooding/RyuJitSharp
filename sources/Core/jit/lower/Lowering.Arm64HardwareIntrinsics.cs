@@ -155,11 +155,17 @@ public sealed partial class Lowering
 
         var id = node.HWIntrinsicId;
         var operation = node.GetOperForHWIntrinsicId(out _);
+        if ((node.Type is TYP_SIMD_ARM64) && (operation is GT_OR))
+        {
+            // SVE has no OR-NOT instruction, so leave this form for later lowering.
+            return node.Next;
+        }
+
         var loweredSvePredicate = (operation is GT_AND) && Configuration.FEATURE_MASKED_HW_INTRINSICS &&
             TryLowerSvePredicateBitwiseClear(node, ref id, ref operation);
         if (!loweredSvePredicate && (operation is GT_AND or GT_OR))
         {
-            assert(node.Type is TYP_SIMD8 or TYP_SIMD16);
+            assert(node.Type is TYP_SIMD8 or TYP_SIMD16 or TYP_SIMD_ARM64);
             var transform = false;
             var first = node.GetOp(1);
             var second = node.GetOp(2);
@@ -190,7 +196,17 @@ public sealed partial class Lowering
 
             if (transform)
             {
-                id = operation is GT_AND ? NI_AdvSimd_BitwiseClear : NI_AdvSimd_OrNot;
+                if (operation is GT_AND)
+                {
+                    id = node.Type is TYP_SIMD_ARM64 ? NI_Sve_BitwiseClear : NI_AdvSimd_BitwiseClear;
+                }
+                else
+                {
+                    assert(operation is GT_OR);
+                    assert(node.Type is not TYP_SIMD_ARM64);
+                    id = NI_AdvSimd_OrNot;
+                }
+
                 node.ChangeHWIntrinsicId(id, first, second);
             }
         }

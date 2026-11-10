@@ -10,9 +10,11 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class IndirectStoreCoalescingTests
 {
-    [TestCase(false, genTreeOps.GT_NULLCHECK)]
-    [TestCase(true, genTreeOps.GT_IND)]
-    public static void UnusedIndirectionTransformsAfterXarchContainment(bool allowContainment,
+    [TestCase(false, false, genTreeOps.GT_NULLCHECK)]
+    [TestCase(true, false, genTreeOps.GT_IND)]
+    [TestCase(false, true, genTreeOps.GT_IND)]
+    [TestCase(true, true, genTreeOps.GT_IND)]
+    public static void UnusedIndirectionTransformsAfterXarchContainment(bool allowContainment, bool isVolatile,
         genTreeOps expectedOperation)
     {
         WithCompiler(optimized: true, compiler => {
@@ -22,6 +24,10 @@ internal static unsafe class IndirectStoreCoalescingTests
             var load = new GenTreeIndir(genTreeOps.GT_IND, var_types.TYP_LONG, address) {
                 IsUnusedValue = true,
             };
+            if (isVolatile)
+            {
+                load.Flags |= GenTreeFlags.GTF_IND_VOLATILE;
+            }
             if (!allowContainment)
             {
                 load.Flags |= GenTreeFlags.GTF_IND_REQ_ADDR_IN_REG;
@@ -33,8 +39,8 @@ internal static unsafe class IndirectStoreCoalescingTests
             Assert.That(LowerIndir(lowering, load), Is.SameAs(next));
             var probe = next.Prev ?? throw new InvalidOperationException();
             Assert.That(probe.Oper, Is.EqualTo(expectedOperation));
-            Assert.That(probe.Type, Is.EqualTo(var_types.TYP_INT));
-            Assert.That(probe.IsUnusedValue, Is.EqualTo(allowContainment));
+            Assert.That(probe.Type, Is.EqualTo(isVolatile ? var_types.TYP_LONG : var_types.TYP_INT));
+            Assert.That(probe.IsUnusedValue, Is.EqualTo(allowContainment || isVolatile));
             Assert.That(address.IsContained, Is.EqualTo(allowContainment));
             if (expectedOperation is genTreeOps.GT_NULLCHECK)
             {

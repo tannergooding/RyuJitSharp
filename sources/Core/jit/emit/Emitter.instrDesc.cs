@@ -100,11 +100,11 @@ public partial class Emitter
 
         public uint idPrevSize()
         {
-            if (!Configuration.TARGET_XARCH)
+            if (!(Configuration.TARGET_XARCH || Configuration.TARGET_WASM))
             {
                 FatalJitException.ThrowFatalJitException(
         CORJIT_SKIPPED,
-        FatalJitErrorCode.PreviousInstructionSizesAreOnlySupportedOnXarch
+        FatalJitErrorCode.PreviousInstructionSizesAreOnlySupportedOnXarchOrWasm
     );
                 return default!;
             }
@@ -114,11 +114,11 @@ public partial class Emitter
 
         public void idSetPrevSize(uint previousSize)
         {
-            if (!Configuration.TARGET_XARCH)
+            if (!(Configuration.TARGET_XARCH || Configuration.TARGET_WASM))
             {
                 FatalJitException.ThrowFatalJitException(
         CORJIT_SKIPPED,
-        FatalJitErrorCode.PreviousInstructionSizesAreOnlySupportedOnXarch
+        FatalJitErrorCode.PreviousInstructionSizesAreOnlySupportedOnXarchOrWasm
     );
                 return;
             }

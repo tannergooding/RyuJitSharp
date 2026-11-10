@@ -23,6 +23,12 @@ public partial class Compiler
 
         if (Configuration.TARGET_ARM64)
         {
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                var sum = gtNewSimdHWIntrinsicNode(simdType, NI_Sve_AddAcross, simdBaseType, simdSize, op1);
+                return gtNewSimdToScalarNode(type, sum, simdBaseType, simdSize);
+            }
+
             switch (simdBaseType)
             {
                 case TYP_BYTE:

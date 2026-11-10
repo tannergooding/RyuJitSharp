@@ -169,7 +169,7 @@ internal static unsafe class CodeGenIndirectLoadTests
             };
             var tree = new GenTreeIndexAddr(Register(compiler, TYP_REF, REG_X64_RAX),
                 Register(compiler, nativeIndex ? TYP_LONG : TYP_INT, REG_X64_RCX),
-                elementType, scale == 3 ? (CORINFO_CLASS_STRUCT_*)1 : NO_CLASS_HANDLE, scale, 8, 16, bounds)
+                elementType, scale == 3 ? (CORINFO_CLASS_STRUCT_*)1 : NO_CLASS_HANDLE, new ValueSize(scale), 8, 16, bounds)
             {
                 RegNum = REG_X64_RDX,
             };
@@ -269,7 +269,7 @@ internal static unsafe class CodeGenIndirectLoadTests
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var tree = new GenTreeIndexAddr(Register(compiler, TYP_REF, REG_X64_RAX),
-                Register(compiler, TYP_INT, REG_X64_RCX), TYP_INT, NO_CLASS_HANDLE, 4, 8, 16, boundsCheck: true)
+                Register(compiler, TYP_INT, REG_X64_RCX), TYP_INT, NO_CLASS_HANDLE, new ValueSize(4), 8, 16, boundsCheck: true)
             {
                 RegNum = REG_X64_RDX,
             };

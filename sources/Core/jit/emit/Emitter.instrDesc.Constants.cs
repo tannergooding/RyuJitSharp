@@ -47,7 +47,7 @@ public partial class Emitter
                             {
                                 if (Configuration.TARGET_WASM)
                                 {
-                                    return -4;
+                                    return -1;
                                 }
                                 else
                                 {
@@ -66,7 +66,9 @@ public partial class Emitter
     }
 
     private static int ID_EXTRA_PREV_OFFSET_BITS =>
-        Configuration.TARGET_XARCH ? Configuration.HOST_64BIT ? 5 : 4 : 0;
+        (Configuration.TARGET_XARCH || Configuration.TARGET_WASM)
+            ? Configuration.HOST_64BIT ? 5 : 4
+            : 0;
 
     private const int ID_EXTRA_RELOC_BITS = 2;
     private static int ID_EXTRA_BITS => ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS;

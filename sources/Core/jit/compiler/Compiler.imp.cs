@@ -13064,6 +13064,11 @@ public partial class Compiler
                     if (simdWidth > 0)
                     {
                         assert((totalSize <= SimdStorageSize) && (totalSize <= LargeStructBufferSize));
+                        if (Configuration.TARGET_ARM64 && (simdWidth == SIZE_UNKNOWN))
+                        {
+                            // A scalable constant encodes a pattern, not arbitrary static-field contents.
+                            return null;
+                        }
                         var simdType = GetSimdTypeForSize(simdWidth);
 
                         var hwAccelerated = true;
@@ -23444,11 +23449,6 @@ public partial class Compiler
                 return NI_Illegal;
             }
         }
-        else if (Configuration.TARGET_ARM64 && (isa is InstructionSet_VectorT))
-        {
-            return NI_Illegal;
-        }
-
         return intrinsic;
     }
 

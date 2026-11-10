@@ -881,6 +881,11 @@ public partial class Compiler
             assert(!isScalar || isValidScalarIntrinsic);
         }
 
+        if ((retNode is not null) && varTypeIsSimdOrMask(retType))
+        {
+            assert(retNode.Type == retType);
+        }
+
         return retNode;
     }
 

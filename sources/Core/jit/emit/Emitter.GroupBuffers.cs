@@ -336,7 +336,7 @@ public partial class Emitter
 
             emitLastIns = emitSavedDescriptor(ig, emitLastIns, sz);
             emitLastInsIG = ig;
-            if (Configuration.EMIT_BACKWARDS_NAVIGATION)
+            if (Configuration.EMIT_BACKWARDS_NAVIGATION || Configuration.TARGET_WASM)
             {
                 ig.igLastIns = emitLastIns;
             }

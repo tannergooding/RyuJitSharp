@@ -31,6 +31,10 @@ public sealed partial class CodeGen
             {
                 assert(_compiler.compIsaSupportedDebugOnly(InstructionSet_Vector64));
             }
+            else if (node.SimdSize == SIZE_UNKNOWN)
+            {
+                assert(_compiler.compIsaSupportedDebugOnly(InstructionSet_VectorT));
+            }
             else
             {
                 assert(node.SimdSize is 12 or 16);
@@ -981,6 +985,12 @@ public sealed partial class CodeGen
                 case NI_Vector_ToVector128:
                 {
                     _ = Emitter.emitIns_Mov(ins, emitSize, targetReg, op1Reg, false);
+                    break;
+                }
+                case NI_Sve_AsVector:
+                {
+                    // This fixed-width move zeros the remaining bytes of the scalable register.
+                    _ = Emitter.emitIns_Mov(ins, EA_16BYTE, targetReg, op1Reg, false);
                     break;
                 }
                 case NI_Vector_ToVector128Unsafe:

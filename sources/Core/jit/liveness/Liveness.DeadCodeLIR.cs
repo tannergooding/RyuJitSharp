@@ -48,7 +48,7 @@ public partial class Liveness<TLiveness>
         if (!node.IsValue || node.IsUnusedValue)
         {
             assert(!node.RequiresAsgFlag && (node.Oper is not GT_CALL));
-            if (((node.Flags & GTF_SET_FLAGS) == 0) && !node.MayThrow(_compiler) &&
+            if (((node.Flags & GTF_SET_FLAGS) == 0) && !_compiler.gtNodeHasSideEffects(node, GTF_OBS_EFFECT) &&
                 CanUncontainOrRemoveOperands(node))
             {
                 if (Configuration.DEBUG && _compiler.verbose)

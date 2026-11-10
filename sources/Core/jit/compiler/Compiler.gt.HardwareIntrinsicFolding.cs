@@ -229,7 +229,11 @@ public partial class Compiler
         var oper = tree.GetOperForHWIntrinsicId(out var isScalar);
 
         // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-        assert(oper != GT_AND_NOT);
+        // Exception: SVE BitwiseClear with mask operands is converted to its mask variant.
+        assert((oper != GT_AND_NOT) ||
+            (Configuration.FEATURE_MASKED_HW_INTRINSICS && Configuration.TARGET_ARM64 &&
+             (ni == NI_Sve_BitwiseClear) && (opCount == 2) && op1.IsConvertMaskToVector &&
+             (op2 is not null) && op2.IsConvertMaskToVector));
 
         if (Configuration.FEATURE_MASKED_HW_INTRINSICS && Configuration.TARGET_XARCH &&
             GenTreeHWIntrinsic.OperIsBitwiseHWIntrinsic(oper))

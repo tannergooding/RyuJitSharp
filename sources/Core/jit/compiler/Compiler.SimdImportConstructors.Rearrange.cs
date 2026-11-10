@@ -149,6 +149,13 @@ public partial class Compiler
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
         assert(varTypeIsArithmetic(simdBaseType));
+
+        if (Configuration.TARGET_ARM64 && (simdSize == SIZE_UNKNOWN))
+        {
+            var intrinsic = upper ? NI_Sve_ZipHigh : NI_Sve_ZipLow;
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2);
+        }
+
         var count = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
         if (count == 1)
         {
@@ -286,6 +293,13 @@ public partial class Compiler
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
         assert(varTypeIsArithmetic(simdBaseType));
+
+        if (Configuration.TARGET_ARM64 && (simdSize == SIZE_UNKNOWN))
+        {
+            var intrinsic = odd ? NI_Sve_UnzipOdd : NI_Sve_UnzipEven;
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2);
+        }
+
         var count = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
         if (count == 1)
         {
@@ -459,6 +473,12 @@ public partial class Compiler
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
         assert(varTypeIsArithmetic(simdBaseType));
+
+        if (Configuration.TARGET_ARM64 && (simdSize == SIZE_UNKNOWN))
+        {
+            return gtNewSimdHWIntrinsicNode(type, NI_Sve_ReverseElement, simdBaseType, simdSize, op1);
+        }
+
         var count = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
         if (count == 1)
         {

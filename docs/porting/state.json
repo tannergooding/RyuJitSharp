@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "b2c0357608296ad2df671b56efbfa09ae9df544d",
-    "targetObservedAt": "2026-11-09",
-    "reconciledCommit": "b2c0357608296ad2df671b56efbfa09ae9df544d"
+    "targetCommit": "9ced5782482614d2183ad536527e2ad1e01dc052",
+    "targetObservedAt": "2026-11-10",
+    "reconciledCommit": "9ced5782482614d2183ad536527e2ad1e01dc052"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Resume phase-dump, codegen, and execution parity against reconciled commit b2c0357608296ad2df671b56efbfa09ae9df544d. The previous 35-method Checked x64 Importation capture is from 59e1f8f3a9501c931f6e0dbd41e8956506f3fd44 (34/35 phase-prefix comparisons equal; the sole difference is accepted D015/B322) and is not evidence for this revision. The next parity boundary is a matched recursive-tail-call-to-loop capture with an early setup following an earlier argument save. Preserve dynamicTlsInputBoundary unchanged and revisit only with a reproducible EE allocation sequence or upstream correction. Wasm GC-info emission remains unverified. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested; AMD64 unwind-V3 encoders remain deferred until the native path is wired.",
+    "nextAction": "Build or locate a matched x64 native JIT at reconciled commit 9ced5782482614d2183ad536527e2ad1e01dc052, then capture recursive-tail-call-to-loop phase/codegen behavior with an early setup following an earlier argument save. The 35-method Checked x64 Importation capture from 59e1f8f3a9501c931f6e0dbd41e8956506f3fd44 is not evidence for this revision (34/35 prefixes matched; the sole difference is accepted D015/B322). Preserve dynamicTlsInputBoundary unchanged and revisit only with a reproducible EE allocation sequence or upstream correction. Wasm GC-info emission remains unverified. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested; AMD64 unwind-V3 encoders remain deferred until the native path is wired. Do not claim full runtime parity from source reconciliation.",
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
       "E03: isIntrinsicType now uses a per-Compiler last-handle boolean cache; the pinned repeated-handle profile is under artifacts\\e03-isintrinsictype. Keep primitive mappings and nullable/enum predicates direct pending repeated-handle evidence and complete output/tri-state semantics.",
@@ -1228,8 +1228,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "6e83aff28689ff67a7caa5108286786a52d8f256",
-    "reconciledCommit": "b2c0357608296ad2df671b56efbfa09ae9df544d",
+    "targetInputCommit": "9ced5782482614d2183ad536527e2ad1e01dc052",
+    "reconciledCommit": "9ced5782482614d2183ad536527e2ad1e01dc052",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

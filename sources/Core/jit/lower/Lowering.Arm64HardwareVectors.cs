@@ -21,6 +21,13 @@ public sealed partial class Lowering
             simdType = TYP_SIMD8;
         }
 
+        if (size == SIZE_UNKNOWN)
+        {
+            assert(id is NI_Vector_Create);
+            assert(node.Operands.Length == 1);
+            return node.Next;
+        }
+
         assert(varTypeIsSimd(simdType));
         assert(varTypeIsArithmetic(baseType));
         assert(size != 0);
@@ -117,6 +124,45 @@ public sealed partial class Lowering
         assert(varTypeIsSimd(simdType) && varTypeIsArithmetic(baseType));
         assert((size != 0) && (node.Type is TYP_INT));
         assert(cmpOp is GT_EQ or GT_NE);
+
+        if (size == SIZE_UNKNOWN)
+        {
+            // SVE comparisons produce predicates; test whether any lane differs, then invert for equality.
+            var foundUse = BlockRange().TryGetUse(node, out var originalUse);
+
+            node.ResetHWIntrinsicId(NI_Sve_CompareNotEqualTo, node.GetOp(1), node.GetOp(2));
+            node.Type = TYP_MASK;
+
+            var allTrue = CompilerInstance.gtNewSimdTrueMaskNode(baseType);
+            BlockRange().InsertAfter(node, allTrue);
+
+            var test = CompilerInstance.gtNewSimdHWIntrinsicNode(
+                TYP_INT, NI_Sve_TestAnyTrue, baseType, size, allTrue, node);
+            BlockRange().InsertAfter(allTrue, test);
+
+            GenTree result = test;
+            if (cmpOp is GT_EQ)
+            {
+                var zeroValue = CompilerInstance.gtNewIconNode(TYP_INT, 0);
+                BlockRange().InsertAfter(test, zeroValue);
+
+                result = CompilerInstance.gtNewBinaryNode(GT_EQ, TYP_INT, test, zeroValue);
+                BlockRange().InsertAfter(zeroValue, result);
+            }
+
+            if (foundUse)
+            {
+                originalUse.ReplaceWith(result);
+            }
+            else
+            {
+                assert(node.IsUnusedValue);
+                node.IsUnusedValue = false;
+                result.IsUnusedValue = true;
+            }
+
+            return node;
+        }
 
         var first = node.GetOp(1);
         var second = node.GetOp(2);

@@ -304,7 +304,7 @@ public partial class Compiler
         }
         else if (Configuration.TARGET_ARM64)
         {
-            assert(simdSize is 8 or 16);
+            assert(simdSize is 8 or 16 || simdSize == SIZE_UNKNOWN);
             var intrinsic = NI_Illegal;
 
             switch (simdSourceBaseType)
@@ -315,13 +315,17 @@ public partial class Compiler
                     {
                         case TYP_INT:
                         {
-                            intrinsic = NI_AdvSimd_ConvertToInt32RoundToZero;
+                            intrinsic = simdSize == SIZE_UNKNOWN
+                                ? NI_Sve_ConvertToInt32
+                                : NI_AdvSimd_ConvertToInt32RoundToZero;
                             break;
                         }
 
                         case TYP_UINT:
                         {
-                            intrinsic = NI_AdvSimd_ConvertToUInt32RoundToZero;
+                            intrinsic = simdSize == SIZE_UNKNOWN
+                                ? NI_Sve_ConvertToUInt32
+                                : NI_AdvSimd_ConvertToUInt32RoundToZero;
                             break;
                         }
 
@@ -340,15 +344,63 @@ public partial class Compiler
                     {
                         case TYP_LONG:
                         {
-                            intrinsic = simdSize == 8 ? NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar
-                                : NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
+                            switch (simdSize)
+                            {
+                                case 8:
+                                {
+                                    intrinsic = NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar;
+                                    break;
+                                }
+
+                                case 16:
+                                {
+                                    intrinsic = NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
+                                    break;
+                                }
+
+                                case SIZE_UNKNOWN:
+                                {
+                                    intrinsic = NI_Sve_ConvertToInt64;
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    unreached();
+                                    break;
+                                }
+                            }
                             break;
                         }
 
                         case TYP_ULONG:
                         {
-                            intrinsic = simdSize == 8 ? NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar
-                                : NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
+                            switch (simdSize)
+                            {
+                                case 8:
+                                {
+                                    intrinsic = NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar;
+                                    break;
+                                }
+
+                                case 16:
+                                {
+                                    intrinsic = NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
+                                    break;
+                                }
+
+                                case SIZE_UNKNOWN:
+                                {
+                                    intrinsic = NI_Sve_ConvertToUInt64;
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    unreached();
+                                    break;
+                                }
+                            }
                             break;
                         }
 

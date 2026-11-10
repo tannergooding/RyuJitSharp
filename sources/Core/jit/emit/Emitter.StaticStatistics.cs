@@ -147,7 +147,7 @@ public partial class Emitter
     {
         var group = new NativeLayout();
         AddField(ref group, "igNext             ", word, word, print);
-        if (Configuration.EMIT_BACKWARDS_NAVIGATION)
+        if (Configuration.EMIT_BACKWARDS_NAVIGATION || Configuration.TARGET_WASM)
         {
             AddField(ref group, "igPrev             ", word, word, print);
         }
@@ -188,7 +188,7 @@ public partial class Emitter
             jitprintf(FormattableString.Invariant($"Offset / size of igPhData           = {groupDataOffset,3} / {groupDataSize,2}\n"));
         }
 
-        if (Configuration.EMIT_BACKWARDS_NAVIGATION)
+        if (Configuration.EMIT_BACKWARDS_NAVIGATION || Configuration.TARGET_WASM)
         {
             AddField(ref group, "igLastIns          ", word, word, print);
         }

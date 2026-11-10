@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeFlags;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.RefCountState;
 using static RyuJitSharp.var_types;
 using BitOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
@@ -303,6 +304,61 @@ internal static unsafe class BlockMorphTests
             Assert.That(store.IsReverseOp, Is.EqualTo(reverse));
             Assert.That(store.Flags & GTF_CALL, Is.Not.Zero);
             Assert.That(compiler.lvaCount, Is.EqualTo(3));
+        });
+    }
+
+    [TestCase(false, GT_NULLCHECK)]
+    [TestCase(true, GT_BLK)]
+    public static void UnusedBlockReadsKeepVolatileAccesses(bool isVolatile, genTreeOps expectedOperation)
+    {
+        WithCompiler(compiler => {
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var load = new GenTreeBlk(TYP_STRUCT, address, new ClassLayout(8));
+            if (isVolatile)
+            {
+                load.Flags |= GTF_IND_VOLATILE;
+            }
+
+            var result = compiler.gtExtractSideEffectsFromUnusedNode(load);
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.Oper, Is.EqualTo(expectedOperation));
+            if (expectedOperation is GT_BLK)
+            {
+                Assert.That(result, Is.SameAs(load));
+            }
+        });
+    }
+
+    [Test]
+    public static void FieldByFieldCopyPreservesSourceIndirectionOrdering()
+    {
+        WithCompiler(compiler => {
+            SetPromotedDestination(compiler);
+            var sourceAddress = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var sourceLayout = compiler.lvaTable[0].Layout ?? throw new InvalidOperationException("Missing promoted destination layout.");
+            var source = new GenTreeBlk(TYP_STRUCT, sourceAddress, sourceLayout) {
+                Flags = GTF_IND_VOLATILE | GTF_IND_UNALIGNED | GTF_IND_NONFAULTING | GTF_ORDER_SIDEEFF,
+            };
+            var store = compiler.gtNewStoreLclVarNode(0, source);
+            var result = compiler.fgMorphCopyBlock(store);
+
+            var expectedFlags = GTF_IND_VOLATILE | GTF_IND_UNALIGNED | GTF_IND_NONFAULTING | GTF_ORDER_SIDEEFF;
+            var fieldCount = 0;
+            while (result.Oper is GT_COMMA)
+            {
+                var comma = result.AsOp();
+                Assert.That(comma.Op2.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+                Assert.That(comma.Op2.Data.Oper, Is.EqualTo(GT_IND));
+                Assert.That(comma.Op2.Data.Flags & expectedFlags, Is.EqualTo(expectedFlags));
+                fieldCount++;
+                result = comma.Op1;
+            }
+
+            Assert.That(result.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+            Assert.That(result.Data.Oper, Is.EqualTo(GT_IND));
+            Assert.That(result.Data.Flags & expectedFlags, Is.EqualTo(expectedFlags));
+            Assert.That(fieldCount + 1, Is.EqualTo(2));
         });
     }
 

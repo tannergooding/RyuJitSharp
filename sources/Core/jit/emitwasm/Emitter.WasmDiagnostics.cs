@@ -69,6 +69,12 @@ public partial class Emitter
         var format = id.idInsFmt();
         switch (format)
         {
+            case IF_NONE:
+            {
+                jitprintf(" (elided)");
+                break;
+            }
+
             case IF_WASM_OPCODE:
             {
                 break;

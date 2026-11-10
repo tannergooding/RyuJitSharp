@@ -165,6 +165,7 @@ public sealed class GenTreeVecCon : GenTree
 
     public static int ElementCount(int simdSize, var_types simdBaseType)
     {
+        assert(simdSize != SIZE_UNKNOWN);
         return simdSize / simdBaseType.Size;
     }
 

@@ -352,7 +352,24 @@ public sealed partial class Lowering
     internal static GenTreeIndir TransformUnusedIndirection(GenTreeIndir ind, Compiler compiler, BasicBlock block)
     {
         assert(ind.Oper is GT_NULLCHECK or GT_IND or GT_BLK);
+        if (ind.IsVolatile)
+        {
+            if (ind.Type is TYP_STRUCT)
+            {
+                ind.Type = TYP_UBYTE;
+            }
+
+            if (ind.Oper is not GT_IND)
+            {
+                ind.SetOper(GT_IND);
+                ind.IsUnusedValue = true;
+            }
+
+            return ind;
+        }
+
         ind.Type = compiler.gtTypeForNullCheck(ind);
+
         bool useNullCheck;
         if (Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64 ||
             Configuration.TARGET_WASM)

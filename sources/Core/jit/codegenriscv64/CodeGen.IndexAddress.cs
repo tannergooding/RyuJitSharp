@@ -35,7 +35,7 @@ public sealed partial class CodeGen
         }
 
         var attr = tree.Type.EmitActualSize;
-        var elementSize = unchecked((uint)tree.ElemSize);
+        var elementSize = tree.GetElemSize();
         if (uint.IsPow2(elementSize))
         {
             var scale = BitOperations.TrailingZeroCount(elementSize);

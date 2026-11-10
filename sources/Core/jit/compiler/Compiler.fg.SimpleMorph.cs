@@ -926,7 +926,7 @@ public partial class Compiler
                     type = tree.Type = TYP_VOID;
                 }
                 GenTree? effects = null;
-                gtExtractSideEffList(op1, ref effects, GTF_SIDE_EFFECT | GTF_MAKE_CSE);
+                gtExtractSideEffList(op1, ref effects, GTF_OBS_EFFECT | GTF_MAKE_CSE);
                 if (effects is not null)
                 {
                     tree.AsOp().Op1 = op1 = effects;

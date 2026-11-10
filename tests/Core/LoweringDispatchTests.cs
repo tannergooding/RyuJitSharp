@@ -356,7 +356,7 @@ internal static unsafe class LoweringDispatchTests
             compiler.lvaTable[1].Type = TYP_INT;
             var array = compiler.gtNewLclvNode(TYP_REF, 0);
             var index = compiler.gtNewLclvNode(TYP_INT, 1);
-            var address = new GenTreeIndexAddr(array, index, TYP_INT, null, 4, 8, 16, boundsChecked);
+            var address = new GenTreeIndexAddr(array, index, TYP_INT, null, new ValueSize(4), 8, 16, boundsChecked);
             var block = NewBlock(array, index, address);
             var lowering = new Lowering(compiler, new LinearScan(compiler));
 

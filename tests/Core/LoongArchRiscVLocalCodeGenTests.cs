@@ -2368,7 +2368,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var baseAddress = Register(compiler, TYP_REF, REG_S0);
             var index = Register(compiler, TYP_INT, REG_S1);
             var tree = new GenTreeIndexAddr(
-                baseAddress, index, TYP_INT, NO_CLASS_HANDLE, 1, 8, 16, boundsCheck: false)
+                baseAddress, index, TYP_INT, NO_CLASS_HANDLE, new ValueSize(1), 8, 16, boundsCheck: false)
             {
                 RegNum = REG_A0,
             };

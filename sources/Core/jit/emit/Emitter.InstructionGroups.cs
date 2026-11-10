@@ -111,7 +111,7 @@ public partial class Emitter
         ig.igNext = insertAfterIG.igNext;
         insertAfterIG.igNext = ig;
 
-        if (Configuration.TARGET_XARCH)
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_WASM || Configuration.EMIT_BACKWARDS_NAVIGATION)
         {
             ig.igPrev = insertAfterIG;
             ig.igNext?.igPrev = ig;

@@ -7,6 +7,101 @@ namespace RyuJitSharp;
 
 public sealed partial class GenTreeHWIntrinsic
 {
+    public static NamedIntrinsic GetSveIntrinsicIdForBinOp(
+        genTreeOps oper, GenTree op1, GenTree op2, var_types simdBaseType)
+    {
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        var id = NI_Illegal;
+
+        switch (oper)
+        {
+            case GT_ADD:
+            {
+                assert(varTypeIsSimd(op1.Type) && varTypeIsSimd(op2.Type));
+                id = NI_Sve_Add;
+                break;
+            }
+
+            case GT_AND:
+            {
+                assert(varTypeIsSimd(op1.Type) && varTypeIsSimd(op2.Type));
+                id = NI_Sve_And;
+                break;
+            }
+
+            case GT_AND_NOT:
+            {
+                assert(varTypeIsSimd(op1.Type) && varTypeIsSimd(op2.Type));
+                break;
+            }
+
+            case GT_OR:
+            {
+                assert(varTypeIsSimd(op1.Type) && varTypeIsSimd(op2.Type));
+                id = NI_Sve_Or;
+                break;
+            }
+
+            case GT_XOR:
+            {
+                assert(varTypeIsSimd(op1.Type) && varTypeIsSimd(op2.Type));
+                id = NI_Sve_Xor;
+                break;
+            }
+
+            case GT_SUB:
+            {
+                assert(varTypeIsSimd(op1.Type) && varTypeIsSimd(op2.Type));
+                id = NI_Sve_Subtract;
+                break;
+            }
+
+            case GT_LSH:
+            {
+                assert(varTypeIsSimd(op1.Type) && varTypeIsSimd(op2.Type));
+                id = NI_Sve_ShiftLeftLogical;
+                break;
+            }
+
+            case GT_RSH:
+            {
+                assert(varTypeIsSimd(op1.Type) && varTypeIsSimd(op2.Type));
+                id = NI_Sve_ShiftRightArithmetic;
+                break;
+            }
+
+            case GT_RSZ:
+            {
+                assert(varTypeIsSimd(op1.Type) && varTypeIsSimd(op2.Type));
+                id = NI_Sve_ShiftRightLogical;
+                break;
+            }
+
+            case GT_MUL:
+            {
+                assert(varTypeIsSimd(op1.Type) && varTypeIsSimd(op2.Type));
+                id = NI_Sve_Multiply;
+                break;
+            }
+
+            case GT_DIV:
+            {
+                assert(varTypeIsSimd(op1.Type) && varTypeIsSimd(op2.Type));
+                id = NI_Sve_Divide;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        return id;
+    }
+
     public bool ShouldConstantProp(GenTree operand, GenTreeVecCon constant)
     {
         var id = HWIntrinsicId;

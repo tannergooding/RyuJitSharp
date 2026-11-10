@@ -706,8 +706,9 @@ public sealed partial class LinearScan
         var indexAddress = tree.AsIndexAddr();
         var sourceCount = buildBinaryUses(tree.AsOp());
         _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
-        if (((indexAddress.Index.Type != TYP_I_IMPL)) &&
-            !(uint.IsPow2((uint)indexAddress.ElemSize) && (indexAddress.ElemSize <= 32768)))
+        if ((indexAddress.Index.Type != TYP_I_IMPL) &&
+            (!indexAddress.ElemSize.IsExact ||
+                !(uint.IsPow2(indexAddress.GetElemSize()) && (indexAddress.GetElemSize() <= 32768))))
         {
             _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
         }

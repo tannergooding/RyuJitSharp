@@ -59,6 +59,11 @@ public partial class Compiler
                 _ = isVariableShuffle;
             }
         }
+        else if (Configuration.TARGET_ARM64 && (simdSize == SIZE_UNKNOWN))
+        {
+            canBecomeValid = false;
+            return false;
+        }
         canBecomeValid = true;
         return true;
     }
@@ -83,6 +88,8 @@ public partial class Compiler
         }
 
         assert(varTypeIsArithmetic(baseType));
+        assert(!Configuration.TARGET_ARM64 || (simdSize != SIZE_UNKNOWN));
+
         var elementSize = baseType.Size;
         var elementCount = simdSize / elementSize;
         var invalidIndex = false;

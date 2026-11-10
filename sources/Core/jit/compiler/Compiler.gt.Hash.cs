@@ -12,6 +12,13 @@ public partial class Compiler
 {
     private static uint genTreeHashAdd(uint old, uint add) => unchecked((old + (old / 2)) ^ add);
 
+    private static uint genTreeHashAdd(uint old, ValueSize add)
+    {
+        var kind = add.IsExact ? 0u : add.IsVector ? 1u : add.IsMask ? 2u : 3u;
+        var size = add.IsExact ? add.ExactSize : 0u;
+        return genTreeHashAdd(genTreeHashAdd(old, kind), size);
+    }
+
     public unsafe uint gtHashValue(GenTree tree)
     {
         // Native hashes a layout's address. Use stable reference identity rather
@@ -225,7 +232,7 @@ public partial class Compiler
                             case GT_INDEX_ADDR:
                             {
                                 var address = tree.AsIndexAddr();
-                                hash = genTreeHashAdd(hash, (uint)address.ElemSize);
+                                hash = genTreeHashAdd(hash, address.ElemSize);
                                 hash = genTreeHashAdd(hash, (uint)address.ElemType);
                                 hash = genTreeHashAdd(hash, (uint)(nuint)address.StructElemClass);
                                 hash = genTreeHashAdd(hash, (uint)address.LenOffset);

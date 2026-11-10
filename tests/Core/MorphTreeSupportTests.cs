@@ -210,7 +210,7 @@ internal static unsafe class MorphTreeSupportTests
             compiler.info.compCompHnd = &jitInfo;
             var literal = new GenTreeStrCon(42, (CORINFO_MODULE_STRUCT_*)&query);
             var address = new GenTreeIndexAddr(literal, compiler.gtNewIconNode(TYP_I_IMPL, (nint)index),
-                TYP_USHORT, null, 2, 8, 12, boundsCheck: true);
+                TYP_USHORT, null, new ValueSize(2), 8, 12, boundsCheck: true);
             var indirection = compiler.gtNewIndir(TYP_USHORT, address);
 
             var result = compiler.gtFoldIndirConst(indirection);
@@ -250,7 +250,7 @@ internal static unsafe class MorphTreeSupportTests
                 ? new GenTreeStrCon(EMPTY_STRING_SCON, null)
                 : new GenTreeStrCon(42, (CORINFO_MODULE_STRUCT_*)&query);
             var address = new GenTreeIndexAddr(literal, compiler.gtNewIconNode(TYP_INT, index),
-                type, null, type.Size, 8, 12, boundsCheck: true);
+                type, null, new ValueSize(type.Size), 8, 12, boundsCheck: true);
 
             Assert.That(compiler.gtFoldIndirConst(compiler.gtNewIndir(type, address)), Is.Null);
             Assert.That(query.Queries, Is.Zero);

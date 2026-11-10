@@ -267,7 +267,8 @@ public partial class Emitter
     public void emitDispIGlist(bool displayInstructions = false)
     {
         insGroup? previous = null;
-        var useBackwardNavigation = Configuration.EMIT_BACKWARDS_NAVIGATION || Configuration.TARGET_XARCH;
+        var useBackwardNavigation = Configuration.EMIT_BACKWARDS_NAVIGATION ||
+            Configuration.TARGET_XARCH || Configuration.TARGET_WASM;
         for (var ig = emitIGlist; ig is not null; ig = ig.igNext)
         {
             var displayFunc = useBackwardNavigation

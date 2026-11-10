@@ -2208,6 +2208,7 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_Sve_ConditionalExtractLastActiveElementScalar
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Sve_ConvertMaskToVector
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Sve_ConvertVectorToMask
+        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Sve_AsVector
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_HWI_Sve_ConversionTrueMask
         (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_Sve_SaturatingDecrementBy16BitElementCountScalar
         (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_Sve_SaturatingDecrementBy32BitElementCountScalar
@@ -2230,6 +2231,7 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Sve_TransposeEven_Predicates
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Sve_TransposeOdd_Predicates
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Sve_ReverseElement_Predicates
+        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Sve2_SaturatingExtractAndNarrowEven
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_PackedSimd_Abs
         (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_PackedSimd_Add
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_PackedSimd_AddPairwiseWidening

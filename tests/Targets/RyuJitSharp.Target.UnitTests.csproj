@@ -99,6 +99,7 @@
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64')))">
     <Compile Include="..\Core\EmitterMethodStatisticsTests.cs" Link="EmitterMethodStatisticsTests.cs" />
     <Compile Include="..\Core\ArmArchEpilogTests.cs" Link="ArmArchEpilogTests.cs" />
+    <Compile Include="..\Core\ValueNumArrayAddressTests.cs" Link="ValueNumArrayAddressTests.cs" />
     <Compile Include="..\Core\LinearScanScalarConversionTests.cs" Link="LinearScanScalarConversionTests.cs" />
     <Compile Include="..\Core\EmitterFrameReferenceTests.cs" Link="EmitterFrameReferenceTests.cs" />
     <Compile Include="..\Core\CodeGenLabelTests.cs" Link="CodeGenLabelTests.cs" />
@@ -206,6 +207,7 @@
     <Compile Include="..\Core\CodeGenSharedGenerationTests.cs" Link="CodeGenSharedGenerationTests.cs" />
     <Compile Include="..\Core\FlowGraphDelegateConstructorTests.cs" Link="FlowGraphDelegateConstructorTests.cs" />
     <Compile Include="..\Core\WasmCallArgumentMorphTests.cs" Link="WasmCallArgumentMorphTests.cs" />
+    <Compile Include="..\Core\WasmEmitterOracleRefreshTests.cs" Link="WasmEmitterOracleRefreshTests.cs" />
     <Compile Include="..\Core\WasmClassifierTests.cs" Link="WasmClassifierTests.cs" />
     <Compile Include="..\Core\WasmRegAllocTests.cs" Link="WasmRegAllocTests.cs" />
     <Compile Include="..\Core\WasmScopeInfoTests.cs" Link="WasmScopeInfoTests.cs" />

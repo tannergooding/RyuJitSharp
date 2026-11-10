@@ -674,6 +674,24 @@ internal static unsafe class LivenessBackwardLIRTests
         });
     }
 
+    [Test]
+    public static void NonFaultingVolatileLoadsAreRetainedByDce()
+    {
+        WithCompiler(1, compiler => {
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var load = compiler.gtNewIndir(TYP_INT, address, GTF_IND_VOLATILE | GTF_IND_NONFAULTING);
+            load.IsUnusedValue = true;
+            var block = Block(address, load);
+
+            var liveness = Prepare<Dce>(compiler);
+            var life = SetOps.MakeEmpty(compiler);
+            liveness.ComputeLifeLIR(life, block, SetOps.MakeEmpty(compiler));
+
+            Assert.That(block.FirstNode, Is.SameAs(address));
+            Assert.That(block.LastNode, Is.SameAs(load));
+        });
+    }
+
     private static Liveness<TPolicy> Prepare<TPolicy>(Compiler compiler)
         where TPolicy : ILivenessPolicy
     {

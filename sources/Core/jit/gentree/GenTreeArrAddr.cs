@@ -55,16 +55,27 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
             return;
         }
 
-        var elemSizeUnsigned = ElemType is TYP_STRUCT
-            ? compiler.typGetObjLayout(ElemClassHandle).Size
-            : (uint)ElemType.Size;
-        assert((ulong)elemSizeUnsigned <= (ulong)Target.SignedSizeMaxValue);
-        var elemSize = Configuration.TARGET_64BIT ? (long)elemSizeUnsigned : (int)elemSizeUnsigned;
+        var elemValueSize = ElemType is TYP_STRUCT
+            ? new ValueSize(compiler.typGetObjLayout(ElemClassHandle).Size)
+            : ValueSize.FromJitType(ElemType);
         var constIndexOffset = Target.SubtractSignedSize(offset, firstElemOffset);
-        assert((constIndexOffset % elemSize) == 0);
-        var constIndex = constIndexOffset / elemSize;
         assert(compiler.vnStore is not null);
         var store = compiler.vnStore;
+
+        if (!elemValueSize.IsExact)
+        {
+            assert(constIndexOffset == 0);
+            indexVN = scaledIndexVN == ValueNumStore.NoVN
+                ? store.VNForPtrSizeIntCon(0)
+                : scaledIndexVN;
+            return;
+        }
+
+        var elemSizeUnsigned = elemValueSize.ExactSize;
+        assert((ulong)elemSizeUnsigned <= (ulong)Target.SignedSizeMaxValue);
+        var elemSize = Configuration.TARGET_64BIT ? (long)elemSizeUnsigned : (int)elemSizeUnsigned;
+        assert((constIndexOffset % elemSize) == 0);
+        var constIndex = constIndexOffset / elemSize;
 
         if (scaledIndexVN == ValueNumStore.NoVN)
         {

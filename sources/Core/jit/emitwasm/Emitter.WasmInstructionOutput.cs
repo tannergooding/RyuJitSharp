@@ -25,6 +25,11 @@ public partial class Emitter
 
         switch (format)
         {
+            case IF_NONE:
+            {
+                break;
+            }
+
             case IF_WASM_OPCODE:
             {
                 dst += emitOutputOpcode(dst, ins);

@@ -3191,8 +3191,8 @@ public enum FatalJitErrorCode
     ARMRelocationDescriptorSizeIsNotSupportedForThisTarget = 1636,
     /// <summary>ARM64 empty-alignment descriptors are not supported for this target.</summary>
     ARM64EmptyAlignmentDescriptorsAreNotSupportedForThisTarget = 1637,
-    /// <summary>Previous-instruction sizes are only supported on xarch.</summary>
-    PreviousInstructionSizesAreOnlySupportedOnXarch = 1638,
+    /// <summary>Previous-instruction sizes are only supported on xarch and Wasm.</summary>
+    PreviousInstructionSizesAreOnlySupportedOnXarchOrWasm = 1638,
     /// <summary>WebAssembly instruction descriptors are not supported for this target.</summary>
     WebAssemblyInstructionDescriptorsAreNotSupportedForThisTarget = 1639,
     /// <summary>Align descriptor size is not yet ported for this target.</summary>
@@ -6808,7 +6808,7 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.RegisterPointerCallDescriptorsAreNotSupportedForThisTarget => "Register-pointer call descriptors are not supported for this target.",
             FatalJitErrorCode.ARMRelocationDescriptorSizeIsNotSupportedForThisTarget => "ARM relocation descriptor size is not supported for this target.",
             FatalJitErrorCode.ARM64EmptyAlignmentDescriptorsAreNotSupportedForThisTarget => "ARM64 empty-alignment descriptors are not supported for this target.",
-            FatalJitErrorCode.PreviousInstructionSizesAreOnlySupportedOnXarch => "Previous-instruction sizes are only supported on xarch.",
+            FatalJitErrorCode.PreviousInstructionSizesAreOnlySupportedOnXarchOrWasm => "Previous-instruction sizes are only supported on xarch and Wasm.",
             FatalJitErrorCode.WebAssemblyInstructionDescriptorsAreNotSupportedForThisTarget => "WebAssembly instruction descriptors are not supported for this target.",
             FatalJitErrorCode.AlignDescriptorSizeIsNotYetPortedForThisTarget => "Align descriptor size is not yet ported for this target.",
             FatalJitErrorCode.XarchAlignmentPaddingIsUnsupportedOnThisTarget => "Xarch alignment padding is unsupported on this target.",

@@ -33,7 +33,11 @@ public partial class Compiler
         }
         else if (Configuration.TARGET_ARM64)
         {
-            if (simdBaseType == TYP_DOUBLE)
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                intrinsic = NI_Sve_RoundToPositiveInfinity;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
             {
                 intrinsic = simdSize == 8 ? NI_AdvSimd_CeilingScalar : NI_AdvSimd_Arm64_Ceiling;
             }
@@ -82,7 +86,11 @@ public partial class Compiler
         }
         else if (Configuration.TARGET_ARM64)
         {
-            if (simdBaseType == TYP_DOUBLE)
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                intrinsic = NI_Sve_RoundToNegativeInfinity;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
             {
                 intrinsic = simdSize == 8 ? NI_AdvSimd_FloorScalar : NI_AdvSimd_Arm64_Floor;
             }
@@ -133,11 +141,36 @@ public partial class Compiler
             NamedIntrinsic intrinsic;
             if (simdBaseType == TYP_DOUBLE)
             {
-                intrinsic = simdSize == 8 ? NI_AdvSimd_RoundToNearestScalar : NI_AdvSimd_Arm64_RoundToNearest;
+                switch (simdSize)
+                {
+                    case 8:
+                    {
+                        intrinsic = NI_AdvSimd_RoundToNearestScalar;
+                        break;
+                    }
+
+                    case 16:
+                    {
+                        intrinsic = NI_AdvSimd_Arm64_RoundToNearest;
+                        break;
+                    }
+
+                    case SIZE_UNKNOWN:
+                    {
+                        intrinsic = NI_Sve_RoundToNearest;
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                        return default!;
+                    }
+                }
             }
             else
             {
-                intrinsic = NI_AdvSimd_RoundToNearest;
+                intrinsic = simdSize == SIZE_UNKNOWN ? NI_Sve_RoundToNearest : NI_AdvSimd_RoundToNearest;
             }
             assert(intrinsic != NI_Illegal);
 
@@ -434,7 +467,11 @@ public partial class Compiler
         else if (Configuration.TARGET_ARM64)
         {
             NamedIntrinsic intrinsic;
-            if (simdBaseType == TYP_DOUBLE)
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                intrinsic = NI_Sve_FusedMultiplyAdd;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
             {
                 intrinsic = simdSize == 8 ? NI_AdvSimd_FusedMultiplyAddScalar : NI_AdvSimd_Arm64_FusedMultiplyAdd;
             }
@@ -443,7 +480,7 @@ public partial class Compiler
                 intrinsic = NI_AdvSimd_FusedMultiplyAdd;
             }
 
-            // AdvSimd.FusedMultiplyAdd expects (addend, left, right), while the APIs take (left, right, addend).
+            // {AdvSimd,Sve}.FusedMultiplyAdd expect (addend, left, right), while the APIs take (left, right, addend).
             // We expect op1 and op2 to have already been spilled.
             (op1, op3) = (op3, op1);
             assert(intrinsic != NI_Illegal);

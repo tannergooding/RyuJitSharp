@@ -829,7 +829,7 @@ internal static unsafe class Arm32IndirectLoadStoreTests
         var index = compiler.gtNewIconNode(TYP_INT, 0);
         index.RegNum = REG_R2;
         var tree = new GenTreeIndexAddr(
-            baseAddress, index, TYP_INT, NO_CLASS_HANDLE, elementSize, 8, 12, boundsCheck)
+            baseAddress, index, TYP_INT, NO_CLASS_HANDLE, new ValueSize(elementSize), 8, 12, boundsCheck)
         {
             RegNum = REG_R0,
         };

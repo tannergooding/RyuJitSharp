@@ -45,7 +45,8 @@ public partial class Emitter
                     _ = buffer.Append(CultureInfo.InvariantCulture,
                         $"igInLoop->igLoopBackEdge: IG{group.igLoopBackEdge.GetDisplayId():D2}\n");
 
-                    var hasBackwardNavigation = Configuration.EMIT_BACKWARDS_NAVIGATION || Configuration.TARGET_XARCH;
+                    var hasBackwardNavigation = Configuration.EMIT_BACKWARDS_NAVIGATION ||
+                        Configuration.TARGET_XARCH || Configuration.TARGET_WASM;
                     if (hasBackwardNavigation && group.endsWithAlignInstr())
                     {
                         if (group.igLastIns is not instrDescAlign lastAlign)

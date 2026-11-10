@@ -48,44 +48,74 @@ public sealed partial class CodeGen
             genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL);
         }
 
-        var elementSize = unchecked((uint)tree.ElemSize);
-        if (uint.IsPow2(elementSize) && (elementSize <= 32768))
+        if (Configuration.TARGET_ARM64 && !tree.ElemSize.IsExact)
         {
-            var scale = BitOperations.TrailingZeroCount(elementSize);
-
-            if (Configuration.TARGET_ARM64 && (index.Type != TYP_I_IMPL))
-            {
-                if (scale <= 4)
-                {
-                    Emitter.emitIns_R_R_R_I(
-                        INS_add, tree.Type.EmitActualSize, tree.RegNum, baseAddress.RegNum, indexReg, scale,
-                        INS_OPTS_UXTW);
-                }
-                else
-                {
-                    _ = Emitter.emitIns_Mov(INS_mov, EA_4BYTE, tempReg, indexReg, canSkip: false);
-                    indexReg = tempReg;
-                    genScaledAddArmArch(tree.Type.EmitActualSize, tree.RegNum, baseAddress.RegNum, indexReg, scale);
-                }
-            }
-            else
-            {
-                genScaledAddArmArch(tree.Type.EmitActualSize, tree.RegNum, baseAddress.RegNum, indexReg, scale);
-            }
-        }
-        else
-        {
-            if (Configuration.TARGET_ARM64 && (index.Type != TYP_I_IMPL))
+            if (index.Type != TYP_I_IMPL)
             {
                 var tempIndexReg = _internalRegisters.Extract(tree);
                 _ = Emitter.emitIns_Mov(INS_mov, EA_4BYTE, tempIndexReg, indexReg, canSkip: false);
                 indexReg = tempIndexReg;
             }
 
-            instGen_Set_Reg_To_Imm(EA_4BYTE, tempReg, unchecked((nint)elementSize));
-            var multiplyAddInstruction = Configuration.TARGET_ARM ? INS_mla : INS_madd;
+            if (tree.ElemSize.IsVector)
+            {
+                Emitter.emitIns_R_I(INS_sve_rdvl, EA_8BYTE, tempReg, 1);
+            }
+            else if (tree.ElemSize.IsMask)
+            {
+                assert(tree.ElemType is TYP_MASK);
+                instGen_Set_Reg_To_Zero(EA_8BYTE, tempReg);
+                Emitter.emitIns_R_R_I(INS_sve_addpl, EA_8BYTE, tempReg, tempReg, 1);
+            }
+            else
+            {
+                unreached();
+            }
+
             Emitter.emitIns_R_R_R_R(
-                multiplyAddInstruction, tree.Type.EmitActualSize, tree.RegNum, indexReg, tempReg, baseAddress.RegNum);
+                INS_madd, EA_8BYTE, tree.RegNum, indexReg, tempReg, baseAddress.RegNum);
+        }
+        else
+        {
+            var elementSize = tree.GetElemSize();
+            if (uint.IsPow2(elementSize) && (elementSize <= 32768))
+            {
+                var scale = BitOperations.TrailingZeroCount(elementSize);
+
+                if (Configuration.TARGET_ARM64 && (index.Type != TYP_I_IMPL))
+                {
+                    if (scale <= 4)
+                    {
+                        Emitter.emitIns_R_R_R_I(
+                            INS_add, tree.Type.EmitActualSize, tree.RegNum, baseAddress.RegNum, indexReg, scale,
+                            INS_OPTS_UXTW);
+                    }
+                    else
+                    {
+                        _ = Emitter.emitIns_Mov(INS_mov, EA_4BYTE, tempReg, indexReg, canSkip: false);
+                        indexReg = tempReg;
+                        genScaledAddArmArch(tree.Type.EmitActualSize, tree.RegNum, baseAddress.RegNum, indexReg, scale);
+                    }
+                }
+                else
+                {
+                    genScaledAddArmArch(tree.Type.EmitActualSize, tree.RegNum, baseAddress.RegNum, indexReg, scale);
+                }
+            }
+            else
+            {
+                if (Configuration.TARGET_ARM64 && (index.Type != TYP_I_IMPL))
+                {
+                    var tempIndexReg = _internalRegisters.Extract(tree);
+                    _ = Emitter.emitIns_Mov(INS_mov, EA_4BYTE, tempIndexReg, indexReg, canSkip: false);
+                    indexReg = tempIndexReg;
+                }
+
+                instGen_Set_Reg_To_Imm(EA_4BYTE, tempReg, unchecked((nint)elementSize));
+                var multiplyAddInstruction = Configuration.TARGET_ARM ? INS_mla : INS_madd;
+                Emitter.emitIns_R_R_R_R(
+                    multiplyAddInstruction, tree.Type.EmitActualSize, tree.RegNum, indexReg, tempReg, baseAddress.RegNum);
+            }
         }
 
         if (Configuration.TARGET_ARM)

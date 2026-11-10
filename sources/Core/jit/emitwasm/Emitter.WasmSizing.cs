@@ -132,9 +132,16 @@ public partial class Emitter
         emitIns_BlockTy(ins, WasmValueType.Invalid);
     }
 
-    private void emitIns_IWasm(instruction ins, emitAttr attr, nint immediate)
+    public void emitIns_I(instruction ins, emitAttr attr, nint immediate, bool isLastUse)
     {
         RequireWasmTarget();
+        emitIns_IWasm(ins, attr, immediate, isLastUse);
+    }
+
+    private void emitIns_IWasm(instruction ins, emitAttr attr, nint immediate, bool isLastUse = false)
+    {
+        RequireWasmTarget();
+        assert(!isLastUse || (ins == INS_local_get));
 
         if ((ins == INS_local_get) && (_compiler is not null) && _compiler.opts.OptimizationEnabled
             && emitCanPeepholeLastIns())
@@ -178,6 +185,26 @@ public partial class Emitter
     {
         RequireWasmTarget();
 
+        if ((ins == INS_br_if) && (_compiler is not null) && _compiler.opts.OptimizationEnabled
+            && emitCanPeepholeLastIns())
+        {
+            var lastInsGroup = emitLastInsIG;
+            var lastIns = emitLastIns;
+            if ((lastInsGroup is not null) && (lastIns is not null) && (lastIns.idIns() == INS_i32_eqz))
+            {
+                var previousGroup = lastInsGroup;
+                var previousIns = lastIns;
+                if (emitPrevID(ref previousGroup, ref previousIns) &&
+                    isInsIGSafeForPeepholeOptimization(previousGroup!, lastInsGroup) &&
+                    (previousIns!.idIns() == INS_i32_eqz))
+                {
+                    JITDUMP("\n -- eliding 'i32.eqz; i32.eqz' before 'br_if'.\n");
+                    emitElideWasmInstruction(previousGroup!, previousIns!);
+                    emitElideWasmInstruction(lastInsGroup, lastIns);
+                }
+            }
+        }
+
         var id = emitNewInstrSC(attr, unchecked((nint)depth));
         id.idIns(ins);
         id.idInsFmt(emitInsFormatWasm(ins));
@@ -191,6 +218,28 @@ public partial class Emitter
 
         dispIns(id);
         appendToCurIG(id);
+    }
+
+    private void emitElideWasmInstruction(insGroup ig, instrDesc id)
+    {
+        var size = id.idCodeSize();
+        assert(size <= ushort.MaxValue);
+
+        if (ig == emitCurIG)
+        {
+            assert((uint)emitCurIGsize >= size);
+            emitCurIGsize = unchecked(emitCurIGsize - (int)size);
+        }
+        else
+        {
+            assert(ig.igSize >= size);
+            ig.igSize = unchecked((ushort)(ig.igSize - size));
+        }
+
+        ig.igFlags |= InsGroupFlags.UpdatedInstructionSize;
+        // Keep the descriptor so any already-captured instruction position remains valid.
+        id.idIns(instruction.INS_nop);
+        id.idInsFmt(insFormat.IF_NONE);
     }
 
     public void emitIns_V128Imm(instruction ins, ReadOnlySpan<byte> immediate)
@@ -282,6 +331,11 @@ public partial class Emitter
     private static uint GetWasmCodeSize(instrDesc id)
     {
         RequireWasmTarget();
+
+        if (id.idInsFmt() == insFormat.IF_NONE)
+        {
+            return 0;
+        }
 
         var instruction = id.idIns();
         var opcode = GetInsOpcode(instruction);

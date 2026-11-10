@@ -83,6 +83,27 @@ internal static unsafe class ValueNumArrayAddressTests
         });
     }
 
+    [Test]
+    public static void ScalableElementSizeRetainsTheScaledIndexValueNumber()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+        WithStore((compiler, store) =>
+        {
+            var array = compiler.gtNewLclvNode(TYP_REF, 0);
+            var offset = compiler.gtNewLclvNode(TYP_I_IMPL, 1);
+            var offsetVN = store.VNForExpr(null, TYP_I_IMPL);
+            offset._vnPair.SetBoth(offsetVN);
+            var address = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, array,
+                compiler.gtNewBinaryNode(GT_ADD, TYP_I_IMPL, offset,
+                    compiler.gtNewIconNode(TYP_I_IMPL, 16)));
+            var wrapper = new GenTreeArrAddr(address, TYP_SIMD_ARM64, null, 16);
+            var result = ValueNumStore.NoVN;
+            wrapper.ParseArrayAddress(compiler, out var parsedArray, ref result);
+            Assert.That(parsedArray, Is.SameAs(array));
+            Assert.That(result, Is.EqualTo(offsetVN));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void FailedParsingPreservesTheCallerIndex(bool hasArray)

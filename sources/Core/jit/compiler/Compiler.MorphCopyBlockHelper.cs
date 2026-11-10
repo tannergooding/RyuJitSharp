@@ -445,10 +445,21 @@ public partial class Compiler
                 return tree;
             }
 
-            static GenTreeFlags GetCopyIndirFlags(var_types type)
+            static GenTreeFlags GetCopyIndirFlags(var_types type, GenTreeFlags indirFlags)
             {
                 // Non-GC pieces of a whole struct copy need not be atomic.
-                return varTypeIsGC(type) ? GTF_EMPTY : GTF_IND_ALLOW_NON_ATOMIC;
+                return (indirFlags & GTF_IND_COPYABLE_FLAGS) |
+                    (varTypeIsGC(type) ? GTF_EMPTY : GTF_IND_ALLOW_NON_ATOMIC);
+            }
+
+            static GenTree CopyOrderingFlag(GenTree indir, GenTreeFlags sourceFlags)
+            {
+                if (((sourceFlags & GTF_IND_NONFAULTING) != 0) && ((sourceFlags & GTF_ORDER_SIDEEFF) != 0))
+                {
+                    indir.HasOrderingSideEffect = true;
+                }
+
+                return indir;
             }
 
             GenTree GrabAddress(int offset)
@@ -496,7 +507,9 @@ public partial class Compiler
                     return _compiler.gtNewNothingNode();
                 }
                 JITDUMP("  ...but keeping a nullcheck\n");
-                return _compiler.gtNewIndir(TYP_BYTE, GrabAddress(0));
+                var nullCheck = _compiler.gtNewIndir(
+                    TYP_BYTE, GrabAddress(0), GetCopyIndirFlags(TYP_BYTE, _src.Flags));
+                return CopyOrderingFlag(nullCheck, _src.Flags);
             }
 
             for (var i = 0; i < fieldCount; i++)
@@ -562,7 +575,9 @@ public partial class Compiler
                             }
                             else
                             {
-                                sourceField = _compiler.gtNewIndir(type, GrabAddress(offset), GetCopyIndirFlags(type));
+                                var fieldLoad = _compiler.gtNewIndir(
+                                    type, GrabAddress(offset), GetCopyIndirFlags(type, _src.Flags));
+                                sourceField = CopyOrderingFlag(fieldLoad, _src.Flags);
                             }
                         }
                     }
@@ -598,7 +613,7 @@ public partial class Compiler
                         else
                         {
                             var fieldAddress = GrabAddress(offset);
-                            var flags = GetCopyIndirFlags(type);
+                            var flags = GetCopyIndirFlags(type, _store.Flags);
                             if (_store.Oper is GT_STORE_BLK or GT_STOREIND)
                             {
                                 flags |= _store.Flags & (GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP);
@@ -607,7 +622,8 @@ public partial class Compiler
                                     flags |= GTF_IND_TGT_NOT_HEAP;
                                 }
                             }
-                            destinationStore = _compiler.gtNewStoreIndNode(type, fieldAddress, sourceField, flags);
+                            destinationStore = CopyOrderingFlag(
+                                _compiler.gtNewStoreIndNode(type, fieldAddress, sourceField, flags), _store.Flags);
                         }
                     }
                 }

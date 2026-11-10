@@ -641,7 +641,7 @@ public sealed partial class LinearScan
                     if (Configuration.TARGET_X86)
                     {
                         assert(!varTypeIsLong(tree.AsIndexAddr().Index.Type));
-                        var elemSize = tree.AsIndexAddr().ElemSize;
+                        var elemSize = tree.AsIndexAddr().GetElemSize();
                         needsTemporary = elemSize is not (1 or 2 or 4 or 8);
                         if (needsTemporary)
                         {

@@ -9317,6 +9317,7 @@ public partial struct HWIntrinsicInfo
         HW_Category_Scalar, // NI_Sve_ConditionalExtractLastActiveElementScalar
         HW_Category_Helper, // NI_Sve_ConvertMaskToVector
         HW_Category_Helper, // NI_Sve_ConvertVectorToMask
+        HW_Category_Helper, // NI_Sve_AsVector
         HW_Category_Helper, // NI_Sve_ConversionTrueMask
         HW_Category_Scalar, // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
         HW_Category_Scalar, // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
@@ -9339,6 +9340,7 @@ public partial struct HWIntrinsicInfo
         HW_Category_SIMD, // NI_Sve_TransposeEven_Predicates
         HW_Category_SIMD, // NI_Sve_TransposeOdd_Predicates
         HW_Category_SIMD, // NI_Sve_ReverseElement_Predicates
+        HW_Category_SIMD, // NI_Sve2_SaturatingExtractAndNarrowEven
     ];
 
     private static ReadOnlySpan<HWIntrinsicFlag> s_Arm64Flags => [
@@ -9380,7 +9382,7 @@ public partial struct HWIntrinsicInfo
         HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ConvertToUInt32Native
         HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ConvertToUInt64
         HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ConvertToUInt64Native
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector_Create
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_Scalable, // NI_Vector_Create
         HW_Flag_InvalidNodeId, // NI_Vector_CreateAlternatingSequence
         HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector_CreateGeometricSequence
         HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector_CreateScalar
@@ -10535,6 +10537,7 @@ public partial struct HWIntrinsicInfo
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport | HW_Flag_HasRMWSemantics | HW_Flag_ExplicitMaskedOperation | HW_Flag_LowMaskedOperation, // NI_Sve_ConditionalExtractLastActiveElementScalar
         HW_Flag_Scalable, // NI_Sve_ConvertMaskToVector
         HW_Flag_Scalable | HW_Flag_ExplicitMaskedOperation | HW_Flag_ReturnsPerElementMask | HW_Flag_LowMaskedOperation, // NI_Sve_ConvertVectorToMask
+        HW_Flag_Scalable | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen, // NI_Sve_AsVector
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask, // NI_Sve_ConversionTrueMask
         HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport | HW_Flag_HasRMWSemantics, // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
         HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport | HW_Flag_HasRMWSemantics, // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
@@ -10557,6 +10560,7 @@ public partial struct HWIntrinsicInfo
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask, // NI_Sve_TransposeEven_Predicates
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask, // NI_Sve_TransposeOdd_Predicates
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask, // NI_Sve_ReverseElement_Predicates
+        HW_Flag_Scalable, // NI_Sve2_SaturatingExtractAndNarrowEven
     ];
 
     private static ReadOnlySpan<byte> s_Arm64FltCosts => [
@@ -11753,6 +11757,7 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve_ConditionalExtractLastActiveElementScalar
         unchecked((byte)(-1)), // NI_Sve_ConvertMaskToVector
         unchecked((byte)(-1)), // NI_Sve_ConvertVectorToMask
+        unchecked((byte)(-1)), // NI_Sve_AsVector
         unchecked((byte)(-1)), // NI_Sve_ConversionTrueMask
         unchecked((byte)(-1)), // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
         unchecked((byte)(-1)), // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
@@ -11775,6 +11780,7 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve_TransposeEven_Predicates
         unchecked((byte)(-1)), // NI_Sve_TransposeOdd_Predicates
         unchecked((byte)(-1)), // NI_Sve_ReverseElement_Predicates
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractAndNarrowEven
     ];
 
     private static ReadOnlySpan<ushort> s_Arm64Instructions => [
@@ -11816,7 +11822,7 @@ public partial struct HWIntrinsicInfo
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_Vector_ConvertToUInt32Native
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_Vector_ConvertToUInt64
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_Vector_ConvertToUInt64Native
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_Vector_Create
+        609, 609, 609, 609, 609, 609, 609, 609, 609, 609, // NI_Vector_Create
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_Vector_CreateAlternatingSequence
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_Vector_CreateGeometricSequence
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_Vector_CreateScalar
@@ -12971,6 +12977,7 @@ public partial struct HWIntrinsicInfo
         626, 626, 626, 626, 626, 626, 626, 626, 626, 626, // NI_Sve_ConditionalExtractLastActiveElementScalar
         553, 553, 553, 553, 553, 553, 553, 553, 553, 553, // NI_Sve_ConvertMaskToVector
         632, 632, 632, 632, 632, 632, 632, 632, 632, 632, // NI_Sve_ConvertVectorToMask
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // NI_Sve_AsVector
         731, 731, 731, 731, 731, 731, 731, 731, 731, 731, // NI_Sve_ConversionTrueMask
         0, 0, 0, 0, 714, 720, 714, 720, 0, 0, // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
         0, 0, 0, 0, 715, 721, 715, 721, 0, 0, // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
@@ -12993,6 +13000,7 @@ public partial struct HWIntrinsicInfo
         610, 610, 610, 610, 610, 610, 610, 610, 610, 610, // NI_Sve_TransposeEven_Predicates
         611, 611, 611, 611, 611, 611, 611, 611, 611, 611, // NI_Sve_TransposeOdd_Predicates
         677, 677, 677, 677, 677, 677, 677, 677, 677, 677, // NI_Sve_ReverseElement_Predicates
+        1092, 1096, 1092, 1096, 1092, 1096, 1092, 1096, 0, 0, // NI_Sve2_SaturatingExtractAndNarrowEven
     ];
 
     private static ReadOnlySpan<ManagedInstructionSet> s_Arm64InstructionSets => [
@@ -14189,6 +14197,7 @@ public partial struct HWIntrinsicInfo
         InstructionSet_Sve, // NI_Sve_ConditionalExtractLastActiveElementScalar
         InstructionSet_Sve, // NI_Sve_ConvertMaskToVector
         InstructionSet_Sve, // NI_Sve_ConvertVectorToMask
+        InstructionSet_Sve, // NI_Sve_AsVector
         InstructionSet_Sve, // NI_Sve_ConversionTrueMask
         InstructionSet_Sve, // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
         InstructionSet_Sve, // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
@@ -14211,6 +14220,7 @@ public partial struct HWIntrinsicInfo
         InstructionSet_Sve, // NI_Sve_TransposeEven_Predicates
         InstructionSet_Sve, // NI_Sve_TransposeOdd_Predicates
         InstructionSet_Sve, // NI_Sve_ReverseElement_Predicates
+        InstructionSet_Sve2, // NI_Sve2_SaturatingExtractAndNarrowEven
     ];
 
     private static ReadOnlySpan<byte> s_Arm64IntCosts => [
@@ -15407,6 +15417,7 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve_ConditionalExtractLastActiveElementScalar
         unchecked((byte)(-1)), // NI_Sve_ConvertMaskToVector
         unchecked((byte)(-1)), // NI_Sve_ConvertVectorToMask
+        unchecked((byte)(-1)), // NI_Sve_AsVector
         unchecked((byte)(-1)), // NI_Sve_ConversionTrueMask
         unchecked((byte)(-1)), // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
         unchecked((byte)(-1)), // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
@@ -15429,6 +15440,7 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve_TransposeEven_Predicates
         unchecked((byte)(-1)), // NI_Sve_TransposeOdd_Predicates
         unchecked((byte)(-1)), // NI_Sve_ReverseElement_Predicates
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractAndNarrowEven
     ];
 
     private static ReadOnlySpan<byte> s_Arm64NameData => [
@@ -16401,6 +16413,7 @@ public partial struct HWIntrinsicInfo
 84, 114, 97, 110, 115, 112, 111, 115, 101, 69, 118, 101, 110, 95, 80, 114, 101, 100, 105, 99, 97, 116, 101, 115, 0, // NI_Sve_TransposeEven_Predicates
 84, 114, 97, 110, 115, 112, 111, 115, 101, 79, 100, 100, 95, 80, 114, 101, 100, 105, 99, 97, 116, 101, 115, 0, // NI_Sve_TransposeOdd_Predicates
 82, 101, 118, 101, 114, 115, 101, 69, 108, 101, 109, 101, 110, 116, 95, 80, 114, 101, 100, 105, 99, 97, 116, 101, 115, 0, // NI_Sve_ReverseElement_Predicates
+83, 97, 116, 117, 114, 97, 116, 105, 110, 103, 69, 120, 116, 114, 97, 99, 116, 65, 110, 100, 78, 97, 114, 114, 111, 119, 69, 118, 101, 110, 0, // NI_Sve2_SaturatingExtractAndNarrowEven
     ];
 
     private static ReadOnlySpan<int> s_Arm64NameRanges => [
@@ -17597,6 +17610,7 @@ public partial struct HWIntrinsicInfo
         25527, 41, // NI_Sve_ConditionalExtractLastActiveElementScalar
         25569, 19, // NI_Sve_ConvertMaskToVector
         25589, 19, // NI_Sve_ConvertVectorToMask
+        125, 8, // NI_Sve_AsVector
         25609, 18, // NI_Sve_ConversionTrueMask
         25628, 44, // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
         25673, 44, // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
@@ -17619,6 +17633,7 @@ public partial struct HWIntrinsicInfo
         26115, 24, // NI_Sve_TransposeEven_Predicates
         26140, 23, // NI_Sve_TransposeOdd_Predicates
         26164, 25, // NI_Sve_ReverseElement_Predicates
+        26190, 30, // NI_Sve2_SaturatingExtractAndNarrowEven
     ];
 
     private static ReadOnlySpan<byte> s_Arm64NumArgs => [
@@ -18815,6 +18830,7 @@ public partial struct HWIntrinsicInfo
         3, // NI_Sve_ConditionalExtractLastActiveElementScalar
         1, // NI_Sve_ConvertMaskToVector
         2, // NI_Sve_ConvertVectorToMask
+        1, // NI_Sve_AsVector
         0, // NI_Sve_ConversionTrueMask
         3, // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
         3, // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
@@ -18837,6 +18853,7 @@ public partial struct HWIntrinsicInfo
         2, // NI_Sve_TransposeEven_Predicates
         2, // NI_Sve_TransposeOdd_Predicates
         1, // NI_Sve_ReverseElement_Predicates
+        1, // NI_Sve2_SaturatingExtractAndNarrowEven
     ];
 
     private static ReadOnlySpan<byte> s_Arm64SimdSizes => [
@@ -20033,6 +20050,7 @@ public partial struct HWIntrinsicInfo
         0, // NI_Sve_ConditionalExtractLastActiveElementScalar
         unchecked((byte)(-1)), // NI_Sve_ConvertMaskToVector
         unchecked((byte)(-1)), // NI_Sve_ConvertVectorToMask
+        unchecked((byte)(-1)), // NI_Sve_AsVector
         unchecked((byte)(-1)), // NI_Sve_ConversionTrueMask
         0, // NI_Sve_SaturatingDecrementBy16BitElementCountScalar
         0, // NI_Sve_SaturatingDecrementBy32BitElementCountScalar
@@ -20055,6 +20073,7 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve_TransposeEven_Predicates
         unchecked((byte)(-1)), // NI_Sve_TransposeOdd_Predicates
         unchecked((byte)(-1)), // NI_Sve_ReverseElement_Predicates
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractAndNarrowEven
     ];
 
     private static ReadOnlySpan<HWIntrinsicCategory> s_WasmCategories => [

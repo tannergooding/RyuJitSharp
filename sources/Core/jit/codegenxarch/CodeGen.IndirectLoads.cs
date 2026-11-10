@@ -130,7 +130,7 @@ public sealed partial class CodeGen
             indexReg = tmpReg;
         }
 
-        var scale = unchecked((uint)tree.ElemSize);
+        var scale = tree.GetElemSize();
         switch (scale)
         {
             case 1:

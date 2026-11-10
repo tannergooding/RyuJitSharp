@@ -613,7 +613,7 @@ public sealed partial class WasmRegAlloc
 
         if ((node.Oper is GT_LCL_VAR) && _compiler.lvaGetDesc(node.AsLclVar().LclNum).lvIsRegCandidate)
         {
-            node._lirFlags &= ~LIR.Flags.MultiplyUsed;
+            // No temporary is needed, but codegen must retain the multiple-read metadata.
             return;
         }
 
@@ -626,6 +626,11 @@ public sealed partial class WasmRegAlloc
     private void ConsumeTemporaryRegForOperand(GenTree operand, string reason)
     {
         if ((operand._lirFlags & LIR.Flags.MultiplyUsed) == LIR.Flags.None)
+        {
+            return;
+        }
+
+        if ((operand.Oper is GT_LCL_VAR) && _compiler.lvaGetDesc(operand.AsLclVar().LclNum).lvIsRegCandidate)
         {
             return;
         }

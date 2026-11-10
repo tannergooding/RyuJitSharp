@@ -61,7 +61,8 @@ public readonly partial struct HWIntrinsicInfo
             return NI_Illegal;
         }
 
-        if (isa is InstructionSet_Vector)
+        if (isa is InstructionSet_Vector ||
+            (Configuration.TARGET_ARM64 && isa is InstructionSet_VectorT))
         {
             return LookupIdForIsa(sig, InstructionSet_Vector128, methodName);
         }

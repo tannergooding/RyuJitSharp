@@ -9,7 +9,7 @@ public partial class Compiler
 {
     public GenTree? gtExtractSideEffectsFromUnusedNode(GenTree node)
     {
-        if (node.Oper.IsBlk && !node.Oper.IsStoreBlk)
+        if (node.Oper.IsBlk && !node.Oper.IsStoreBlk && !node.AsIndir().IsVolatile)
         {
             JITDUMP($"Replace an unused BLK node [{node.TreeId:D6}] with a NULLCHECK\n");
             return gtChangeOperToNullCheck(node);

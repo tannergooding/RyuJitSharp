@@ -10,11 +10,19 @@ public sealed class GenTreeIndexAddr : GenTreeOp
 {
     private readonly unsafe CORINFO_CLASS_HANDLE _structElemClass;
     private readonly var_types _elemType;
-    private readonly int _elemSize;
+    private readonly ValueSize _elemSize;
     private readonly int _lenOffset;
     private readonly int _elemOffset;
 
-    public unsafe GenTreeIndexAddr(GenTree arr, GenTree ind, var_types elemType, CORINFO_CLASS_HANDLE structElemClass, int elemSize, int lenOffset, int elemOffset, bool boundsCheck)
+    public unsafe GenTreeIndexAddr(
+        GenTree arr,
+        GenTree ind,
+        var_types elemType,
+        CORINFO_CLASS_HANDLE structElemClass,
+        ValueSize elemSize,
+        int lenOffset,
+        int elemOffset,
+        bool boundsCheck)
         : base(GT_INDEX_ADDR, TYP_BYREF, arr, ind)
     {
         _structElemClass = structElemClass;
@@ -38,8 +46,10 @@ public sealed class GenTreeIndexAddr : GenTreeOp
     /// <summary>The offset from the array's base address to its first element.</summary>
     public int ElemOffset => _elemOffset;
 
-    /// <summary>The size of elements in the array</summary>
-    public int ElemSize => _elemSize;
+    /// <summary>The size of elements in the array.</summary>
+    public ValueSize ElemSize => _elemSize;
+
+    public uint GetElemSize() => _elemSize.ExactSize;
 
     /// <summary>The element type of the array.</summary>
     public var_types ElemType => _elemType;
