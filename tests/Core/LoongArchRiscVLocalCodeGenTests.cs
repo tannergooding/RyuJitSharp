@@ -46,10 +46,83 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         ? regNumber.REG_RISCV64_FT2
         : regNumber.REG_LOONGARCH64_F2;
 
+    private static int LoongArchImmediate(Emitter.instrDesc descriptor)
+    {
+        return unchecked((int)(descriptor.idAddr().iiaGetInstrEncode() << 10)) >> 20;
+    }
+
     [SetUp]
     public static void SetUp()
     {
         Assume.That(Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64);
+    }
+
+    [TestCase(0)]
+    [TestCase(16)]
+    [TestCase(2032)]
+    public static void LoongArch64FuncletPrologSavesReturnAddressAndOutgoingSpace(int outgoingArgSpaceSize)
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
+        WithFunclet(outgoingArgSpaceSize, (compiler, codeGen, block) =>
+        {
+            codeGen.genCaptureFuncletPrologEpilogInfo();
+            var prolog = codeGen.Emitter.emitGetFirstPrologIG();
+            CurrentGroup(codeGen.Emitter) = prolog;
+            prolog.igFlags = InsGroupFlags.FuncletProlog;
+
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            codeGen.genFuncletProlog(block);
+
+            Assert.That(descriptors[initialCount].idIns(), Is.EqualTo(INS_addi_d));
+            Assert.That(LoongArchImmediate(descriptors[initialCount]), Is.EqualTo(-Configuration.STACK_ALIGN));
+            Assert.That(descriptors[initialCount + 1].idIns(), Is.EqualTo(INS_st_d));
+            Assert.That(descriptors[initialCount + 1].idReg1(), Is.EqualTo(REG_LOONGARCH64_RA));
+            Assert.That(LoongArchImmediate(descriptors[initialCount + 1]), Is.EqualTo(Configuration.REGSIZE_BYTES));
+            Assert.That(descriptors.Count - initialCount, Is.EqualTo(outgoingArgSpaceSize == 0 ? 2 : 3));
+            if (outgoingArgSpaceSize > 0)
+            {
+                Assert.That(descriptors[initialCount + 2].idIns(), Is.EqualTo(INS_addi_d));
+                Assert.That(LoongArchImmediate(descriptors[initialCount + 2]), Is.EqualTo(-outgoingArgSpaceSize));
+            }
+        });
+    }
+
+    [TestCase(0)]
+    [TestCase(16)]
+    [TestCase(2032)]
+    public static void LoongArch64FuncletEpilogRestoresReturnAddressAndOutgoingSpace(int outgoingArgSpaceSize)
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
+        WithFunclet(outgoingArgSpaceSize, (_, codeGen, block) =>
+        {
+            codeGen.genCaptureFuncletPrologEpilogInfo();
+            var group = CurrentGroup(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction group.");
+            group.igFlags = InsGroupFlags.FuncletEpilog | InsGroupFlags.OutOfOrderHead;
+
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            codeGen.genFuncletEpilog(block);
+
+            var returnAddressLoad = initialCount + ((outgoingArgSpaceSize == 0) ? 0 : 1);
+            if (outgoingArgSpaceSize > 0)
+            {
+                Assert.That(descriptors[initialCount].idIns(), Is.EqualTo(INS_addi_d));
+                Assert.That(LoongArchImmediate(descriptors[initialCount]), Is.EqualTo(outgoingArgSpaceSize));
+            }
+
+            Assert.That(descriptors[returnAddressLoad].idIns(), Is.EqualTo(INS_ld_d));
+            Assert.That(descriptors[returnAddressLoad].idReg1(), Is.EqualTo(REG_LOONGARCH64_RA));
+            Assert.That(LoongArchImmediate(descriptors[returnAddressLoad]), Is.EqualTo(Configuration.REGSIZE_BYTES));
+            Assert.That(descriptors[^2].idIns(), Is.EqualTo(INS_addi_d));
+            Assert.That(LoongArchImmediate(descriptors[^2]), Is.EqualTo(Configuration.STACK_ALIGN));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_jirl));
+        });
     }
 
     [Test]
@@ -2529,6 +2602,45 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             JitTls.Compiler = previous;
         }
+    }
+
+    private static void WithFunclet(
+        int outgoingArgSpaceSize, Action<Compiler, CodeGen, BasicBlock> action)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+            compiler.lvaMonAcquired = BAD_VAR_NUM;
+            compiler.lvaResumedIndicator = BAD_VAR_NUM;
+            compiler.lvaAsyncThreadObjectVar = BAD_VAR_NUM;
+            compiler.lvaAsyncExecutionContextVar = BAD_VAR_NUM;
+            compiler.lvaAsyncSynchronizationContextVar = BAD_VAR_NUM;
+            compiler.lvaOutgoingArgSpaceSize.ResetWritePhase();
+            compiler.lvaOutgoingArgSpaceSize.Value = outgoingArgSpaceSize;
+            compiler.compHndBBtabCount = 1;
+            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = new UnwindInfo() }];
+            compiler.compFuncInfoCount = 1;
+            compiler.fgFuncletsCreated = true;
+            compiler.funCurrentFunc().GetUnwindInfo().InitUnwindInfo(compiler, null, null);
+
+            var block = new BasicBlock(null, null)
+            {
+                CatchType = bbCatchType.BBCT_FINALLY,
+                HndIndex = 0,
+            };
+            compiler.compHndBBtab = [
+                new EHblkDsc {
+                    ebdTyp = bbCatchType.BBCT_FINALLY,
+                    ebdHndBeg = block,
+                    ebdHndLast = block,
+                },
+            ];
+            compiler.compCurBB = block;
+            codeGen.resetFramePointerUsedWritePhase();
+            codeGen.IsFramePointerUsed = true;
+
+            action(compiler, codeGen, block);
+        });
     }
 
     private static FatalJitException? CaptureFatalJitException(Action action)

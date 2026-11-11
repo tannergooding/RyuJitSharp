@@ -599,7 +599,7 @@ public partial class Compiler
             {
                 codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(false);
             }
-            else if (opts.compJitSaveFpLrWithCalleeSavedRegisters is 2 or 3)
+            else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 2)
             {
                 codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(true);
             }

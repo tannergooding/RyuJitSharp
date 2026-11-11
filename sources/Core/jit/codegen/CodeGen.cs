@@ -105,7 +105,6 @@ public sealed partial class CodeGen : ICodeGen
         }
 
         genSaveFpLrWithAllCalleeSavedRegisters = false;
-        genForceFuncletFrameType5 = false;
         genReverseAndPairCalleeSavedRegisters = false;
     }
 

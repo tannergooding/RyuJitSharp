@@ -78,7 +78,7 @@ internal static unsafe class Arm64FrameLayoutTests
 
     [TestCase(1, 24, -8)]
     [TestCase(2, -8, -24)]
-    [TestCase(3, -8, -24)]
+    [TestCase(3, 24, -8)]
     public static void FinalLayoutRelocatesFpLrWithoutOverlappingArguments(
         int placementOption, int localOffset, int callerSpOffset)
     {

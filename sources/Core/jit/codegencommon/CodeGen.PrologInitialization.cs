@@ -299,9 +299,7 @@ public sealed partial class CodeGen
             Emitter.emitIns(WasmInstructions.INS_I_add);
         }
 
-        Emitter.emitIns_I(INS_i32_const, EA_4BYTE, 0);
-        Emitter.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, untrLclHi - untrLclLo);
-        Emitter.emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+        genWasmZeroInit(unchecked((nuint)(untrLclHi - untrLclLo)));
     }
 
     private void genReportGenericContextArgWasm()

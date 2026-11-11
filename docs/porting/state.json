@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "9ced5782482614d2183ad536527e2ad1e01dc052",
-    "targetObservedAt": "2026-11-10",
-    "reconciledCommit": "9ced5782482614d2183ad536527e2ad1e01dc052"
+    "targetCommit": "62b13ead8ce0b3caa496a8503f197d7107b9a9c8",
+    "targetObservedAt": "2026-11-11",
+    "reconciledCommit": "62b13ead8ce0b3caa496a8503f197d7107b9a9c8"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Build or locate a matched x64 native JIT at reconciled commit 9ced5782482614d2183ad536527e2ad1e01dc052, then capture recursive-tail-call-to-loop phase/codegen behavior with an early setup following an earlier argument save. The 35-method Checked x64 Importation capture from 59e1f8f3a9501c931f6e0dbd41e8956506f3fd44 is not evidence for this revision (34/35 prefixes matched; the sole difference is accepted D015/B322). Preserve dynamicTlsInputBoundary unchanged and revisit only with a reproducible EE allocation sequence or upstream correction. Wasm GC-info emission remains unverified. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested; AMD64 unwind-V3 encoders remain deferred until the native path is wired. Do not claim full runtime parity from source reconciliation.",
+    "nextAction": "Continue full-runtime parity verification at 62b13ead8ce0b3caa496a8503f197d7107b9a9c8: obtain matched native JIT evidence and compare the changed codegen behavior; the focused target fixtures validate managed descriptor paths, not execution of emitted code on those architectures. Then capture recursive-tail-call-to-loop phase/codegen behavior with an early setup following an earlier argument save. The 35-method Checked x64 Importation capture from 59e1f8f3a9501c931f6e0dbd41e8956506f3fd44 is not evidence for this revision (34/35 prefixes matched; the sole difference is accepted D015/B322). Preserve dynamicTlsInputBoundary unchanged and revisit only with a reproducible EE allocation sequence or upstream correction. Wasm GC-info emission remains unverified. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested; AMD64 unwind-V3 encoders remain deferred until the native path is wired. Do not claim full runtime parity from source reconciliation.",
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
       "E03: isIntrinsicType now uses a per-Compiler last-handle boolean cache; the pinned repeated-handle profile is under artifacts\\e03-isintrinsictype. Keep primitive mappings and nullable/enum predicates direct pending repeated-handle evidence and complete output/tri-state semantics.",
@@ -29,6 +29,42 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "return-address-only-funclet-frames",
+      "native": [
+        "src\\coreclr\\jit\\codegen.h",
+        "src\\coreclr\\jit\\codegenarm64.cpp",
+        "src\\coreclr\\jit\\codegenriscv64.cpp",
+        "src\\coreclr\\jit\\codegenloongarch64.cpp",
+        "src\\coreclr\\jit\\codegencommon.cpp",
+        "src\\coreclr\\jit\\emitarm64.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegencommon\\CodeGen.FuncletPrologEpilog.cs",
+        "sources\\Core\\jit\\codegenloongarch64\\CodeGen.FuncletPrologEpilog.cs",
+        "sources\\Core\\jit\\codegenarm64\\CodeGen.FramePolicy.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.FinalFrameLayout.Locals.cs",
+        "sources\\Core\\jit\\emit\\Emitter.PatchpointDependencies.cs"
+      ],
+      "disposition": "The shared managed partial implements the ARM64 and RISC-V64 changes; LoongArch64 remains target-owned. These funclets save only the return address and reserve aligned outgoing argument space. The ARM64 register-only return now reaches its existing target recorder through the shared wrapper, and option 3 no longer forces frame type 5.",
+      "sourceCommit": "62b13ead8ce0b3caa496a8503f197d7107b9a9c8"
+    },
+    {
+      "area": "wasm-small-zero-initialization",
+      "native": [
+        "src\\coreclr\\jit\\codegenwasm.cpp",
+        "src\\coreclr\\jit\\lowerwasm.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegenwasm\\CodeGen.WasmNodeDispatch.cs",
+        "sources\\Core\\jit\\codegencommon\\CodeGen.PrologInitialization.cs",
+        "sources\\Core\\jit\\lower\\Lowering.Blocks.cs",
+        "tests\\Targets\\WasmEmitterOutputTests.cs",
+        "tests\\Core\\BlockStoreLoweringTargetTests.cs"
+      ],
+      "disposition": "Wasm zero initialization uses scalar stores for 1, 2, 4, and 8 bytes and memory.fill otherwise. The managed lowering marks zero fill values contained so codegen consumes them consistently; focused target fixtures cover emitted descriptors and lowering.",
+      "sourceCommit": "62b13ead8ce0b3caa496a8503f197d7107b9a9c8"
+    },
     {
       "area": "universal-async-resume-codegen",
       "native": [
@@ -1228,8 +1264,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "9ced5782482614d2183ad536527e2ad1e01dc052",
-    "reconciledCommit": "9ced5782482614d2183ad536527e2ad1e01dc052",
+    "targetInputCommit": "62b13ead8ce0b3caa496a8503f197d7107b9a9c8",
+    "reconciledCommit": "62b13ead8ce0b3caa496a8503f197d7107b9a9c8",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

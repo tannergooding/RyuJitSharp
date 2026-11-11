@@ -7,8 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    internal bool genForceFuncletFrameType5;
-
     public void SetSaveFpLrWithAllCalleeSavedRegisters(bool value)
     {
         if (!Configuration.TARGET_ARM64)
@@ -19,16 +17,5 @@ public sealed partial class CodeGen
 
         JITDUMP($"Setting genSaveFpLrWithAllCalleeSavedRegisters to {dspBool(value)}\n");
         genSaveFpLrWithAllCalleeSavedRegisters = value;
-
-        if (genSaveFpLrWithAllCalleeSavedRegisters)
-        {
-            // Frame type 5 needs a large outgoing argument area and is otherwise rare.
-            // Its nonempty-area requirement is checked when selecting the frame type.
-            if ((_compiler.opts.compJitSaveFpLrWithCalleeSavedRegisters == 3) ||
-                _compiler.compStressCompile(Compiler.STRESS_GENERIC_VARN, 50))
-            {
-                genForceFuncletFrameType5 = true;
-            }
-        }
     }
 }

@@ -21,6 +21,12 @@ public partial class Emitter
             return;
         }
 
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_RArm64(ins, attr, reg);
+            return;
+        }
+
         FatalJitException.ThrowFatalJitException(
         CORJIT_SKIPPED,
         FatalJitErrorCode.TargetRegisterInstructionRecordingIsNotImplemented

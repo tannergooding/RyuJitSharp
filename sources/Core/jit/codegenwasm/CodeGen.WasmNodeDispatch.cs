@@ -1690,9 +1690,7 @@ public sealed partial class CodeGen
                 if (needsZeroing)
                 {
                     GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
-                    GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, 0);
-                    GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)amount));
-                    GetEmitter().emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+                    genWasmZeroInit(amount);
                 }
 
                 GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
@@ -1902,7 +1900,7 @@ public sealed partial class CodeGen
         uint destOffset = 0;
         uint srcOffset = 0;
 
-        // Unwrap a contained GT_INIT_VAL so its fill value, not the wrapper, is pushed onto the value stack.
+        // Unwrap a contained GT_INIT_VAL to consume its fill value.
         var srcForConsume = src.Oper is GT_INIT_VAL ? src.AsUnOp().Op1 : src;
         assert(src.Oper is not GT_INIT_VAL || src.IsContained);
 
@@ -1931,7 +1929,7 @@ public sealed partial class CodeGen
                 src = src.AsUnOp().Op1;
             }
 
-            assert(!src.IsContained);
+            assert(src.IsContained == src.IsIntegralConst(0));
             assert(!isCopyBlk);
             assert(isNativeOp);
         }
@@ -1985,9 +1983,8 @@ public sealed partial class CodeGen
 
         if (isNativeOp)
         {
-            if (src.IsContained)
+            if (isCopyBlk && src.IsContained)
             {
-                assert(isCopyBlk);
                 assert(srcReg != REG_WASM_NA);
                 // A contained source may not be on the value stack, so manufacture its address.
                 genEmitLocalGet(srcReg, WasmValueType.I);
@@ -1998,8 +1995,15 @@ public sealed partial class CodeGen
                 }
             }
 
-            emit.emitIns_I(INS_i32_const, EA_4BYTE, unchecked((nint)blkOp.Size));
-            emit.emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+            if (!isCopyBlk && src.IsContained)
+            {
+                genWasmZeroInit(blkOp.Size);
+            }
+            else
+            {
+                emit.emitIns_I(INS_i32_const, EA_4BYTE, unchecked((nint)blkOp.Size));
+                emit.emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+            }
             genUpdateLife(blkOp);
             return;
         }
@@ -2063,17 +2067,58 @@ public sealed partial class CodeGen
     private void genCodeForInitBlkLoopWasm(GenTreeBlk blkOp)
     {
         // TODO-WASM: In multi-threaded Wasm we will need to generate a for loop that atomically zeroes one GC ref
-        //  at a time. Right now we're single-threaded, so we can just use memory.fill.
+        //  at a time. Right now we're single-threaded, so regular stores and memory.fill suffice.
         assert(!WasmThreadSupport);
 
         // FIXME-WASM: We're missing a null check here.
 
         genConsumeOperands(blkOp);
-        // Emit the value constant expected by the memory.fill opcode (zero)
-        GetEmitter().emitIns_I(INS_i32_const, EA_4BYTE, 0);
-        // Emit the size constant expected by the memory.copy and memory.fill opcodes
-        GetEmitter().emitIns_I(INS_i32_const, EA_4BYTE, unchecked((nint)blkOp.Size));
-        GetEmitter().emitIns_I(INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
+        genWasmZeroInit(blkOp.Size);
+    }
+
+    private void genWasmZeroInit(nuint size)
+    {
+        var store = INS_invalid;
+        switch (size)
+        {
+            case 1:
+            {
+                store = INS_i32_store8;
+                break;
+            }
+
+            case 2:
+            {
+                store = INS_i32_store16;
+                break;
+            }
+
+            case 4:
+            {
+                store = INS_i32_store;
+                break;
+            }
+
+            case 8:
+            {
+                store = INS_i64_store;
+                break;
+            }
+        }
+
+        var emit = GetEmitter();
+        var valueAttribute = (size == 8) ? EA_8BYTE : EA_4BYTE;
+        emit.emitIns_I((size == 8) ? INS_i64_const : INS_i32_const, valueAttribute, 0);
+
+        if (store is not INS_invalid)
+        {
+            emit.emitIns_I(store, valueAttribute, 0);
+        }
+        else
+        {
+            emit.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)size));
+            emit.emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+        }
     }
 
     private static uint PackIntrinsicAndType(NamedIntrinsic intrinsic, var_types type)

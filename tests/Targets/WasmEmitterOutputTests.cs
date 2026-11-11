@@ -413,6 +413,43 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
+    [TestCase(1, INS_i32_const, INS_i32_store8)]
+    [TestCase(2, INS_i32_const, INS_i32_store16)]
+    [TestCase(4, INS_i32_const, INS_i32_store)]
+    [TestCase(8, INS_i64_const, INS_i64_store)]
+    [TestCase(3, INS_i32_const, INS_memory_fill)]
+    public static void ZeroInitializationUsesScalarStoresForSmallSizes(
+        int size, instruction valueInstruction, instruction storeInstruction)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var descriptors = CurrentDescriptors(codeGen.Emitter) ??
+                throw new AssertionException("Missing Wasm instruction descriptors.");
+            var initialCount = descriptors.Count;
+            var addressInstruction = Configuration.TARGET_64BIT ? INS_i64_const : INS_i32_const;
+            var pointerInstruction = Configuration.TARGET_64BIT ? INS_i64_const : INS_i32_const;
+            codeGen.Emitter.emitIns_I(addressInstruction, Globals.EA_PTRSIZE, 16);
+            GenWasmZeroInit(codeGen, unchecked((nuint)size));
+
+            instruction[] expected = (storeInstruction is INS_memory_fill)
+                ? [addressInstruction, valueInstruction, pointerInstruction, INS_memory_fill]
+                : [addressInstruction, valueInstruction, storeInstruction];
+            var actual = new instruction[descriptors.Count - initialCount];
+            for (var index = 0; index < actual.Length; index++)
+            {
+                actual[index] = descriptors[initialCount + index].idIns();
+            }
+
+            Assert.That(actual, Is.EqualTo(expected));
+            Assert.That(descriptors[initialCount].idSmallCns(), Is.EqualTo(16));
+            Assert.That(descriptors[initialCount + 1].idSmallCns(), Is.Zero);
+            if (storeInstruction is INS_memory_fill)
+            {
+                Assert.That(descriptors[initialCount + 2].idSmallCns(), Is.EqualTo(size));
+            }
+        });
+    }
+
     [Test]
     public static void NativeAotPrologEmitsFrameIdentity()
     {
@@ -922,6 +959,9 @@ internal static unsafe class WasmEmitterOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_UseBlockInit")]
     private static extern void SetUseBlockInit(CodeGen codeGen, bool value);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genWasmZeroInit")]
+    private static extern void GenWasmZeroInit(CodeGen codeGen, nuint size);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
     private static extern ref insGroup? FirstInstructionGroup(Emitter emitter);

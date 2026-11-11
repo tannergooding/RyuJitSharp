@@ -44,7 +44,6 @@ internal static unsafe class CodeGenSharedGenerationTests
             if (Configuration.TARGET_ARM64)
             {
                 Assert.That(codeGen.IsSaveFpLrWithAllCalleeSavedRegisters, Is.False);
-                Assert.That(codeGen.genForceFuncletFrameType5, Is.False);
                 Assert.That(codeGen.genReverseAndPairCalleeSavedRegisters, Is.False);
             }
             if (TestConfiguration.IsDebug)

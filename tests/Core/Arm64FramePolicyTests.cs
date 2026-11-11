@@ -13,37 +13,12 @@ internal static unsafe class Arm64FramePolicyTests
     {
         WithCodeGen(0, codeGen => {
             Assert.That(codeGen.IsSaveFpLrWithAllCalleeSavedRegisters, Is.False);
-            Assert.That(codeGen.genForceFuncletFrameType5, Is.False);
 
             codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(true);
             Assert.That(codeGen.IsSaveFpLrWithAllCalleeSavedRegisters, Is.True);
-            Assert.That(codeGen.genForceFuncletFrameType5, Is.False);
 
             codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(false);
             Assert.That(codeGen.IsSaveFpLrWithAllCalleeSavedRegisters, Is.False);
-            Assert.That(codeGen.genForceFuncletFrameType5, Is.False);
-        });
-    }
-
-    [Test]
-    public static void OptionThreeForcesFrameTypeFiveOnlyAfterEnablingAndStaysForced()
-    {
-        WithCodeGen(3, codeGen => {
-            codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(false);
-            Assert.That(codeGen.IsSaveFpLrWithAllCalleeSavedRegisters, Is.False);
-            Assert.That(codeGen.genForceFuncletFrameType5, Is.False);
-
-            codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(true);
-            Assert.That(codeGen.IsSaveFpLrWithAllCalleeSavedRegisters, Is.True);
-            Assert.That(codeGen.genForceFuncletFrameType5, Is.True);
-
-            codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(false);
-            Assert.That(codeGen.IsSaveFpLrWithAllCalleeSavedRegisters, Is.False);
-            Assert.That(codeGen.genForceFuncletFrameType5, Is.True);
-
-            codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(true);
-            Assert.That(codeGen.IsSaveFpLrWithAllCalleeSavedRegisters, Is.True);
-            Assert.That(codeGen.genForceFuncletFrameType5, Is.True);
         });
     }
 

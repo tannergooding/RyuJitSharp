@@ -14,6 +14,34 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class BlockStoreLoweringTargetTests
 {
+    [TestCase(1)]
+    [TestCase(2)]
+    [TestCase(4)]
+    [TestCase(8)]
+    [TestCase(16)]
+    public static void WasmZeroInitializationContainsTheFillValue(int size)
+    {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the Wasm target.");
+
+        WithCompiler(compiler => {
+            var destination = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var fill = compiler.gtNewIconNode(TYP_INT, 0);
+            var initialization = new GenTreeUnOp(GT_INIT_VAL, TYP_INT, fill);
+            var store = new GenTreeBlk(TYP_STRUCT, destination, initialization, new ClassLayout(size));
+            var block = NewBlock(destination, fill, initialization, store);
+            compiler.compCurBB = block;
+            compiler.fgNodeThreading = NodeThreading.LIR;
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+            LoweringBlock(lowering) = block;
+
+            LowerInitBlockStore(lowering, store);
+
+            Assert.That(store._kind, Is.EqualTo(GenTreeBlk.BlkOpKindNativeOpcode));
+            Assert.That(initialization.IsContained, Is.True);
+            Assert.That(fill.IsContained, Is.True);
+        });
+    }
+
     [Test]
     public static void UnaddressableLocalFieldBlockSourceUsesNonFaultingAddressLoads()
     {
@@ -91,6 +119,9 @@ internal static unsafe class BlockStoreLoweringTargetTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerNode")]
     private static extern GenTree? LowerNode(Lowering lowering, GenTree node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerInitBlockStore")]
+    private static extern void LowerInitBlockStore(Lowering lowering, GenTreeBlk block);
 
     private static void WithCompiler(Action<Compiler> action)
     {

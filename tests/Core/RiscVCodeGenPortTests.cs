@@ -1262,11 +1262,10 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [TestCase(0, -32, 0, false)]
-    [TestCase(16, -48, 16, false)]
-    [TestCase(2032, -32, 0, true)]
-    public static void FuncletPrologPreservesRiscVFrameShapes(
-        int outgoingArgSpaceSize, int firstStackAdjustment, int saveOffset, bool splitFrame)
+    [TestCase(0)]
+    [TestCase(16)]
+    [TestCase(2032)]
+    public static void FuncletPrologSavesReturnAddressAndOutgoingSpace(int outgoingArgSpaceSize)
     {
         WithFunclet(outgoingArgSpaceSize, (compiler, codeGen, block) =>
         {
@@ -1290,24 +1289,22 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(firstDescriptor.idIns(), Is.EqualTo(INS_addi));
             Assert.That(firstDescriptor.idReg1(), Is.EqualTo(REG_SPBASE));
             Assert.That(firstDescriptor.idReg2(), Is.EqualTo(REG_SPBASE));
-            Assert.That(firstDescriptor.idSmallCns(), Is.EqualTo(firstStackAdjustment));
+            Assert.That(firstDescriptor.idSmallCns(), Is.EqualTo(-Configuration.STACK_ALIGN));
 
             if (!TestConfiguration.IsDebug)
             {
-                var expected = splitFrame
-                    ? (instruction[])[INS_addi, INS_sd, INS_sd, INS_sd, INS_addi]
-                    : [INS_addi, INS_sd, INS_sd, INS_sd];
+                var expected = (outgoingArgSpaceSize == 0)
+                    ? (instruction[])[INS_addi, INS_sd]
+                    : [INS_addi, INS_sd, INS_addi];
                 Assert.That(descriptors.Skip(initialInstructionCount).Select(descriptor => descriptor.idIns()),
                     Is.EqualTo(expected));
-                Assert.That(descriptors[initialInstructionCount + 1].idReg1(), Is.EqualTo(REG_FP));
-                Assert.That(descriptors[initialInstructionCount + 1].idSmallCns(), Is.EqualTo(saveOffset));
-                Assert.That(descriptors[initialInstructionCount + 2].idReg1(), Is.EqualTo(REG_RA));
-                Assert.That(descriptors[initialInstructionCount + 2].idSmallCns(), Is.EqualTo(saveOffset + 8));
-                Assert.That(descriptors[initialInstructionCount + 3].idReg1(), Is.EqualTo(REG_S1));
-                Assert.That(descriptors[initialInstructionCount + 3].idSmallCns(), Is.EqualTo(saveOffset + 16));
-                if (splitFrame)
+                Assert.That(descriptors[initialInstructionCount + 1].idReg1(), Is.EqualTo(REG_RA));
+                Assert.That(descriptors[initialInstructionCount + 1].idSmallCns(),
+                    Is.EqualTo(Configuration.REGSIZE_BYTES));
+                if (outgoingArgSpaceSize > 0)
                 {
-                    Assert.That(descriptors[initialInstructionCount + 4].idSmallCns(), Is.EqualTo(-2032));
+                    Assert.That(descriptors[initialInstructionCount + 2].idSmallCns(),
+                        Is.EqualTo(-outgoingArgSpaceSize));
                 }
 
                 Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
@@ -1315,11 +1312,10 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [TestCase(0, 32, false)]
-    [TestCase(16, 48, false)]
-    [TestCase(2032, 32, true)]
-    public static void FuncletEpilogRestoresRiscVFrameShapes(
-        int outgoingArgSpaceSize, int finalStackAdjustment, bool splitFrame)
+    [TestCase(0)]
+    [TestCase(16)]
+    [TestCase(2032)]
+    public static void FuncletEpilogRestoresReturnAddressAndOutgoingSpace(int outgoingArgSpaceSize)
     {
         WithFunclet(outgoingArgSpaceSize, (compiler, codeGen, block) =>
         {
@@ -1343,26 +1339,24 @@ internal static unsafe class RiscVCodeGenPortTests
             if (TestConfiguration.IsDebug)
             {
                 var firstDescriptor = descriptors[initialInstructionCount];
-                Assert.That(firstDescriptor.idIns(), Is.EqualTo(splitFrame ? INS_addi : INS_ld));
-                Assert.That(firstDescriptor.idSmallCns(), Is.EqualTo(splitFrame ? 2032 : outgoingArgSpaceSize + 16));
+                Assert.That(firstDescriptor.idIns(),
+                    Is.EqualTo((outgoingArgSpaceSize == 0) ? INS_ld : INS_addi));
+                Assert.That(firstDescriptor.idSmallCns(),
+                    Is.EqualTo((outgoingArgSpaceSize == 0) ? Configuration.REGSIZE_BYTES : outgoingArgSpaceSize));
             }
             else
             {
-                var expected = splitFrame
-                    ? (instruction[])[INS_addi, INS_ld, INS_ld, INS_ld, INS_addi, INS_jalr]
-                    : [INS_ld, INS_ld, INS_ld, INS_addi, INS_jalr];
+                var expected = (outgoingArgSpaceSize == 0)
+                    ? (instruction[])[INS_ld, INS_addi, INS_jalr]
+                    : [INS_addi, INS_ld, INS_addi, INS_jalr];
                 Assert.That(descriptors.Skip(initialInstructionCount).Select(descriptor => descriptor.idIns()),
                     Is.EqualTo(expected));
 
-                var firstLoad = initialInstructionCount + (splitFrame ? 1 : 0);
-                var saveOffset = splitFrame ? 0 : outgoingArgSpaceSize;
-                Assert.That(descriptors[firstLoad].idReg1(), Is.EqualTo(REG_S1));
-                Assert.That(descriptors[firstLoad].idSmallCns(), Is.EqualTo(saveOffset + 16));
-                Assert.That(descriptors[firstLoad + 1].idReg1(), Is.EqualTo(REG_RA));
-                Assert.That(descriptors[firstLoad + 1].idSmallCns(), Is.EqualTo(saveOffset + 8));
-                Assert.That(descriptors[firstLoad + 2].idReg1(), Is.EqualTo(REG_FP));
-                Assert.That(descriptors[firstLoad + 2].idSmallCns(), Is.EqualTo(saveOffset));
-                Assert.That(descriptors[^2].idSmallCns(), Is.EqualTo(finalStackAdjustment));
+                var returnAddressLoad = initialInstructionCount + ((outgoingArgSpaceSize == 0) ? 0 : 1);
+                Assert.That(descriptors[returnAddressLoad].idReg1(), Is.EqualTo(REG_RA));
+                Assert.That(descriptors[returnAddressLoad].idSmallCns(),
+                    Is.EqualTo(Configuration.REGSIZE_BYTES));
+                Assert.That(descriptors[^2].idSmallCns(), Is.EqualTo(Configuration.STACK_ALIGN));
                 Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_R0));
                 Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_RA));
                 Assert.That(compiler.compGeneratingUnwindEpilog, Is.False);

@@ -19,7 +19,7 @@ internal static class Arm64FuncletPrologEpilogTests
     [TestCase(0)]
     [TestCase(16)]
     [TestCase(512)]
-    public static void FuncletPrologPreservesArm64FrameShapes(int outgoingArgSpaceSize)
+    public static void FuncletPrologSavesReturnAddressAndOutgoingSpace(int outgoingArgSpaceSize)
     {
         WithFunclet(outgoingArgSpaceSize, (compiler, codeGen, block) =>
         {
@@ -30,21 +30,21 @@ internal static class Arm64FuncletPrologEpilogTests
 
             codeGen.genFuncletProlog(block);
 
-            var expected = outgoingArgSpaceSize switch
-            {
-                0 => (instruction[])[INS_stp],
-                16 => [INS_sub, INS_stp],
-                _ => [INS_stp, INS_sub],
-            };
-            Assert.That(Descriptors(codeGen.Emitter).Select(descriptor => descriptor.idIns()),
+            var expected = (outgoingArgSpaceSize == 0)
+                ? (instruction[])[INS_str]
+                : [INS_str, INS_sub];
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors.Select(descriptor => descriptor.idIns()),
                 Is.EqualTo(expected));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(regNumber.REG_ARM64_LR));
+            Assert.That(descriptors[0].idSmallCns(), Is.EqualTo(-Configuration.STACK_ALIGN));
         });
     }
 
     [TestCase(0)]
     [TestCase(16)]
     [TestCase(512)]
-    public static void FuncletEpilogRestoresArm64FrameShapes(int outgoingArgSpaceSize)
+    public static void FuncletEpilogRestoresReturnAddressAndOutgoingSpace(int outgoingArgSpaceSize)
     {
         WithFunclet(outgoingArgSpaceSize, (_, codeGen, _) =>
         {
@@ -55,14 +55,16 @@ internal static class Arm64FuncletPrologEpilogTests
 
             codeGen.genFuncletEpilog(new BasicBlock(null, null));
 
-            var expected = outgoingArgSpaceSize switch
-            {
-                0 => (instruction[])[INS_ldp, INS_ret],
-                16 => [INS_ldp, INS_add, INS_ret],
-                _ => [INS_add, INS_ldp, INS_ret],
-            };
-            Assert.That(Descriptors(codeGen.Emitter).Select(descriptor => descriptor.idIns()),
+            var expected = (outgoingArgSpaceSize == 0)
+                ? (instruction[])[INS_ldr, INS_ret]
+                : [INS_add, INS_ldr, INS_ret];
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors.Select(descriptor => descriptor.idIns()),
                 Is.EqualTo(expected));
+            var returnAddressLoad = descriptors[^2];
+            Assert.That(returnAddressLoad.idReg1(), Is.EqualTo(regNumber.REG_ARM64_LR));
+            Assert.That(returnAddressLoad.idSmallCns(), Is.EqualTo(Configuration.STACK_ALIGN));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(regNumber.REG_ARM64_LR));
         });
     }
 

@@ -404,6 +404,10 @@ public sealed partial class Lowering
             else
             {
                 block._kind = GenTreeBlk.BlkOpKindNativeOpcode;
+                if (source.IsIntegralConst(0))
+                {
+                    source.IsContained = true;
+                }
             }
 
             if ((block._kind is not GenTreeBlk.BlkOpKindNativeOpcode) ||
