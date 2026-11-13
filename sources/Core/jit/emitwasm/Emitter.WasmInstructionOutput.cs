@@ -86,10 +86,11 @@ public partial class Emitter
             case IF_WASM_FRAMEIDENTITY:
             {
                 assert(_compiler is not null);
+                assert(_compiler.IsNativeAot || id.idIsCnsReloc());
                 dst += emitOutputOpcode(dst, ins);
                 var target = _compiler.IsNativeAot
                     ? (void*)emitCodeBlock
-                    : (void*)_compiler.info.compMethodHnd;
+                    : unchecked((void*)emitGetInsSC(id));
                 emitRecordRelocation(dst, target, CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB);
                 dst += emitOutputPaddedReloc(dst);
                 break;
@@ -118,6 +119,19 @@ public partial class Emitter
             case IF_WASM_FUNCIDX:
             {
                 dst += emitOutputOpcode(dst, ins);
+                dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc.WASM_FUNCTION_INDEX_LEB);
+                break;
+            }
+
+            case IF_WASM_DEFERRED_CALL:
+            {
+                dst += emitOutputOpcode(dst, INS_i32_const);
+                emitRecordRelocation(dst, unchecked((void*)emitGetInsSC(id)),
+                    CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB);
+                dst += emitOutputPaddedReloc(dst);
+                dst += emitOutputOpcode(dst, ins);
+                emitRecordRelocation(dst, unchecked((void*)id.idAddr().iiaWasmSignature),
+                    CorInfoReloc.WASM_DEFERRED_CALL);
                 dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc.WASM_FUNCTION_INDEX_LEB);
                 break;
             }
@@ -386,7 +400,10 @@ public partial class Emitter
 
     private unsafe nuint emitOutputConstantFunclet(byte* destination, instrDesc id, CorInfoReloc relocationType)
     {
-        emitRecordRelocation(destination, emitCodeBlock, relocationType, unchecked((int)emitGetInsSC(id)));
+        var funcletIndex = emitGetInsSC(id);
+        assert((funcletIndex >= 0) && FitsIn(TYP_INT, funcletIndex));
+        _ = emitOutputULEB128Padded(destination, unchecked((uint)funcletIndex));
+        emitRecordRelocation(destination, emitCodeBlock, relocationType, unchecked((int)funcletIndex));
         return (nuint)PADDED_RELOC_SIZE;
     }
 

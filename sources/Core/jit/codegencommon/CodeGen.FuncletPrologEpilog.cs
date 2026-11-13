@@ -33,26 +33,16 @@ public sealed partial class CodeGen
             GCInfo.gcResetForBB();
             _compiler.unwindBegProlog();
 
-            var maskPushRegsFloat = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ALLFLOAT);
-            var maskPushRegsInt = genFuncletInfo.fiSaveRegs & ~maskPushRegsFloat;
-            var maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
-            maskPushRegsInt |= maskStackAlloc;
+            var maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, RBM_NONE);
+            var maskPushRegs = RBM_LR | maskStackAlloc;
 
-            assert(unchecked((ulong)maskPushRegsInt.Lower) <= int.MaxValue);
-            inst_IV(INS_push, unchecked((int)maskPushRegsInt.Lower));
-            _compiler.unwindPushMaskInt(maskPushRegsInt);
+            assert(unchecked((ulong)maskPushRegs.Lower) <= int.MaxValue);
+            inst_IV(INS_push, unchecked((int)maskPushRegs.Lower));
+            _compiler.unwindPushMaskInt(maskPushRegs);
 
-            if (maskPushRegsFloat.IsNonEmpty)
-            {
-                genPushFltRegsArmCore(maskPushRegsFloat);
-                _compiler.unwindPushMaskFloat(maskPushRegsFloat);
-            }
-
-            var liveIn = block.CatchType switch {
-                BBCT_FILTER => new regMaskTP(SRBM_ARM32_R0 | SRBM_ARM32_R1),
-                BBCT_FINALLY or BBCT_FAULT => RBM_NONE,
-                _ => new regMaskTP(SRBM_ARM32_R0),
-            };
+            var liveIn = block.CatchType is BBCT_FINALLY or BBCT_FAULT
+                ? RBM_NONE
+                : new regMaskTP(SRBM_ARM32_R0);
             var initRegZeroed = false;
             if (maskStackAlloc.IsEmpty)
             {
@@ -200,12 +190,7 @@ public sealed partial class CodeGen
                 jitprintf("*************** In genFuncletEpilog()\n");
             }
             var unwindStarted = false;
-            assert((genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ARM32_LR)).IsNonEmpty);
-
-            var maskPopRegsFloat = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ALLFLOAT);
-            var maskPopRegsInt = genFuncletInfo.fiSaveRegs & ~maskPopRegsFloat;
-            var maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPopRegsFloat);
-            maskPopRegsInt |= maskStackAlloc;
+            var maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, RBM_NONE);
 
             if (maskStackAlloc.IsEmpty)
             {
@@ -218,18 +203,11 @@ public sealed partial class CodeGen
                 unwindStarted = true;
             }
 
-            maskPopRegsInt &= ~new regMaskTP(SRBM_ARM32_LR);
-            maskPopRegsInt |= new regMaskTP(SRBM_ARM32_PC);
+            var maskPopRegs = RBM_PC | maskStackAlloc;
 
-            if (maskPopRegsFloat.IsNonEmpty)
-            {
-                genPopFltRegsArmCore(maskPopRegsFloat);
-                _compiler.unwindPopMaskFloat(maskPopRegsFloat);
-            }
-
-            assert(unchecked((ulong)maskPopRegsInt.Lower) <= int.MaxValue);
-            inst_IV(INS_pop, unchecked((int)maskPopRegsInt.Lower));
-            _compiler.unwindPopMaskInt(maskPopRegsInt);
+            assert(unchecked((ulong)maskPopRegs.Lower) <= int.MaxValue);
+            inst_IV(INS_pop, unchecked((int)maskPopRegs.Lower));
+            _compiler.unwindPopMaskInt(maskPopRegs);
             _compiler.unwindEndEpilog();
         }
         else if (Configuration.TARGET_ARM64)
@@ -346,47 +324,15 @@ public sealed partial class CodeGen
             assert(IsFramePointerUsed);
             assert(_compiler.lvaDoneFrameLayout == Compiler.FINAL_FRAME_LAYOUT);
 
-            var preSpillRegArgSize = unchecked((int)genCountBits(_regSet.rsMaskPreSpillRegs(true))) * Configuration.REGSIZE_BYTES;
-            var saveRegs = _regSet.rsGetModifiedCalleeSavedRegsMask() |
-                new regMaskTP(SRBM_ARM32_FP | SRBM_ARM32_LR);
-            assert((saveRegs & new regMaskTP(SRBM_ARM32_R12 | SRBM_ARM32_SP)).IsEmpty);
-            var saveRegsSize = unchecked((int)genCountBits(saveRegs)) * Configuration.REGSIZE_BYTES;
-            var saveSizeWithPsp = saveRegsSize + Configuration.REGSIZE_BYTES;
-            if (_compiler.lvaMonAcquired != BAD_VAR_NUM)
-            {
-                saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
-            }
-            if (_compiler.lvaResumedIndicator != BAD_VAR_NUM)
-            {
-                saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
-            }
-            if (_compiler.lvaAsyncThreadObjectVar != BAD_VAR_NUM)
-            {
-                saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
-            }
-            if (_compiler.lvaAsyncExecutionContextVar != BAD_VAR_NUM)
-            {
-                saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
-            }
-            if (_compiler.lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
-            {
-                saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
-            }
-
             var outgoingArgSpaceSize = unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value);
             assert((outgoingArgSpaceSize % Configuration.REGSIZE_BYTES) == 0);
-            var funcletFrameSize = unchecked((uint)preSpillRegArgSize + (uint)saveSizeWithPsp + outgoingArgSpaceSize);
+            var funcletFrameSize = unchecked((uint)Configuration.REGSIZE_BYTES + outgoingArgSpaceSize);
             var funcletFrameSizeAligned = roundUp(funcletFrameSize, unchecked((uint)Configuration.STACK_ALIGN));
-            var spDelta = funcletFrameSizeAligned - (uint)saveRegsSize;
-
-            genFuncletInfo.fiSaveRegs = saveRegs;
-            genFuncletInfo.fiSpDelta = spDelta;
+            genFuncletInfo.fiSpDelta = funcletFrameSizeAligned - unchecked((uint)Configuration.REGSIZE_BYTES);
 
             if (Configuration.DEBUG && _verbose)
             {
                 jitprintf("\nFunclet prolog / epilog info\n");
-                jitprintf("                        Save regs: ");
-                dspRegMask(saveRegs);
                 jitprintf($"\n                         SP delta: {genFuncletInfo.fiSpDelta}\n");
             }
         }

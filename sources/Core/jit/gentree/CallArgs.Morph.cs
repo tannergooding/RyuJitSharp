@@ -132,7 +132,7 @@ public partial struct CallArgs
                     }
                 }
             }
-            else if ((node.Flags & GTF_EXCEPT) != 0)
+            else if ((node.Flags & (GTF_EXCEPT | GTF_ORDER_SIDEEFF)) != 0)
             {
                 if (previousExceptionTree is not null)
                 {
@@ -147,9 +147,11 @@ public partial struct CallArgs
 
                     var exactlyOneKnown = uint.IsPow2((uint)exceptionFlags) &&
                         ((exceptionFlags & ExceptionSetFlags.UnknownException) == ExceptionSetFlags.None);
-                    if (!exactlyOneKnown || (exceptionFlags != previousExceptionFlags))
+                    var canReorder = ((node.Flags & GTF_ORDER_SIDEEFF) == 0) &&
+                        exactlyOneKnown && (exceptionFlags == previousExceptionFlags);
+                    if (!canReorder)
                     {
-                        JITDUMP($"Exception set for arg [{node.TreeId:D6}] interferes with previous tree " +
+                        JITDUMP($"Effects for arg [{node.TreeId:D6}] interfere with previous tree " +
                             $"[{previousExceptionTree.TreeId:D6}]; must evaluate previous trees with exceptions to temps\n");
                         // Unspilled throwing predecessors can only share the previous
                         // tree's single exception; all interfere with this different set.
@@ -171,8 +173,11 @@ public partial struct CallArgs
                     }
                 }
 
-                previousExceptionTree = node;
-                previousExceptionFlags = exceptionFlags;
+                if ((node.Flags & GTF_EXCEPT) != 0)
+                {
+                    previousExceptionTree = node;
+                    previousExceptionFlags = exceptionFlags;
+                }
             }
         }
 

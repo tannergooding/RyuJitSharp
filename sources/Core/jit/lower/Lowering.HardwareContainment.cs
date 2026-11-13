@@ -30,7 +30,7 @@ public sealed partial class Lowering
         MakeSrcContained(parentNode, childNode);
     }
 
-    private void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic node, GenTree addr, uint size)
+    private void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic node, GenTree addr, ValueSize size)
     {
         assert((addr.Type.ActualType is var __targetAliasValue0 && (__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_BYREF)));
 

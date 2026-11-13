@@ -5567,6 +5567,8 @@ public sealed partial class CodeGen
         (insInfoFlags)(0), // INS_return_call
         (insInfoFlags)(0), // INS_return_call_indirect
         (insInfoFlags)(0), // INS_call_funclet
+        (insInfoFlags)(0), // INS_deferred_call
+        (insInfoFlags)(0), // INS_deferred_return_call
         (insInfoFlags)(0), // INS_drop
         (insInfoFlags)(0), // INS_try_table
         (insInfoFlags)(0), // INS_local_get

@@ -8568,7 +8568,7 @@ public partial class Compiler
 
         node.ClearInlineInfo();
 
-        if (node.CallExceptions() != ExceptionSetFlags.None)
+        if (node.CallExceptions(this) != ExceptionSetFlags.None)
         {
             node.Flags |= GTF_EXCEPT;
         }
@@ -8806,7 +8806,7 @@ public partial class Compiler
     {
         var result = gtNewCallNode(type, CT_HELPER, eeFindHelper(helper));
 
-        if (!helper.NoThrow)
+        if (!helper.NoThrowFor(this))
         {
             result.Flags |= GTF_EXCEPT;
 
@@ -14295,7 +14295,7 @@ public partial class Compiler
             call.InitializeLongReturnType();
         }
 
-        if (call.CallExceptions() != ExceptionSetFlags.None)
+        if (call.CallExceptions(this) != ExceptionSetFlags.None)
         {
             call.Flags |= GTF_EXCEPT;
         }
@@ -14327,7 +14327,7 @@ public partial class Compiler
     {
         var result = gtNewCallNode(type, CT_HELPER, eeFindHelper(helper));
 
-        if (!helper.NoThrow)
+        if (!helper.NoThrowFor(this))
         {
             result.Flags |= GTF_EXCEPT;
 
@@ -16904,6 +16904,11 @@ public partial class Compiler
 
                     level += 5;
                     costEx += 3 * IND_COST_EX;
+                    if (IsAot && call.IsHelperCall() &&
+                        (call.HelperNum is CORINFO_HELP_READYTORUN_GENERIC_HANDLE))
+                    {
+                        costEx += 11 * IND_COST_EX;
+                    }
                     break;
                 }
 

@@ -36,7 +36,7 @@ public partial class Emitter
         }
 
         public bool idjIsRemovableJmpCandidate;
-        public bool idjIsAfterCallBeforeEpilog;
+        public bool idjIsAfterCall;
         public bool idjShort;
         public bool idjKeepLong;
 

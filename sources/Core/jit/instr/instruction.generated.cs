@@ -4345,6 +4345,8 @@ public enum instruction
     INS_return_call,
     INS_return_call_indirect,
     INS_call_funclet,
+    INS_deferred_call,
+    INS_deferred_return_call,
     INS_drop,
     INS_try_table,
     INS_local_get,

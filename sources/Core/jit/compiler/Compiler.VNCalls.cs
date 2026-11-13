@@ -84,6 +84,13 @@ public partial class Compiler
             }
         }
 
+        if ((vnf is VNF_ReadyToRunGenericHandle) &&
+            !call.HelperNum.NoThrowFor(this))
+        {
+            var lookupException = vnStore.VNPairForFunc(TYP_REF, VNF_HelperOpaqueExc, call._vnPair);
+            exceptions = vnStore.VNPExcSetUnion(exceptions, vnStore.VNPExcSetSingleton(lookupException));
+        }
+
         if (unique)
         {
             arity--;
@@ -739,7 +746,7 @@ public partial class Compiler
         var modHeap = helper.MutatesHeap || mayRunCctor;
         var exceptions = ValueNumStore.VNPForEmptyExcSet();
 
-        if (!helper.NoThrow)
+        if (!helper.NoThrowFor(this))
         {
             switch (helper)
             {
@@ -848,6 +855,10 @@ public partial class Compiler
                 case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
                 {
                     exceptions = fgValueNumberIndirNullCheckExceptions(call.Args.GetUserArgByIndex(0)!.Node);
+                    break;
+                }
+                case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+                {
                     break;
                 }
                 default:

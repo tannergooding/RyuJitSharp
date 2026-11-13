@@ -161,7 +161,7 @@ public partial class Emitter
                     assert(id.idIsBound());
                     dst = emitOutputLJ(ig, dst, id);
                 }
-                else if (Configuration.TARGET_AMD64 && jmp.idjIsAfterCallBeforeEpilog)
+                else if (Configuration.TARGET_AMD64 && jmp.idjIsAfterCall)
                 {
                     assert(id.idCodeSize() == 1);
                     dst = emitOutputNOP(dst, 1);

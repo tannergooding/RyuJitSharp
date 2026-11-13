@@ -1853,7 +1853,7 @@ public partial class GenTree
 
             case GT_CALL:
             {
-                return AsCall().CallExceptions();
+                return AsCall().CallExceptions(comp);
             }
 
             case GT_LOCKADD:

@@ -24,13 +24,13 @@ public sealed partial class Lowering
                 {
                     MakeSrcContained(node, op3);
                 }
-                ContainCheckHWIntrinsicAddr(node, op1, simdSize);
+                ContainCheckHWIntrinsicAddr(node, op1, new ValueSize(simdSize));
                 break;
             }
 
             case HW_Category_MemoryStore:
             {
-                ContainCheckHWIntrinsicAddr(node, op1, simdSize);
+                ContainCheckHWIntrinsicAddr(node, op1, new ValueSize(simdSize));
                 break;
             }
 

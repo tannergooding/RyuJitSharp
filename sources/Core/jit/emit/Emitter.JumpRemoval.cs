@@ -136,17 +136,10 @@ public partial class Emitter
                     var codeSize = jmp.idCodeSize();
                     jmp.idCodeSize(0);
 
-                    if (Configuration.TARGET_AMD64 && jmp.idjIsAfterCallBeforeEpilog)
+                    if (Configuration.TARGET_AMD64 && jmp.idjIsAfterCall)
                     {
-                        if ((targetGroup.igFlags & InsGroupFlags.Epilog) != 0)
-                        {
-                            jmp.idCodeSize(1);
-                            codeSize--;
-                        }
-                        else
-                        {
-                            jmp.idjIsAfterCallBeforeEpilog = false;
-                        }
+                        jmp.idCodeSize(1);
+                        codeSize--;
                     }
 
                     jmpGroup.igSize = unchecked((ushort)(jmpGroup.igSize - codeSize));

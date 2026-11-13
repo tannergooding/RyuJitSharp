@@ -32,8 +32,11 @@ internal static class Arm32FuncletPrologEpilogTests
             instruction[] expected = outgoingArgSpaceSize == 0
                 ? [INS_push]
                 : [INS_push, INS_sub];
-            Assert.That(Descriptors(codeGen.Emitter).Select(descriptor => descriptor.idIns()),
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors.Select(descriptor => descriptor.idIns()),
                 Is.EqualTo(expected));
+            var expectedPushEncoding = outgoingArgSpaceSize == 0 ? 33 : 1;
+            Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)expectedPushEncoding));
         });
     }
 
@@ -55,6 +58,9 @@ internal static class Arm32FuncletPrologEpilogTests
                 : [INS_add, INS_pop];
             Assert.That(Descriptors(codeGen.Emitter).Select(descriptor => descriptor.idIns()),
                 Is.EqualTo(expected));
+            var descriptors = Descriptors(codeGen.Emitter);
+            var expectedPopEncoding = outgoingArgSpaceSize == 0 ? 34 : 2;
+            Assert.That(Emitter.emitGetInsSC(descriptors[^1]), Is.EqualTo((nint)expectedPopEncoding));
         });
     }
 

@@ -441,6 +441,41 @@ internal static unsafe class LocalMorphTests
         });
     }
 
+    [Test]
+    public static void WiderHiddenReturnBufferExposesThePromotedFieldParent()
+    {
+        WithCompiler(compiler => {
+            InitializePromotedPair(compiler);
+            compiler.opts.compJitOptimizeStructHiddenBuffer = true;
+            compiler.lvaTable[1].Type = TYP_STRUCT;
+            compiler.lvaTable[1].Layout = new ClassLayout(sizeof(int));
+
+            var handle = (CORINFO_CLASS_STRUCT_*)1;
+            var layout = new ClassLayout(handle, true, 8, TYP_STRUCT, "WideReturn", "WideReturn");
+            var layouts = new ClassLayoutTable();
+            _ = layouts.AddObjLayout(compiler, layout);
+            LayoutTable(compiler) = layouts;
+
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call.RetClsHnd = handle;
+            call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG;
+            var address = compiler.gtNewLclVarAddrNode(TYP_BYREF, 1);
+            var retBuffer = call.Args.PushBack(
+                NewCallArg.CreateForPrimitive(address).WithWellKnownArg(WellKnownArg.RetBuffer));
+            var statement = compiler.gtNewStmt(call);
+            var value = new LocalAddressVisitor.Value(statement, ref retBuffer.EarlyNodeRef, call);
+            value.Address(1, 0);
+            Assert.That(compiler.IsWideAccess(1, 0, new ValueSize(8)), Is.True);
+            var visitor = new LocalAddressVisitor(compiler);
+
+            visitor.EscapeAddress(ref value, call);
+
+            Assert.That(call.IsOptimizingRetBufAsLocal, Is.False);
+            Assert.That(compiler.lvaTable[0].IsAddressExposed, Is.True);
+            Assert.That(compiler.lvaTable[1].IsAddressExposed, Is.True);
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void MatchingPromotedFieldsBecomeScalarLocalNodes(bool store)
@@ -1641,6 +1676,9 @@ internal static unsafe class LocalMorphTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgBigOffsetMorphingTemps")]
     private static extern ref InlineArrayTypCount<int> BigOffsetMorphingTemps(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_classLayoutTable")]
+    private static extern ref ClassLayoutTable? LayoutTable(Compiler compiler);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsInstanceField(ICorJitInfo* jitInfo, CORINFO_FIELD_STRUCT_* field) => 0;

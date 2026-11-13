@@ -392,14 +392,14 @@ public sealed partial class CodeGen
             var loc = locOp.RegNum;
             var val = !valOp.IsContained ? valOp.RegNum : TargetRuntimeMetadata.ZeroRegister;
             var riscvComparand = TargetRuntimeMetadata.ZeroRegister;
+            var comparandToExtend = REG_NA;
             if (!comparandOp.IsContained)
             {
                 riscvComparand = comparandOp.RegNum;
                 if (comparandOp.Type is TYP_INT or TYP_UINT)
                 {
-                    var signExtendedComparand = InternalRegisters.Extract(tree);
-                    Emitter.emitIns_R_R(INS_sext_w, EA_4BYTE, signExtendedComparand, riscvComparand);
-                    riscvComparand = signExtendedComparand;
+                    comparandToExtend = riscvComparand;
+                    riscvComparand = InternalRegisters.Extract(tree);
                 }
             }
             var storeErr = InternalRegisters.GetSingle(tree);
@@ -421,6 +421,12 @@ public sealed partial class CodeGen
             genConsumeAddress(locOp);
             genConsumeRegs(valOp);
             genConsumeRegs(comparandOp);
+
+            // genConsumeRegs may reload the comparand from its spill location.
+            if (comparandToExtend != REG_NA)
+            {
+                Emitter.emitIns_R_R(INS_sext_w, EA_4BYTE, riscvComparand, comparandToExtend);
+            }
 
             // genConsumeAddress marks the location non-pointer at first use, but this operation reuses it across the retry loop.
             _gcInfo.gcMarkRegPtrVal(loc, locOp.Type);

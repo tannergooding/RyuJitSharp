@@ -15,7 +15,7 @@ public sealed partial class Lowering
         {
             case HW_Category_MemoryLoad:
             {
-                ContainCheckHWIntrinsicAddr(node, op1, simdSize);
+                ContainCheckHWIntrinsicAddr(node, op1, new ValueSize(simdSize));
                 break;
             }
 
@@ -65,7 +65,7 @@ public sealed partial class Lowering
                     {
                         if (node.IsMemoryLoad())
                         {
-                            ContainCheckHWIntrinsicAddr(node, op1, 16);
+                            ContainCheckHWIntrinsicAddr(node, op1, new ValueSize(16));
                             return;
                         }
                         break;
@@ -77,7 +77,7 @@ public sealed partial class Lowering
                     {
                         if (node.IsMemoryLoad())
                         {
-                            ContainCheckHWIntrinsicAddr(node, op1, 8);
+                            ContainCheckHWIntrinsicAddr(node, op1, new ValueSize(8));
                             return;
                         }
 

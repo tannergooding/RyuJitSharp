@@ -219,7 +219,9 @@ public partial class Emitter
 
         if (Configuration.TARGET_WASM)
         {
-            assert(parameters.wasmSignature != null);
+            assert(parameters.wasmSignature is not null);
+            var wasmSignature = parameters.wasmSignature!;
+            var compiler = _compiler!;
 
             instruction wasmInstruction;
             instrDesc id;
@@ -228,6 +230,15 @@ public partial class Emitter
             {
                 case EC_FUNC_TOKEN:
                 {
+                    if (compiler.eeGetRelocTypeHint(parameters.addr) is CorInfoReloc.WASM_DEFERRED_CALL)
+                    {
+                        wasmInstruction = parameters.isJump ? INS_deferred_return_call : INS_deferred_call;
+                        id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, unchecked((nint)parameters.addr));
+                        id.idInsFmt(IF_WASM_DEFERRED_CALL);
+                        id.idAddr().iiaWasmSignature = unchecked((nint)wasmSignature);
+                        break;
+                    }
+
                     wasmInstruction = parameters.isJump ? INS_return_call : INS_call;
                     id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, unchecked((nint)parameters.addr));
                     id.idInsFmt(IF_WASM_FUNCIDX);

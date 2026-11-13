@@ -158,4 +158,7 @@ public enum CorInfoReloc
 
     /// <summary>Wasm: runtime-specific shadow-frame identity, encoded as a signed varint32.</summary>
     WASM_METHOD_FRAME_IDENTITY_SLEB,
+
+    /// <summary>Wasm: metadata for a deferred direct call; the signature handle is the target and the location is its first immediate byte.</summary>
+    WASM_DEFERRED_CALL,
 }

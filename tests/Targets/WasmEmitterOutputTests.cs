@@ -90,9 +90,10 @@ internal static unsafe class WasmEmitterOutputTests
             emitter.writeableOffset = 8;
             emitter.emitCodeBlock = buffer;
 
-            var descriptor = TestEmitter.Constant(0);
+            var descriptor = TestEmitter.Constant((nint)method);
             descriptor.idIns(INS_i32_const_frameidentity);
             descriptor.idInsFmt(Emitter.insFormat.IF_WASM_FRAMEIDENTITY);
+            descriptor.idSetIsCnsReloc();
             var destination = buffer + 2;
             var next = destination;
             _ = EmitOutputInstrWasm(emitter, new insGroup(), descriptor, &next);
@@ -107,6 +108,64 @@ internal static unsafe class WasmEmitterOutputTests
             Assert.That(callbacks.AdditionalDelta, Is.Zero);
             Assert.That(new ReadOnlySpan<byte>(buffer + 11, 5).ToArray(),
                 Is.EqualTo(new byte[] { 0x80, 0x80, 0x80, 0x80, 0x00 }));
+        });
+    }
+
+    [Test]
+    public static void DeferredCallRecordsFrameIdentitySignatureAndFunctionIndexInOrder()
+    {
+        WithEmitter((compiler, emitter) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.recordRelocation = &RecordDeferredCallRelocation;
+            var callbacks = new DeferredCallCallbackContext
+            {
+                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+            };
+
+            ConfigureAddressModel(compiler, nativeAot: false);
+            compiler.info.compMatchedVM = true;
+            compiler.info.compCompHnd = &callbacks.JitInfo;
+            emitter.emitCmpHandle = &callbacks.JitInfo;
+
+            var buffer = stackalloc byte[32];
+            new Span<byte>(buffer, 32).Fill(0xA5);
+            emitter.writeableOffset = 8;
+            emitter.emitCodeBlock = buffer;
+
+            const nint frameIdentity = 0x1234;
+            const nint signature = 0x5678;
+            var descriptor = TestEmitter.Constant(frameIdentity);
+            descriptor.idIns(INS_deferred_call);
+            descriptor.idInsFmt(Emitter.insFormat.IF_WASM_DEFERRED_CALL);
+            descriptor.idSetIsCnsReloc();
+            descriptor.idAddr().iiaWasmSignature = signature;
+            var destination = buffer + 2;
+            var next = destination;
+            _ = EmitOutputInstrWasm(emitter, new insGroup(), descriptor, &next);
+            var relocationCount = callbacks.Relocations;
+            var overflow = callbacks.Overflow;
+            var firstRelocationType = callbacks.FirstRelocationType;
+            var secondRelocationType = callbacks.SecondRelocationType;
+            var thirdRelocationType = callbacks.ThirdRelocationType;
+            var firstTarget = unchecked((nuint)callbacks.FirstTarget);
+            var secondTarget = unchecked((nuint)callbacks.SecondTarget);
+            var thirdTarget = unchecked((nuint)callbacks.ThirdTarget);
+            var emittedSize = unchecked((nuint)(next - destination));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(relocationCount, Is.EqualTo(3));
+                Assert.That(overflow, Is.Zero);
+                Assert.That(firstRelocationType,
+                    Is.EqualTo(CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB));
+                Assert.That(secondRelocationType, Is.EqualTo(CorInfoReloc.WASM_DEFERRED_CALL));
+                Assert.That(thirdRelocationType, Is.EqualTo(CorInfoReloc.WASM_FUNCTION_INDEX_LEB));
+                Assert.That(firstTarget, Is.EqualTo((nuint)frameIdentity));
+                Assert.That(secondTarget, Is.EqualTo((nuint)signature));
+                Assert.That(thirdTarget, Is.EqualTo((nuint)frameIdentity));
+                Assert.That(emittedSize, Is.EqualTo((nuint)12));
+            });
         });
     }
 
@@ -922,6 +981,66 @@ internal static unsafe class WasmEmitterOutputTests
         public void* Target;
         public CorInfoReloc RelocationType;
         public int AdditionalDelta;
+    }
+
+    private struct DeferredCallCallbackContext
+    {
+        public ICorJitInfo JitInfo;
+        public int Relocations;
+        public int Overflow;
+        public CorInfoReloc FirstRelocationType;
+        public CorInfoReloc SecondRelocationType;
+        public CorInfoReloc ThirdRelocationType;
+        public void* FirstTarget;
+        public void* SecondTarget;
+        public void* ThirdTarget;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void RecordDeferredCallRelocation(ICorJitInfo* self, void* location, void* locationRW, void* target,
+        CorInfoReloc relocationType, int additionalDelta)
+    {
+        var callbacks = (DeferredCallCallbackContext*)self;
+        switch (callbacks->Relocations++)
+        {
+            case 0:
+            {
+                callbacks->FirstRelocationType = relocationType;
+                callbacks->FirstTarget = target;
+                break;
+            }
+            case 1:
+            {
+                callbacks->SecondRelocationType = relocationType;
+                callbacks->SecondTarget = target;
+                break;
+            }
+            case 2:
+            {
+                callbacks->ThirdRelocationType = relocationType;
+                callbacks->ThirdTarget = target;
+                break;
+            }
+            default:
+            {
+                callbacks->Overflow = 1;
+                break;
+            }
+        }
+
+        if (relocationType is CorInfoReloc.WASM_DEFERRED_CALL)
+        {
+            return;
+        }
+
+        var writable = (byte*)locationRW;
+        var value = unchecked((uint)additionalDelta);
+        for (var index = 0; index < 4; index++)
+        {
+            writable[index] = unchecked((byte)((value & 0x7F) | 0x80));
+            value >>= 7;
+        }
+        writable[4] = unchecked((byte)value);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

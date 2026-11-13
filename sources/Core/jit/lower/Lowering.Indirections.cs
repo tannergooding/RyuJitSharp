@@ -79,7 +79,7 @@ public sealed partial class Lowering
             }
 
             if ((addr.Oper is GT_LCL_ADDR) && ((node.Flags & GTF_IND_VOLATILE) == 0) &&
-                IsContainableLclAddr(addr.AsLclFld(), (uint)node.Size))
+                IsContainableLclAddr(addr.AsLclFld(), node.ValueSize))
             {
                 MakeSrcContained(node, addr);
             }
@@ -135,7 +135,7 @@ public sealed partial class Lowering
                 }
             }
             else if ((addr.Oper is GT_LCL_ADDR) && (node.Oper is not GT_NULLCHECK) &&
-                IsContainableLclAddr(addr.AsLclFld(), (uint)node.Size))
+                IsContainableLclAddr(addr.AsLclFld(), node.ValueSize))
             {
                 MakeSrcContained(node, addr);
             }
@@ -156,7 +156,7 @@ public sealed partial class Lowering
                 MakeSrcContained(node, addr);
             }
             else if ((addr.Oper is GT_LCL_ADDR) && (node.Oper is not GT_NULLCHECK) &&
-                IsContainableLclAddr(addr.AsLclFld(), (uint)node.Size))
+                IsContainableLclAddr(addr.AsLclFld(), node.ValueSize))
             {
                 MakeSrcContained(node, addr);
             }
@@ -186,7 +186,7 @@ public sealed partial class Lowering
                 MakeSrcContained(node, addr);
             }
             else if ((addr.Oper is GT_LCL_ADDR) &&
-                IsContainableLclAddr(addr.AsLclFld(), (uint)node.Size))
+                IsContainableLclAddr(addr.AsLclFld(), node.ValueSize))
             {
                 MakeSrcContained(node, addr);
             }
@@ -219,7 +219,7 @@ public sealed partial class Lowering
             {
                 MakeSrcContained(node, addr);
             }
-            else if ((addr.Oper is GT_LCL_ADDR) && IsContainableLclAddr(addr.AsLclFld(), (uint)node.Size))
+            else if ((addr.Oper is GT_LCL_ADDR) && IsContainableLclAddr(addr.AsLclFld(), node.ValueSize))
             {
                 MakeSrcContained(node, addr);
             }
@@ -336,10 +336,9 @@ public sealed partial class Lowering
         address._lirFlags |= LIR.Flags.FoldedAddr;
     }
 
-    private bool IsContainableLclAddr(GenTreeLclFld lclAddr, uint accessSize)
+    private bool IsContainableLclAddr(GenTreeLclFld lclAddr, ValueSize accessSize)
     {
-        if (((ulong)lclAddr.LclOffs + accessSize > uint.MaxValue) ||
-            !CompilerInstance.IsValidLclAddr(lclAddr.LclNum, unchecked((int)(lclAddr.LclOffs + accessSize - 1))))
+        if (CompilerInstance.IsWideAccess(lclAddr.LclNum, lclAddr.LclOffs, accessSize))
         {
             // Local morph requires address exposure when containment cannot preserve local liveness.
             assert(CompilerInstance.lvaGetDesc(lclAddr.LclNum).IsAddressExposed);

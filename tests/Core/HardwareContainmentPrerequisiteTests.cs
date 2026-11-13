@@ -30,7 +30,7 @@ internal static unsafe class HardwareContainmentPrerequisiteTests
             var intrinsic = Load(address);
             var block = NewBlock(address, intrinsic);
 
-            ContainCheckHWIntrinsicAddr(NewLowering(compiler, block), intrinsic, address, accessSize);
+            ContainCheckHWIntrinsicAddr(NewLowering(compiler, block), intrinsic, address, new ValueSize(accessSize));
 
             Assert.That(address.IsContained, Is.EqualTo(contained));
             Assert.That(intrinsic.GetOp(1), Is.SameAs(address));
@@ -49,7 +49,7 @@ internal static unsafe class HardwareContainmentPrerequisiteTests
             var intrinsic = Load(address);
             var block = NewBlock(address, intrinsic);
 
-            ContainCheckHWIntrinsicAddr(NewLowering(compiler, block), intrinsic, address, 16);
+            ContainCheckHWIntrinsicAddr(NewLowering(compiler, block), intrinsic, address, new ValueSize(16));
 
             Assert.That(address.IsContained, Is.True);
             Assert.That(intrinsic.GetOp(1), Is.SameAs(address));
@@ -66,7 +66,7 @@ internal static unsafe class HardwareContainmentPrerequisiteTests
             var intrinsic = Load(address);
             var block = NewBlock(local, offset, address, intrinsic);
 
-            ContainCheckHWIntrinsicAddr(NewLowering(compiler, block), intrinsic, address, 16);
+            ContainCheckHWIntrinsicAddr(NewLowering(compiler, block), intrinsic, address, new ValueSize(16));
 
             var mode = intrinsic.GetOp(1);
             Assert.That(mode.Oper, Is.EqualTo(GT_LEA));
@@ -128,7 +128,7 @@ internal static unsafe class HardwareContainmentPrerequisiteTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckHWIntrinsicAddr")]
     private static extern void ContainCheckHWIntrinsicAddr(Lowering lowering, GenTreeHWIntrinsic intrinsic,
-        GenTree address, uint accessSize);
+        GenTree address, ValueSize accessSize);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainHWIntrinsicOperand")]
     private static extern void ContainHWIntrinsicOperand(Lowering lowering, GenTreeHWIntrinsic intrinsic,

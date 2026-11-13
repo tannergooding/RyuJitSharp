@@ -28,6 +28,7 @@ public partial class Compiler
         public bool Hoistable;
         public bool CctorDependent;
         public bool Invariant;
+        public int SubtreeEnd;
         public string FailReason = "unset";
     }
 
@@ -43,6 +44,10 @@ public partial class Compiler
         private readonly BitVecTraits _traits;
         private readonly BitVec _defExecuted;
         private readonly List<HoistValue> _values;
+        private readonly List<int> _valueStack;
+        private int _nextValue;
+        private bool _hoisting;
+        private GenTree? _hoistedTree;
         private bool _canHoistSideEffects;
         private BasicBlock? _currentBlock;
 
@@ -55,6 +60,10 @@ public partial class Compiler
             _traits = traits;
             _defExecuted = defExecuted;
             _values = [];
+            _valueStack = [];
+            _nextValue = 0;
+            _hoisting = false;
+            _hoistedTree = null;
             _canHoistSideEffects = true;
         }
 
@@ -107,19 +116,6 @@ public partial class Compiler
             return true;
         }
 
-        private readonly bool IsHoistableOverExcepSibling(GenTree node, bool siblingHasExcep)
-        {
-            JITDUMP($"      [{node.TreeId:D6}]");
-            if ((node.Flags & GTF_ALL_EFFECT) != 0 && siblingHasExcep)
-            {
-                JITDUMP(" not hoistable: cannot move past node that throws exception.\n");
-                return false;
-            }
-
-            JITDUMP(" hoistable\n");
-            return true;
-        }
-
         public void HoistBlock(BasicBlock block)
         {
             _currentBlock = block;
@@ -135,19 +131,22 @@ public partial class Compiler
             {
                 for (var stmt = block.GetFirstNonPhiDef(); stmt is not null; stmt = stmt.NextStmt)
                 {
+                    var canHoistBefore = _canHoistSideEffects;
                     _ = WalkTree(ref stmt.RootNodeRef, null);
-                    var top = _values[^1];
-                    assert(top.Node == stmt.RootNode);
-                    if (top.Hoistable)
-                    {
-                        var defExecuted = BitVecOps.IsMember(_traits, _defExecuted, block.bbPostorderNum);
-                        _compiler.optHoistCandidate(top.Node, block, _loop, _context, defExecuted);
-                    }
-                    else
-                    {
-                        JITDUMP($"      [{top.Node.TreeId:D6}] " +
-                            $"{(top.Invariant ? "not hoistable" : "not invariant")}: {top.FailReason}\n");
-                    }
+
+                    assert(_valueStack.Count == 1);
+                    _valueStack.Clear();
+
+                    // Classify bottom-up, then select in execution order so enclosing candidates win.
+                    var canHoistAfter = _canHoistSideEffects;
+                    _canHoistSideEffects = canHoistBefore;
+                    _nextValue = 0;
+                    _hoisting = true;
+                    _ = WalkTree(ref stmt.RootNodeRef, null);
+                    assert(_nextValue == _values.Count);
+                    assert(_hoistedTree is null);
+                    _hoisting = false;
+                    _canHoistSideEffects &= canHoistAfter;
                     _values.Clear();
                 }
             }
@@ -156,17 +155,70 @@ public partial class Compiler
             _canHoistSideEffects = false;
         }
 
-        public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
+        public fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
-            JITDUMP($"----- PreOrderVisit for [{use.TreeId:D6}] {use.Oper.Name}\n");
+            JITDUMP($"----- Hoist {(_hoisting ? "selection" : "classification")} PreOrderVisit for " +
+                $"[{use.TreeId:D6}] {use.Oper.Name}\n");
+            if (_hoisting)
+            {
+                var value = _values[_nextValue++];
+                assert(value.Node == use);
+
+                if (value.Hoistable && (_canHoistSideEffects || ((use.Flags & GTF_EXCEPT) == 0)))
+                {
+                    JITDUMP($"      [{use.TreeId:D6}] {use.Oper.Name}: hoist selection: considering candidate\n");
+                    var defExecuted = BitVecOps.IsMember(_traits, _defExecuted, _currentBlock!.bbPostorderNum);
+                    if (_compiler.optHoistCandidate(use, _currentBlock, _loop, _context, defExecuted))
+                    {
+                        JITDUMP($"      [{use.TreeId:D6}] {use.Oper.Name}: hoist selection: accepted, skipping descendants\n");
+                        _nextValue = value.SubtreeEnd;
+                        _hoistedTree = use;
+                        return WALK_SKIP_SUBTREES;
+                    }
+                }
+                else if (!value.Hoistable)
+                {
+                    JITDUMP($"      [{use.TreeId:D6}] {use.Oper.Name}: hoist selection: " +
+                        $"{(value.Invariant ? "not hoistable" : "not invariant")}: {value.FailReason}\n");
+                }
+                else
+                {
+                    JITDUMP($"      [{use.TreeId:D6}] {use.Oper.Name}: hoist selection: blocked by earlier exception\n");
+                }
+
+                return WALK_CONTINUE;
+            }
+
             _values.Add(new HoistValue(use));
+            _valueStack.Add(_values.Count - 1);
             return WALK_CONTINUE;
         }
 
         public fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
         {
             var tree = use;
-            JITDUMP($"----- PostOrderVisit for [{tree.TreeId:D6}] {tree.Oper.Name}\n");
+            JITDUMP($"----- Hoist {(_hoisting ? "selection" : "classification")} PostOrderVisit for " +
+                $"[{tree.TreeId:D6}] {tree.Oper.Name}\n");
+            if (_hoisting)
+            {
+                if (_hoistedTree == tree)
+                {
+                    _hoistedTree = null;
+                }
+                else if (tree.MayThrow(_compiler))
+                {
+                    if (_canHoistSideEffects)
+                    {
+                        JITDUMP($"      [{tree.TreeId:D6}] {tree.Oper.Name}: " +
+                            "unhoisted operation closes exception-ordering barrier\n");
+                    }
+
+                    _canHoistSideEffects = false;
+                }
+
+                return WALK_CONTINUE;
+            }
+
             if (tree.Oper.IsLocalRead)
             {
                 var local = tree.AsLclVarCommon();
@@ -185,8 +237,9 @@ public partial class Compiler
                     invariant = !_loop.ContainsBlock(definition);
                 }
                 invariant = invariant && IsTreeVNInvariant(tree);
-                var top = _values[^1];
+                var top = _values[_valueStack[^1]];
                 assert(top.Node == tree);
+                top.SubtreeEnd = _values.Count;
                 if (invariant)
                 {
                     top.Invariant = true;
@@ -210,13 +263,12 @@ public partial class Compiler
 
             var cctorDependent = tree.Oper.IsIndir && (tree.Flags & GTF_IND_INITCLASS) != 0;
             var invariantTree = true;
-            var hasHoistableChildren = false;
             var failReason = "unknown";
-            var parent = _values.Count - 1;
-            while (_values[parent].Node != tree)
+            var childCount = 0;
+            var currentValue = _valueStack.Count - 1;
+            while (_values[_valueStack[currentValue - childCount]].Node != tree)
             {
-                var child = _values[parent];
-                hasHoistableChildren |= child.Hoistable;
+                var child = _values[_valueStack[currentValue - childCount]];
                 if (!child.Invariant)
                 {
                     invariantTree = false;
@@ -233,7 +285,8 @@ public partial class Compiler
                         assert(!child.Hoistable);
                     }
                 }
-                parent--;
+
+                childCount++;
             }
 
             var hoistable = invariantTree && !cctorDependent;
@@ -308,7 +361,7 @@ public partial class Compiler
                         if (helper.MutatesHeap ||
                             ((call._callMoreFlags & GTF_CALL_M_ALLOC_SIDE_EFFECTS) != 0) ||
                             (helper.MayRunCctor && (call.Flags & GTF_CALL_HOISTABLE) == 0) ||
-                            (!hoistable && !helper.NoThrow))
+                            (!hoistable && !helper.NoThrowFor(_compiler)))
                         {
                             _canHoistSideEffects = false;
                         }
@@ -334,47 +387,12 @@ public partial class Compiler
                 }
             }
 
-            if (!hoistable && hasHoistableChildren)
-            {
-                var visitedCurrent = false;
-                var isComma = tree.Oper is GT_COMMA;
-                var hasExcep = false;
-                foreach (var value in _values)
-                {
-                    if (value.Hoistable)
-                    {
-                        assert(value.Node != tree);
-                        if (IsHoistableOverExcepSibling(value.Node, hasExcep))
-                        {
-                            var block = _currentBlock!;
-                            var defExecuted = BitVecOps.IsMember(_traits, _defExecuted, block.bbPostorderNum);
-                            _compiler.optHoistCandidate(value.Node, block, _loop, _context, defExecuted);
-                        }
-                        value.Hoistable = false;
-                        value.Invariant = false;
-                    }
-                    else if (value.Node != tree)
-                    {
-                        if (visitedCurrent && isComma)
-                        {
-                            hasExcep = (tree.Flags & GTF_EXCEPT) != 0;
-                        }
-                        JITDUMP($"      [{value.Node.TreeId:D6}] " +
-                            $"{(value.Invariant ? "not hoistable" : "not invariant")}: {value.FailReason}\n");
-                    }
-                    else
-                    {
-                        visitedCurrent = true;
-                        JITDUMP($"      [{value.Node.TreeId:D6}] not hoistable : current node\n");
-                    }
-                }
-            }
-
-            _values.RemoveRange(parent + 1, _values.Count - parent - 1);
-            var result = _values[parent];
+            _valueStack.RemoveRange(_valueStack.Count - childCount, childCount);
+            var result = _values[_valueStack[^1]];
             result.Hoistable = hoistable;
             result.CctorDependent = cctorDependent;
             result.Invariant = invariantTree;
+            result.SubtreeEnd = _values.Count;
             if (!invariantTree || !hoistable)
             {
                 result.FailReason = failReason;

@@ -179,7 +179,10 @@ public partial class Compiler
                     var previousExceptions = vnStore.VNExceptionSet(previousVN);
                     var currentExceptions = vnStore.VNExceptionSet(vnLib);
                     if ((previousExceptions != currentExceptions) &&
-                        vnStore.VNExcIsSubset(currentExceptions, previousExceptions))
+                        vnStore.VNExcIsSubset(currentExceptions, previousExceptions) &&
+                        !vnStore.VNExcIsSubset(
+                            vnStore.VNExcSetUnion(previousExceptions, optValnumCSE_ImpliedExcSet(previous)),
+                            currentExceptions))
                     {
                         JITDUMP($"Skipping CSE candidate for tree [{previous.TreeId:D6}]; " +
                             $"tree [{tree.TreeId:D6}] is a better candidate with more exceptions\n");
@@ -195,6 +198,12 @@ public partial class Compiler
             if (first.tslNext is null)
             {
                 descriptor.csdIsSharedConst = isSharedConst;
+            }
+
+            if (!descriptor.csdMixedExcSets &&
+                (vnStore.VNExceptionSet(vnLib) != vnStore.VNExceptionSet(first.tslTree._vnPair.Liberal)))
+            {
+                descriptor.csdMixedExcSets = true;
             }
 
             var occurrence = new treeStmtLst(tree, stmt, compCurBB);

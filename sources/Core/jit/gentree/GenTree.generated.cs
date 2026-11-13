@@ -30,6 +30,7 @@ public partial class GenTree
         HKF_INVARIANT | HKF_NONNULL, // GTF_ICON_STATIC_ADDR_PTR
         HKF_INVARIANT, // GTF_ICON_SECREL_OFFSET
         HKF_INVARIANT, // GTF_ICON_TLSGD_OFFSET
+        HKF_INVARIANT, // GTF_ICON_WASM_FRAME_IDENTITY
     ];
 
     public GenTreeUnOp AsUnOp()

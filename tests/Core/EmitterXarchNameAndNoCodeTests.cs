@@ -102,7 +102,7 @@ internal static unsafe class EmitterXarchNameAndNoCodeTests
 
         public static void MarkAfterCall(instrDesc id)
         {
-            ((instrDescJmp)id).idjIsAfterCallBeforeEpilog = true;
+            ((instrDescJmp)id).idjIsAfterCall = true;
         }
     }
 

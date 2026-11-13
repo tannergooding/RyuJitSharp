@@ -229,6 +229,62 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [Test]
+    public static void CompareExchangeExtendsTheReloadedSpilledComparand()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD_RISCV64);
+            codeGen.IsFramePointerUsed = false;
+            compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+            var spilledComparand = compiler.gtNewIconNode(TYP_INT, 7);
+            spilledComparand.RegNum = REG_A6;
+            spilledComparand.Flags |= GTF_SPILL;
+            codeGen.RegSet.tmpInit();
+            codeGen.RegSet.tmpBeginPreAllocateTemps();
+            codeGen.RegSet.tmpPreAllocateTemps(TYP_INT, 1);
+            var temp = codeGen.RegSet.tmpGetTemp(TYP_INT);
+            temp.tdTempOffs = -32;
+            codeGen.RegSet.tmpRlsTemp(temp);
+            codeGen.RegSet.rsSpillTree(REG_A6, spilledComparand);
+
+            var comparand = new GenTreeCopyOrReload(GT_RELOAD, TYP_INT, spilledComparand)
+            {
+                RegNum = REG_A7,
+            };
+            var tree = new GenTreeCmpXchg(
+                TYP_LONG,
+                new GenTreePhysReg(REG_A4, TYP_BYREF) { RegNum = REG_A4 },
+                new GenTreePhysReg(REG_A5, TYP_LONG) { RegNum = REG_A5 },
+                comparand)
+            {
+                RegNum = REG_A3,
+            };
+            codeGen.InternalRegisters.Add(
+                tree,
+                regMaskTP.CreateFromRegNum(REG_A0, REG_A0.SingleTypeMask) |
+                regMaskTP.CreateFromRegNum(REG_A1, REG_A1.SingleTypeMask));
+
+            var emitter = codeGen.Emitter;
+            var initialCount = RecordedInstructions(emitter).Count;
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForCmpXchg(tree));
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, RiscVRecorderDebugBoundary, initialCount, CurrentInstructionGroupSize(emitter));
+
+            var emitted = RecordedInstructions(emitter).Skip(initialCount).ToArray();
+            var reloadIndex = Array.FindIndex(emitted, descriptor => descriptor.idIns() == INS_lw);
+            var extensionIndex = Array.FindIndex(emitted, descriptor => descriptor.idIns() == INS_sext_w);
+            Assert.Multiple(() =>
+            {
+                Assert.That(reloadIndex, Is.GreaterThanOrEqualTo(0));
+                Assert.That(extensionIndex, Is.GreaterThan(reloadIndex));
+                Assert.That(emitted[reloadIndex].idReg1(), Is.EqualTo(REG_A7));
+                Assert.That(emitted[extensionIndex].idReg1(), Is.EqualTo(REG_A0));
+                Assert.That(emitted[extensionIndex].idReg2(), Is.EqualTo(REG_A7));
+            });
+        });
+    }
+
     [TestCase(INS_ld, 8, false, 32)]
     [TestCase(INS_lw, 16, true, 32)]
     [TestCase(INS_lbu, 2048, false, 32)]

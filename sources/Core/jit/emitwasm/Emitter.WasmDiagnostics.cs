@@ -93,6 +93,7 @@ public partial class Emitter
             case IF_WASM_RAW_ULEB128:
             case IF_WASM_ULEB128:
             case IF_WASM_FUNCIDX:
+            case IF_WASM_DEFERRED_CALL:
             case IF_WASM_GLOBALIDX:
             {
                 jitprintf($" {unchecked((ulong)emitGetInsSC(id))}");

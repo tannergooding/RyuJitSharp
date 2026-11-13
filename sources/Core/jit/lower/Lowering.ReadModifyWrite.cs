@@ -66,7 +66,7 @@ public sealed partial class Lowering
         else
         {
             assert(address.Oper is GT_LCL_VAR or GT_CNS_INT or GT_LCL_ADDR);
-            if (((address.Oper is GT_LCL_ADDR) && IsContainableLclAddr(address.AsLclFld(), (uint)store.Size)) ||
+            if (((address.Oper is GT_LCL_ADDR) && IsContainableLclAddr(address.AsLclFld(), new ValueSize((uint)store.Size))) ||
                 (address.Oper.IsCnsIntOrI && address.AsIntConCommon().FitsInAddrBase(CompilerInstance)))
             {
                 destination.IsContained = true;

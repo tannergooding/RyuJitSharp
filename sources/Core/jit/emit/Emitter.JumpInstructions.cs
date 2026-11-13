@@ -318,11 +318,9 @@ public partial class Emitter
         {
             emitContainsRemovableJmpCandidates = true;
             id.idjIsRemovableJmpCandidate = true;
-            // Removing a jump after a call may require a nop before an OS epilog.
-            // The epilog check belongs to emitRemoveJumpToNextInst.
             if (Configuration.TARGET_AMD64)
             {
-                id.idjIsAfterCallBeforeEpilog = lastInsIsCall;
+                id.idjIsAfterCall = lastInsIsCall;
             }
         }
         else

@@ -491,7 +491,7 @@ public sealed class GenTreeCall : GenTree
     public unsafe CorInfoHelpFunc HelperNum
         => IsHelperCall() ? Compiler.eeGetHelperNum(_callMethHnd) : CORINFO_HELP_UNDEF;
 
-    public ExceptionSetFlags CallExceptions()
+    public ExceptionSetFlags CallExceptions(Compiler compiler)
     {
         var helper = HelperNum;
 
@@ -500,7 +500,7 @@ public sealed class GenTreeCall : GenTree
             return ExceptionSetFlags.UnknownException;
         }
 
-        return helper.ThrownExceptions;
+        return helper.ThrownExceptionsFor(compiler);
     }
 
     public byte InlineCandidatesCount => _inlineInfoCount;
@@ -1098,7 +1098,7 @@ public sealed class GenTreeCall : GenTree
         }
 
         // If we also care about exceptions then check if the helper can throw
-        if (!ignoreExceptions && !helper.NoThrow)
+        if (!ignoreExceptions && !helper.NoThrowFor(compiler))
         {
             return true;
         }

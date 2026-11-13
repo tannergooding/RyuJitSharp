@@ -340,12 +340,23 @@ public sealed partial class Lowering
             !call.IsUnmanaged &&
             compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS))
         {
-            if (call._directCallAddress is not null)
+            if ((call._directCallAddress is not null) &&
+                (compiler.eeGetRelocTypeHint(call._directCallAddress) is not CorInfoReloc.WASM_DEFERRED_CALL))
             {
-                // Direct targets have no PEP, but still require the ABI's final argument.
-                AddWasmPortableEntryPointArg(call, compiler.gtNewIconNode(TYP_I_IMPL, 0));
+                GenTree portableEntryPoint;
+                if ((call._callMethHnd is not null) && !call.IsHelperCall())
+                {
+                    portableEntryPoint = compiler.gtNewIconHandleNode(
+                        unchecked((nint)call._callMethHnd), GTF_ICON_WASM_FRAME_IDENTITY);
+                }
+                else
+                {
+                    portableEntryPoint = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+                }
+
+                AddWasmPortableEntryPointArg(call, portableEntryPoint);
             }
-            else
+            else if (call._directCallAddress is null)
             {
                 LowerPEPCall(call);
             }

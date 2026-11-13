@@ -85,9 +85,13 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                 }
                 if (suitable)
                 {
-                    _compiler.lvaSetHiddenBufferStructArg(lclNum);
-                    call._callMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
-                    defSize = (uint)_compiler.typGetObjLayout(call.RetClsHnd).Size;
+                    var retSize = (uint)_compiler.typGetObjLayout(call.RetClsHnd).Size;
+                    if (!_compiler.IsWideAccess(lclNum, value.Offset, new ValueSize(retSize)))
+                    {
+                        _compiler.lvaSetHiddenBufferStructArg(lclNum);
+                        call._callMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                        defSize = retSize;
+                    }
                 }
             }
             else if (call.IsAsync)

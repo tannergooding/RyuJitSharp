@@ -433,6 +433,9 @@ public static class CorInfoHelpFuncExtensions
 
         public bool NoThrow => helperId.ThrownExceptions == ExceptionSetFlags.None;
 
+        public bool NoThrowFor(Compiler compiler)
+            => helperId.ThrownExceptionsFor(compiler) == ExceptionSetFlags.None;
+
         public ExceptionSetFlags ThrownExceptions
         {
             get
@@ -440,6 +443,16 @@ public static class CorInfoHelpFuncExtensions
                 assert(s_thrownExceptions.Length == (int)(CORINFO_HELP_COUNT));
                 return s_thrownExceptions[(int)(helperId)];
             }
+        }
+
+        public ExceptionSetFlags ThrownExceptionsFor(Compiler compiler)
+        {
+            if ((helperId == CORINFO_HELP_READYTORUN_GENERIC_HANDLE) && compiler.IsNativeAot)
+            {
+                return ExceptionSetFlags.UnknownException;
+            }
+
+            return helperId.ThrownExceptions;
         }
 
         private Flags Flags

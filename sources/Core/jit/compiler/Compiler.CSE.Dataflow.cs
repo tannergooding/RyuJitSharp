@@ -268,6 +268,66 @@ public partial class Compiler
         }
     }
 
+    private ValueNum optValnumCSE_ImpliedExcSet(GenTree tree)
+    {
+        assert(vnStore is not null);
+        var visitor = new ImpliedExceptionSetVisitor(this);
+        _ = visitor.WalkTree(ref tree, null);
+        return visitor.ExceptionSet;
+    }
+
+    private struct ImpliedExceptionSetVisitor : IGenTreeVisitor<ImpliedExceptionSetVisitor>
+    {
+        private readonly Compiler _compiler;
+
+        public ValueNum ExceptionSet { get; private set; }
+
+        public static bool DoPreOrder => true;
+
+        public ImpliedExceptionSetVisitor(Compiler compiler)
+        {
+            _compiler = compiler;
+            ExceptionSet = ValueNumStore.VNForEmptyExcSet();
+        }
+
+        public fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
+        {
+            var node = use;
+            GenTree? address = null;
+
+            if (node.Oper.IsIndir)
+            {
+                address = node.AsIndir().Addr;
+            }
+            else if (node.Oper is GT_ARR_LENGTH or GT_MDARR_LENGTH or GT_MDARR_LOWER_BOUND)
+            {
+                address = node.AsArrCommon().ArrRef;
+            }
+
+            var store = _compiler.vnStore!;
+            if (address is not null)
+            {
+                var exceptions = _compiler.fgValueNumberIndirNullCheckExceptions(address).Liberal;
+                ExceptionSet = store.VNExcSetUnion(ExceptionSet, exceptions);
+            }
+            else if ((node.Oper is GT_DIV or GT_UDIV or GT_MOD or GT_UMOD) &&
+                     varTypeIsIntegral(node.Type))
+            {
+                var exceptions = _compiler.fgValueNumberDivisionExceptions(
+                    node.Oper, node.AsOp().Op1, node.AsOp().Op2).Liberal;
+                ExceptionSet = store.VNExcSetUnion(ExceptionSet, exceptions);
+            }
+
+            return WALK_CONTINUE;
+        }
+
+        public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
+            => WALK_CONTINUE;
+
+        public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
+            => IGenTreeVisitor<ImpliedExceptionSetVisitor>.WalkTree(ref this, ref use, user);
+    }
+
     private void optValnumCSE_Availability()
     {
         assert(cseLivenessTraits is not null);
@@ -329,21 +389,28 @@ public partial class Compiler
                         var exceptions = vnStore.VNExceptionSet(tree._vnPair.Liberal);
                         if (isDef)
                         {
+                            var defExceptions = exceptions;
+                            if (descriptor.csdMixedExcSets)
+                            {
+                                defExceptions = vnStore.VNExcSetUnion(
+                                    defExceptions, optValnumCSE_ImpliedExcSet(tree));
+                            }
+
                             if (descriptor.defExcSetCurrent == ValueNumStore.VNForNull())
                             {
-                                descriptor.defExcSetCurrent = exceptions;
+                                descriptor.defExcSetCurrent = defExceptions;
                             }
-                            else if (descriptor.defExcSetCurrent != exceptions)
+                            else if (descriptor.defExcSetCurrent != defExceptions)
                             {
                                 var intersection = vnStore.VNExcSetIntersection(
-                                    descriptor.defExcSetCurrent, exceptions);
+                                    descriptor.defExcSetCurrent, defExceptions);
                                 if (Configuration.DEBUG && verbose)
                                 {
                                     jitprintf(">>> defExcSetCurrent is ");
                                     vnStore.vnDumpExc(this, descriptor.defExcSetCurrent);
                                     jitprintf("\n");
-                                    jitprintf(">>> theLiberalExcSet is ");
-                                    vnStore.vnDumpExc(this, exceptions);
+                                    jitprintf(">>> defExcSet is ");
+                                    vnStore.vnDumpExc(this, defExceptions);
                                     jitprintf("\n");
                                     jitprintf(">>> the intersectionExcSet is ");
                                     vnStore.vnDumpExc(this, intersection);
@@ -354,7 +421,7 @@ public partial class Compiler
                             }
 
                             if ((descriptor.defExcSetPromise != ValueNumStore.VNForEmptyExcSet()) &&
-                                !vnStore.VNExcIsSubset(exceptions, descriptor.defExcSetPromise))
+                                !vnStore.VNExcIsSubset(defExceptions, descriptor.defExcSetPromise))
                             {
                                 descriptor.defExcSetPromise = ValueNumStore.NoVN;
                                 tree._cseNum = NO_CSE;

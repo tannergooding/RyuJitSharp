@@ -181,7 +181,11 @@ public sealed partial class ObjectAllocator
                 if (!appearance.IsDef && (appearance.Stmt == appearance.Block.LastStmt))
                 {
                     var guard = new GuardInfo();
-                    appearance.IsGuard = IsGuard(appearance.Block, guard) is not null;
+                    unsafe
+                    {
+                        appearance.IsGuard = (IsGuard(appearance.Block, guard) is not null) &&
+                            (guard.Type == info.Type);
+                    }
                 }
 
                 if (lclNum == info.Local)

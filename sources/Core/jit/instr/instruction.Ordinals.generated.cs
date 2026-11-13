@@ -408,7 +408,7 @@ internal static class InstructionOrdinalMaps
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
-        65535, 65535, 1039
+        65535, 65535, 65535, 65535, 1039
     ];
 
     private static ReadOnlySpan<instruction> s_x86InstructionsByNativeOrdinal => [
@@ -1852,7 +1852,7 @@ internal static class InstructionOrdinalMaps
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
-        65535, 65535, 1135
+        65535, 65535, 65535, 65535, 1135
     ];
 
     private static ReadOnlySpan<instruction> s_x64InstructionsByNativeOrdinal => [
@@ -3392,7 +3392,7 @@ internal static class InstructionOrdinalMaps
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
-        65535, 65535, 131
+        65535, 65535, 65535, 65535, 131
     ];
 
     private static ReadOnlySpan<instruction> s_armInstructionsByNativeOrdinal => [
@@ -3928,7 +3928,7 @@ internal static class InstructionOrdinalMaps
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
-        65535, 65535, 1159
+        65535, 65535, 65535, 65535, 1159
     ];
 
     private static ReadOnlySpan<instruction> s_arm64InstructionsByNativeOrdinal => [
@@ -5492,7 +5492,7 @@ internal static class InstructionOrdinalMaps
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
-        65535, 65535, 375
+        65535, 65535, 65535, 65535, 375
     ];
 
     private static ReadOnlySpan<instruction> s_loongarch64InstructionsByNativeOrdinal => [
@@ -6272,7 +6272,7 @@ internal static class InstructionOrdinalMaps
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
         65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535,
-        65535, 65535, 214
+        65535, 65535, 65535, 65535, 214
     ];
 
     private static ReadOnlySpan<instruction> s_riscv64InstructionsByNativeOrdinal => [
@@ -6891,7 +6891,7 @@ internal static class InstructionOrdinalMaps
         415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426,
         427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438,
         439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450,
-        451, 452, 453
+        451, 452, 453, 454, 455
     ];
 
     private static ReadOnlySpan<instruction> s_wasmInstructionsByNativeOrdinal => [
@@ -6918,6 +6918,8 @@ internal static class InstructionOrdinalMaps
         INS_return_call,
         INS_return_call_indirect,
         INS_call_funclet,
+        INS_deferred_call,
+        INS_deferred_return_call,
         INS_drop,
         INS_try_table,
         INS_local_get,

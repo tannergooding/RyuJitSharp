@@ -186,7 +186,7 @@ public sealed partial class Lowering
                 }
 
                 if ((source.Oper is GT_BLK) && source.AsBlk().Addr.IsLclVarAddr &&
-                    IsContainableLclAddr(source.AsBlk().Addr.AsLclFld(), source.AsBlk().Size))
+                    IsContainableLclAddr(source.AsBlk().Addr.AsLclFld(), source.AsBlk().ValueSize))
                 {
                     MakeSrcContained(source, source.AsBlk().Addr);
                 }

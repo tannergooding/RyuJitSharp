@@ -6158,6 +6158,32 @@ public partial class Compiler
         }
     }
 
+    private unsafe bool impIsCovariantAwait(CorInfoType asyncVariantRetType, IL_OFFSET awaitOffset)
+    {
+        if (asyncVariantRetType is CORINFO_TYPE_VOID)
+        {
+            return false;
+        }
+
+        var awaitTokenAddress = info.compCode + awaitOffset + 1;
+        var awaitToken = BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(awaitTokenAddress, sizeof(int)));
+        return TypeFromToken(awaitToken) is not mdtMethodSpec;
+    }
+
+    private void impDiscardTopOfStack()
+    {
+        var value = impPopStack().val;
+        if ((value.Flags & GTF_SIDE_EFFECT) != 0)
+        {
+            if (varTypeIsStruct(value.Type))
+            {
+                value = impNormStructVal(value, CHECK_SPILL_ALL);
+            }
+
+            _ = impAppendTree(gtUnusedValNode(value), CHECK_SPILL_ALL, impCurStmtDI);
+        }
+    }
+
     /// <summary>Check whether an await's root-method, inline-ordinal and IL-offset hash is selected.</summary>
     public unsafe bool impCheckOptimizeAwait(IL_OFFSET awaitOffset)
     {
@@ -8750,6 +8776,13 @@ public partial class Compiler
                     if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz, ref callTyp))
                     {
                         return;
+                    }
+
+                    if (((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0) &&
+                        impIsCovariantAwait(callInfo.sig.retType, opcodeOffs))
+                    {
+                        JITDUMP("\nDiscarding unused result after folded task await\n");
+                        impDiscardTopOfStack();
                     }
 
                     break;

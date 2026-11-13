@@ -20,12 +20,12 @@ public partial class Compiler
     public bool IsEntireAccess(int lclNum, uint offset, ValueSize accessSize)
         => (lvaLclValueSize(lclNum) == accessSize) && (offset == 0);
 
-    /// <summary>Whether an access overflows the local; an inexact access is wide unless it covers the entire local.</summary>
+    /// <summary>Whether an access overflows the local; an inexact access or local size is wide unless it covers the entire local.</summary>
     public bool IsWideAccess(int lclNum, uint offset, ValueSize accessSize)
     {
         assert(!accessSize.IsNull);
 
-        if (accessSize.IsExact)
+        if (accessSize.IsExact && lvaLclValueSize(lclNum).IsExact)
         {
             // Widen the sum so overflow cannot hide a wide access. Its extent
             // must fit in 16 bits and its last byte must be a valid local address.

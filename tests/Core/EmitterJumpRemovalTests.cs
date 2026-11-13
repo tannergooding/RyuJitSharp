@@ -129,13 +129,13 @@ internal static class EmitterJumpRemovalTests
         });
     }
 
-    [TestCase(false, 0u, 5, 5u)]
-    [TestCase(true, 1u, 6, 6u)]
-    public static void CallAdjacentJumpKeepsOneByteOnlyBeforeAnEpilog(
-        bool epilog, uint jumpSize, int groupSize, uint targetOffset)
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void CallAdjacentRemovedJumpAlwaysRetainsItsReturnPcByte(bool epilog)
     {
         WithEmitter((_, emitter) =>
         {
+            Assume.That(Configuration.TARGET_AMD64);
             var target = Label();
             var source = emitter.emitCurIG ?? throw new AssertionException("Missing source group.");
             emitter.emitIns_J(INS_call, Label());
@@ -155,13 +155,13 @@ internal static class EmitterJumpRemovalTests
             Assert.That(JumpView.First(emitter), Is.SameAs(call));
             Assert.That(JumpView.Last(emitter), Is.SameAs(call));
             Assert.That(JumpView.Next(call), Is.Null);
-            Assert.That(jump.idCodeSize(), Is.EqualTo(jumpSize));
-            Assert.That(JumpView.AfterCall(jump), Is.EqualTo(epilog));
+            Assert.That(jump.idCodeSize(), Is.EqualTo(1u));
+            Assert.That(JumpView.AfterCall(jump), Is.True);
             Assert.That(JumpView.Offset(jump), Is.EqualTo(5u));
-            Assert.That(source.igSize, Is.EqualTo((ushort)groupSize));
+            Assert.That(source.igSize, Is.EqualTo((ushort)6));
             Assert.That(source.igData?[1], Is.SameAs(jump));
-            Assert.That(successor.igOffs, Is.EqualTo(targetOffset));
-            Assert.That(TotalSize(emitter), Is.EqualTo((int)targetOffset));
+            Assert.That(successor.igOffs, Is.EqualTo(6u));
+            Assert.That(TotalSize(emitter), Is.EqualTo(6));
         });
     }
 
@@ -398,7 +398,7 @@ internal static class EmitterJumpRemovalTests
         public static instrDescJmp? Last(Emitter emitter) => (instrDescJmp?)LastJump(emitter);
         public static instrDescJmp? Next(instrDesc id) => ((instrDescJmp)id).idjNext;
         public static bool Removable(instrDesc id) => ((instrDescJmp)id).idjIsRemovableJmpCandidate;
-        public static bool AfterCall(instrDesc id) => ((instrDescJmp)id).idjIsAfterCallBeforeEpilog;
+        public static bool AfterCall(instrDesc id) => ((instrDescJmp)id).idjIsAfterCall;
         public static bool KeepLong(instrDesc id) => ((instrDescJmp)id).idjKeepLong;
         public static uint Offset(instrDesc id) => ((instrDescJmp)id).idjOffs;
         public static insGroup? FirstCold(Emitter emitter) => ColdGroup(emitter);

@@ -157,6 +157,12 @@ public partial class Compiler
                 break;
             }
 
+            case GTF_ICON_WASM_FRAME_IDENTITY:
+            {
+                jitprintf($" {"Wasm frame identity"}");
+                break;
+            }
+
             default:
             {
                 jitprintf(" ILLEGAL");

@@ -343,6 +343,12 @@ public partial class Emitter
 
         switch (id.idInsFmt())
         {
+            case insFormat.IF_WASM_DEFERRED_CALL:
+            {
+                size += 1 + (2 * PADDED_RELOC_SIZE);
+                break;
+            }
+
             case insFormat.IF_WASM_OPCODE:
             {
                 break;

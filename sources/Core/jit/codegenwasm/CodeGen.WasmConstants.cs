@@ -22,6 +22,14 @@ public sealed partial class CodeGen
             var icon = treeNode.AsIntConCommon();
             if (icon.IsIconHandle())
             {
+                if (icon.IsIconHandle(GTF_ICON_WASM_FRAME_IDENTITY))
+                {
+                    GetEmitter().emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC,
+                        unchecked((nint)icon.IntegralValue));
+                    WasmProduceReg(treeNode);
+                    return;
+                }
+
                 // R2R relocations are module-base-relative; NativeAOT linker relocations are absolute.
                 assert(icon.ImmedValNeedsReloc(_compiler) || _compiler.RunningSuperPmiReplay);
                 GetEmitter().emitAddressConstant(unchecked((nint)icon.IntegralValue));

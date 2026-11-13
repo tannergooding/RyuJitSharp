@@ -38,6 +38,7 @@ public sealed class CSEdsc
     public ushort numDistinctLocals;
     public ushort numLocalOccurrences;
     public bool csdIsSharedConst;
+    public bool csdMixedExcSets;
     public bool csdLiveAcrossCall;
 
     public CSEdsc(GenTree tree, Statement stmt, BasicBlock block)

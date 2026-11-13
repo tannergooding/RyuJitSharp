@@ -27,7 +27,7 @@ public sealed partial class Lowering
         assert((block.Oper is GT_STORE_BLK) && (block._kind is GenTreeBlk.BlkOpKindUnroll));
         assert(size < int.MaxValue);
 
-        if ((address.Oper is GT_LCL_ADDR) && IsContainableLclAddr(address.AsLclFld(), (uint)size))
+        if ((address.Oper is GT_LCL_ADDR) && IsContainableLclAddr(address.AsLclFld(), new ValueSize(size)))
         {
             address.IsContained = true;
             return;

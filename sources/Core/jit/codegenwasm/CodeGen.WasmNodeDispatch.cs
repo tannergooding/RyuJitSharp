@@ -1302,6 +1302,14 @@ public sealed partial class CodeGen
             }
         }
 
+        if ((call._directCallAddress is not null) &&
+            (_compiler.eeGetRelocTypeHint(call._directCallAddress) is CorInfoReloc.WASM_DEFERRED_CALL))
+        {
+            assert(!call.IsHelperCall() && !call.IsUnmanaged);
+            assert(call.Args.FindWellKnownArg(WellKnownArg.WasmPortableEntryPoint) is null);
+            typeStack.Push(CORINFO_WASM_TYPE_I32);
+        }
+
         // Report managed call signatures to R2R so it can generate Wasm thunks.
         if (!call.IsHelperCall() && !call.IsUnmanaged)
         {
@@ -1407,9 +1415,8 @@ public sealed partial class CodeGen
         parameters.ptrVars = GCInfo.gcVarPtrSetCur;
         parameters.gcrefRegs = GCInfo.gcRegGCrefSetCur;
         parameters.byrefRegs = GCInfo.gcRegByrefSetCur;
-        _ = wasmSignature;
-        // The managed Wasm emitter has no call-instruction entry point yet.
-        WasmCodegenDependencyNotPorted(call, "Emitter.emitIns_Call");
+        parameters.wasmSignature = wasmSignature;
+        GetEmitter().emitIns_Call(in parameters);
     }
 
     private unsafe void genEmitWasmCallWithCurrentGC(
@@ -1418,8 +1425,8 @@ public sealed partial class CodeGen
         parameters.ptrVars = GCInfo.gcVarPtrSetCur;
         parameters.gcrefRegs = GCInfo.gcRegGCrefSetCur;
         parameters.byrefRegs = GCInfo.gcRegByrefSetCur;
-        _ = wasmSignature;
-        WasmCodegenDependencyNotPorted("Emitter.emitIns_Call");
+        parameters.wasmSignature = wasmSignature;
+        GetEmitter().emitIns_Call(in parameters);
     }
 
     // Keep Wasm helper signatures and target setup separate from the common helper-call NYI.

@@ -429,7 +429,7 @@ internal static class EmitterJumpInstructionTests
 
             Assert.That(diagnostic, Does.Contain("IN0001 call[5] -> ILLEGAL"));
             Assert.That(diagnostic,
-                Does.Contain("IN0002 jmp[5] -> ILLEGAL (short) ; removal candidate ; after call before epilog"));
+                Does.Contain("IN0002 jmp[5] -> ILLEGAL (short) ; removal candidate ; after call"));
             Assert.That(diagnostic, Does.Contain("  total jump count: 2"));
 
             var targetGroup = emitter.emitCurIG ?? throw new AssertionException("Missing target instruction group.");
@@ -437,7 +437,7 @@ internal static class EmitterJumpInstructionTests
             diagnostic = InstructionRecordingTestSupport.Capture(
                 () => TestConfiguration.DumpEmitterJumpList(emitter));
             Assert.That(diagnostic,
-                Does.Contain($"IN0002 jmp[5] -> IG{targetGroup.GetDisplayId():D2} (short) ; removal candidate ; after call before epilog"));
+                Does.Contain($"IN0002 jmp[5] -> IG{targetGroup.GetDisplayId():D2} (short) ; removal candidate ; after call"));
 
             jump.idSetIsBound();
             diagnostic = InstructionRecordingTestSupport.Capture(
@@ -477,7 +477,7 @@ internal static class EmitterJumpInstructionTests
         public static bool IsShort(instrDesc id) => ((instrDescJmp)id).idjShort;
         public static bool KeepLong(instrDesc id) => ((instrDescJmp)id).idjKeepLong;
         public static bool IsRemovable(instrDesc id) => ((instrDescJmp)id).idjIsRemovableJmpCandidate;
-        public static bool AfterCall(instrDesc id) => ((instrDescJmp)id).idjIsAfterCallBeforeEpilog;
+        public static bool AfterCall(instrDesc id) => ((instrDescJmp)id).idjIsAfterCall;
         public static void First(Emitter emitter, instrDesc jump) => FirstJumps(emitter) = (instrDescJmp)jump;
         public static void Next(instrDesc jump, instrDesc? next) => ((instrDescJmp)jump).idjNext = (instrDescJmp?)next;
 

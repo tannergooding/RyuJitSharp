@@ -330,9 +330,9 @@ public partial class Emitter
                     jitprintf(" ; removal candidate");
                 }
 
-                if (Configuration.TARGET_AMD64 && jump.idjIsAfterCallBeforeEpilog)
+                if (Configuration.TARGET_AMD64 && jump.idjIsAfterCall)
                 {
-                    jitprintf(" ; after call before epilog");
+                    jitprintf(" ; after call");
                 }
             }
 

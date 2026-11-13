@@ -56,6 +56,9 @@ public partial class Emitter
             [FieldOffset(0)]
             public emitAddrMode iiaAddrMode;
 
+            [FieldOffset(0)]
+            public nint iiaWasmSignature;
+
             [FieldOffset(4)]
             private uint _iiaRegisterBitsAtFour;
 

@@ -94,7 +94,7 @@ public partial class Emitter
         if (Configuration.TARGET_AMD64)
         {
             assert(!result || id.idCodeSize() == 0
-                || (((instrDescJmp)id).idjIsAfterCallBeforeEpilog && id.idCodeSize() == 1));
+                || (((instrDescJmp)id).idjIsAfterCall && id.idCodeSize() == 1));
         }
         else
         {

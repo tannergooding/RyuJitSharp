@@ -199,7 +199,7 @@ public partial class Compiler
         }
 
         if (((terminatorFlags & GTF_ORDER_SIDEEFF) != 0) &&
-            ((treeFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
+            ((treeFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF | GTF_EXCEPT)) != 0))
         {
             JITDUMP("  cannot reorder ordering side effect\n");
             return false;

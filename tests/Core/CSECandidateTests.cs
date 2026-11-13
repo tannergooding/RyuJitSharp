@@ -211,8 +211,12 @@ internal static unsafe class CSECandidateTests
             var normal = store.VNForExpr(null, TYP_INT);
             var exception = store.VNForFunc(TYP_REF, VNFunc.VNF_NullPtrExc,
                 store.VNForExpr(null, TYP_BYREF));
-            var first = compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(Globals.TYP_I_IMPL, 17));
-            var second = compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(Globals.TYP_I_IMPL, 17));
+            var firstAddress = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 17);
+            firstAddress._vnPair.SetBoth(store.VNForHandle(17, Globals.GTF_ICON_OBJ_HDL));
+            var secondAddress = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 17);
+            secondAddress._vnPair.SetBoth(store.VNForHandle(17, Globals.GTF_ICON_OBJ_HDL));
+            var first = compiler.gtNewIndir(TYP_INT, firstAddress);
+            var second = compiler.gtNewIndir(TYP_INT, secondAddress);
             first._vnPair.SetBoth(normal);
             second._vnPair.SetBoth(store.VNWithExc(normal, store.VNExcSetSingleton(exception)));
             Assert.That(Index(compiler, first, compiler.gtNewStmt(first)), Is.Zero);
@@ -310,7 +314,7 @@ internal static unsafe class CSECandidateTests
             if (scenario is AvailabilityScenario.UnsatisfiedDefinition)
             {
                 Assert.That(output, Does.Contain(">>> defExcSetCurrent is "));
-                Assert.That(output, Does.Contain(">>> theLiberalExcSet is "));
+                Assert.That(output, Does.Contain(">>> defExcSet is "));
                 Assert.That(output, Does.Contain(">>> the intersectionExcSet is "));
                 Assert.That(descriptor.defExcSetCurrent, Is.EqualTo(ValueNumStore.VNForEmptyExcSet()));
                 Assert.That(descriptor.defExcSetPromise, Is.EqualTo(ValueNumStore.NoVN));

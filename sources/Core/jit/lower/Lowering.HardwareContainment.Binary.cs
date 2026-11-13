@@ -20,18 +20,18 @@ public sealed partial class Lowering
             {
                 if (intrinsicId is NI_AVX_MaskLoad or NI_AVX2_MaskLoad)
                 {
-                    ContainCheckHWIntrinsicAddr(node, op1, simdSize);
+                    ContainCheckHWIntrinsicAddr(node, op1, new ValueSize(simdSize));
                 }
                 else
                 {
-                    ContainCheckHWIntrinsicAddr(node, op2, simdSize);
+                    ContainCheckHWIntrinsicAddr(node, op2, new ValueSize(simdSize));
                 }
                 break;
             }
 
             case HW_Category_MemoryStore:
             {
-                ContainCheckHWIntrinsicAddr(node, op1, simdSize);
+                ContainCheckHWIntrinsicAddr(node, op1, new ValueSize(simdSize));
                 break;
             }
 

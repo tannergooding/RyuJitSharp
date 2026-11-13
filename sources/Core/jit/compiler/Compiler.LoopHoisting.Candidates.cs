@@ -90,30 +90,30 @@ public partial class Compiler
         return true;
     }
 
-    private void optHoistCandidate(GenTree tree, BasicBlock block, FlowGraphNaturalLoop loop,
+    private bool optHoistCandidate(GenTree tree, BasicBlock block, FlowGraphNaturalLoop loop,
         LoopHoistContext context, bool defExecuted)
     {
-        if (!optIsProfitableToHoistTree(tree, loop, context, defExecuted))
-        {
-            JITDUMP("   ... not profitable to hoist\n");
-            return;
-        }
-
         var vn = tree._vnPair.Liberal;
         if (context.GetHoistedInCurLoop().ContainsKey(vn))
         {
             JITDUMP($"      [{tree.TreeId:D6}] ... already hoisted ${vn:x} in L{loop.Index:D2}\n ");
-            return;
+            return true;
+        }
+
+        if (!optIsProfitableToHoistTree(tree, loop, context, defExecuted))
+        {
+            JITDUMP($"      [{tree.TreeId:D6}] ... not profitable to hoist\n");
+            return false;
         }
 
         assert(loop.EntryEdges.Length == 1);
         var preheader = loop.EntryEdge(0).SourceBlock;
         if (!BasicBlock.sameTryRegion(preheader, block))
         {
-            JITDUMP($"   ... not hoisting in L{loop.Index:D2}, eh region constraint " +
+            JITDUMP($"      [{tree.TreeId:D6}] ... not hoisting in L{loop.Index:D2}, eh region constraint " +
                 $"(pre-header try index {preheader.bbTryIndex}, candidate {FMT_BB(block.bbNum)} " +
                 $"try index {block.bbTryIndex}\n");
-            return;
+            return false;
         }
 
         if (Configuration.DEBUG)
@@ -124,8 +124,9 @@ public partial class Compiler
                 var current = unchecked((uint)GetTotalLoopHoistedExpressions());
                 if (current >= (uint)limit)
                 {
-                    JITDUMP($"   ... not hoisting in L{loop.Index:D2}, hoist count {current} >= JitHoistLimit {(uint)limit}\n");
-                    return;
+                    JITDUMP($"      [{tree.TreeId:D6}] ... not hoisting in L{loop.Index:D2}, " +
+                        $"hoist count {current} >= JitHoistLimit {(uint)limit}\n");
+                    return false;
                 }
             }
         }
@@ -150,5 +151,6 @@ public partial class Compiler
 
         context.GetHoistedInCurLoop()[vn] = true;
         Metrics.HoistedExpressions++;
+        return true;
     }
 }

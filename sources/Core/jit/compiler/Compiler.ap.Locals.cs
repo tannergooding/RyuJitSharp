@@ -86,6 +86,10 @@ public partial class Compiler
         }
 
         tree.LclNum = copyNumber;
+        if (copy.RequiresGlobRefFlag)
+        {
+            tree.Flags |= GTF_GLOB_REF;
+        }
         if (local.lvIsMultiRegRet)
         {
             copy.lvIsMultiRegRet = true;

@@ -285,7 +285,7 @@ internal static unsafe class EmitterInstructionOutputTests
         internal static void SetRemoved(instrDesc descriptor, bool afterCall)
         {
             var jump = (instrDescJmp)descriptor;
-            jump.idjIsAfterCallBeforeEpilog = afterCall;
+            jump.idjIsAfterCall = afterCall;
             jump.idCodeSize(afterCall ? 1u : 0u);
         }
     }

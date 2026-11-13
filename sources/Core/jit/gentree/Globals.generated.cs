@@ -26,4 +26,5 @@ public static partial class Globals
     public const GenTreeFlags GTF_ICON_STATIC_ADDR_PTR = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_STATIC_ADDR_PTR + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_SECREL_OFFSET = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_SECREL_OFFSET + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_TLSGD_OFFSET = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_TLSGD_OFFSET + 1) << HANDLE_KIND_INDEX_SHIFT);
+    public const GenTreeFlags GTF_ICON_WASM_FRAME_IDENTITY = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_WASM_FRAME_IDENTITY + 1) << HANDLE_KIND_INDEX_SHIFT);
 }

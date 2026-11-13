@@ -158,7 +158,8 @@ public sealed partial class CodeGen
             Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
             if (_compiler.IsNativeAot || _compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_WASM_MANAGED_HELPER))
             {
-                Emitter.emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
+                Emitter.emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC,
+                    unchecked((nint)_compiler.info.compMethodHnd));
             }
             else if (_compiler.lvaWasmPortableEntryPointArg != BAD_VAR_NUM)
             {
