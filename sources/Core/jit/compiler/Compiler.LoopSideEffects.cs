@@ -51,6 +51,10 @@ public partial class Compiler
                     result = !loop.ContainsLoop(otherLoop);
                 }
             }
+            else if (funcApp.FuncIs(VNF_ByrefExposedStore))
+            {
+                result = optVNIsLoopInvariant(funcApp.GetArg(3), loop, loopVnInvariantCache);
+            }
             else
             {
                 for (var index = 0; index < funcApp.Arity; index++)

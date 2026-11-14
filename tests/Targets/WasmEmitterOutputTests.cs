@@ -285,6 +285,47 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
+    [Test]
+    public static void HelperCellLoadUsesRelocatableMemoryAddress()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.getHelperFtn = &GetRelocatableHelper;
+            vtable.Base.getWasmTypeSymbol = &GetWasmTypeSymbol;
+            vtable.Base.Base.getWasmWellKnownGlobals = &GetWasmWellKnownGlobals;
+            var jitInfo = new ICorJitInfo { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            compiler.info.compMatchedVM = true;
+            ConfigureAddressModel(compiler, nativeAot: false);
+            compiler.fgFuncletsCreated = true;
+            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
+            compiler.compFuncInfoCount = 1;
+
+            codeGen.genEmitHelperCall(CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF, 0, Globals.EA_PTRSIZE);
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing Wasm emitter instruction buffer.");
+            var actual = new instruction[descriptors.Count];
+            for (var index = 0; index < actual.Length; index++)
+            {
+                actual[index] = descriptors[index].idIns();
+            }
+
+            instruction[] expected =
+            [
+                INS_global_get,
+                INS_i32_load,
+                INS_i32_load,
+                INS_call_indirect,
+            ];
+            Assert.That(actual, Is.EqualTo(expected));
+            Assert.That(descriptors[1].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_WASM_MEMARG));
+            Assert.That(descriptors[1].idIsCnsReloc(), Is.True);
+            Assert.That(descriptors[2].idIsCnsReloc(), Is.False);
+        });
+    }
+
     [TestCase(true, CorInfoReloc.WASM_MEMORY_ADDR_SLEB)]
     [TestCase(false, CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB)]
     public static void DataOffsetRelocationsFollowTheNativeAotAddressModel(
@@ -506,6 +547,32 @@ internal static unsafe class WasmEmitterOutputTests
             {
                 Assert.That(descriptors[initialCount + 2].idSmallCns(), Is.EqualTo(size));
             }
+        });
+    }
+
+    [Test]
+    public static void SixteenByteZeroInitializationUsesSimdWhenAvailable()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var descriptors = CurrentDescriptors(codeGen.Emitter) ??
+                throw new AssertionException("Missing Wasm instruction descriptors.");
+            var initialCount = descriptors.Count;
+            var addressInstruction = Configuration.TARGET_64BIT ? INS_i64_const : INS_i32_const;
+            var pointerInstruction = Configuration.TARGET_64BIT ? INS_i64_const : INS_i32_const;
+            codeGen.Emitter.emitIns_I(addressInstruction, Globals.EA_PTRSIZE, 16);
+            GenWasmZeroInit(codeGen, 16);
+
+            instruction[] expected = Configuration.FEATURE_SIMD
+                ? [addressInstruction, INS_i32_const, INS_i8x16_splat, INS_v128_store]
+                : [addressInstruction, INS_i32_const, pointerInstruction, INS_memory_fill];
+            var actual = new instruction[descriptors.Count - initialCount];
+            for (var index = 0; index < actual.Length; index++)
+            {
+                actual[index] = descriptors[initialCount + index].idIns();
+            }
+
+            Assert.That(actual, Is.EqualTo(expected));
         });
     }
 
@@ -1107,6 +1174,32 @@ internal static unsafe class WasmEmitterOutputTests
     {
         _ = self;
         *result = default;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetRelocatableHelper(
+        ICorJitInfo* self,
+        CorInfoHelpFunc helper,
+        CORINFO_CONST_LOOKUP* lookup,
+        CORINFO_METHOD_STRUCT_** method)
+    {
+        _ = self;
+        _ = helper;
+        _ = method;
+        lookup->accessType = InfoAccessType.IAT_PVALUE;
+        lookup->addr = (void*)0x1234;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_WASM_TYPE_SYMBOL_STRUCT_* GetWasmTypeSymbol(
+        ICorJitInfo* self,
+        CorInfoWasmType* types,
+        nint typesSize)
+    {
+        _ = self;
+        _ = types;
+        _ = typesSize;
+        return (CORINFO_WASM_TYPE_SYMBOL_STRUCT_*)0x1234;
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genCodeForIndir")]

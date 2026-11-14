@@ -323,6 +323,24 @@ public partial class Compiler
             virtualIPFuncIndex = unchecked(virtualIPFuncIndex + 1);
         }
 
+        if (!IsNativeAot && (compHndBBtabCount == 0))
+        {
+            assert(virtualIP == 2);
+            foreach (var block in Blocks)
+            {
+                if (blockData[block.bbNum].isRequired)
+                {
+                    _ = getVirtualIPLclNum();
+                    break;
+                }
+            }
+
+            JITDUMP("Virtual IP is always 1; omitting frame stores\n");
+            return lvaWasmVirtualIP == BAD_VAR_NUM
+                ? PhaseStatus.MODIFIED_NOTHING
+                : PhaseStatus.MODIFIED_EVERYTHING;
+        }
+
         // A redundant store is unnecessary when the same IP reaches the block on every path.
         var vipMerge = new WasmVirtualIPMerge(blockData);
         new DataFlow(this).ForwardAnalysis(ref vipMerge);

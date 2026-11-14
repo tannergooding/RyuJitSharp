@@ -90,10 +90,18 @@ internal static unsafe class ValueNumMemoryTests
             var mapStore = store.VNForFunc(TYP_HEAP, VNFunc.VNF_MapStore,
                 opaque, store.VNForIntCon(0), store.VNForIntCon(42),
                 expected?.Index ?? ValueNumStore.NoLoop);
+            var byrefStore = store.VNForFunc(
+                TYP_HEAP,
+                VNFunc.VNF_ByrefExposedStore,
+                store.VNForExpr(block, TYP_BYREF),
+                store.VNForExpr(block, TYP_BYREF),
+                store.VNForIntCon(42),
+                opaque);
 
             Assert.That(store.LoopOfVN(opaque), Is.SameAs(expected));
             Assert.That(store.LoopOfVN(phi), Is.SameAs(expected));
             Assert.That(store.LoopOfVN(mapStore), Is.SameAs(expected));
+            Assert.That(store.LoopOfVN(byrefStore), Is.SameAs(expected));
         });
     }
 

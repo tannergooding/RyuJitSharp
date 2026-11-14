@@ -195,6 +195,7 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_TypeHandleToRuntimeTypeHandle
         (ValueNumStore.VNFOpAttrib)0x2C, // VNF_LdElemA
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_ByrefExposedLoad
+        (ValueNumStore.VNFOpAttrib)0x10, // VNF_ByrefExposedStore
         (ValueNumStore.VNFOpAttrib)0x10, // VNF_ByrefExposedLocalLoad
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_GetRefanyVal
         (ValueNumStore.VNFOpAttrib)0x24, // VNF_GetClassFromMethodParam
@@ -2341,6 +2342,7 @@ public static partial class VNFuncExtensions
         ValueNumStore.SetValidationAttributes(attributes, VNF_TypeHandleToRuntimeTypeHandle, 1, false, false);
         ValueNumStore.SetValidationAttributes(attributes, VNF_LdElemA, 3, false, true);
         ValueNumStore.SetValidationAttributes(attributes, VNF_ByrefExposedLoad, 3, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ByrefExposedStore, 4, false, false);
         ValueNumStore.SetValidationAttributes(attributes, VNF_ByrefExposedLocalLoad, 4, false, false);
         ValueNumStore.SetValidationAttributes(attributes, VNF_GetRefanyVal, 2, false, false);
         ValueNumStore.SetValidationAttributes(attributes, VNF_GetClassFromMethodParam, 1, false, true);

@@ -175,6 +175,82 @@ internal static unsafe class ValueNumMemoryAccessTests
         });
     }
 
+    [TestCase(true)]
+    [TestCase(false)]
+    public static void ByrefLoadForwardsOnlyWhenTheConservativeAddressMatches(bool matchingAddress)
+    {
+        WithStore((compiler, store) =>
+        {
+            ArgumentNullException.ThrowIfNull(compiler.compCurBB);
+            compiler.compCurBB.bbMemoryDef = (1 << (int)GcHeap) | (1 << (int)ByrefExposed);
+
+            var oldHeap = store.VNForExpr(null, TYP_HEAP);
+            var oldByref = store.VNForExpr(null, TYP_HEAP);
+            compiler.fgCurMemoryVN[(int)GcHeap] = oldHeap;
+            compiler.fgCurMemoryVN[(int)ByrefExposed] = oldByref;
+
+            var pointerVN = store.VNForExpr(null, TYP_BYREF);
+            var storeConservativeVN = store.VNForExpr(compiler.compCurBB, TYP_BYREF);
+            var loadConservativeVN = matchingAddress
+                ? storeConservativeVN
+                : store.VNForExpr(compiler.compCurBB.Next, TYP_BYREF);
+
+            var storeAddress = compiler.gtNewIconNode(TYP_BYREF, 0);
+            storeAddress._vnPair.Liberal = pointerVN;
+            storeAddress._vnPair.Conservative = storeConservativeVN;
+            var storedValueVN = store.VNForIntCon(42);
+            var storedValue = compiler.gtNewIconNode(TYP_INT, 42);
+            storedValue._vnPair.SetBoth(storedValueVN);
+            var assignment = compiler.gtNewStoreIndNode(TYP_INT, storeAddress, storedValue);
+
+            compiler.fgValueNumberStore(assignment);
+
+            var loadAddress = compiler.gtNewIconNode(TYP_BYREF, 0);
+            loadAddress._vnPair.Liberal = pointerVN;
+            loadAddress._vnPair.Conservative = loadConservativeVN;
+            var load = compiler.gtNewIndir(TYP_INT, loadAddress);
+            load.Flags |= GTF_EXCEPT;
+
+            compiler.fgValueNumberTree(load);
+
+            store.VNPUnpackExc(load._vnPair, out var normal, out var exceptions);
+            Assert.That(normal.Liberal, Is.EqualTo(storedValueVN));
+            Assert.That(exceptions, matchingAddress
+                ? Is.EqualTo(ValueNumStore.VNPForEmptyExcSet())
+                : Is.Not.EqualTo(ValueNumStore.VNPForEmptyExcSet()));
+        });
+    }
+
+    [Test]
+    public static void ByrefLoadDoesNotForwardAcrossATypeMismatch()
+    {
+        WithStore((compiler, store) =>
+        {
+            ArgumentNullException.ThrowIfNull(compiler.compCurBB);
+            compiler.compCurBB.bbMemoryDef = (1 << (int)GcHeap) | (1 << (int)ByrefExposed);
+            compiler.fgCurMemoryVN[(int)GcHeap] = store.VNForExpr(null, TYP_HEAP);
+            compiler.fgCurMemoryVN[(int)ByrefExposed] = store.VNForExpr(null, TYP_HEAP);
+
+            var pointerVN = store.VNForExpr(null, TYP_BYREF);
+            var address = compiler.gtNewIconNode(TYP_BYREF, 0);
+            address._vnPair.SetBoth(pointerVN);
+            var storedValue = compiler.gtNewIconNode(TYP_INT, 42);
+            storedValue._vnPair.SetBoth(store.VNForIntCon(42));
+            compiler.fgValueNumberStore(compiler.gtNewStoreIndNode(TYP_INT, address, storedValue));
+
+            var loadAddress = compiler.gtNewIconNode(TYP_BYREF, 0);
+            loadAddress._vnPair.SetBoth(pointerVN);
+            var load = compiler.gtNewIndir(TYP_FLOAT, loadAddress);
+            load.Flags |= GTF_EXCEPT;
+            compiler.fgValueNumberTree(load);
+
+            store.VNPUnpackExc(load._vnPair, out var normal, out _);
+            var app = new VNFuncApp();
+            Assert.That(store.GetVNFunc(normal.Liberal, ref app), Is.True);
+            Assert.That(app.Func, Is.EqualTo(VNF_ByrefExposedLoad));
+        });
+    }
+
     internal static void WithStore(Action<Compiler, ValueNumStore> action)
     {
         using var tls = TestConfiguration.CreateJitTls();

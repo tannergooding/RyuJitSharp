@@ -1532,6 +1532,23 @@ public sealed partial class CodeGen
 
         var wasmSignature = _compiler.info.compCompHnd->getWasmTypeSymbol(types, typeCount);
 
+        void emitHelperCellLoad()
+        {
+            if (_compiler.opts.compReloc && !_compiler.IsNativeAot)
+            {
+                GetEmitter().emitImageBase();
+                GetEmitter().emitIns_MemargAddress(
+                    WasmInstructions.INS_I_load,
+                    EA_PTRSIZE,
+                    unchecked((nint)helperFunction.addr));
+            }
+            else
+            {
+                GetEmitter().emitAddressConstant(unchecked((nint)helperFunction.addr));
+                GetEmitter().emitIns_I(WasmInstructions.INS_I_load, EA_PTRSIZE, 0);
+            }
+        }
+
         if (helperUsesPep)
         {
             if (helperFunction.accessType is IAT_VALUE)
@@ -1543,8 +1560,7 @@ public sealed partial class CodeGen
             {
                 // Push the PEP address from the helper's indirection cell.
                 assert(helperFunction.accessType is IAT_PVALUE);
-                GetEmitter().emitAddressConstant(unchecked((nint)helperFunction.addr));
-                GetEmitter().emitIns_I(WasmInstructions.INS_I_load, EA_PTRSIZE, 0);
+                emitHelperCellLoad();
             }
         }
 
@@ -1552,8 +1568,7 @@ public sealed partial class CodeGen
         {
             // Push the call target by dereferencing the cell and then the PEP address.
             assert(helperFunction.accessType is IAT_PVALUE);
-            GetEmitter().emitAddressConstant(unchecked((nint)helperFunction.addr));
-            GetEmitter().emitIns_I(WasmInstructions.INS_I_load, EA_PTRSIZE, 0);
+            emitHelperCellLoad();
             GetEmitter().emitIns_I(WasmInstructions.INS_I_load, EA_PTRSIZE, 0);
         }
 
@@ -2111,11 +2126,26 @@ public sealed partial class CodeGen
                 store = INS_i64_store;
                 break;
             }
+
+            case 16:
+            {
+                if (Configuration.FEATURE_SIMD)
+                {
+                    store = INS_v128_store;
+                }
+                break;
+            }
         }
 
         var emit = GetEmitter();
         var valueAttribute = (size == 8) ? EA_8BYTE : EA_4BYTE;
         emit.emitIns_I((size == 8) ? INS_i64_const : INS_i32_const, valueAttribute, 0);
+
+        if (Configuration.FEATURE_SIMD && (size == 16))
+        {
+            emit.emitIns(INS_i8x16_splat);
+            valueAttribute = EA_16BYTE;
+        }
 
         if (store is not INS_invalid)
         {

@@ -183,6 +183,7 @@ public partial class Compiler
         assert(vnStore is not null);
         var oper = tree.Oper;
         var type = tree.Type;
+        var addressAlreadyDereferenced = false;
 
         if (oper.IsConst)
         {
@@ -432,7 +433,31 @@ public partial class Compiler
                     }
                     else
                     {
-                        tree._vnPair.Liberal = fgValueNumberByrefExposedLoad(type, addr._vnPair.Liberal);
+                        ValueNum loadVN;
+                        if (IsByrefStoreForwardingType(type) &&
+                            vnStore.GetVNFunc(fgCurMemoryVN[(int)ByrefExposed], ref app) &&
+                            app.FuncIs(VNF_ByrefExposedStore) &&
+                            (app.GetArg(0) == vnStore.VNNormalValue(addrNormal.Liberal)) &&
+                            (vnStore.TypeOfVN(app.GetArg(2)) == type))
+                        {
+                            loadVN = app.GetArg(2);
+                            if ((compCurBB is BasicBlock currentBlock) &&
+                                (_blockToLoop?.GetLoop(currentBlock) is not null))
+                            {
+                                optRecordLoopMemoryDependence(
+                                    tree,
+                                    currentBlock,
+                                    fgCurMemoryVN[(int)ByrefExposed]);
+                            }
+
+                            addressAlreadyDereferenced = app.GetArg(1) == addrNormal.Conservative;
+                        }
+                        else
+                        {
+                            loadVN = fgValueNumberByrefExposedLoad(type, addr._vnPair.Liberal);
+                        }
+
+                        tree._vnPair.Liberal = loadVN;
                         tree._vnPair.Conservative = vnStore.VNForExpr(compCurBB, type);
                     }
                     tree._vnPair = vnStore.VNPWithExc(tree._vnPair, addrExceptions);
@@ -631,7 +656,10 @@ public partial class Compiler
                     }
                 }
             }
-            fgValueNumberAddExceptionSet(tree);
+            if (!addressAlreadyDereferenced)
+            {
+                fgValueNumberAddExceptionSet(tree);
+            }
         }
         else
         {

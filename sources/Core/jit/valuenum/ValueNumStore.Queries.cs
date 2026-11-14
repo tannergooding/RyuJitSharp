@@ -115,6 +115,10 @@ public sealed partial class ValueNumStore
                 assert(_compiler._loops is not null);
                 return _compiler._loops.GetLoopByIndex(index);
             }
+            else if (funcApp.FuncIs(VNF_ByrefExposedStore))
+            {
+                return LoopOfVN(funcApp.GetArg(3));
+            }
         }
         else if (GetMemoryPhiDef(vn, ref memoryPhiDef))
         {

@@ -221,6 +221,38 @@ internal static unsafe class WasmEmitterOracleRefreshTests
         });
     }
 
+    [Test]
+    public static void CoreClrWithoutEhOmitsVirtualIpStoresButKeepsFrameIdentityLocals()
+    {
+        WithCompiler(compiler =>
+        {
+            Assert.That(compiler.IsNativeAot, Is.False);
+
+            compiler.fgNodeThreading = NodeThreading.LIR;
+            compiler.fgPredsComputed = true;
+            compiler.fgFuncletsCreated = true;
+            compiler.compHndBBtab = [];
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+
+            var root = BasicBlock.New(compiler, BBJ_RETURN);
+            root.MakeLir(null, null);
+            var rootReturn = compiler.gtNewUnaryNode(GT_RETURN, TYP_VOID, null);
+            root.InsertAtEnd(rootReturn);
+            compiler.fgFirstBB = root;
+            compiler.fgLastBB = root;
+            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
+            compiler.compFuncInfoCount = 1;
+            compiler.lvaWasmVirtualIP = BAD_VAR_NUM;
+            compiler.lvaWasmFunctionIndex = BAD_VAR_NUM;
+            CurrentLowering(compiler) = new Lowering(compiler, new LinearScan(compiler));
+
+            Assert.That(compiler.fgWasmVirtualIP(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.lvaWasmVirtualIP, Is.Not.EqualTo(BAD_VAR_NUM));
+            Assert.That(compiler.lvaWasmFunctionIndex, Is.Not.EqualTo(BAD_VAR_NUM));
+            Assert.That(root.FirstNode, Is.SameAs(rootReturn));
+        });
+    }
+
     private static void WithEmitter(Action<Compiler, Emitter> action)
     {
         WithCompiler(compiler =>

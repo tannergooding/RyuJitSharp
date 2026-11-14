@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "36e8ec35850c66052053e5a1dd180e6d616f43ed",
-    "targetObservedAt": "2026-11-13",
-    "reconciledCommit": "36e8ec35850c66052053e5a1dd180e6d616f43ed"
+    "targetCommit": "87c412743ae00397fbbf17e087baff27c1b3d534",
+    "targetObservedAt": "2026-11-14",
+    "reconciledCommit": "87c412743ae00397fbbf17e087baff27c1b3d534"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Continue full-runtime parity verification at 36e8ec35850c66052053e5a1dd180e6d616f43ed: obtain matched native JIT evidence and compare changed codegen behavior. Then capture recursive-tail-call-to-loop phase/codegen behavior with an early setup following an earlier argument save. D015/B322 remains accepted. Preserve dynamicTlsInputBoundary unchanged; Wasm GC-info emission remains unverified. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter closure is ported and tested; AMD64 unwind-V3 encoders remain deferred until the native path is wired. Do not claim full runtime parity from source reconciliation.",
+    "nextAction": "Build a matched native JIT from 87c412743ae00397fbbf17e087baff27c1b3d534 and compare changed behavior where the backend is available; then capture recursive-tail-call-to-loop phase/codegen behavior with early setup following an earlier argument save. Keep D015/B322 accepted and dynamicTlsInputBoundary unresolved. Defer genAsyncResumeInfo until the B209 target-width table/emitter closure is ported and tested; Wasm GC-info and AMD64 unwind-V3 encoders remain unverified. Do not claim full runtime parity.",
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
       "E03: isIntrinsicType now uses a per-Compiler last-handle boolean cache; the pinned repeated-handle profile is under artifacts\\e03-isintrinsictype. Keep primitive mappings and nullable/enum predicates direct pending repeated-handle evidence and complete output/tri-state semantics.",
@@ -1254,6 +1254,40 @@
       ],
       "disposition": "Early argument setup nodes are inserted before caller-parameter assignments but after required temporary saves, preserving argument evaluation order during recursive tail-call-to-loop conversion.",
       "sourceCommit": "4b73d784df79a696fd0487b2e66f9e51efc955f3"
+    },
+    {
+      "area": "wasm-noeh-virtual-ip",
+      "native": [
+        "src\\coreclr\\jit\\fgwasm.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.WasmVirtualIP.cs",
+        "tests\\Core\\WasmEmitterOracleRefreshTests.cs"
+      ],
+      "disposition": "CoreCLR methods without EH retain required frame identity locals but omit virtual-IP frame stores.",
+      "sourceCommit": "87c412743ae00397fbbf17e087baff27c1b3d534"
+    },
+    {
+      "area": "byref-exposed-store-value-numbering",
+      "native": [
+        "src\\coreclr\\jit\\optimizer.cpp",
+        "src\\coreclr\\jit\\valuenum.cpp",
+        "src\\coreclr\\jit\\valuenumfuncs.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.LoopSideEffects.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.VNMemoryAccess.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.VNTree.cs",
+        "sources\\Core\\jit\\valuenum\\ValueNumStore.Queries.cs",
+        "sources\\GenerateTables\\Inputs\\valuenumfuncs.h",
+        "sources\\Core\\jit\\valuenum\\VNFunc.generated.cs",
+        "sources\\Core\\jit\\valuenum\\VNFuncExtensions.generated.cs",
+        "tests\\Core\\LoopSideEffectTests.cs",
+        "tests\\Core\\ValueNumMemoryAccessTests.cs",
+        "tests\\Core\\ValueNumMemoryTests.cs"
+      ],
+      "disposition": "ByrefExposedStore value numbering is split between compiler memory/tree/loop partials and ValueNumStore queries; the VNF declaration flows through the managed generator input and generated consumer tables.",
+      "sourceCommit": "87c412743ae00397fbbf17e087baff27c1b3d534"
     }
   ],
   "generatorInputMapping": {
@@ -1264,8 +1298,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "36e8ec35850c66052053e5a1dd180e6d616f43ed",
-    "reconciledCommit": "36e8ec35850c66052053e5a1dd180e6d616f43ed",
+    "targetInputCommit": "87c412743ae00397fbbf17e087baff27c1b3d534",
+    "reconciledCommit": "87c412743ae00397fbbf17e087baff27c1b3d534",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

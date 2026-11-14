@@ -98,6 +98,24 @@ internal static unsafe class LoopSideEffectTests
                 store.VNForFunc(TYP_HEAP, VNF_MapStore, outsideMemoryPhi, constant, outside, outer.Index),
                 inner, cache), Is.True);
 
+            var loopPointer = store.VNForExpr(blocks[2], TYP_BYREF);
+            var byrefStoreOutside = store.VNForFunc(
+                TYP_HEAP,
+                VNF_ByrefExposedStore,
+                loopPointer,
+                loopPointer,
+                innerValue,
+                outsideMemoryPhi);
+            var byrefStoreInside = store.VNForFunc(
+                TYP_HEAP,
+                VNF_ByrefExposedStore,
+                loopPointer,
+                loopPointer,
+                outside,
+                insideMemoryPhi);
+            Assert.That(compiler.optVNIsLoopInvariant(byrefStoreOutside, inner, cache), Is.True);
+            Assert.That(compiler.optVNIsLoopInvariant(byrefStoreInside, inner, cache), Is.False);
+
             cache[insidePhi] = true;
             Assert.That(compiler.optVNIsLoopInvariant(insidePhi, inner, cache), Is.True);
             Assert.That(cache, Does.ContainKey(invariantExpr));

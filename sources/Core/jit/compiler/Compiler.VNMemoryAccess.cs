@@ -99,7 +99,30 @@ public partial class Compiler
                 else
                 {
                     assert(!store.HasAnyLocalDefs(this));
-                    fgMutateGcHeap(store, "assign-of-IND");
+                    if ((store.Oper is GT_STOREIND) &&
+                        IsByrefStoreForwardingType(store.Type) &&
+                        (data.Type == store.Type) &&
+                        !store.AsIndir().IsVolatile &&
+                        !(addrIsVNFunc && funcApp.FuncIs(VNF_PtrToLoc)))
+                    {
+                        var memoryVN = vnStore.VNForFunc(
+                            TYP_HEAP,
+                            VNF_ByrefExposedStore,
+                            vnStore.VNNormalValue(addr._vnPair.Liberal),
+                            vnStore.VNNormalValue(addr._vnPair.Conservative),
+                            value.Liberal,
+                            vnStore.VNForExpr(compCurBB, TYP_HEAP));
+                        recordGcHeapStore(store, memoryVN, "byref store");
+                        if (!byrefStatesMatchGcHeapStates)
+                        {
+                            fgSetCurrentMemoryVN(ByrefExposed, memoryVN);
+                            fgValueNumberRecordMemorySsa(ByrefExposed, store);
+                        }
+                    }
+                    else
+                    {
+                        fgMutateGcHeap(store, "assign-of-IND");
+                    }
                 }
                 break;
             }
@@ -123,6 +146,31 @@ public partial class Compiler
         var storeExcSet = store.Oper.IsIndir
             ? vnStore.VNPUnionExcSet(store.AsIndir().Addr._vnPair, valueExcSet) : valueExcSet;
         store._vnPair = vnStore.VNPWithExc(ValueNumStore.VNPForVoid(), storeExcSet);
+    }
+
+    private static bool IsByrefStoreForwardingType(var_types type)
+    {
+        switch (type)
+        {
+            case TYP_INT:
+            case TYP_FLOAT:
+            case TYP_DOUBLE:
+            case TYP_REF:
+            case TYP_BYREF:
+            {
+                return true;
+            }
+
+            case TYP_LONG:
+            {
+                return !Configuration.LOWER_DECOMPOSE_LONGS;
+            }
+
+            default:
+            {
+                return false;
+            }
+        }
     }
 
     private static unsafe var_types DecodeElemType(CORINFO_CLASS_HANDLE clsHnd)
