@@ -23436,6 +23436,11 @@ public partial class Compiler
             if (isIsaSupported && compSupportsHWIntrinsic(isa) &&
                 (vectorByteLength <= GetPreferredVectorByteLength()))
             {
+                if (Configuration.TARGET_WASM)
+                {
+                    return NI_IsSupported_True;
+                }
+
                 if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || compExactlyDependsOn(isa))
                 {
                     return NI_IsSupported_True;

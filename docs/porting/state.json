@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "87c412743ae00397fbbf17e087baff27c1b3d534",
-    "targetObservedAt": "2026-11-14",
-    "reconciledCommit": "87c412743ae00397fbbf17e087baff27c1b3d534"
+    "targetCommit": "a33eebbe8e6cc76c22f30ac9b9f166ac6469d088",
+    "targetObservedAt": "2026-11-16",
+    "reconciledCommit": "a33eebbe8e6cc76c22f30ac9b9f166ac6469d088"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Build a matched native JIT from 87c412743ae00397fbbf17e087baff27c1b3d534 and compare changed behavior where the backend is available; then capture recursive-tail-call-to-loop phase/codegen behavior with early setup following an earlier argument save. Keep D015/B322 accepted and dynamicTlsInputBoundary unresolved. Defer genAsyncResumeInfo until the B209 target-width table/emitter closure is ported and tested; Wasm GC-info and AMD64 unwind-V3 encoders remain unverified. Do not claim full runtime parity.",
+    "nextAction": "Build a matched native JIT from a33eebbe8e6cc76c22f30ac9b9f166ac6469d088 and compare changed behavior where the backend is available; then capture recursive-tail-call-to-loop phase/codegen behavior with early setup following an earlier argument save. Keep D015/B322 accepted and dynamicTlsInputBoundary unresolved. Defer genAsyncResumeInfo until the B209 target-width table/emitter closure is ported and tested; Wasm GC-info and AMD64 unwind-V3 encoders remain unverified. Do not claim full runtime parity.",
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
       "E03: isIntrinsicType now uses a per-Compiler last-handle boolean cache; the pinned repeated-handle profile is under artifacts\\e03-isintrinsictype. Keep primitive mappings and nullable/enum predicates direct pending repeated-handle evidence and complete output/tri-state semantics.",
@@ -1288,6 +1288,30 @@
       ],
       "disposition": "ByrefExposedStore value numbering is split between compiler memory/tree/loop partials and ValueNumStore queries; the VNF declaration flows through the managed generator input and generated consumer tables.",
       "sourceCommit": "87c412743ae00397fbbf17e087baff27c1b3d534"
+    },
+    {
+      "area": "wasm-nativeaot-isa-query-support",
+      "native": [
+        "src\\coreclr\\jit\\hwintrinsic.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.imp.cs",
+        "tests\\Targets\\HardwareIntrinsicOracleRefreshTests.cs"
+      ],
+      "disposition": "Wasm NativeAOT IsSupported and IsHardwareAccelerated queries return compile-time True rather than Dynamic through the shared managed importer.",
+      "sourceCommit": "a33eebbe8e6cc76c22f30ac9b9f166ac6469d088"
+    },
+    {
+      "area": "simd-negated-subtraction-ordering",
+      "native": [
+        "src\\coreclr\\jit\\morph.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.fg.HardwareMorph.cs",
+        "tests\\Targets\\HardwareIntrinsicOracleRefreshTests.cs"
+      ],
+      "disposition": "The SIMD subtraction-to-addition rewrite swaps negated operands only when gtCanSwapOrder preserves their evaluation and effect order.",
+      "sourceCommit": "a33eebbe8e6cc76c22f30ac9b9f166ac6469d088"
     }
   ],
   "generatorInputMapping": {
@@ -1299,7 +1323,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "87c412743ae00397fbbf17e087baff27c1b3d534",
-    "reconciledCommit": "87c412743ae00397fbbf17e087baff27c1b3d534",
+    "reconciledCommit": "a33eebbe8e6cc76c22f30ac9b9f166ac6469d088",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

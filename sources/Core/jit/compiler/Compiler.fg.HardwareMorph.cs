@@ -571,7 +571,8 @@ public partial class Compiler
                     var left = first.AsHWIntrinsic();
                     var leftOperation = left.GetOperForHWIntrinsicId(out var leftIsScalar, getEffectiveOp: true);
                     if ((leftOperation is GT_NEG) && !leftIsScalar &&
-                        (varTypeToSigned(baseType) == varTypeToSigned(left.SimdBaseType)))
+                        (varTypeToSigned(baseType) == varTypeToSigned(left.SimdBaseType)) &&
+                        gtCanSwapOrder(first, second))
                     {
                         first = ExtractEffectiveOp(GT_NEG, left, destroy: true);
                         node.SetOp(1, second);
