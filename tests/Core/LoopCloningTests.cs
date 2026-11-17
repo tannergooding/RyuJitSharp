@@ -318,6 +318,48 @@ internal static unsafe class LoopCloningTests
         });
     }
 
+    [TestCase(GT_GE, 7, 2, 3, true)]
+    [TestCase(GT_GE, 7, 1, 3, false)]
+    [TestCase(GT_GE, 7, 0, 1, false)]
+    [TestCase(GT_GT, 7, 1, 3, true)]
+    [TestCase(GT_NE, 7, 2, 1, true)]
+    public static void UnsignedDecreasingLoopMustProveItCannotWrap(
+        genTreeOps comparisonOper, int init, int limit, int stride, bool expected)
+    {
+        WithLoop((compiler, preheader, header, latch, unusedExit) => {
+            compiler.fgInsertStmtAtEnd(preheader, compiler.gtNewStmt(
+                compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, init))));
+            var check = new GenTreeBoundsChk(compiler.gtNewLclvNode(TYP_INT, 0),
+                compiler.gtNewLclvNode(TYP_INT, 3), SpecialCodeKind.SCK_RNGCHK_FAIL);
+            compiler.fgInsertStmtAtEnd(header, compiler.gtNewStmt(
+                compiler.gtNewBinaryNode(GT_COMMA, TYP_INT, check, compiler.gtNewIconNode(TYP_INT, 0))));
+            AddCountedLatch(compiler, latch, limit, comparisonOper, -stride, isUnsigned: true);
+            compiler.optMethodFlags |= OMF_HAS_ARRAYREF;
+            compiler._loops = FlowGraphNaturalLoops.Find(ComputeDfs(compiler, false));
+
+            var loop = compiler._loops.GetLoopByIndex(0);
+            Assert.That(loop.AnalyzeIteration(out var iter, allowMissingBaseCase: true), Is.True);
+            Assert.That(iter.IsDecreasingLoop(), Is.True);
+            var context = new LoopCloneContext(compiler._loops.NumLoops);
+            Assert.That(ObtainCandidates(compiler, context), Is.True);
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                var output = CodeGenLifeTransitionTests.Capture(() =>
+                    Assert.That(DeriveConditions(compiler, loop, context), Is.EqualTo(expected)));
+                if (!expected)
+                {
+                    Assert.That(output, Does.Contain(
+                        $"Unsigned decreasing loop with stride {stride}: IV might wrap around 0"));
+                }
+            }
+            else
+            {
+                Assert.That(DeriveConditions(compiler, loop, context), Is.EqualTo(expected));
+            }
+        });
+    }
+
     [Test]
     public static void ProfiledGdvCandidateRequiresFrequentlyExecutedBiasedGuard()
     {
@@ -410,7 +452,7 @@ internal static unsafe class LoopCloningTests
     }
 
     private static void AddCountedLatch(Compiler compiler, BasicBlock latch, int limit,
-        genTreeOps comparisonOper = GT_LT, int stride = 1)
+        genTreeOps comparisonOper = GT_LT, int stride = 1, bool isUnsigned = false)
     {
         var increment = compiler.gtNewStoreLclVarNode(0,
             compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
@@ -418,6 +460,7 @@ internal static unsafe class LoopCloningTests
         compiler.fgInsertStmtAtEnd(latch, compiler.gtNewStmt(increment));
         var comparison = compiler.gtNewBinaryNode(comparisonOper, TYP_INT,
             compiler.gtNewLclvNode(TYP_INT, 0), compiler.gtNewIconNode(TYP_INT, limit));
+        comparison.Flags |= isUnsigned ? GTF_UNSIGNED : GTF_EMPTY;
         compiler.fgInsertStmtAtEnd(latch,
             compiler.gtNewStmt(compiler.gtNewUnaryNode(GT_JTRUE, TYP_VOID, comparison)));
     }

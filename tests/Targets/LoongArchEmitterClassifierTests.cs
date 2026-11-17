@@ -68,9 +68,9 @@ internal static class LoongArchEmitterClassifierTests
         Assert.That(emitter.insEvaluateExecutionCost(descriptor), Is.EqualTo(expectedCost));
     }
 
-    [TestCase(INS_b, INS_OPTS_RC, 8u, 6.0f)]
-    [TestCase(INS_b, INS_OPTS_RC, 12u, 9.0f)]
-    [TestCase(INS_jirl, INS_OPTS_JIRL, 8u, 5.5f)]
+    [TestCase(INS_b, INS_OPTS_RC, 8u, 1.0f)]
+    [TestCase(INS_b, INS_OPTS_RC, 12u, 2.0f)]
+    [TestCase(INS_jirl, INS_OPTS_JIRL, 8u, 1.0f)]
     public static void MergedInstructionCostsUseLoongArchInstructionCount(
         instruction ins,
         insOpts options,
@@ -86,6 +86,71 @@ internal static class LoongArchEmitterClassifierTests
 
         Assert.That(emitter.insEvaluateExecutionCost(descriptor), Is.EqualTo(expectedCost));
     }
+
+    [TestCase(INS_b, INS_OPTS_RC, 8u, 0.75f)]
+    [TestCase(INS_b, INS_OPTS_RC, 12u, 1.5f)]
+    [TestCase(INS_ld_b, INS_OPTS_RC, 8u, 1.0f)]
+    [TestCase(INS_ld_b, INS_OPTS_RC, 12u, 1.75f)]
+    [TestCase(INS_b, INS_OPTS_RL, 8u, 0.75f)]
+    [TestCase(INS_b, INS_OPTS_RL, 12u, 1.5f)]
+    [TestCase(INS_jirl, INS_OPTS_JIRL, 8u, 1.0f)]
+    [TestCase(INS_jirl, INS_OPTS_JIRL, 12u, 2.0f)]
+    [TestCase(INS_addi_d, INS_OPTS_LOONGARCH64_I, 8u, 0.5f)]
+    [TestCase(INS_addi_d, INS_OPTS_LOONGARCH64_I, 12u, 1.5f)]
+    [TestCase(INS_jirl, INS_OPTS_LOONGARCH64_C, 8u, 1.25f)]
+    [TestCase(INS_jirl, INS_OPTS_LOONGARCH64_C, 16u, 2.25f)]
+    public static void CombinedInstructionThroughputMatchesLoongArchCharacteristics(
+        instruction ins,
+        insOpts options,
+        uint codeSize,
+        float expectedThroughput)
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
+        var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
+        var descriptor = NewDescriptor(ins, isLocal: false);
+        descriptor.idInsOpt(options);
+        descriptor.idCodeSize(codeSize);
+
+        Assert.That(emitter.getInsExecutionCharacteristicsLoongArch64(descriptor).insThroughput,
+            Is.EqualTo(expectedThroughput));
+    }
+
+    [TestCase(false, 1.0f)]
+    [TestCase(true, 0.75f)]
+    public static void RelocatedCombinedInstructionThroughputMatchesLoongArchCharacteristics(
+        bool isConstantRelocation, float expectedThroughput)
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
+        var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
+        var descriptor = NewDescriptor(INS_pcalau12i, isLocal: false);
+        descriptor.idInsOpt(INS_OPTS_LOONGARCH64_RELOC);
+        descriptor.idCodeSize(8);
+        if (isConstantRelocation)
+        {
+            descriptor.idSetIsCnsReloc();
+        }
+
+        Assert.That(emitter.getInsExecutionCharacteristicsLoongArch64(descriptor).insThroughput,
+            Is.EqualTo(expectedThroughput));
+    }
+
+    [TestCaseSource(nameof(ThroughputCases))]
+    public static void ThroughputUsesUpdatedLoongArchInstructionCharacteristics(
+        instruction ins, float expectedThroughput)
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
+        var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
+        var descriptor = NewDescriptor(ins, isLocal: false);
+        descriptor.idInsOpt(INS_OPTS_NONE);
+        descriptor.idCodeSize(4);
+
+        Assert.That(emitter.getInsExecutionCharacteristicsLoongArch64(descriptor).insThroughput,
+            Is.EqualTo(expectedThroughput));
+    }
+
     [TestCase(INS_nop, 0x03400000u, 0xffffffffu, "DF_G_ALIAS")]
     [TestCase(INS_addi_d, 0x02c00000u, 0xffc00000u, "DF_G_2R12I")]
     public static void InstructionCodeAndDisassemblyTablesStayAligned(
@@ -206,16 +271,34 @@ internal static class LoongArchEmitterClassifierTests
 
     private static IEnumerable<TestCaseData> ExecutionCostCases()
     {
-        yield return new TestCaseData(INS_nop, 4.0f);
+        yield return new TestCaseData(INS_nop, 0.25f);
         yield return new TestCaseData(INS_b, 1.0f);
         yield return new TestCaseData(INS_ld_d, 3.0f);
-        yield return new TestCaseData(INS_st_d, 2.0f);
+        yield return new TestCaseData(INS_st_d, 0.5f);
 
         if (Configuration.FEATURE_SIMD)
         {
-            yield return new TestCaseData(INS_vadd_b, 4.0f);
-            yield return new TestCaseData(INS_xvadd_b, 4.0f);
-            yield return new TestCaseData(INS_xvbitsel_v, 2.0f);
+            yield return new TestCaseData(INS_vadd_b, 0.25f);
+            yield return new TestCaseData(INS_xvadd_b, 0.25f);
+            yield return new TestCaseData(INS_xvbitsel_v, 0.5f);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> ThroughputCases()
+    {
+        yield return new TestCaseData(INS_nop, 0.25f);
+        yield return new TestCaseData(INS_dbar, 11.0f);
+        yield return new TestCaseData(INS_ibar, 16.0f);
+        yield return new TestCaseData(INS_ld_d, 0.5f);
+        yield return new TestCaseData(INS_st_d, 0.5f);
+        yield return new TestCaseData(INS_fsqrt_s, 3.25f);
+
+        if (Configuration.FEATURE_SIMD)
+        {
+            yield return new TestCaseData(INS_vadd_b, 0.25f);
+            yield return new TestCaseData(INS_xvpcnt_b, 0.5f);
+            yield return new TestCaseData(INS_xvdiv_b, 23.4f);
+            yield return new TestCaseData(INS_xvfsqrt_s, 11.5f);
         }
     }
 

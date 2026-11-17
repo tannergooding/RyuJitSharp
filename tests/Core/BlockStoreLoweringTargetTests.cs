@@ -43,6 +43,39 @@ internal static unsafe class BlockStoreLoweringTargetTests
     }
 
     [Test]
+    public static void RelocatableOffsetIsNotContainedInBlockStoreAddress()
+    {
+        Assume.That(Configuration.TARGET_ARM || Configuration.TARGET_ARM64 ||
+            Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64);
+
+        WithCompiler(compiler => {
+            compiler.opts.compReloc = true;
+            var baseAddress = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var offsetNode = compiler.gtNewIconHandleNode((nint)4, GTF_ICON_OBJ_HDL);
+            var address = new GenTreeOp(GT_ADD, TYP_BYREF, baseAddress, offsetNode);
+            address._vnPair.SetBoth(123);
+            var data = compiler.gtNewIconNode(TYP_INT, 0);
+            var store = new GenTreeBlk(TYP_STRUCT, address, data, new ClassLayout(16)) {
+                _kind = GenTreeBlk.BlkOpKindUnroll,
+            };
+            var block = NewBlock(baseAddress, offsetNode, address, data, store);
+            compiler.compCurBB = block;
+            compiler.fgNodeThreading = NodeThreading.LIR;
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+            LoweringBlock(lowering) = block;
+
+            ContainBlockStoreAddress(lowering, store, 16, address, null);
+
+            Assert.That(store.Addr, Is.SameAs(address));
+            Assert.That(address.AsOp().Op2, Is.SameAs(offsetNode));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
+        });
+    }
+
+    [Test]
     public static void UnaddressableLocalFieldBlockSourceUsesNonFaultingAddressLoads()
     {
         WithCompiler(compiler => {
@@ -122,6 +155,10 @@ internal static unsafe class BlockStoreLoweringTargetTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerInitBlockStore")]
     private static extern void LowerInitBlockStore(Lowering lowering, GenTreeBlk block);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainBlockStoreAddress")]
+    private static extern void ContainBlockStoreAddress(
+        Lowering lowering, GenTreeBlk block, uint size, GenTree address, GenTree? addressParent);
 
     private static void WithCompiler(Action<Compiler> action)
     {

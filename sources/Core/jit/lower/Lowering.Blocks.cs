@@ -57,6 +57,7 @@ public sealed partial class Lowering
             return;
         }
 
+        // The target address modes below encode offsets as plain immediates, so folding would drop relocations.
         if (Configuration.TARGET_ARM)
         {
             if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
@@ -67,6 +68,11 @@ public sealed partial class Lowering
 
             var offsetNode = address.AsOp().Op2.AsIntCon();
             var offset = offsetNode.IconValue;
+            if (offsetNode.ImmedValNeedsReloc(CompilerInstance))
+            {
+                return;
+            }
+
             if ((offset < -255) || (offset > 255) || ((long)offset + size > 256))
             {
                 return;
@@ -100,6 +106,11 @@ public sealed partial class Lowering
 
             var offsetNode = address.AsOp().Op2.AsIntCon();
             var offset = offsetNode.IconValue;
+            if (offsetNode.ImmedValNeedsReloc(CompilerInstance))
+            {
+                return;
+            }
+
             // Native ClrSafeInt checks the conversion as well as offset + size; INT32_MAX is excluded.
             if ((offset < int.MinValue) || (offset > int.MaxValue) || ((long)offset + size >= int.MaxValue))
             {
@@ -134,6 +145,11 @@ public sealed partial class Lowering
 
             var offsetNode = address.AsOp().Op2.AsIntCon();
             var offset = offsetNode.IconValue;
+            if (offsetNode.ImmedValNeedsReloc(CompilerInstance))
+            {
+                return;
+            }
+
             if ((offset < -2048) || (offset > 2047) ||
                 ((offset + (int)size) < -2048) || ((offset + (int)size) > 2047))
             {
@@ -169,6 +185,11 @@ public sealed partial class Lowering
 
             var offsetNode = address.AsOp().Op2.AsIntCon();
             var offset = offsetNode.IconValue;
+            if (offsetNode.ImmedValNeedsReloc(CompilerInstance))
+            {
+                return;
+            }
+
             var endOffset = unchecked(offset + (nint)(int)size);
             if ((offset < -2048) || (offset >= 2048) ||
                 (endOffset < -2048) || (endOffset >= 2048))

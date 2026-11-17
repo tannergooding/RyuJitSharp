@@ -176,6 +176,42 @@ public partial class Compiler
             }
         }
 
+        if (!increasing && ((iter.TestTree!.Flags & GTF_UNSIGNED) != 0))
+        {
+            var provenSafe = false;
+            if (iter.HasConstInit && iter.HasConstLimit)
+            {
+                var constInit = iter.ConstInitValue;
+                var constLimit = iter.ConstLimit();
+                if ((constInit >= 0) && (constLimit >= 0) && (constInit >= constLimit))
+                {
+                    // The non-negative bounds make the unsigned remainder calculation safe from signed overflow.
+                    var uInit = (uint)constInit;
+                    var uLimit = (uint)constLimit;
+                    var uStride = (uint)stride;
+                    var remainder = (uInit - uLimit) % uStride;
+                    var testIsExclusive = iter.TestOper() is GT_GT or GT_NE;
+
+                    // An exclusive test does not visit the limit when the remainder is zero.
+                    var lastValue = (testIsExclusive && (remainder == 0))
+                        ? (uLimit + uStride)
+                        : (uLimit + remainder);
+
+                    // The final decrement cannot wrap if the lowest visited value is at least the stride.
+                    if (lastValue >= uStride)
+                    {
+                        provenSafe = true;
+                    }
+                }
+            }
+
+            if (!provenSafe)
+            {
+                JITDUMP($"> Unsigned decreasing loop with stride {stride}: IV might wrap around 0\n");
+                return false;
+            }
+        }
+
         if (iter.NeedsZeroTripGuard)
         {
             LC_Ident init;
