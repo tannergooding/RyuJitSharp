@@ -18,6 +18,18 @@ public sealed partial class ObjectAllocator
         assert(newArr.HelperNum is not CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
         var compiler = CompilerInstance;
         var alignTo8 = newArr.HelperNum is CORINFO_HELP_NEWARR_1_ALIGN8;
+        if ((Configuration.TARGET_ARM || Configuration.TARGET_WASM) && !alignTo8)
+        {
+            var elementClassHandle = NO_CLASS_HANDLE;
+            var elementCorInfoType = compiler.info.compCompHnd->getChildType(clsHnd, &elementClassHandle);
+            var elementType = compiler.TypeHandleToVarType(elementCorInfoType, elementClassHandle);
+            alignTo8 = elementType is TYP_LONG or TYP_DOUBLE;
+            if (elementType is TYP_STRUCT)
+            {
+                assert(elementClassHandle != NO_CLASS_HANDLE);
+                alignTo8 = compiler.eeGetClassAlignmentRequirement(elementClassHandle) == 8;
+            }
+        }
         var local = compiler.lvaGrabTemp(shortLifetime: false, "stack allocated array temp");
         ref var descriptor = ref compiler.lvaGetDesc(local);
 

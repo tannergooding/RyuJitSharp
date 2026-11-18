@@ -380,8 +380,8 @@ public sealed partial class WasmRegAlloc
             }
 
             local.RegNum = assignedRegister;
-            local.lvRegister = _compiler.compFuncCount() == 1;
-            local.lvOnFrame = false;
+            local.lvRegister = !local.lvWasmGCWriteThru && (_compiler.compFuncCount() == 1);
+            local.lvOnFrame = local.lvWasmGCWriteThru;
 
             if (local.lvIsParam || local.lvIsParamRegTarget)
             {

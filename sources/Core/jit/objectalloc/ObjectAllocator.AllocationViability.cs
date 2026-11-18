@@ -34,7 +34,7 @@ public sealed partial class ObjectAllocator
             return false;
         }
 
-        if (allocType is ObjectAllocationType.OAT_NEWARR)
+        if (allocType is ObjectAllocationType.OAT_NEWARR or ObjectAllocationType.OAT_NEWARR_R2R)
         {
             if (!enableArrays)
             {

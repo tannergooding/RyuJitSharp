@@ -192,7 +192,8 @@ public partial class Compiler
                         isRefLocalCandidate = VarSetOps.IsMember(this, candidates, varDsc._varIndex);
                     }
 
-                    // Non-candidate locals have a pinned stack home; candidate reads may still need spilling.
+                    // Locals outside the GC-safe candidate set have pinned stack homes, including write-through
+                    // candidates. Their reads need no additional spill; safe candidates may still need one.
                     if (!varDsc.IsAddressExposed && !isRefLocalCandidate)
                     {
                         continue;

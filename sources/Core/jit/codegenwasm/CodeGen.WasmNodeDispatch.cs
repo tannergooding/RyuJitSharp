@@ -964,7 +964,7 @@ public sealed partial class CodeGen
                 ((tree._lirFlags & LIR.Flags.MultiplyUsed) == LIR.Flags.None);
 
             GetEmitter().emitIns_I(
-                INS_local_get, type.EmitSize, unchecked((nint)wasmLclIndex), isLastUse);
+                INS_local_get, type.EmitSize, unchecked((nint)wasmLclIndex), isLastUse, tree.LclNum);
 
             // A register local may have a different type than the tree, so truncate when needed.
             if (tree.Type is TYP_INT && varDsc.Type is TYP_LONG)
@@ -988,7 +988,7 @@ public sealed partial class CodeGen
         assert(genIsValidReg(targetReg) && varDsc.lvIsRegCandidate);
 
         var wasmLclIndex = regNumberExtensions.WasmRegToIndex(targetReg);
-        GetEmitter().emitIns_I(INS_local_set, type.EmitSize, unchecked((nint)wasmLclIndex));
+        GetEmitter().emitIns_I(INS_local_set, type.EmitSize, unchecked((nint)wasmLclIndex), false, tree.LclNum);
         genUpdateLifeStoreWasm(tree, targetReg, ref varDsc);
     }
 

@@ -28,6 +28,7 @@ public partial class DefaultPolicy : LegacyPolicy
     protected int _calleeNativeSizeEstimate;
     protected int _callsiteNativeSizeEstimate;
     private Flags _flags;
+    protected bool _mayReturnSmallArray;
 
     public DefaultPolicy(Compiler compiler, bool isPrejitRoot)
         : base(isPrejitRoot)
@@ -413,6 +414,12 @@ public partial class DefaultPolicy : LegacyPolicy
                 case InlineObservation.CALLSITE_IN_TRY_REGION:
                 {
                     CallsiteIsInTryRegion = value;
+                    break;
+                }
+
+                case InlineObservation.CALLEE_MAY_RETURN_SMALL_ARRAY:
+                {
+                    _mayReturnSmallArray = true;
                     break;
                 }
 
@@ -917,12 +924,19 @@ public partial class DefaultPolicy : LegacyPolicy
             multiplier += 3.0;
             JITDUMP($"\nInline candidate has const arg that feeds a conditional.  Multiplier increased to {multiplier}.");
         }
+
         // For prejit roots we do not see the call sites. To be suitably optimistic
         // assume that call sites may pass constants.
-        else if (_isPrejitRoot && ((_argFeedsConstantTest > 0) || (_argFeedsTest > 0)))
+        if (_isPrejitRoot && ((_argFeedsConstantTest > 0) || (_argFeedsTest > 0)))
         {
             multiplier += 3.0;
             JITDUMP($"\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to {multiplier}.");
+        }
+
+        if (_mayReturnSmallArray)
+        {
+            multiplier += 4.0;
+            JITDUMP($"\nInline candidate may return small known-size array.  Multiplier increased to {multiplier}.");
         }
 
         switch (_callsiteFrequency)

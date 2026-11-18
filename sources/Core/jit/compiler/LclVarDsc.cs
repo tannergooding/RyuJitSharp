@@ -49,6 +49,8 @@ public partial struct LclVarDsc
     /// <remarks>It is set during codegen any time the variable is enregistered (lvRegister is only set to non-zero if the variable gets the same register assignment for its entire lifetime).</remarks>
     private regNumber _lvRegNum;
 
+    public bool lvWasmGCWriteThru;
+
     /// <summary>Used for "upper half" of long var.</summary>
     private regNumber _lvOtherReg;
 
@@ -1495,8 +1497,9 @@ public partial struct LclVarDsc
     }
 
     /// <summary>Determines if this variable's value is always up-to-date on stack.</summary>
-    /// <remarks>This is possible if this is an EH-var or we decided to spill after single-def.</remarks>
-    public readonly bool IsAlwaysAliveInMemory => IsLiveInOutOfHandler || lvSpillAtSingleDef;
+    /// <remarks>This is possible if this is an EH-var, we decided to spill after single-def, or it is a Wasm GC write-through local.</remarks>
+    public readonly bool IsAlwaysAliveInMemory =>
+        (Configuration.TARGET_WASM && lvWasmGCWriteThru) || IsLiveInOutOfHandler || lvSpillAtSingleDef;
 
     /// <summary>check if a whole struct reference could be replaced by a field.</summary>
     /// <param name="compiler">the compiler instance</param>

@@ -138,6 +138,28 @@ internal static class ExtendedDefaultPolicyTests
         });
     }
 
+    [Test]
+    public static void SmallArrayReturnObservationBoostsBothDefaultPolicies()
+    {
+        var compiler = CreateCompiler();
+        var defaultPolicy = new DefaultPolicyProbe(compiler);
+        var defaultPolicyWithoutObservation = new DefaultPolicyProbe(compiler);
+        var extendedPolicy = new ProbePolicy(compiler);
+        var extendedPolicyWithoutObservation = new ProbePolicy(compiler);
+
+        defaultPolicy.NoteBool(InlineObservation.CALLEE_MAY_RETURN_SMALL_ARRAY, true);
+        defaultPolicy.NoteInt(InlineObservation.CALLSITE_FREQUENCY, (int)InlineCallsiteFrequency.HOT);
+        defaultPolicyWithoutObservation.NoteInt(InlineObservation.CALLSITE_FREQUENCY, (int)InlineCallsiteFrequency.HOT);
+        extendedPolicy.NoteBool(InlineObservation.CALLEE_MAY_RETURN_SMALL_ARRAY, true);
+        extendedPolicy.NoteInt(InlineObservation.CALLSITE_FREQUENCY, (int)InlineCallsiteFrequency.HOT);
+        extendedPolicyWithoutObservation.NoteInt(InlineObservation.CALLSITE_FREQUENCY, (int)InlineCallsiteFrequency.HOT);
+
+        Assert.Multiple(() => {
+            Assert.That(defaultPolicy.Multiplier - defaultPolicyWithoutObservation.Multiplier, Is.EqualTo(4.0));
+            Assert.That(extendedPolicy.Multiplier - extendedPolicyWithoutObservation.Multiplier, Is.EqualTo(4.0));
+        });
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(3)]

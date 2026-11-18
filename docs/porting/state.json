@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "2ce18f74dcacc0e52d68cc2f250fcb744a2e943f",
-    "targetObservedAt": "2026-11-17",
-    "reconciledCommit": "2ce18f74dcacc0e52d68cc2f250fcb744a2e943f"
+    "targetCommit": "096877240648650996bf57c9203ae428c99fc0f6",
+    "targetObservedAt": "2026-11-18",
+    "reconciledCommit": "096877240648650996bf57c9203ae428c99fc0f6"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Build a matched native JIT from 2ce18f74dcacc0e52d68cc2f250fcb744a2e943f and compare changed behavior where the backend is available; then capture recursive-tail-call-to-loop phase/codegen behavior with early setup following an earlier argument save. Keep D015/B322 accepted and dynamicTlsInputBoundary unresolved. Defer genAsyncResumeInfo until the B209 target-width table/emitter closure is ported and tested; Wasm GC-info and AMD64 unwind-V3 encoders remain unverified. Do not claim full runtime parity.",
+    "nextAction": "Investigate the GenericCatch Importation diagnostic difference at 096877240648650996bf57c9203ae428c99fc0f6 (native defers profile-weight checking after fgPgoDeferredInconsistency; managed checks weights), then continue recursive-tail-call-to-loop phase/codegen verification. Keep D015/B322 accepted and dynamicTlsInputBoundary unresolved. Defer genAsyncResumeInfo until the B209 target-width table/emitter closure is ported and tested; Wasm GC-info and AMD64 unwind-V3 encoders remain unverified. Do not claim full runtime parity.",
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
       "E03: isIntrinsicType now uses a per-Compiler last-handle boolean cache; the pinned repeated-handle profile is under artifacts\\e03-isintrinsictype. Keep primitive mappings and nullable/enum predicates direct pending repeated-handle evidence and complete output/tri-state semantics.",
@@ -1349,7 +1349,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "87c412743ae00397fbbf17e087baff27c1b3d534",
-    "reconciledCommit": "2ce18f74dcacc0e52d68cc2f250fcb744a2e943f",
+    "reconciledCommit": "096877240648650996bf57c9203ae428c99fc0f6",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

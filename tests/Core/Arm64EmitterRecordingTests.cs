@@ -903,6 +903,17 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.EqualTo(expectedSize));
     }
 
+    [Test]
+    public static void VectorOppositeEightByteMoveIsRetainedToClearUpperBits()
+    {
+        var emitter = CreateEmitter(optimized: true);
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(EmitterCompiler(emitter));
+        RecordMove(emitter, INS_mov, EA_8BYTE, REG_ARM64_V0, REG_ARM64_V1, false, INS_OPTS_NONE);
+        RecordMove(emitter, INS_mov, EA_8BYTE, REG_ARM64_V1, REG_ARM64_V0, false, INS_OPTS_NONE);
+
+        Assert.That(GroupSize(emitter), Is.EqualTo(8));
+    }
+
     [TestCase(INS_ldr, EA_4BYTE, 4)]
     [TestCase(INS_ldrh, EA_4BYTE, 4)]
     [TestCase(INS_ldrb, EA_4BYTE, 4)]

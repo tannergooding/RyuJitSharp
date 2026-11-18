@@ -16,6 +16,7 @@ public sealed partial class ObjectAllocator : Phase
         OAT_NEWOBJ,
         OAT_NEWOBJ_HEAP,
         OAT_NEWARR,
+        OAT_NEWARR_R2R,
     }
 
     public unsafe ObjectAllocator(Compiler compiler)
@@ -96,8 +97,11 @@ public sealed partial class ObjectAllocator : Phase
             var isValueClass = compiler.eeIsValueClass(clsHnd);
             var canBeOnStack = isValueClass || compiler.info.compCompHnd->canAllocateOnStack(clsHnd);
             allocType = canBeOnStack ? ObjectAllocationType.OAT_NEWOBJ : ObjectAllocationType.OAT_NEWOBJ_HEAP;
+            JITDUMP(canBeOnStack
+                ? $"Checking if we can stack allocate object [{TreeIdForDump(tree):D6}] ({compiler.eeGetClassName(clsHnd)})\n"
+                : $"Object [{TreeIdForDump(tree):D6}] must be allocated on the heap ({compiler.eeGetClassName(clsHnd)})\n");
         }
-        else if (!_isR2R && (tree.Oper is GT_CALL) && tree.AsCall().IsHelperCall())
+        else if ((tree.Oper is GT_CALL) && tree.AsCall().IsHelperCall())
         {
             var call = tree.AsCall();
 
@@ -108,15 +112,31 @@ public sealed partial class ObjectAllocator : Phase
                 case CORINFO_HELP_NEWARR_1_DIRECT:
                 case CORINFO_HELP_NEWARR_1_ALIGN8:
                 {
-                    if (call.Args.CountUserArgs() == 2)
+                    if ((call.Args.CountUserArgs() == 2) &&
+                        (call.Args.GetUserArgByIndex(1)?.Node.Oper.IsCnsIntOrI == true))
                     {
-                        var lengthArg = call.Args.GetUserArgByIndex(1);
-                        assert(lengthArg is not null);
+                        allocType = ObjectAllocationType.OAT_NEWARR;
+                        JITDUMP($"Checking if we can stack allocate array [{TreeIdForDump(call):D6}]\n");
+                    }
+                    else
+                    {
+                        JITDUMP($"Can't handle unknown length newarr [{TreeIdForDump(call):D6}]\n");
+                    }
+                    break;
+                }
 
-                        if (lengthArg.Node.Oper.IsCnsIntOrI)
-                        {
-                            allocType = ObjectAllocationType.OAT_NEWARR;
-                        }
+                case CORINFO_HELP_READYTORUN_NEWARR_1:
+                {
+                    assert(_isR2R);
+                    if ((call.Args.CountUserArgs() == 1) &&
+                        (call.Args.GetUserArgByIndex(0)?.Node.Oper.IsCnsIntOrI == true))
+                    {
+                        allocType = ObjectAllocationType.OAT_NEWARR_R2R;
+                        JITDUMP($"Checking if we can stack allocate array [{TreeIdForDump(call):D6}]\n");
+                    }
+                    else
+                    {
+                        JITDUMP($"Can't handle unknown length newarr [{TreeIdForDump(call):D6}]\n");
                     }
                     break;
                 }

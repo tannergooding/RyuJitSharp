@@ -307,7 +307,7 @@ public sealed partial class CodeGen
                 }
             }
 
-            if (local.lvOnFrame && (!local.lvIsInReg || local.IsLiveInOutOfHandler))
+            if (local.lvOnFrame && (!local.lvIsInReg || local.IsAlwaysAliveInMemory))
             {
                 var storeType = sourceType;
                 if ((local.Type != TYP_STRUCT) && (local.Type.ActualType.Size < storeType.Size))

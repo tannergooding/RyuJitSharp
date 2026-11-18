@@ -16,5 +16,7 @@ public enum ExceptionSetFlags : byte
     ArithmeticException = 1 << 2,
     NullReferenceException = 1 << 3,
     IndexOutOfRangeException = 1 << 4,
-    UnknownException = 1 << 5,
+    ArgumentException = 1 << 5,
+    ArgumentOutOfRangeException = 1 << 6,
+    UnknownException = 1 << 7,
 }

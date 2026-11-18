@@ -42,8 +42,8 @@ public sealed partial class WasmRegAlloc
                 isRegCandidate = false;
             }
 
-            // Only GC refs proven not to be live across safepoints can live in Wasm locals.
-            if (varTypeIsGC(local.Type))
+            // GC refs outside the safe candidate set also need a pinned shadow-stack home.
+            if (isRegCandidate && varTypeIsGC(local.Type))
             {
                 var isRefLocalCandidate = false;
                 if (local.lvTracked)
@@ -56,11 +56,8 @@ public sealed partial class WasmRegAlloc
                     }
                     isRefLocalCandidate = VarSetOps.IsMember(compiler, candidates, local._varIndex);
                 }
-                if (!isRefLocalCandidate)
-                {
-                    _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.WasmGCVisibility);
-                    isRegCandidate = false;
-                }
+                local.lvWasmGCWriteThru = !isRefLocalCandidate;
+                anyFrameLocals |= local.lvWasmGCWriteThru;
             }
 
             if (isRegCandidate)
@@ -222,6 +219,10 @@ public sealed partial class WasmRegAlloc
                 {
                     assert(node.Oper is GT_STORE_LCL_VAR);
                     CollectReference(node.AsLclVarCommon());
+                    if (local.lvWasmGCWriteThru)
+                    {
+                        RewriteLocalStackStore(node.AsLclVarCommon());
+                    }
                 }
                 else
                 {
@@ -507,18 +508,28 @@ public sealed partial class WasmRegAlloc
 
         var range = CurrentRange();
         var nextNode = localNode.Next;
-        range.Remove(localNode);
-
-        var localAddress = new GenTreeLclFld(
-            GT_LCL_ADDR,
-            TYP_I_IMPL,
-            localNode.LclNum,
-            offset,
-            data: null,
-            layout: layout,
-            source: localNode,
-            threading: NodeThreading.None);
-        localAddress.CopySsaIdentityFrom(localNode);
+        GenTreeLclFld localAddress;
+        if (_compiler.lvaGetDesc(localNode.LclNum).lvWasmGCWriteThru)
+        {
+            assert(localNode.Oper is GT_STORE_LCL_VAR && varTypeIsGC(storeType));
+            localAddress = _compiler.gtNewLclAddrNode(TYP_I_IMPL, localNode.LclNum, 0);
+            value = _compiler.gtNewLclVarNode(storeType, localNode.LclNum);
+            range.InsertAfter(localNode, value);
+        }
+        else
+        {
+            range.Remove(localNode);
+            localAddress = new GenTreeLclFld(
+                GT_LCL_ADDR,
+                TYP_I_IMPL,
+                localNode.LclNum,
+                offset,
+                data: null,
+                layout: layout,
+                source: localNode,
+                threading: NodeThreading.None);
+            localAddress.CopySsaIdentityFrom(localNode);
+        }
         range.InsertBefore(insertionPoint, localAddress);
 
         GenTree store;
@@ -536,7 +547,14 @@ public sealed partial class WasmRegAlloc
             store = _compiler.gtNewStoreIndNode(storeType, localAddress, value, indirectFlags);
         }
 
-        range.InsertBefore(nextNode, store);
+        if (_compiler.lvaGetDesc(localNode.LclNum).lvWasmGCWriteThru)
+        {
+            range.InsertAfter(value, store);
+        }
+        else
+        {
+            range.InsertBefore(nextNode, store);
+        }
 
         var storeRange = new LIR.ReadOnlyRange(store, store);
         var lowering = _compiler.LoweringPhase;

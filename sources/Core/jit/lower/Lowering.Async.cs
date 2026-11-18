@@ -46,12 +46,13 @@ public sealed partial class Lowering
         if (block.Kind is not BBJ_RETURN)
         {
             var profileInconsistent = false;
+            var blockWeight = block.bbWeight;
             foreach (var successor in block.Succs)
             {
                 var edge = compiler.fgRemoveAllRefPreds(successor, block);
                 if (block.hasProfileWeight && successor.hasProfileWeight)
                 {
-                    successor.decreaseBBProfileWeight(edge.LikelyWeight);
+                    successor.decreaseBBProfileWeight(edge.Likelihood * blockWeight);
                     profileInconsistent |= successor.NumSucc > 0;
                 }
             }

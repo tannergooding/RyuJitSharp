@@ -193,6 +193,11 @@ public sealed partial class ObjectAllocator
                 return MorphAllocObjNodeHelperArr(candidate);
             }
 
+            case ObjectAllocationType.OAT_NEWARR_R2R:
+            {
+                return MorphAllocObjNodeHelperArr(candidate);
+            }
+
             case ObjectAllocationType.OAT_NEWOBJ:
             {
                 return MorphAllocObjNodeHelperObj(candidate);
@@ -219,15 +224,10 @@ public sealed partial class ObjectAllocator
     {
         var compiler = CompilerInstance;
         assert(candidate.Block.HasFlag(BBF_HAS_NEWARR));
-        if (_isR2R)
-        {
-            candidate.OnHeapReason = "[R2R array not yet supported]";
-            return false;
-        }
 
         var call = candidate.Tree.AsLclVar().Data.AsCall();
         var clsHnd = compiler.gtGetHelperCallClassHandle(call, out var isExact, out var isNonNull);
-        var length = call.Args.GetUserArgByIndex(1)?.Node;
+        var length = call.Args.GetUserArgByIndex(call.Args.CountUserArgs() - 1)?.Node;
         if (length is null)
         {
             FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.NewArrayHelperRequiresALengthArgument);

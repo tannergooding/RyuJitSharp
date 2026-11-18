@@ -38,8 +38,6 @@ public class ExtendedDefaultPolicy : DefaultPolicy
     protected bool _nonGenericCallsGeneric;
     protected bool _isCallsiteInNoReturnRegion;
     protected bool _hasProfileWeights;
-    protected bool _mayReturnSmallArray;
-
     public ExtendedDefaultPolicy(Compiler compiler, bool isPrejitRoot)
         : base(compiler, isPrejitRoot)
     {

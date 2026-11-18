@@ -4,7 +4,9 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
+using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -75,6 +77,59 @@ internal static unsafe class WasmRegAllocTests
             Assert.That(locals, Has.Count.EqualTo(1));
             Assert.That(locals[0].Type, Is.EqualTo(WasmValueType.I32));
             Assert.That(locals[0].Count, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void GCWriteThroughLocalKeepsItsRegisterDefinitionAndPinnedStackHome()
+    {
+        WithCompiler(compiler =>
+        {
+            compiler.opts.compFlags |= CLFLG_REGVAR;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_I_IMPL }, new LclVarDsc { Type = TYP_REF }];
+            compiler.lvaCount = 2;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaTrackedToVarNum = [1];
+            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+            compiler.m_wasmGCRefCandidates = VarSetOps.MakeEmpty(compiler);
+            compiler.lvaGetDesc(0).setLvRefCnt(1);
+
+            ref var local = ref compiler.lvaGetDesc(1);
+            local.lvTracked = true;
+            local._varIndex = 0;
+            local.setLvRefCnt(1);
+
+            var allocator = new WasmRegAlloc(compiler);
+            Assert.That(allocator.DoRegisterAllocation(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(local.lvWasmGCWriteThru, Is.True);
+            Assert.That(local.IsAlwaysAliveInMemory, Is.True);
+
+            var block = new BasicBlock(null, null);
+            block.MakeLir(null, null);
+            var value = compiler.gtNewIconNode(TYP_REF, 42);
+            var store = compiler.gtNewStoreLclVarNode(1, value);
+            block.InsertAtEnd(value);
+            block.InsertAtEnd(store);
+
+            CurrentBlock(allocator) = block;
+            CurrentLowering(compiler) = new Lowering(compiler, allocator);
+            RewriteLocalStackStore(allocator, store);
+
+            var address = block.FirstNode ?? throw new AssertionException("Missing pinned-home address.");
+            var rhs = address.Next ?? throw new AssertionException("Missing local store value.");
+            var localStore = rhs.Next ?? throw new AssertionException("Missing retained local definition.");
+            var localRead = localStore.Next ?? throw new AssertionException("Missing write-through local read.");
+            var stackStore = localRead.Next ?? throw new AssertionException("Missing pinned-home store.");
+
+            Assert.That(address.Oper, Is.EqualTo(GT_LCL_ADDR));
+            Assert.That(address.AsLclVarCommon().LclNum, Is.EqualTo(1));
+            Assert.That(rhs, Is.SameAs(value));
+            Assert.That(localStore, Is.SameAs(store));
+            Assert.That(localRead.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(localRead.AsLclVarCommon().LclNum, Is.EqualTo(1));
+            Assert.That(stackStore.Oper, Is.EqualTo(GT_STOREIND));
+            Assert.That(stackStore.Next, Is.Null);
         });
     }
 
@@ -157,4 +212,13 @@ internal static unsafe class WasmRegAllocTests
             JitTls.Compiler = previous;
         }
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBlock")]
+    private static extern ref BasicBlock? CurrentBlock(WasmRegAlloc allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RewriteLocalStackStore")]
+    private static extern void RewriteLocalStackStore(WasmRegAlloc allocator, GenTreeLclVarCommon localNode);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_pLowering")]
+    private static extern ref Lowering? CurrentLowering(Compiler compiler);
 }

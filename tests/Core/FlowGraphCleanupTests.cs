@@ -491,6 +491,22 @@ internal static unsafe class FlowGraphCleanupTests
         });
     }
 
+    [Test]
+    public static void ThrowConversionUsesOriginalWeightWhenRemovingASelfEdge()
+    {
+        WithCompiler(NodeThreading.None, compiler => {
+            var (block, _, falseBlock) = CreateConditional(compiler);
+            block.setBBProfileWeight(100);
+            falseBlock.setBBProfileWeight(100);
+            compiler.fgRedirectEdge(ref block.TrueEdgeRef, block);
+
+            compiler.fgConvertBBToThrowBB(block);
+
+            Assert.That(block.bbWeight, Is.EqualTo(75));
+            Assert.That(falseBlock.bbWeight, Is.EqualTo(25));
+        });
+    }
+
     [TestCase(NodeThreading.None, TYP_INT, TYP_INT, 5, 5, true)]
     [TestCase(NodeThreading.None, TYP_INT, TYP_INT, 5, 6, false)]
     [TestCase(NodeThreading.None, TYP_BYTE, TYP_INT, 255, -1, true)]

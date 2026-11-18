@@ -75,7 +75,8 @@ public partial struct CallArgs
                 (argumentCount > 1) && compiler.opts.compDbgCode)
             {
                 exceptionFlags = compiler.gtCollectExceptions(node);
-                if ((exceptionFlags & (ExceptionSetFlags.IndexOutOfRangeException | ExceptionSetFlags.OverflowException)) !=
+                if ((exceptionFlags & (ExceptionSetFlags.IndexOutOfRangeException | ExceptionSetFlags.ArgumentException |
+                    ExceptionSetFlags.ArgumentOutOfRangeException | ExceptionSetFlags.OverflowException)) !=
                     ExceptionSetFlags.None)
                 {
                     foreach (var other in Args)

@@ -1896,7 +1896,29 @@ public partial class GenTree
 
             case GT_BOUNDS_CHECK:
             {
-                return ExceptionSetFlags.IndexOutOfRangeException;
+                switch (AsBoundsChk().ThrowKind)
+                {
+                    case SCK_RNGCHK_FAIL:
+                    {
+                        return ExceptionSetFlags.IndexOutOfRangeException;
+                    }
+
+                    case SCK_ARG_EXCPN:
+                    {
+                        return ExceptionSetFlags.ArgumentException;
+                    }
+
+                    case SCK_ARG_RNG_EXCPN:
+                    {
+                        return ExceptionSetFlags.ArgumentOutOfRangeException;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                        return ExceptionSetFlags.None;
+                    }
+                }
             }
 
             case GT_INDEX_ADDR:

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.CorInfoHelpFunc;
@@ -56,6 +57,38 @@ internal static unsafe class StackArrayExpansionTests
             Assert.That(store.Data.AsLclVarCommon().LclNum, Is.EqualTo(0));
             Assert.That(store.Data, Is.Not.SameAs(originalAddress));
             Assert.That(compiler.fgExpandStackArrayAllocations(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+        });
+    }
+
+    [Test]
+    public static void ReadyToRunStackArrayUsesEmbeddedTypeHandleAndLengthArgument()
+    {
+        WithCompiler((compiler, block) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.embedClassHandle = &EmbedClassHandle;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+
+            var arrayClassHandle = (CORINFO_CLASS_STRUCT_*)123;
+            var call = compiler.gtNewHelperCallNode(TYP_LONG, CORINFO_HELP_READYTORUN_NEWARR_1,
+                compiler.gtNewIconNode(TYP_INT, 3));
+            call._compileTimeHelperArgumentHandle = (CORINFO_GENERIC_STRUCT_*)arrayClassHandle;
+            var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address)
+                .WithWellKnownArg(WellKnownArg.StackArrayLocal));
+            var statement = Append(compiler, block, compiler.gtNewStoreLclVarNode(2, call));
+            compiler.MethodHasStackAllocatedArray = true;
+
+            Assert.That(compiler.fgExpandStackArrayAllocations(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+
+            var statements = Collect(block);
+            Assert.That(statements, Has.Count.EqualTo(3));
+            var methodTable = statements[0].RootNode.AsIndir().Data.AsIntCon();
+            Assert.That(methodTable.IconValue, Is.EqualTo((nint)arrayClassHandle));
+            Assert.That(statements[1].RootNode.AsIndir().Data.AsIntCon().IconValue, Is.EqualTo((nint)3));
+            Assert.That(statements[2], Is.SameAs(statement));
+            Assert.That(statement.RootNode.AsLclVar().Data.Oper, Is.EqualTo(GT_LCL_ADDR));
         });
     }
 
@@ -235,6 +268,14 @@ internal static unsafe class StackArrayExpansionTests
             statements.Add(statement);
         }
         return statements;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_CLASS_STRUCT_* EmbedClassHandle(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* cls,
+        void** indirection)
+    {
+        *indirection = null;
+        return cls;
     }
 
     private static void WithCompiler(Action<Compiler, BasicBlock> action)

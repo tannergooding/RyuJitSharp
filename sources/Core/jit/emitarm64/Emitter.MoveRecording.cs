@@ -218,7 +218,8 @@ public partial class Emitter
                 {
                     if (size == EA_8BYTE)
                     {
-                        if (isVectorRegister(src) == isVectorRegister(dst))
+                        if ((isVectorRegister(src) == isVectorRegister(dst)) &&
+                            (canSkip || !isVectorRegister(dst)))
                         {
                             JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to src register.\n");
                             return true;

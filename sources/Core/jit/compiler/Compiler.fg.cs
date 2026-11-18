@@ -12637,6 +12637,7 @@ public partial class Compiler
 
         // Update bbRefs and bbPreds for this block's successors
         var profileInconsistent = false;
+        var blockWeight = block.bbWeight;
 
         foreach (var succBlock in block.Succs)
         {
@@ -12644,7 +12645,7 @@ public partial class Compiler
 
             if (block.hasProfileWeight && succBlock.hasProfileWeight)
             {
-                succBlock.decreaseBBProfileWeight(succEdge.LikelyWeight);
+                succBlock.decreaseBBProfileWeight(succEdge.Likelihood * blockWeight);
                 profileInconsistent |= (succBlock.NumSucc > 0);
             }
         }
@@ -13592,6 +13593,7 @@ public partial class Compiler
         }
 
         var profileInconsistent = false;
+        var blockWeight = block.bbWeight;
 
         foreach (var succBlock in block.Succs)
         {
@@ -13599,7 +13601,7 @@ public partial class Compiler
 
             if (block.hasProfileWeight && succBlock.hasProfileWeight)
             {
-                succBlock.decreaseBBProfileWeight(succEdge.LikelyWeight);
+                succBlock.decreaseBBProfileWeight(succEdge.Likelihood * blockWeight);
                 profileInconsistent |= succBlock.NumSucc > 0;
             }
         }

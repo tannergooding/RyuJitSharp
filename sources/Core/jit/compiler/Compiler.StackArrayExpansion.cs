@@ -47,7 +47,7 @@ public partial class Compiler
         return modified ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
-    private bool fgExpandStackArrayAllocation(BasicBlock block, Statement stmt, GenTreeCall call)
+    private unsafe bool fgExpandStackArrayAllocation(BasicBlock block, Statement stmt, GenTreeCall call)
     {
         if (!call.IsHelperCall())
         {
@@ -65,6 +65,13 @@ public partial class Compiler
             {
                 lengthArgIndex = 1;
                 typeArgIndex = 0;
+                break;
+            }
+
+            case CORINFO_HELP_READYTORUN_NEWARR_1:
+            {
+                lengthArgIndex = 0;
+                typeArgIndex = -1;
                 break;
             }
 
@@ -95,9 +102,20 @@ public partial class Compiler
         }
 
         var stackLocalAddress = stackLocalAddressArg.Node;
-        var typeArg = call.Args.GetUserArgByIndex(typeArgIndex);
-        assert(typeArg is not null);
-        var mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, typeArg.Node);
+        GenTree methodTable;
+        if (typeArgIndex < 0)
+        {
+            var arrayClassHandle = (CORINFO_CLASS_HANDLE)call._compileTimeHelperArgumentHandle;
+            assert(arrayClassHandle != NO_CLASS_HANDLE);
+            methodTable = gtNewIconEmbClsHndNode(arrayClassHandle);
+        }
+        else
+        {
+            var typeArg = call.Args.GetUserArgByIndex(typeArgIndex);
+            assert(typeArg is not null);
+            methodTable = typeArg.Node;
+        }
+        var mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, methodTable);
         var mtStmt = fgNewStmtFromTree(mtStore);
         fgInsertStmtBefore(block, stmt, mtStmt);
 

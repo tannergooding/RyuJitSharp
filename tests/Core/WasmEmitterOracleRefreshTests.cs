@@ -43,6 +43,22 @@ internal static unsafe class WasmEmitterOracleRefreshTests
     }
 
     [Test]
+    public static void RegisterLocalInstructionsRetainVariableNumbersForDisassembly()
+    {
+        Assume.That(TestConfiguration.IsDebug);
+        WithEmitter((_, emitter) =>
+        {
+            emitter.emitIns_I(INS_local_get, EA_PTRSIZE, 4, isLastUse: false, lclNum: 2);
+            emitter.emitIns_I(INS_local_set, EA_PTRSIZE, 5, isLastUse: false, lclNum: 3);
+
+            var descriptors = CurrentDescriptors(emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            Assert.That(descriptors[0].idDebugOnlyInfo()!.idLclNum, Is.EqualTo(2));
+            Assert.That(descriptors[1].idDebugOnlyInfo()!.idLclNum, Is.EqualTo(3));
+        });
+    }
+
+    [Test]
     public static void LocalGetWithoutLastUseStillRewritesTheSetToTee()
     {
         WithEmitter((_, emitter) =>

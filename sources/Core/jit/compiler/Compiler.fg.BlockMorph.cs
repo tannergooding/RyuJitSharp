@@ -482,13 +482,14 @@ public partial class Compiler
             var profileInconsistent = false;
             if (block.hasProfileWeight)
             {
+                var blockWeight = block.bbWeight;
                 // Duplicate jump table entries share an edge; debit each unique successor once.
                 foreach (var edge in block.SwitchTargets.Succs)
                 {
                     var target = edge.DestinationBlock;
                     if (target.hasProfileWeight)
                     {
-                        target.decreaseBBProfileWeight(edge.LikelyWeight);
+                        target.decreaseBBProfileWeight(edge.Likelihood * blockWeight);
                         profileInconsistent |= target.NumSucc > 0;
                     }
                 }

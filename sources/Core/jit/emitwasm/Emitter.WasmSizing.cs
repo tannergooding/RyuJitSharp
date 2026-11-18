@@ -132,16 +132,18 @@ public partial class Emitter
         emitIns_BlockTy(ins, WasmValueType.Invalid);
     }
 
-    public void emitIns_I(instruction ins, emitAttr attr, nint immediate, bool isLastUse)
+    public void emitIns_I(instruction ins, emitAttr attr, nint immediate, bool isLastUse, int lclNum = BAD_VAR_NUM)
     {
         RequireWasmTarget();
-        emitIns_IWasm(ins, attr, immediate, isLastUse);
+        emitIns_IWasm(ins, attr, immediate, isLastUse, lclNum);
     }
 
-    private void emitIns_IWasm(instruction ins, emitAttr attr, nint immediate, bool isLastUse = false)
+    private void emitIns_IWasm(
+        instruction ins, emitAttr attr, nint immediate, bool isLastUse = false, int lclNum = BAD_VAR_NUM)
     {
         RequireWasmTarget();
         assert(!isLastUse || (ins == INS_local_get));
+        assert((lclNum == BAD_VAR_NUM) || (ins is INS_local_get or INS_local_set or INS_local_tee));
 
         if ((ins == INS_local_get) && (_compiler is not null) && _compiler.opts.OptimizationEnabled
             && emitCanPeepholeLastIns())
@@ -159,6 +161,13 @@ public partial class Emitter
         var id = emitNewInstrSC(attr, immediate);
         id.idIns(ins);
         id.idInsFmt(emitInsFormatWasm(ins));
+
+        if (_debugInfoSize > 0)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo!.idLclNum = lclNum;
+        }
 
         dispIns(id);
         appendToCurIG(id);

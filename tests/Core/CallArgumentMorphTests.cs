@@ -537,6 +537,31 @@ internal static unsafe class CallArgumentMorphTests
         });
     }
 
+    [TestCase(SpecialCodeKind.SCK_ARG_EXCPN)]
+    [TestCase(SpecialCodeKind.SCK_ARG_RNG_EXCPN)]
+    public static void DebugBoundsExceptionsPreserveEarlierThrowingArguments(SpecialCodeKind throwKind)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.compDbgCode = true;
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            var first = call.Args.PushBack(NewCallArg.CreateForPrimitive(
+                compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_BYREF, 0))));
+            var second = call.Args.PushBack(NewCallArg.CreateForPrimitive(
+                compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_BYREF, 1))));
+            var boundsCheck = new GenTreeBoundsChk(
+                compiler.gtNewLclvNode(TYP_INT, 2),
+                compiler.gtNewLclvNode(TYP_INT, 3),
+                throwKind);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(boundsCheck));
+
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            call.Args.ArgsComplete(compiler, call);
+
+            Assert.That(first.NeedTmp, Is.True);
+            Assert.That(second.NeedTmp, Is.True);
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void DebugInlineThrowsRespectOutgoingStackArguments(bool debugCode)

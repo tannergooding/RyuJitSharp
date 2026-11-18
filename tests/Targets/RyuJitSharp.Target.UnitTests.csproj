@@ -33,6 +33,7 @@
     <Compile Include="..\Core\ComparisonMorphTests.cs" Link="ComparisonMorphTests.cs" />
     <Compile Include="..\Core\AsyncResumeCodeGenTestSupport.cs" Link="AsyncResumeCodeGenTestSupport.cs" />
     <Compile Include="..\Core\AsyncResumeTableTargetTests.cs" Link="AsyncResumeTableTargetTests.cs" />
+    <Compile Include="..\Core\ObjectAllocatorPhaseTests.cs" Link="ObjectAllocatorPhaseTests.cs" />
     <Compile Include="..\Core\ArmCalleeSavedRegisterTests.cs" Link="ArmCalleeSavedRegisterTests.cs" />
     <Compile Include="..\Core\ArmGcInfoPublicationTests.cs" Link="ArmGcInfoPublicationTests.cs" />
     <Compile Include="..\Core\Arm64*Tests.cs" Link="%(Filename)%(Extension)" />

@@ -195,6 +195,68 @@ internal static unsafe class ObjectAllocatorPhaseTests
         }, enableArray: true);
     }
 
+    [TestCase(790)]
+    [TestCase(791)]
+    [TestCase(792)]
+    public static void EnabledPhaseDoubleAlignsStackAllocatedLongDoubleAndStructArraysOn32BitArmAndWasmTargets(
+        int arrayHandleValue)
+    {
+        Assume.That((Configuration.TARGET_ARM || Configuration.TARGET_WASM) && !Configuration.TARGET_64BIT);
+        WithAllocator(OMF_HAS_NEWARRAY, minOpts: false, (compiler, allocator, block) =>
+        {
+            block.SetFlags(BBF_HAS_NEWARR);
+            allocator.EnableObjectStackAllocation();
+
+            var arrayHandle = (CORINFO_CLASS_STRUCT_*)arrayHandleValue;
+            var call = compiler.gtNewHelperCallNode(TYP_REF, CORINFO_HELP_NEWARR_1_DIRECT,
+                compiler.gtNewIconNode(TYP_I_IMPL, arrayHandleValue), compiler.gtNewIconNode(TYP_INT, 3));
+            call._compileTimeHelperArgumentHandle = (CORINFO_GENERIC_STRUCT_*)arrayHandle;
+            var store = compiler.gtNewStoreLclVarNode(0, call);
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(store));
+            var comparison = compiler.gtNewBinaryNode(GT_EQ, TYP_INT,
+                compiler.gtNewLclvNode(TYP_REF, 0), compiler.gtNewIconNode(TYP_REF, 1));
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(comparison));
+            compiler._dfsTree = compiler.fgComputeDfs();
+
+            var status = InvokePhase(allocator);
+
+            Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.lvaGetDesc(1).lvStackAllocatedObject, Is.True);
+            Assert.That(compiler.lvaGetDesc(1).lvStructDoubleAlign, Is.True);
+        }, enableArray: true);
+    }
+
+    [Test]
+    public static void EnabledPhaseStackAllocatesConstantLengthReadyToRunArray()
+    {
+        WithAllocator(OMF_HAS_NEWARRAY, minOpts: false, (compiler, allocator, block) =>
+        {
+            block.SetFlags(BBF_HAS_NEWARR);
+            allocator.EnableObjectStackAllocation();
+
+            var arrayHandle = (CORINFO_CLASS_STRUCT_*)789;
+            var call = compiler.gtNewHelperCallNode(TYP_REF, CORINFO_HELP_READYTORUN_NEWARR_1,
+                compiler.gtNewIconNode(TYP_INT, 3));
+            call._compileTimeHelperArgumentHandle = (CORINFO_GENERIC_STRUCT_*)arrayHandle;
+            var store = compiler.gtNewStoreLclVarNode(0, call);
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(store));
+            var comparison = compiler.gtNewBinaryNode(GT_EQ, TYP_INT,
+                compiler.gtNewLclvNode(TYP_REF, 0), compiler.gtNewIconNode(TYP_REF, 1));
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(comparison));
+            compiler._dfsTree = compiler.fgComputeDfs();
+
+            var status = InvokePhase(allocator);
+
+            Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(Get<int>(allocator, "_stackAllocationCount"), Is.EqualTo(1));
+            Assert.That(compiler.lvaGetDesc(1).lvStackAllocatedObject, Is.True);
+            Assert.That(call.HelperNum, Is.EqualTo(CORINFO_HELP_READYTORUN_NEWARR_1));
+            Assert.That(call.Args.CountUserArgs(), Is.EqualTo(1));
+            Assert.That(call.Args.FindWellKnownArg(WellKnownArg.StackArrayLocal)?.Node.AsLclVarCommon().LclNum,
+                Is.EqualTo(1));
+        }, enableArray: true, readyToRun: true);
+    }
+
     [Test]
     public static void MethodRangeExcludesStackAnalysisButStillMorphsHeapAllocations()
     {
@@ -263,7 +325,7 @@ internal static unsafe class ObjectAllocatorPhaseTests
 
     private static void WithAllocator(int methodFlags, bool minOpts,
         Action<Compiler, ObjectAllocator, BasicBlock> action, bool canAllocateOnStack = false,
-        bool enableBoxedValueClass = false, bool enableArray = false)
+        bool enableBoxedValueClass = false, bool enableArray = false, bool readyToRun = false)
     {
         var previousConfig = JitConfig;
         object config = previousConfig;
@@ -297,8 +359,12 @@ internal static unsafe class ObjectAllocatorPhaseTests
         vtable.Base.Base.printClassName = &PrintClassName;
         vtable.Base.Base.getArrayRank = &GetArrayRank;
         vtable.Base.Base.getChildType = &GetChildType;
+        vtable.Base.Base.getClassAlignmentRequirement =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, bool, int>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte, int>)&GetClassAlignmentRequirement;
         vtable.Base.Base.getTypeInstantiationArgument = &GetTypeInstantiationArgument;
         vtable.Base.Base.isIntrinsicType = &IsIntrinsicType;
+        vtable.Base.Base.getEEInfo = &GetEEInfo;
         vtable.Base.Base.runWithSPMIErrorTrap =
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, byte>)&RunWithErrorTrap;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
@@ -314,6 +380,10 @@ internal static unsafe class ObjectAllocatorPhaseTests
         compiler.lvaTable[0].Type = TYP_REF;
         compiler.optMethodFlags = methodFlags;
         JitFlags flags = default;
+        if (readyToRun)
+        {
+            flags.Set(JitFlags.JIT_FLAG_AOT);
+        }
         compiler.opts.jitFlags = &flags;
         compiler.SetMinOpts(minOpts);
         JitTls.Compiler = compiler;
@@ -357,6 +427,13 @@ internal static unsafe class ObjectAllocatorPhaseTests
         CorInfoGCType* gcPtrs) => 0;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetEEInfo(ICorJitInfo* self, CORINFO_EE_INFO* info)
+    {
+        *info = default;
+        info->targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoFlag GetClassAttribs(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* clsHnd) => 0;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
@@ -365,15 +442,32 @@ internal static unsafe class ObjectAllocatorPhaseTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetArrayRank(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* clsHnd)
-        => (nint)clsHnd is 789 ? 1 : 0;
+        => (nint)clsHnd is 789 or 790 or 791 or 792 ? 1 : 0;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoType GetChildType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* clsHnd,
         CORINFO_CLASS_STRUCT_** childClass)
     {
         *childClass = null;
-        return (nint)clsHnd is 789 ? CORINFO_TYPE_INT : CORINFO_TYPE_UNDEF;
+        if ((nint)clsHnd is 792)
+        {
+            *childClass = (CORINFO_CLASS_STRUCT_*)793;
+            return CORINFO_TYPE_VALUECLASS;
+        }
+
+        return (nint)clsHnd switch
+        {
+            789 => CORINFO_TYPE_INT,
+            790 => CORINFO_TYPE_LONG,
+            791 => CORINFO_TYPE_DOUBLE,
+            _ => CORINFO_TYPE_UNDEF,
+        };
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetClassAlignmentRequirement(
+        ICorJitInfo* self, CORINFO_CLASS_STRUCT_* clsHnd, byte doubleAlignHint)
+        => (nint)clsHnd is 793 ? 8 : 4;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CORINFO_CLASS_STRUCT_* GetTypeInstantiationArgument(ICorJitInfo* self,
