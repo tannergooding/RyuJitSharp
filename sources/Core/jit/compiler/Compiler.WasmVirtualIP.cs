@@ -326,13 +326,25 @@ public partial class Compiler
         if (!IsNativeAot && (compHndBBtabCount == 0))
         {
             assert(virtualIP == 2);
+            var needsFrameHeader = false;
             foreach (var block in Blocks)
             {
                 if (blockData[block.bbNum].isRequired)
                 {
-                    _ = getVirtualIPLclNum();
+                    needsFrameHeader = true;
                     break;
                 }
+            }
+
+            if (needsFrameHeader && opts.OptimizationEnabled && !fgWasmMayEmitCall())
+            {
+                JITDUMP("Method makes no calls; omitting frame header\n");
+                needsFrameHeader = false;
+            }
+
+            if (needsFrameHeader)
+            {
+                _ = getVirtualIPLclNum();
             }
 
             JITDUMP("Virtual IP is always 1; omitting frame stores\n");

@@ -325,7 +325,7 @@ public partial class Emitter
         }
 
         assert(emitLastIns is not null);
-        if (emitLastIns.idIns() != ins)
+        if ((emitLastIns.idIns() != ins) || insOptsIndexed(emitLastIns.idInsOpt()))
         {
             return false;
         }

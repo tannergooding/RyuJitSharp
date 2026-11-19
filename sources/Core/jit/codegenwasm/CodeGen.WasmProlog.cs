@@ -54,6 +54,7 @@ public sealed partial class CodeGen
     public void ensureCurrentFuncIsUnwindable()
     {
         ref var func = ref _compiler.funCurrentFunc();
+        assert((_compiler.funCurrentFuncIdx() != ROOT_FUNC_IDX) || (_compiler.lvaWasmVirtualIP != BAD_VAR_NUM));
         func.ensureUnwindableFrame(_compiler);
     }
 

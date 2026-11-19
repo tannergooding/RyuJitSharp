@@ -78,6 +78,7 @@ internal static class Arm64BlockMemoryUnrollTests
 
             var emitted = Descriptors(codeGen);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo([INS_add, INS_str]));
+            Assert.That(emitted[0].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
             Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)260));
             Assert.That(emitted[1].idReg2(), Is.EqualTo(emitted[0].idReg1()));
         });

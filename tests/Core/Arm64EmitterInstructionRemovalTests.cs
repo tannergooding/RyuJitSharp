@@ -5,6 +5,7 @@ using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.insOpts;
 using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
@@ -22,6 +23,20 @@ internal static unsafe class Arm64EmitterInstructionRemovalTests
         Assert.That(LastInstruction(emitter), Is.Null);
 
         emitter.emitIns(INS_nop);
+        var previousInstruction = LastInstruction(emitter);
+
+        Assert.That(TryOptimizeLdrStr(emitter), Is.False);
+        Assert.That(LastInstruction(emitter), Is.SameAs(previousInstruction));
+    }
+
+    [Test]
+    public static void LoadStoreOptimizationRejectsIndexedPreviousInstruction()
+    {
+        Assume.That(Configuration.TARGET_ARM64);
+
+        var emitter = CreateEmitter().Emitter;
+        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_ARM64_R0, REG_ARM64_SP, 8,
+            INS_OPTS_POST_INDEX, insScalableOpts.INS_SCALABLE_OPTS_NONE);
         var previousInstruction = LastInstruction(emitter);
 
         Assert.That(TryOptimizeLdrStr(emitter), Is.False);
@@ -94,6 +109,10 @@ internal static unsafe class Arm64EmitterInstructionRemovalTests
         return OptimizeLdrStr(emitter, INS_ldr, EA_8BYTE, REG_ARM64_R0, REG_ARM64_SP, 0, EA_8BYTE,
             IF_ARM64_LS_2A, false, -1, -1, false);
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_IArm64")]
+    private static extern void RecordPair(Emitter emitter, instruction ins, emitAttr attr, regNumber reg1,
+        regNumber reg2, nint imm, insOpts opt, insScalableOpts sopt);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "OptimizeLdrStr")]
     private static extern bool OptimizeLdrStr(Emitter emitter, instruction ins, emitAttr reg1Attr, regNumber reg1,

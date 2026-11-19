@@ -130,6 +130,20 @@ public partial class Compiler
             }
             else if (iter.HasInvariantLocalLimit)
             {
+                var limitLcl = iter.VarLimit();
+                if ((iter.LimitOffset < 0) && (lvaGetDesc(limitLcl).Type.ActualType is not TYP_INT))
+                {
+                    JITDUMP($"> Stride {stride}: limit var V{limitLcl:D2} not TYP_INT-compatible\n");
+                    return false;
+                }
+                if (iter.LimitOffset < 0)
+                {
+                    context.EnsureConditions(loopNum).Add(new LC_Condition(GT_GE,
+                        new LC_Expr(LC_Ident.CreateVar(limitLcl, iter.LimitBase().Type)),
+                        new LC_Expr(LC_Ident.CreateConst(0))));
+                    JITDUMP($"Added non-negative limit guard: V{limitLcl:D2} >= 0\n");
+                }
+
                 if (maxLimitBase >= int.MaxValue)
                 {
                     JITDUMP($"Stride>1 overflow guard trivially holds (offset {iter.LimitOffset})\n");
@@ -141,7 +155,6 @@ public partial class Compiler
                 }
                 else
                 {
-                    var limitLcl = iter.VarLimit();
                     if (lvaGetDesc(limitLcl).Type.ActualType is not TYP_INT)
                     {
                         JITDUMP($"> Stride {stride}: limit var V{limitLcl:D2} not TYP_INT-compatible\n");
@@ -153,7 +166,7 @@ public partial class Compiler
                     JITDUMP($"Added stride>1 overflow guard: V{limitLcl:D2} <= {maxLimitBase}\n");
                 }
             }
-            else if (iter.HasArrayLengthLimit && largeStride)
+            else if (iter.HasArrayLengthLimit)
             {
                 if (maxLimitBase >= CORINFO_Array_MaxLength)
                 {

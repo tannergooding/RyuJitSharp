@@ -34,6 +34,7 @@ public partial class Compiler
 
         var check = tree.AsOp().Op1.AsBoundsChk();
         if (check.Index.Oper is not GT_LCL_VAR ||
+            lvaGetDesc(check.Index.AsLclVarCommon().LclNum).Type.ActualType is not TYP_INT ||
             check.ArrayLength.Oper is GT_LCL_VAR or GT_LCL_FLD or GT_CNS_INT ||
             check.ArrayLength.AsUnOp().Op1.Oper is not GT_LCL_VAR)
         {
@@ -70,7 +71,8 @@ public partial class Compiler
         }
 
         var check = tree.AsOp().Op1.AsBoundsChk();
-        if (check.Index.Oper is not GT_LCL_VAR || check.ArrayLength.Oper is not GT_LCL_VAR)
+        if (check.Index.Oper is not GT_LCL_VAR || check.ArrayLength.Oper is not GT_LCL_VAR ||
+            lvaGetDesc(check.Index.AsLclVarCommon().LclNum).Type.ActualType is not TYP_INT)
         {
             return false;
         }

@@ -298,6 +298,48 @@ internal static unsafe class ImporterEffectsTests
     }
 
     [Test]
+    public static void NullableThrowIfNullReadsHasValueBeforeArgumentName()
+    {
+        WithCompiler(compiler => {
+            fixed (byte* namespaceName = "System\0"u8)
+            fixed (byte* className = "ArgumentNullException\0"u8)
+            fixed (byte* methodName = "ThrowIfNull\0"u8)
+            {
+                var metadata = new MethodMetadata(namespaceName, className, methodName);
+                ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+                vtable.Base.Base.getMethodNameFromMetadata = &GetMethodName;
+                ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+                compiler.info.compCompHnd = &jitInfo;
+                compiler.SetMinOpts(true);
+                compiler.compCurBB!.setBBProfileWeight(100);
+
+                var sourceAddress = compiler.gtNewCallNode(var_types.TYP_BYREF, gtCallTypes.CT_USER_FUNC, null);
+                var classHandle = compiler.gtNewIconHandleNode(0x1000, Globals.GTF_ICON_CLASS_HDL);
+                var nullableBox = compiler.gtNewHelperCallNode(var_types.TYP_REF,
+                    CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE, classHandle, sourceAddress);
+                var argumentName = compiler.gtNewCallNode(var_types.TYP_REF, gtCallTypes.CT_USER_FUNC, null);
+                var call = compiler.gtNewCallNode(var_types.TYP_VOID, gtCallTypes.CT_USER_FUNC,
+                    (CORINFO_METHOD_STRUCT_*)&metadata);
+                call._callMoreFlags = GenTreeCallFlags.GTF_CALL_M_SPECIAL_INTRINSIC;
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(nullableBox));
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(argumentName));
+
+                var result = compiler.impThrowIfNull(call);
+
+                Assert.That(result.Oper, Is.EqualTo(genTreeOps.GT_QMARK));
+                var statements = ImporterStatements(compiler)
+                    ?? throw new AssertionException("Missing nullable ThrowIfNull spills.");
+                var hasValueSpill = statements.RootNode.AsLclVar();
+                var argumentNameSpill = statements.NextStmt?.RootNode.AsLclVar()
+                    ?? throw new AssertionException("Missing argument-name spill.");
+                Assert.That(hasValueSpill.Data.Oper, Is.EqualTo(genTreeOps.GT_IND));
+                Assert.That(hasValueSpill.Data.AsIndir().Addr, Is.SameAs(sourceAddress));
+                Assert.That(argumentNameSpill.Data, Is.SameAs(argumentName));
+            }
+        });
+    }
+
+    [Test]
     public static void ConstantStringComparisonUsesExactChunkWidths(
         [Values("AbC", "AbC-d", "AbC-deF", "AbC-deFGh")] string value,
         [Values(StringComparison.Ordinal, StringComparison.OrdinalIgnoreCase)] StringComparison comparison)
@@ -848,6 +890,15 @@ internal static unsafe class ImporterEffectsTests
             var handle = kind == gtCallTypes.CT_HELPER ? Compiler.eeFindHelper(helper) : null;
             var call = compiler.gtNewCallNode(var_types.TYP_INT, kind, handle);
             Assert.That((call.Flags & GenTreeFlags.GTF_EXCEPT) != 0, Is.EqualTo(mayThrow));
+        });
+    }
+
+    [Test]
+    public static void SwiftErrorHasCallSideEffects()
+    {
+        WithCompiler(compiler => {
+            var error = new GenTree(genTreeOps.GT_SWIFT_ERROR, var_types.TYP_VOID);
+            Assert.That(compiler.gtNodeHasSideEffects(error, GenTreeFlags.GTF_CALL), Is.True);
         });
     }
 

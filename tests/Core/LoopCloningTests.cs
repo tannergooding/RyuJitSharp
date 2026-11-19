@@ -451,6 +451,30 @@ internal static unsafe class LoopCloningTests
         });
     }
 
+    [Test]
+    public static void LoopIndexLocalsMustHaveIntActualType()
+    {
+        WithLoop((compiler, unusedPreheader, unusedHeader, unusedLatch, unusedExit) => {
+            compiler.lvaTable[0].Type = TYP_LONG;
+            var arrayCheck = new GenTreeBoundsChk(compiler.gtNewLclvNode(TYP_INT, 0),
+                compiler.gtNewArrLen(TYP_INT, compiler.gtNewLclvNode(TYP_REF, 1),
+                    OFFSETOF__CORINFO_Array__length),
+                SpecialCodeKind.SCK_RNGCHK_FAIL) { InxType = TYP_INT };
+            var arrayAccess = compiler.gtNewBinaryNode(GT_COMMA, TYP_INT,
+                arrayCheck, compiler.gtNewIconNode(TYP_INT, 0));
+            var spanCheck = new GenTreeBoundsChk(compiler.gtNewLclvNode(TYP_INT, 0),
+                compiler.gtNewLclvNode(TYP_INT, 3), SpecialCodeKind.SCK_RNGCHK_FAIL)
+            {
+                InxType = TYP_INT,
+            };
+            var spanAccess = compiler.gtNewBinaryNode(GT_COMMA, TYP_INT,
+                spanCheck, compiler.gtNewIconNode(TYP_INT, 0));
+
+            Assert.That(ExtractArrayIndex(compiler, arrayAccess, new ArrIndex(), BAD_VAR_NUM, out _), Is.False);
+            Assert.That(ExtractSpanIndex(compiler, spanAccess, new SpanIndex()), Is.False);
+        });
+    }
+
     private static void AddCountedLatch(Compiler compiler, BasicBlock latch, int limit,
         genTreeOps comparisonOper = GT_LT, int stride = 1, bool isUnsigned = false)
     {
@@ -561,6 +585,13 @@ internal static unsafe class LoopCloningTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optReconstructArrIndex")]
     private static extern bool ReconstructArray(Compiler compiler, GenTree tree, ArrIndex index);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optExtractArrIndex")]
+    private static extern bool ExtractArrayIndex(Compiler compiler, GenTree tree, ArrIndex index, int lhsNum,
+        out bool topLevelIsFinal);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optExtractSpanIndex")]
+    private static extern bool ExtractSpanIndex(Compiler compiler, GenTree tree, SpanIndex index);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optCheckLoopCloningGDVTestProfitable")]
     private static extern bool GdvProfitable(Compiler compiler, GenTreeOp guard, FlowGraphNaturalLoop loop);

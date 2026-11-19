@@ -183,7 +183,45 @@ internal static unsafe class WasmRegAllocTests
         });
     }
 
-    private static void WithCompiler(Action<Compiler> action)
+    [Test]
+    public static void SingleUseLocalCopyIsForwardedAndLastUseMovesWithIt()
+    {
+        WithCompiler(compiler =>
+        {
+            compiler.lvaTable =
+            [
+                new LclVarDsc { Type = TYP_INT },
+                new LclVarDsc { Type = TYP_INT },
+            ];
+            compiler.lvaCount = 2;
+            compiler.lvaGetDesc(0).setLvRefCnt(1);
+            compiler.lvaGetDesc(1).setLvRefCnt(2);
+            compiler.fgNodeThreading = NodeThreading.LIR;
+
+            var block = new BasicBlock(null, null);
+            block.MakeLir(null, null);
+
+            var source = compiler.gtNewLclvNode(TYP_INT, 0);
+            source.Flags |= GenTreeFlags.GTF_VAR_DEATH;
+            var copy = compiler.gtNewStoreLclVarNode(1, source);
+            var use = compiler.gtNewLclvNode(TYP_INT, 1);
+            use.Flags |= GenTreeFlags.GTF_VAR_DEATH;
+            block.InsertAtEnd(source);
+            block.InsertAtEnd(copy);
+            block.InsertAtEnd(use);
+            compiler.RecordWasmLocalCopyBlock(block);
+
+            Assert.That(compiler.fgWasmForwardLocalCopies(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(block.FirstNode, Is.SameAs(use));
+            Assert.That(block.LastNode, Is.SameAs(use));
+            Assert.That(use.AsLclVarCommon().LclNum, Is.Zero);
+            Assert.That(use.HasLastUse, Is.True);
+            Assert.That(source.HasLastUse, Is.False);
+            Assert.That(compiler.lvaGetDesc(1).lvRefCnt(), Is.Zero);
+        }, minOpts: false);
+    }
+
+    private static void WithCompiler(Action<Compiler> action, bool minOpts = true)
     {
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
@@ -194,7 +232,7 @@ internal static unsafe class WasmRegAllocTests
             JitFlags flags = default;
             compiler.opts.jitFlags = &flags;
             compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
-            compiler.SetMinOpts(true);
+            compiler.SetMinOpts(minOpts);
             compiler.lvaTable = [new LclVarDsc { Type = TYP_I_IMPL }];
             compiler.lvaCount = 1;
             compiler.lvaWasmSpArg = 0;

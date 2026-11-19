@@ -14511,6 +14511,11 @@ public partial class Compiler
                 potentialCall = potentialCall.AsRetExpr().InlineCandidate;
             }
 
+            if (potentialCall.Oper is GT_SWIFT_ERROR)
+            {
+                return true;
+            }
+
             if (potentialCall.Oper is GT_CALL)
             {
                 var call = potentialCall.AsCall();

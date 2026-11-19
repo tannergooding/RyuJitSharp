@@ -153,11 +153,12 @@ internal static unsafe class LoopCloningModelTests
         var left = new LC_Expr(LC_Ident.CreateVar(1, TYP_INT));
         var right = new LC_Expr(LC_Ident.CreateVar(2, TYP_INT));
         var less = new LC_Condition(GT_LT, left, right, asUnsigned: true);
-        Assert.That(less.Combines(new LC_Condition(GT_LT, left, right), out var same), Is.True);
+        Assert.That(less.Combines(new LC_Condition(GT_LT, left, right), out _), Is.False);
+        Assert.That(less.Combines(new LC_Condition(GT_LT, left, right, asUnsigned: true), out var same), Is.True);
         Assert.That(same.CompareUnsigned, Is.True);
-        Assert.That(less.Combines(new LC_Condition(GT_GE, right, left), out var reversed), Is.True);
+        Assert.That(less.Combines(new LC_Condition(GT_GT, right, left, asUnsigned: true), out var reversed), Is.True);
         Assert.That(reversed.Oper, Is.EqualTo(GT_LT));
-        Assert.That(less.Combines(new LC_Condition(GT_GT, right, left), out _), Is.False);
+        Assert.That(less.Combines(new LC_Condition(GT_GE, right, left, asUnsigned: true), out _), Is.False);
         var equal = new LC_Condition(GT_EQ, left, right);
         Assert.That(equal.Combines(new LC_Condition(GT_EQ, right, left), out _), Is.False);
     }
@@ -171,7 +172,7 @@ internal static unsafe class LoopCloningModelTests
             var second = new LC_Expr(LC_Ident.CreateVar(2, TYP_INT));
             var conditions = context.EnsureConditions(1);
             conditions.Add(new LC_Condition(GT_LT, first, second));
-            conditions.Add(new LC_Condition(GT_GE, second, first));
+            conditions.Add(new LC_Condition(GT_GT, second, first));
             conditions.Add(new LC_Condition(GT_EQ, first, first));
             context.EvaluateConditions(1, out var allTrue, out var anyFalse);
             Assert.That(allTrue, Is.False);

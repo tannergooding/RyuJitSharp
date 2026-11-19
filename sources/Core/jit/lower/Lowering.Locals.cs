@@ -385,6 +385,12 @@ public sealed partial class Lowering
             VerifyLclFldDoNotEnregister(storeLoc.LclNum);
         }
 
+        if (Configuration.TARGET_WASM && CompilerInstance.opts.OptimizationEnabled &&
+            (storeLoc.Oper is GT_STORE_LCL_VAR) && (storeLoc.Op1.Oper is GT_LCL_VAR))
+        {
+            CompilerInstance.RecordWasmLocalCopyBlock(CompilerInstance.compCurBB!);
+        }
+
         ContainCheckStoreLoc(storeLoc);
         var next = storeLoc.Next;
         if (Configuration.TARGET_ARM64 && CompilerInstance.opts.OptimizationEnabled)

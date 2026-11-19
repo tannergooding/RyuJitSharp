@@ -101,8 +101,9 @@ public sealed partial class CodeGen
             var dstOffsetAdjustment = helper.GetDstOffset() - dstRegAddrAlignment;
             dstRegAddrAlignment = 0;
 
+            var dstAttr = (dstLclNum == BAD_VAR_NUM) && varTypeIsGC(dstAddr.Type) ? EA_BYREF : EA_PTRSIZE;
             var tempReg = InternalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT_ARM64));
-            _ = genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
+            _ = genInstrWithConstant(INS_add, dstAttr, tempReg, dstReg, dstOffsetAdjustment, tempReg);
             dstReg = tempReg;
 
             helper.SetDstOffset(helper.GetDstOffset() - dstOffsetAdjustment);

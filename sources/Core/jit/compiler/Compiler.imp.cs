@@ -19832,12 +19832,14 @@ public partial class Compiler
                 return call;
             }
 
-            // Now we need to spill the addr and argName arguments in the correct order to preserve possible side effects.
+            assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
 
-            var boxedValTmp = lvaGrabTemp(shortLifetime: true, "boxedVal spilled");
+            var hasValueField = gtNewIndir(TYP_UBYTE, boxHelperAddrArg);
+            var hasValueTmp = lvaGrabTemp(shortLifetime: true, "nullable hasValue spilled");
             var boxedArgNameTmp = lvaGrabTemp(shortLifetime: true, "boxedArg spilled");
 
-            impStoreToTemp(boxedValTmp, boxHelperAddrArg, CHECK_SPILL_ALL);
+            // Boxing reads the source before valueName is evaluated, so preserve that order.
+            impStoreToTemp(hasValueTmp, hasValueField, CHECK_SPILL_ALL);
             impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
 
             // Change arguments to 'ThrowIfNull(null, valueNameTmp)'
@@ -19845,9 +19847,8 @@ public partial class Compiler
             callArg1.EarlyNode = gtNewLclvNode(valueName.Type, boxedArgNameTmp);
 
             // This is Tier0 specific, so we create a raw indir node to access Nullable<T>.hasValue field which is the first field of Nullable<T> struct and is of type 'bool'.
-            var hasValueField = gtNewIndir(TYP_UBYTE, gtNewLclvNode(boxHelperAddrArg.Type, boxedValTmp));
-
-            var cond = gtNewBinaryNode(GT_NE, TYP_INT, hasValueField, gtNewIconNode(TYP_INT, 0));
+            var cond = gtNewBinaryNode(GT_NE, TYP_INT, gtNewLclvNode(TYP_INT, hasValueTmp),
+                gtNewIconNode(TYP_INT, 0));
             var colon = gtNewColonNode(TYP_VOID, gtNewNothingNode(), call);
 
             return gtNewQmarkNode(TYP_VOID, cond, colon);

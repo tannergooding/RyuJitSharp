@@ -237,8 +237,10 @@ internal static unsafe class WasmEmitterOracleRefreshTests
         });
     }
 
-    [Test]
-    public static void CoreClrWithoutEhOmitsVirtualIpStoresButKeepsFrameIdentityLocals()
+    [TestCase(false, PhaseStatus.MODIFIED_NOTHING)]
+    [TestCase(true, PhaseStatus.MODIFIED_EVERYTHING)]
+    public static void CoreClrWithoutEhKeepsFrameIdentityLocalsOnlyWhenMethodMayCall(
+        bool hasCall, PhaseStatus expectedStatus)
     {
         WithCompiler(compiler =>
         {
@@ -252,6 +254,12 @@ internal static unsafe class WasmEmitterOracleRefreshTests
 
             var root = BasicBlock.New(compiler, BBJ_RETURN);
             root.MakeLir(null, null);
+            GenTree? call = null;
+            if (hasCall)
+            {
+                call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+                root.InsertAtEnd(call);
+            }
             var rootReturn = compiler.gtNewUnaryNode(GT_RETURN, TYP_VOID, null);
             root.InsertAtEnd(rootReturn);
             compiler.fgFirstBB = root;
@@ -262,10 +270,10 @@ internal static unsafe class WasmEmitterOracleRefreshTests
             compiler.lvaWasmFunctionIndex = BAD_VAR_NUM;
             CurrentLowering(compiler) = new Lowering(compiler, new LinearScan(compiler));
 
-            Assert.That(compiler.fgWasmVirtualIP(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
-            Assert.That(compiler.lvaWasmVirtualIP, Is.Not.EqualTo(BAD_VAR_NUM));
-            Assert.That(compiler.lvaWasmFunctionIndex, Is.Not.EqualTo(BAD_VAR_NUM));
-            Assert.That(root.FirstNode, Is.SameAs(rootReturn));
+            Assert.That(compiler.fgWasmVirtualIP(), Is.EqualTo(expectedStatus));
+            Assert.That(compiler.lvaWasmVirtualIP == BAD_VAR_NUM, Is.EqualTo(!hasCall));
+            Assert.That(compiler.lvaWasmFunctionIndex == BAD_VAR_NUM, Is.EqualTo(!hasCall));
+            Assert.That(root.FirstNode, Is.SameAs(call ?? rootReturn));
         });
     }
 

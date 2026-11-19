@@ -126,8 +126,14 @@ public readonly struct LC_Condition
 
     public bool Combines(in LC_Condition that, out LC_Condition combined)
     {
+        if ((Oper is GT_LT or GT_LE or GT_GT or GT_GE) && (CompareUnsigned != that.CompareUnsigned))
+        {
+            combined = default;
+            return false;
+        }
+
         if (((Oper == that.Oper) && Op1.Matches(that.Op1) && Op2.Matches(that.Op2)) ||
-            ((Oper is GT_LT or GT_LE or GT_GT or GT_GE) && (Oper.ReverseRelop == that.Oper) &&
+            ((Oper is GT_LT or GT_LE or GT_GT or GT_GE) && (Oper.SwapRelop == that.Oper) &&
              Op1.Matches(that.Op2) && Op2.Matches(that.Op1)))
         {
             combined = this;

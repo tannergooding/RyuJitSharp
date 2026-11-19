@@ -124,6 +124,21 @@ internal static unsafe class NaturalLoopIterationTests
     }
 
     [Test]
+    public static void CheckedLimitArithmeticIsNotPeeled()
+    {
+        WithLoop((compiler, loop, unusedPreheader, unusedHeader, latch) =>
+        {
+            compiler.fgInsertStmtAtEnd(latch, compiler.gtNewStmt(NewIncrement(compiler, GT_ADD, 1)));
+            var limit = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 1));
+            limit.Flags |= GTF_OVERFLOW;
+            AddTest(compiler, latch, GT_LT, limit);
+
+            Assert.That(loop.AnalyzeIteration(out _, allowMissingBaseCase: true), Is.False);
+        });
+    }
+
+    [Test]
     public static void AcceptsSymbolicInvariantLimitOnlyWithEntryProofOrCallerGuard()
     {
         WithLoop((compiler, loop, unusedPreheader, header, latch) =>

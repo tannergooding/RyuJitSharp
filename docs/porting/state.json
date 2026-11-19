@@ -3,14 +3,15 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "096877240648650996bf57c9203ae428c99fc0f6",
-    "targetObservedAt": "2026-11-18",
-    "reconciledCommit": "096877240648650996bf57c9203ae428c99fc0f6"
+    "targetCommit": "fcb04a83f3013e65d573dc0ec240c7a5a720db3a",
+    "targetObservedAt": "2026-11-19",
+    "reconciledCommit": "fcb04a83f3013e65d573dc0ec240c7a5a720db3a"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Investigate the GenericCatch Importation diagnostic difference at 096877240648650996bf57c9203ae428c99fc0f6 (native defers profile-weight checking after fgPgoDeferredInconsistency; managed checks weights), then continue recursive-tail-call-to-loop phase/codegen verification. Keep D015/B322 accepted and dynamicTlsInputBoundary unresolved. Defer genAsyncResumeInfo until the B209 target-width table/emitter closure is ported and tested; Wasm GC-info and AMD64 unwind-V3 encoders remain unverified. Do not claim full runtime parity.",
+    "nextAction": "Capture matched native/managed phase and codegen evidence for the fcb04a83f3013e65d573dc0ec240c7a5a720db3a Wasm, ARM64, loop-cloning, and importer changes before claiming that frontier; the available runtime JIT binaries are stamped 032b849d22cbf2eee40f63eb2c6156c2f54846e5 and 1d599674e31ad86ca9e6e1dad7055b531e4d58e4, not the pinned oracle. Then investigate the GenericCatch Importation diagnostic difference at fcb04a83f3013e65d573dc0ec240c7a5a720db3a (native defers profile-weight checking after fgPgoDeferredInconsistency; managed checks weights), then continue recursive-tail-call-to-loop phase/codegen verification. Keep D015/B322 accepted and dynamicTlsInputBoundary unresolved. Defer genAsyncResumeInfo until the B209 target-width table/emitter closure is ported and tested; Wasm GC-info and AMD64 unwind-V3 encoders remain unverified. Do not claim full runtime parity.",
+    "activeBatch": null,
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
       "E03: isIntrinsicType now uses a per-Compiler last-handle boolean cache; the pinned repeated-handle profile is under artifacts\\e03-isintrinsictype. Keep primitive mappings and nullable/enum predicates direct pending repeated-handle evidence and complete output/tri-state semantics.",
@@ -1258,14 +1259,16 @@
     {
       "area": "wasm-noeh-virtual-ip",
       "native": [
-        "src\\coreclr\\jit\\fgwasm.cpp"
+        "src\\coreclr\\jit\\fgwasm.cpp",
+        "src\\coreclr\\jit\\codegenwasm.cpp"
       ],
       "csharp": [
         "sources\\Core\\jit\\compiler\\Compiler.WasmVirtualIP.cs",
+        "sources\\Core\\jit\\codegenwasm\\CodeGen.WasmProlog.cs",
         "tests\\Core\\WasmEmitterOracleRefreshTests.cs"
       ],
-      "disposition": "CoreCLR methods without EH retain required frame identity locals but omit virtual-IP frame stores.",
-      "sourceCommit": "87c412743ae00397fbbf17e087baff27c1b3d534"
+      "disposition": "Methods without EH retain required frame identity locals but omit virtual-IP frame stores and the call-producing frame-header path.",
+      "sourceCommit": "fcb04a83f3013e65d573dc0ec240c7a5a720db3a"
     },
     {
       "area": "byref-exposed-store-value-numbering",
@@ -1316,14 +1319,40 @@
     {
       "area": "unsigned-decreasing-loop-cloning-wrap-guard",
       "native": [
-        "src\\coreclr\\jit\\loopcloning.cpp"
+        "src\\coreclr\\jit\\loopcloning.cpp",
+        "src\\coreclr\\jit\\flowgraph.cpp"
       ],
       "csharp": [
         "sources\\Core\\jit\\compiler\\Compiler.LoopCloning.Conditions.cs",
-        "tests\\Core\\LoopCloningTests.cs"
+        "sources\\Core\\jit\\compiler\\Compiler.LoopCloning.Candidates.cs",
+        "sources\\Core\\jit\\loopcloning\\LC_Condition.cs",
+        "sources\\Core\\jit\\flowgraph\\FlowGraphNaturalLoop.Iteration.cs",
+        "tests\\Core\\LoopCloningTests.cs",
+        "tests\\Core\\NaturalLoopIterationTests.cs"
       ],
-      "disposition": "The managed loop-cloning guard mirrors the native proof for constant unsigned decreasing-loop bounds and stride; unsafe or unproven loops are rejected with the matching diagnostic.",
-      "sourceCommit": "2ce18f74dcacc0e52d68cc2f250fcb744a2e943f"
+      "disposition": "Loop cloning uses swapped relational equivalence with signedness checks, rejects overflow-checked limits and non-TYP_INT actual index locals, and retains offset, stride, and unsigned wrap guards.",
+      "sourceCommit": "fcb04a83f3013e65d573dc0ec240c7a5a720db3a"
+    },
+    {
+      "area": "wasm-single-use-local-copy-forwarding",
+      "native": [
+        "src\\coreclr\\jit\\fgwasm.cpp",
+        "src\\coreclr\\jit\\lowerwasm.cpp",
+        "src\\coreclr\\jit\\compiler.cpp",
+        "src\\coreclr\\jit\\compiler.h",
+        "src\\coreclr\\jit\\compphases.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.WasmLocalCopies.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.comp.cs",
+        "sources\\Core\\jit\\lower\\Lowering.Locals.cs",
+        "sources\\GenerateTables\\Inputs\\compphases.h",
+        "sources\\Core\\jit\\compiler\\Phases.generated.cs",
+        "sources\\Core\\jit\\compiler\\PhasesExtensions.generated.cs",
+        "tests\\Core\\WasmRegAllocTests.cs"
+      ],
+      "disposition": "Lowering records blocks containing local-to-local stores; a phase after late liveness forwards safe single-use copies before Wasm virtual-IP setup.",
+      "sourceCommit": "fcb04a83f3013e65d573dc0ec240c7a5a720db3a"
     },
     {
       "area": "relocatable-block-store-offset-containment",
@@ -1348,8 +1377,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "87c412743ae00397fbbf17e087baff27c1b3d534",
-    "reconciledCommit": "096877240648650996bf57c9203ae428c99fc0f6",
+    "targetInputCommit": "fcb04a83f3013e65d573dc0ec240c7a5a720db3a",
+    "reconciledCommit": "fcb04a83f3013e65d573dc0ec240c7a5a720db3a",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

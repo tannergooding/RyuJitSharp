@@ -3907,6 +3907,14 @@ public partial class Compiler
         }
     }
 
+    private readonly struct WasmForwardLocalCopiesPhaseAction : ICompilerPhaseAction
+    {
+        public PhaseStatus Invoke(Compiler compiler)
+        {
+            return compiler.fgWasmForwardLocalCopies();
+        }
+    }
+
     private readonly struct WasmVirtualIPPhaseAction : ICompilerPhaseAction
     {
         public PhaseStatus Invoke(Compiler compiler)
@@ -4626,6 +4634,8 @@ public partial class Compiler
 
         if (Configuration.TARGET_WASM)
         {
+            DoPhase(this, PHASE_WASM_FORWARD_LOCAL_COPIES, default(WasmForwardLocalCopiesPhaseAction));
+
             // Determine if a Virtual IP is needed and add code as needed to keep the Virtual IP updated.
             DoPhase(this, PHASE_WASM_VIRTUAL_IP, default(WasmVirtualIPPhaseAction));
 

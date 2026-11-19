@@ -258,7 +258,7 @@ public sealed partial class FlowGraphNaturalLoop
 
         var peeledOffset = 0;
         GenTree? peeledBase = null;
-        if (limitOp.Oper is GT_ADD or GT_SUB && limitOp.Type is TYP_INT)
+        if ((limitOp.Oper is GT_ADD or GT_SUB) && (limitOp.Type is TYP_INT) && !limitOp.HasOverflowCheck)
         {
             var lop1 = limitOp.AsOp().Op1;
             var lop2 = limitOp.AsOp().Op2;

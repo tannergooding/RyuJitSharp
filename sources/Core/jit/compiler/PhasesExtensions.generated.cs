@@ -453,6 +453,10 @@ public static partial class PhasesExtensions
             {
                 return "Wasm spill refs";
             }
+            case Phases.PHASE_WASM_FORWARD_LOCAL_COPIES:
+            {
+                return "Wasm forward local copies";
+            }
             case Phases.PHASE_WASM_VIRTUAL_IP:
             {
                 return "Wasm virtual IP";
@@ -655,6 +659,7 @@ public static partial class PhasesExtensions
         false, // PHASE_WASM_CONTROL_FLOW
         false, // PHASE_WASM_IDENTIFY_GCSAFE_LOCALS
         false, // PHASE_WASM_SPILL_REFS
+        false, // PHASE_WASM_FORWARD_LOCAL_COPIES
         false, // PHASE_WASM_VIRTUAL_IP
         false, // PHASE_WASM_PROF_INSTRUMENT
         false, // PHASE_ASYNC
@@ -788,6 +793,7 @@ public static partial class PhasesExtensions
         (Phases)(-1), // PHASE_WASM_CONTROL_FLOW
         (Phases)(-1), // PHASE_WASM_IDENTIFY_GCSAFE_LOCALS
         (Phases)(-1), // PHASE_WASM_SPILL_REFS
+        (Phases)(-1), // PHASE_WASM_FORWARD_LOCAL_COPIES
         (Phases)(-1), // PHASE_WASM_VIRTUAL_IP
         (Phases)(-1), // PHASE_WASM_PROF_INSTRUMENT
         (Phases)(-1), // PHASE_ASYNC
@@ -921,6 +927,7 @@ public static partial class PhasesExtensions
         false, // PHASE_WASM_CONTROL_FLOW
         false, // PHASE_WASM_IDENTIFY_GCSAFE_LOCALS
         false, // PHASE_WASM_SPILL_REFS
+        false, // PHASE_WASM_FORWARD_LOCAL_COPIES
         false, // PHASE_WASM_VIRTUAL_IP
         false, // PHASE_WASM_PROF_INSTRUMENT
         true, // PHASE_ASYNC
