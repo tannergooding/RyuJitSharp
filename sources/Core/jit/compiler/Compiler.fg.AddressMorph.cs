@@ -85,7 +85,9 @@ public partial class Compiler
             GenTree secondIndex;
             if (((array.Flags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0)
                 || gtComplexityExceeds(array, MaxArrayComplexity, static _ => 1) || (array.Oper is GT_LCL_FLD)
-                || ((array.Oper is GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(array.AsLclVar().LclNum)))
+                || ((array.Oper is GT_LCL_VAR) &&
+                    (lvaIsLocalImplicitlyAccessedByRef(array.AsLclVar().LclNum) ||
+                     fgTreeMayModifyLocal(index, array.AsLclVar().LclNum))))
             {
                 var local = lvaGrabTemp(true, "arr expr");
                 arrayDefinition = gtNewTempStore(local, array);
@@ -209,5 +211,15 @@ public partial class Compiler
         JITDUMP("fgMorphIndexAddr (after remorph):\n");
         DISPTREE(result);
         return result;
+    }
+
+    private bool fgTreeMayModifyLocal(GenTree tree, int lclNum)
+    {
+        if ((tree.Flags & (GTF_ASG | GTF_CALL)) == 0)
+        {
+            return false;
+        }
+
+        return lvaGetDesc(lclNum).IsAddressExposed || gtHasRef(tree, lclNum);
     }
 }

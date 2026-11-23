@@ -65,13 +65,13 @@ internal static unsafe class AsyncContextTests
             var args = GetArgs(call);
             Assert.That(compiler.compAsyncBodyMaySuspend, Is.True);
             Assert.That(compiler.lvaTable[0].lvHasLdAddrOp, Is.True);
-            AssertOwnContexts(args);
+            AssertOwnContexts(args, 1);
             Assert.That(args.Count, Is.EqualTo(5));
-            Assert.That(args[4], Is.SameAs(userArg));
+            Assert.That(args[0], Is.SameAs(userArg));
             Assert.That(call.GetAsyncInfo().InlineFrameContextHandling, Is.Null);
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(args[0].Node.TreeId, Is.EqualTo(args[1].Node.TreeId + 1));
+                Assert.That(args[1].Node.TreeId, Is.EqualTo(args[2].Node.TreeId + 1));
             }
         });
     }
@@ -118,15 +118,15 @@ internal static unsafe class AsyncContextTests
             compiler.AddContextArgsToAsyncCalls(block);
 
             var args = GetArgs(call);
-            AssertOwnContexts(args);
+            AssertOwnContexts(args, 1);
             Assert.That(args.Count, Is.EqualTo(5 + originals.Count));
-            Assert.That(args[^1], Is.SameAs(userArg));
+            Assert.That(args[0], Is.SameAs(userArg));
 
             for (var i = 0; i < originals.Count; i++)
             {
-                Assert.That(args[i + 4].WellKnownArg, Is.EqualTo(originals[i].WellKnownArg));
-                Assert.That(args[i + 4].Node, Is.Not.SameAs(originals[i].Node));
-                Assert.That(args[i + 4].Node.AsLclVar().LclNum, Is.EqualTo(originals[i].Node.AsLclVar().LclNum));
+                Assert.That(args[i + 5].WellKnownArg, Is.EqualTo(originals[i].WellKnownArg));
+                Assert.That(args[i + 5].Node, Is.Not.SameAs(originals[i].Node));
+                Assert.That(args[i + 5].Node.AsLclVar().LclNum, Is.EqualTo(originals[i].Node.AsLclVar().LclNum));
             }
 
             var handling = call.GetAsyncInfo().InlineFrameContextHandling;
@@ -193,7 +193,7 @@ internal static unsafe class AsyncContextTests
         });
     }
 
-    private static void AssertOwnContexts(List<CallArg> args)
+    private static void AssertOwnContexts(List<CallArg> args, int firstContextIndex)
     {
         WellKnownArg[] kinds = [WellKnownArg.AsyncResumedDef, WellKnownArg.AsyncResumedUse,
             WellKnownArg.AsyncExecutionContext, WellKnownArg.AsyncSynchronizationContext];
@@ -201,12 +201,12 @@ internal static unsafe class AsyncContextTests
 
         for (var i = 0; i < kinds.Length; i++)
         {
-            Assert.That(args[i].WellKnownArg, Is.EqualTo(kinds[i]));
-            Assert.That(args[i].Node.AsLclVarCommon().LclNum, Is.EqualTo(locals[i]));
+            Assert.That(args[firstContextIndex + i].WellKnownArg, Is.EqualTo(kinds[i]));
+            Assert.That(args[firstContextIndex + i].Node.AsLclVarCommon().LclNum, Is.EqualTo(locals[i]));
         }
 
-        Assert.That(args[0].Node.Type, Is.EqualTo(Globals.TYP_I_IMPL));
-        Assert.That(args[1].Node.Type, Is.EqualTo(var_types.TYP_INT));
+        Assert.That(args[firstContextIndex].Node.Type, Is.EqualTo(Globals.TYP_I_IMPL));
+        Assert.That(args[firstContextIndex + 1].Node.Type, Is.EqualTo(var_types.TYP_INT));
     }
 
     private static GenTreeCall NewAsyncCall(Compiler compiler)

@@ -2503,6 +2503,8 @@ public partial class Compiler
                         if (!Configuration.TARGET_ARM64 || compiler.compOpportunisticallyDependsOn(InstructionSet_Atomics))
                         {
                             assert(sigInfo.numArgs is 2);
+                            compiler.impSpillSideEffects(true,
+                                compiler.stackState.esStackDepth - sigInfo.numArgs, "Spilling Interlocked arguments");
 
                             var op2 = compiler.impPopStack().val;
                             var op1 = compiler.impPopStack().val;
@@ -2552,6 +2554,9 @@ public partial class Compiler
 
                         assert(callType is not TYP_STRUCT);
                         assert(sigInfo.numArgs is 3);
+
+                        compiler.impSpillSideEffects(true,
+                            compiler.stackState.esStackDepth - sigInfo.numArgs, "Spilling Interlocked arguments");
 
                         var op3 = compiler.impPopStack().val;
 
@@ -2608,6 +2613,9 @@ public partial class Compiler
                         assert(callType is not TYP_STRUCT);
                         assert(sigInfo.numArgs is 2);
                         assert((retType.Size >= 4) || (ni is NI_System_Threading_Interlocked_Exchange));
+
+                        compiler.impSpillSideEffects(true,
+                            compiler.stackState.esStackDepth - sigInfo.numArgs, "Spilling Interlocked arguments");
 
                         _ = compiler.impPopStack();
                         var op1 = compiler.impPopStack().val;

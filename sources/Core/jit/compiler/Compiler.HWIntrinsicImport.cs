@@ -468,6 +468,8 @@ public partial class Compiler
 
                             case NI_AdvSimd_AddWideningUpper:
                             case NI_AdvSimd_SubtractWideningUpper:
+                            case NI_AdvSimd_AddWideningLower:
+                            case NI_AdvSimd_SubtractWideningLower:
                             {
                                 assert(varTypeIsSimd(op1.Type));
                                 retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op1ClsHnd);

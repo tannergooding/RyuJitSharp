@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "fcb04a83f3013e65d573dc0ec240c7a5a720db3a",
-    "targetObservedAt": "2026-11-19",
-    "reconciledCommit": "fcb04a83f3013e65d573dc0ec240c7a5a720db3a"
+    "targetCommit": "bdd9b750b7065f5d2a26e28a0b74776339beaeac",
+    "targetObservedAt": "2026-11-23",
+    "reconciledCommit": "bdd9b750b7065f5d2a26e28a0b74776339beaeac"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Capture matched native/managed phase and codegen evidence for the fcb04a83f3013e65d573dc0ec240c7a5a720db3a Wasm, ARM64, loop-cloning, and importer changes before claiming that frontier; the available runtime JIT binaries are stamped 032b849d22cbf2eee40f63eb2c6156c2f54846e5 and 1d599674e31ad86ca9e6e1dad7055b531e4d58e4, not the pinned oracle. Then investigate the GenericCatch Importation diagnostic difference at fcb04a83f3013e65d573dc0ec240c7a5a720db3a (native defers profile-weight checking after fgPgoDeferredInconsistency; managed checks weights), then continue recursive-tail-call-to-loop phase/codegen verification. Keep D015/B322 accepted and dynamicTlsInputBoundary unresolved. Defer genAsyncResumeInfo until the B209 target-width table/emitter closure is ported and tested; Wasm GC-info and AMD64 unwind-V3 encoders remain unverified. Do not claim full runtime parity.",
+    "nextAction": "Capture matched native/managed phase and codegen evidence for the bdd9b750b7065f5d2a26e28a0b74776339beaeac Wasm select/if-conversion, ARM64 widening-intrinsic, xarch codegen, async importer, AliasSet, and value-number changes before claiming those frontiers; available runtime JIT binaries are stamped 032b849d22cbf2eee40f63eb2c6156c2f54846e5 and 1d599674e31ad86ca9e6e1dad7055b531e4d58e4, not the pinned oracle. Then investigate the GenericCatch Importation diagnostic difference last observed at fcb04a83f3013e65d573dc0ec240c7a5a720db3a (native defers profile-weight checking after fgPgoDeferredInconsistency; managed checks weights), then continue recursive-tail-call-to-loop phase/codegen verification. Preserve the known broad win-arm64 Debug baseline of 10 failures and 2 not executed; do not treat it as passing or attribute those failures to this batch. Keep D015/B322 accepted and dynamicTlsInputBoundary unresolved. Defer genAsyncResumeInfo until the B209 target-width table/emitter closure is ported and tested; Wasm GC-info and AMD64 unwind-V3 encoders remain unverified. Do not claim full runtime parity.",
     "activeBatch": null,
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
@@ -1377,8 +1377,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "fcb04a83f3013e65d573dc0ec240c7a5a720db3a",
-    "reconciledCommit": "fcb04a83f3013e65d573dc0ec240c7a5a720db3a",
+    "targetInputCommit": "bdd9b750b7065f5d2a26e28a0b74776339beaeac",
+    "reconciledCommit": "bdd9b750b7065f5d2a26e28a0b74776339beaeac",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

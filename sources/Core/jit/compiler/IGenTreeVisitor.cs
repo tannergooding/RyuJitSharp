@@ -190,6 +190,23 @@ public interface IGenTreeVisitor<TSelf>
                         break;
                     }
 
+                    case GT_WASM_SELECT:
+                    {
+                        var conditional = node.AsConditional();
+                        result = WalkTree(ref self, ref conditional.Op1Ref, conditional, ancestors);
+
+                        if (result is not fgWalkResult.WALK_ABORT)
+                        {
+                            result = WalkTree(ref self, ref conditional.Op2Ref, conditional, ancestors);
+
+                            if (result is not fgWalkResult.WALK_ABORT)
+                            {
+                                result = WalkTree(ref self, ref conditional.CondRef, conditional, ancestors);
+                            }
+                        }
+                        break;
+                    }
+
                     case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
                     {
                         var hwintrinsic = node.AsHWIntrinsic();

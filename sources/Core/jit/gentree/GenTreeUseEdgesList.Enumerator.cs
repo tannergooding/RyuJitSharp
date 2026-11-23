@@ -148,6 +148,26 @@ public partial struct GenTreeUseEdgesList
                         break;
                     }
 
+                    case GT_WASM_SELECT:
+                    {
+                        var conditional = tree.AsConditional();
+
+                        if (index < 0)
+                        {
+                            return SetCurrent(ref conditional.Op1Ref, 0);
+                        }
+                        else if (index == 0)
+                        {
+                            return SetCurrent(ref conditional.Op2Ref, 1);
+                        }
+                        else if (index == 1)
+                        {
+                            return SetCurrent(ref conditional.CondRef, 2);
+                        }
+
+                        break;
+                    }
+
                     case GT_HWINTRINSIC:
                     {
                         if (Configuration.FEATURE_HW_INTRINSICS)

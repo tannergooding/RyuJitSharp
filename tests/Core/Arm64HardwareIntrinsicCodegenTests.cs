@@ -80,6 +80,29 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
         });
     }
 
+    [TestCase(TYP_BYTE, INS_saddw)]
+    [TestCase(TYP_UBYTE, INS_uaddw)]
+    public static void WideningLowerUsesAuxiliaryTypeForOpcode(var_types baseType, instruction expected)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AdvSimd_AddWideningLower, baseType, 8,
+                Operand(REG_ARM64_V1, TYP_SIMD16), Operand(REG_ARM64_V2, TYP_SIMD8)) {
+                RegNum = REG_ARM64_V0,
+                AuxiliaryType = TYP_USHORT,
+            };
+            EnableIsa(compiler, node);
+            codeGen.genHWIntrinsic(node);
+
+            var descriptor = SingleDescriptor(codeGen);
+            Assert.That(descriptor.idIns(), Is.EqualTo(expected));
+            Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_8BYTE));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_V0));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(descriptor.idReg3(), Is.EqualTo(REG_ARM64_V2));
+        });
+    }
+
     [TestCase(REG_ARM64_V1, INS_bsl, REG_ARM64_V2, REG_ARM64_V3, 1)]
     [TestCase(REG_ARM64_V2, INS_bif, REG_ARM64_V3, REG_ARM64_V1, 1)]
     [TestCase(REG_ARM64_V3, INS_bit, REG_ARM64_V2, REG_ARM64_V1, 1)]

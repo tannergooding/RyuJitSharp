@@ -63,7 +63,7 @@ internal static unsafe class DivisionLoweringTests
     }
 
     [Test]
-    public static void MismatchedDivisorWidthCannotBeContained()
+    public static void MismatchedDivisorWidthCannotBeContainedOrRegOptional()
     {
         WithCompiler(compiler => {
             compiler.lvaTable[0].Type = TYP_LONG;
@@ -77,7 +77,7 @@ internal static unsafe class DivisionLoweringTests
             ContainCheckDivOrMod(NewLowering(compiler, block), divMod);
 
             Assert.That(divisor.IsContained, Is.False);
-            Assert.That(divisor.IsRegOptional, Is.True);
+            Assert.That(divisor.IsRegOptional, Is.False);
         });
     }
 

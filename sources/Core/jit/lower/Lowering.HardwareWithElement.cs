@@ -33,6 +33,12 @@ public sealed partial class Lowering
         var op2 = node.GetOp(2);
         var op3 = node.GetOp(3);
 
+        var op1TempNum = BAD_VAR_NUM;
+        if ((simdSize > 16) && (op1.Oper is GT_LCL_VAR) && !IsInvariantInRange(op1, op3))
+        {
+            op1TempNum = CompilerInstance.lvaGrabTemp(true, "WithElement source vector");
+        }
+
         if (!op2.Oper.IsConst)
         {
             op2 = NormalizeIndexToNativeSized(op2);
@@ -64,7 +70,7 @@ public sealed partial class Lowering
             result = CompilerInstance.gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsicId, simdBaseType, 16, op1, op2, op3);
             BlockRange().InsertBefore(node, result);
             var op1Use = new LIR.Use(BlockRange(), ref node.GetOpRef(1), node);
-            _ = ReplaceWithLclVar(op1Use);
+            _ = ReplaceWithLclVar(op1Use, op1TempNum);
             var tmp64 = node.GetOp(1);
             var clone = CompilerInstance.gtClone(tmp64);
             assert(clone is not null);
@@ -103,7 +109,7 @@ public sealed partial class Lowering
             result = CompilerInstance.gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsicId, simdBaseType, 16, op1, op2, op3);
             BlockRange().InsertBefore(node, result);
             var op1Use = new LIR.Use(BlockRange(), ref node.GetOpRef(1), node);
-            _ = ReplaceWithLclVar(op1Use);
+            _ = ReplaceWithLclVar(op1Use, op1TempNum);
             var tmp32 = node.GetOp(1);
             var clone = CompilerInstance.gtClone(tmp32);
             assert(clone is not null);

@@ -33,11 +33,32 @@ public partial class Compiler
         assert(!op2.Oper.IsCnsVec || isShuffleNative);
         var elementSize = baseType.Size;
         var elementCount = simdSize / elementSize;
+        GenTree? op1Store = null;
         GenTree? safeIndices;
         var signedComparisonHint = false;
         GenTree result;
         if (Configuration.TARGET_XARCH)
         {
+            var op1MultiUse = false;
+            if ((simdSize == 32) && !gtCanReorderWithoutTemp(op1, op2))
+            {
+                if (elementSize == 1)
+                {
+                    op1MultiUse = !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative);
+                }
+                else if (elementSize == 2)
+                {
+                    op1MultiUse = !compOpportunisticallyDependsOn(InstructionSet_AVX512, isShuffleNative);
+                }
+            }
+
+            if (op1MultiUse)
+            {
+                var temp = fgMakeTemp(op1);
+                op1 = temp.Load;
+                op1Store = temp.Store;
+            }
+
             safeIndices = isShuffleNative ? null : fgMakeMultiUse(ref op2);
             if (simdSize == 64)
             {
@@ -348,6 +369,12 @@ public partial class Compiler
         {
             assert(safeIndices is null);
         }
+
+        if (op1Store is not null)
+        {
+            result = gtNewCommaNode(type, op1Store, result);
+        }
+
         return result;
     }
 }

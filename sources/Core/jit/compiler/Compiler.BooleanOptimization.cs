@@ -113,7 +113,7 @@ public partial class Compiler
 
             assert(_test1.CompTree is not null && _test2.CompTree is not null);
             if ((_test1.CompTree.Type.Size != _test2.CompTree.Type.Size) ||
-                ((_operand2.Flags & GTF_GLOB_EFFECT) != 0) ||
+                ((_operand2.Flags & GTF_ALL_EFFECT) != 0) ||
                 (_operand2.CostEx > 12))
             {
                 return false;

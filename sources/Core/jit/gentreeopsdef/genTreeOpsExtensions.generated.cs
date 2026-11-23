@@ -158,6 +158,7 @@ public static partial class genTreeOpsExtensions
         GTK_UNOP | GTK_NOVALUE, // GT_RETFILT
         GTK_LEAF, // GT_SWIFT_ERROR
         GTK_BINOP | GTK_NOVALUE, // GT_SWIFT_ERROR_RET
+        GTK_SPECIAL, // GT_WASM_SELECT
         GTK_LEAF | GTK_NOVALUE, // GT_WASM_JEXCEPT
         GTK_LEAF | GTK_NOVALUE, // GT_WASM_THROW_REF
         GTK_LEAF, // GT_JMPTABLE
@@ -333,6 +334,7 @@ public static partial class genTreeOpsExtensions
             DBK_NONE, // GT_RETFILT
             DBK_NONE, // GT_SWIFT_ERROR
             DBK_NONE, // GT_SWIFT_ERROR_RET
+            DBK_NOTHIR, // GT_WASM_SELECT
             DBK_NOTHIR, // GT_WASM_JEXCEPT
             DBK_NOTHIR, // GT_WASM_THROW_REF
             DBK_NOCONTAIN | DBK_NOTHIR, // GT_JMPTABLE
@@ -502,6 +504,7 @@ public static partial class genTreeOpsExtensions
             "RETFILT", // GT_RETFILT
             "SWIFT_ERROR", // GT_SWIFT_ERROR
             "SWIFT_ERROR_RET", // GT_SWIFT_ERROR_RET
+            "WASM_SELECT", // GT_WASM_SELECT
             "WASM_JEXCEPT", // GT_WASM_JEXCEPT
             "WASM_THROW_REF", // GT_WASM_THROW_REF
             "JMPTABLE", // GT_JMPTABLE
@@ -670,6 +673,7 @@ public static partial class genTreeOpsExtensions
             typeof(GenTreeUnOp), // GT_RETFILT
             typeof(GenTree), // GT_SWIFT_ERROR
             typeof(GenTreeOp), // GT_SWIFT_ERROR_RET
+            typeof(GenTreeConditional), // GT_WASM_SELECT
             typeof(GenTree), // GT_WASM_JEXCEPT
             typeof(GenTree), // GT_WASM_THROW_REF
             typeof(GenTree), // GT_JMPTABLE

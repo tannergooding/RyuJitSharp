@@ -52,58 +52,8 @@ public sealed class CheckLclVarSemanticsHelper
 
             if (nodeInfo.IsLclVarWrite)
             {
-                // If this node is a lclVar write, it must not alias a lclVar with an outstanding read
-                if (_unusedLclVarReads.TryGetValue(nodeInfo.LclNum, out var reads))
-                {
-                    foreach (var read in reads)
-                    {
-                        var readNode = read.Key;
-                        var readInfo = new AliasSet.NodeInfo(_compiler, readNode);
-
-                        assert(readInfo.IsLclVarRead && (readInfo.LclNum == nodeInfo.LclNum));
-
-                        var readStart = readInfo.LclOffs;
-                        var readEnd = readStart + readNode.Type.Size;
-
-                        var writeStart = nodeInfo.LclOffs;
-                        var writeEnd = writeStart + node.Type.StSz;
-
-                        if ((readEnd > writeStart) && (writeEnd > readStart))
-                        {
-                            JITDUMP($"Write to local overlaps outstanding read (write: {writeStart}..{writeEnd}, read: {readStart}..{readEnd})\n");
-
-                            var found = _range.TryGetUse(readNode, out var use);
-                            var user = found ? use.User() : null;
-
-                            foreach (var rangeNode in _range)
-                            {
-                                string prefix;
-
-                                if (rangeNode == readNode)
-                                {
-                                    prefix = "read:  ";
-                                }
-                                else if (rangeNode == node)
-                                {
-                                    prefix = "write: ";
-                                }
-                                else if (rangeNode == user)
-                                {
-                                    prefix = "user:  ";
-                                }
-                                else
-                                {
-                                    prefix = "       ";
-                                }
-
-                                _compiler.gtDispLIRNode(rangeNode, prefix);
-                            }
-
-                            NO_WAY("Write to unaliased local overlaps outstanding read");
-                            break;
-                        }
-                    }
-                }
+                var visitor = new LocalWriteVisitor(this, node);
+                _ = nodeInfo.VisitLocalWrites(ref visitor);
             }
         }
 
@@ -134,7 +84,7 @@ public sealed class CheckLclVarSemanticsHelper
     /// <param name="defInfo">the node info representing the def.</param>
     private void PushLclVarRead(in AliasSet.NodeInfo defInfo)
     {
-        if (!_unusedLclVarReads.TryGetValue(defInfo.LclNum, out var reads))
+        if (!_unusedLclVarReads.TryGetValue(defInfo.ReadLclNum, out var reads))
         {
             if (_lclVarReadsMapsCache.Count != 0)
             {
@@ -145,7 +95,7 @@ public sealed class CheckLclVarSemanticsHelper
                 reads = [];
             }
 
-            _unusedLclVarReads[defInfo.LclNum] = reads;
+            _unusedLclVarReads[defInfo.ReadLclNum] = reads;
         }
 
         reads[defInfo.Node] = defInfo.Node;
@@ -155,7 +105,7 @@ public sealed class CheckLclVarSemanticsHelper
     /// <remarks>the node info representing the def.</remarks>
     private void PopLclVarRead(in AliasSet.NodeInfo defInfo)
     {
-        var found = _unusedLclVarReads.TryGetValue(defInfo.LclNum, out var reads);
+        var found = _unusedLclVarReads.TryGetValue(defInfo.ReadLclNum, out var reads);
         if (!Configuration.DEBUG)
         {
             _ = found;
@@ -165,8 +115,73 @@ public sealed class CheckLclVarSemanticsHelper
 
         if (reads!.Count == 0)
         {
-            _ = _unusedLclVarReads.Remove(defInfo.LclNum);
+            _ = _unusedLclVarReads.Remove(defInfo.ReadLclNum);
             _lclVarReadsMapsCache.Push(reads);
+        }
+    }
+
+    private struct LocalWriteVisitor(CheckLclVarSemanticsHelper helper, GenTree writeNode) : ILocalDefVisitor
+    {
+        public readonly GenTree.VisitResult Visit<TDef>(TDef def) where TDef : struct, ILocalDef
+        {
+            if (!helper._unusedLclVarReads.TryGetValue(def.LclNum, out var reads))
+            {
+                return GenTree.VisitResult.Continue;
+            }
+
+            var writeStart = unchecked((uint)def.GetOffset(helper._compiler));
+            var writeSize = def.GetSize(helper._compiler);
+            var writeEnd = writeSize.IsExact
+                ? unchecked(writeStart + writeSize.ExactSize)
+                : uint.MaxValue;
+
+            foreach (var read in reads)
+            {
+                var readNode = read.Key;
+                var readInfo = new AliasSet.NodeInfo(helper._compiler, readNode);
+
+                assert(readInfo.IsLclVarRead && (readInfo.ReadLclNum == def.LclNum));
+
+                var readStart = unchecked((uint)readInfo.ReadLclOffs);
+                var readEnd = unchecked(readStart + (uint)readNode.Type.Size);
+
+                if ((readEnd > writeStart) && (writeEnd > readStart))
+                {
+                    JITDUMP($"Write to local overlaps outstanding read (write: {writeStart}..{writeEnd}, read: {readStart}..{readEnd})\n");
+
+                    var found = helper._range.TryGetUse(readNode, out var use);
+                    var user = found ? use.User() : null;
+
+                    foreach (var rangeNode in helper._range)
+                    {
+                        string prefix;
+
+                        if (rangeNode == readNode)
+                        {
+                            prefix = "read:  ";
+                        }
+                        else if (rangeNode == writeNode)
+                        {
+                            prefix = "write: ";
+                        }
+                        else if (rangeNode == user)
+                        {
+                            prefix = "user:  ";
+                        }
+                        else
+                        {
+                            prefix = "       ";
+                        }
+
+                        helper._compiler.gtDispLIRNode(rangeNode, prefix);
+                    }
+
+                    NO_WAY("Write to unaliased local overlaps outstanding read");
+                    return GenTree.VisitResult.Abort;
+                }
+            }
+
+            return GenTree.VisitResult.Continue;
         }
     }
 }

@@ -522,6 +522,7 @@ internal static unsafe class UseEdgeIteratorTests
             compiler.lvaCount = 2;
             var zero = compiler.gtNewIconNode(TYP_INT, 0);
             var store = new GenTreeLclVar(TYP_INT, 0, zero);
+            store.Flags |= GenTreeFlags.GTF_ASG;
             var writes = new AliasSet();
             writes.AddNode(compiler, store);
             writes.AddNode(compiler, store);
@@ -576,8 +577,8 @@ internal static unsafe class UseEdgeIteratorTests
             var aliases = new AliasSet();
             aliases.AddNode(compiler, store);
             Assert.That(aliases.WritesLocal(0), Is.True);
-            Assert.That(aliases.WritesLocal(1), Is.EqualTo(offset is < 4 or 8));
-            Assert.That(aliases.WritesLocal(2), Is.EqualTo(offset is -1 or >= 2));
+            Assert.That(aliases.WritesLocal(1), Is.EqualTo(offset < 4));
+            Assert.That(aliases.WritesLocal(2), Is.EqualTo(offset is -1 or 2 or 4));
             Assert.That(aliases.WritesLocal(3), Is.False);
             var visitor = new DefinitionVisitor(compiler, abort);
             var result = store.VisitLogicalLocalDefs(compiler, ref visitor);

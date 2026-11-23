@@ -522,13 +522,6 @@ public sealed partial class CodeGen
     [System.Diagnostics.Conditional("DEBUG")]
     public void genStackPointerCheck(bool doStackPointerCheck, int stackPointerVar, nint offset = 0)
     {
-        genStackPointerCheck(doStackPointerCheck, stackPointerVar, offset, REG_NA);
-    }
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    public void genStackPointerCheck(bool doStackPointerCheck, int stackPointerVar,
-        nint offset, regNumber tempReg)
-    {
         if (!Configuration.TARGET_XARCH)
         {
             FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackPointerCheckingIsNotPortedForThisTarget);
@@ -544,15 +537,11 @@ public sealed partial class CodeGen
             assert(local.lvOnFrame);
             if (offset != 0)
             {
-                assert(tempReg != REG_NA);
-                _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, tempReg, TargetRuntimeMetadata.StackPointerBaseRegister, canSkip: false);
-                Emitter.emitIns_R_I(INS_sub, EA_PTRSIZE, tempReg, offset);
-                Emitter.emitIns_S_R(INS_cmp, EA_PTRSIZE, tempReg, stackPointerVar, 0);
+                // Adjust the saved value so the check does not need a scratch register.
+                Emitter.emitIns_S_I(INS_add, EA_PTRSIZE, stackPointerVar, 0, unchecked((int)offset));
             }
-            else
-            {
-                Emitter.emitIns_S_R(INS_cmp, EA_PTRSIZE, TargetRuntimeMetadata.StackPointerBaseRegister, stackPointerVar, 0);
-            }
+
+            Emitter.emitIns_S_R(INS_cmp, EA_PTRSIZE, TargetRuntimeMetadata.StackPointerBaseRegister, stackPointerVar, 0);
 
             var label = genCreateTempLabel();
             Emitter.emitIns_J(INS_je, label);

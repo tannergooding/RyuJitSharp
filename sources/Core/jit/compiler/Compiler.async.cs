@@ -403,10 +403,10 @@ public partial class Compiler
             var syncCtxArg = NewCallArg.CreateForPrimitive(syncCtx).WithWellKnownArg(WellKnownArg.AsyncSynchronizationContext);
 
             // Keep the single def outside the per-frame (resumed, exec, sync) triples.
-            var insertAfter = call.Args.PushFront(resumedDefArg);
-            insertAfter = call.Args.InsertAfter(insertAfter, resumedUseArg);
-            insertAfter = call.Args.InsertAfter(insertAfter, execCtxArg);
-            insertAfter = call.Args.InsertAfter(insertAfter, syncCtxArg);
+            _ = call.Args.PushBack(resumedDefArg);
+            _ = call.Args.PushBack(resumedUseArg);
+            _ = call.Args.PushBack(execCtxArg);
+            var insertAfter = call.Args.PushBack(syncCtxArg);
             _compiler.lvaGetDesc(_compiler.lvaResumedIndicator).lvHasLdAddrOp = true;
 
             if (!_compiler.compIsForInlining)

@@ -75,7 +75,7 @@ public sealed partial class Lowering
         GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY)
         => _scratchSideEffects.IsLirInvariantInRange(CompilerInstance, node, endExclusive, ignoreNode, ignoreFlagsOnNode);
 
-    private bool IsRangeInvariantInRange(GenTree rangeStart, GenTree rangeEnd, GenTree endExclusive, GenTree ignoreNode)
+    private bool IsRangeInvariantInRange(GenTree rangeStart, GenTree rangeEnd, GenTree endExclusive, GenTree? ignoreNode)
         => _scratchSideEffects.IsLirRangeInvariantInRange(CompilerInstance, rangeStart, rangeEnd, endExclusive, ignoreNode);
 
     private bool IsSafeToContainMem(GenTree parentNode, GenTree childNode)

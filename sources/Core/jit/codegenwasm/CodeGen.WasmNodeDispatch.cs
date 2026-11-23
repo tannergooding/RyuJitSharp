@@ -111,6 +111,12 @@ public sealed partial class CodeGen
                 break;
             }
 
+            case GT_WASM_SELECT:
+            {
+                GetEmitter().emitIns(INS_select);
+                break;
+            }
+
             case GT_SWITCH:
             {
                 genTableBasedSwitchWasm(treeNode);

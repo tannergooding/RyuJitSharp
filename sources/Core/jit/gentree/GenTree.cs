@@ -1177,6 +1177,9 @@ public partial class GenTree
             GT_XCHG => true,
             GT_LOCKADD => true,
             GT_CMPXCHG => true,
+            GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS =>
+                HWIntrinsicInfo.IsVectorGetElement(AsHWIntrinsic().HWIntrinsicId) ||
+                (AsHWIntrinsic().HWIntrinsicId is NI_Vector_WithElement),
             GT_MEMORYBARRIER => true,
             // Proven-safe division must remain below the checks that established
             // GTF_DIV_MOD_NO_BY_ZERO and, for signed operations, GTF_DIV_MOD_NO_OVERFLOW.
@@ -1651,6 +1654,7 @@ public partial class GenTree
             case GT_SELECT_INV:
             case GT_SELECT_INC:
             case GT_SELECT:
+            case GT_WASM_SELECT:
             {
                 return GenTreeConditional.Equals(op1.AsConditional(), op2.AsConditional());
             }
@@ -2199,6 +2203,25 @@ public partial class GenTree
                         else if (def == conditionalNode.Op2)
                         {
                             use = ref conditionalNode.Op2Ref;
+                        }
+                        break;
+                    }
+
+                    case GT_WASM_SELECT:
+                    {
+                        var conditionalNode = AsConditional();
+
+                        if (def == conditionalNode.Op1)
+                        {
+                            use = ref conditionalNode.Op1Ref;
+                        }
+                        else if (def == conditionalNode.Op2)
+                        {
+                            use = ref conditionalNode.Op2Ref;
+                        }
+                        else if (def == conditionalNode.Cond)
+                        {
+                            use = ref conditionalNode.CondRef;
                         }
                         break;
                     }
@@ -3166,6 +3189,23 @@ public partial class GenTree
                         if ((result is not VisitResult.Abort) && (conditional.Op2 is not null))
                         {
                             result = visitor.Visit(ref conditional.Op2Ref);
+                        }
+                    }
+                    break;
+                }
+
+                case GT_WASM_SELECT:
+                {
+                    var conditional = AsConditional();
+                    result = visitor.Visit(ref conditional.Op1Ref);
+
+                    if (result is not VisitResult.Abort)
+                    {
+                        result = visitor.Visit(ref conditional.Op2Ref);
+
+                        if (result is not VisitResult.Abort)
+                        {
+                            result = visitor.Visit(ref conditional.CondRef);
                         }
                     }
                     break;

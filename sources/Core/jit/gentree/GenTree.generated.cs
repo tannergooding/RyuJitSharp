@@ -269,7 +269,7 @@ public partial class GenTree
     }
     public GenTreeConditional AsConditional()
     {
-        assert(_oper is GT_SELECT or GT_SELECT_INC or GT_SELECT_INV or GT_SELECT_NEG);
+        assert(_oper is GT_SELECT or GT_SELECT_INC or GT_SELECT_INV or GT_SELECT_NEG or GT_WASM_SELECT);
         assert(this is GenTreeConditional);
         return Unsafe.As<GenTreeConditional>(this);
     }

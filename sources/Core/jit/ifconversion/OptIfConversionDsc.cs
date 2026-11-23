@@ -438,7 +438,7 @@ public partial class Compiler
 
             if (select.Oper is GT_SELECT)
             {
-                if (varTypeIsFloating(select.Type))
+                if (!Configuration.TARGET_WASM && varTypeIsFloating(select.Type))
                 {
                     JITDUMP("Abort: SELECT of type float\n");
                     return true;
@@ -472,11 +472,15 @@ public partial class Compiler
                         return true;
                     }
                 }
-                else if (Configuration.TARGET_32BIT && select.Type is TYP_LONG)
+                else if (!Configuration.TARGET_WASM && Configuration.TARGET_32BIT && select.Type is TYP_LONG)
                 {
                     JITDUMP("Abort: SELECT of type Long on 32-bit system\n");
                     return true;
                 }
+            }
+            else
+            {
+                _cond.Flags &= ~GTF_RELOP_JMP_USED;
             }
 
             var thenNode = _thenOperation.Node!;

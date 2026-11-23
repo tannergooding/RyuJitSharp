@@ -21,7 +21,11 @@ public partial class Compiler
     public void fgKillDependentAssertionsSingle(int lclNum, GenTree tree)
     {
         assert(apTraits is not null);
-        var killed = GetAssertionDep(lclNum);
+        if (!TryGetAssertionDep(lclNum, out var killed))
+        {
+            return;
+        }
+
         if (Configuration.DEBUG && !BitVecOps.IsEmptyIntersection(apTraits, apLocal, killed))
         {
             for (var index = optAssertionCount; index > 0; index--)

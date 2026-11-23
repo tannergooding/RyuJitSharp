@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -46,6 +47,27 @@ internal static unsafe class WasmCallLoweringTests
             Assert.That(compiler.IsReadyToRun, Is.True);
             Assert.That(LowerCall(lowering, call), Is.Null);
             Assert.That(s_observedMethodHandle, Is.EqualTo((nint)0x1234));
+        });
+    }
+
+    [Test]
+    public static void SelectMovesInvariantConditionAfterValueOperands()
+    {
+        WithLowering((compiler, lowering, block) => {
+            var condition = compiler.gtNewIconNode(TYP_INT, 1);
+            var trueValue = compiler.gtNewLclvNode(TYP_INT, 0);
+            var falseValue = compiler.gtNewLclvNode(TYP_INT, 0);
+            var select = new GenTreeConditional(GT_SELECT, TYP_INT, condition, trueValue, falseValue);
+            block.InsertAtEnd(condition);
+            block.InsertAtEnd(trueValue);
+            block.InsertAtEnd(falseValue);
+            block.InsertAtEnd(select);
+
+            _ = LowerSelect(lowering, select);
+
+            Assert.That(select.Oper, Is.EqualTo(GT_WASM_SELECT));
+            Assert.That(new List<GenTree>(block),
+                Is.EqualTo(new GenTree[] { trueValue, falseValue, condition, select }));
         });
     }
 
@@ -270,6 +292,9 @@ internal static unsafe class WasmCallLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerCall")]
     private static extern GenTree? LowerCall(Lowering lowering, GenTree node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerSelect")]
+    private static extern GenTree? LowerSelect(Lowering lowering, GenTreeConditional select);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerArgsForCall")]
     private static extern void LowerArgsForCall(Lowering lowering, GenTreeCall call);

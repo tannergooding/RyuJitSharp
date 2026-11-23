@@ -73,7 +73,12 @@ public partial class Compiler
 
         assert(apTraits is not null);
         var local = op.AsLclVarCommon().LclNum;
-        var dependent = BitVecOps.Intersection(apTraits, GetAssertionDep(local), assertions);
+        if (!TryGetAssertionDep(local, out var dependencies))
+        {
+            return false;
+        }
+
+        var dependent = BitVecOps.Intersection(apTraits, dependencies, assertions);
         var result = false;
         _ = BitVecOps.VisitBits(apTraits, dependent, bitIndex => {
             var assertion = optGetAssertion(GetAssertionIndex((ushort)bitIndex));

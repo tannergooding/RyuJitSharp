@@ -62,10 +62,14 @@ public partial class Compiler
             }
 
             var array = arrElem.ArrObj;
-            var arrayLocal = array.Oper is GT_LCL_VAR
-                ? array.AsLclVar().LclNum
-                : tempCache.GrabTemp(TYP_REF);
-            var newArrayLocal = array.Oper is GT_LCL_VAR ? BAD_VAR_NUM : arrayLocal;
+            var canReuseArrayLocal = array.Oper is GT_LCL_VAR;
+            for (var i = 0; canReuseArrayLocal && anyIndexWithSideEffects && (i < rank); i++)
+            {
+                canReuseArrayLocal = !compiler.fgTreeMayModifyLocal(indices[i], array.AsLclVar().LclNum);
+            }
+
+            var arrayLocal = canReuseArrayLocal ? array.AsLclVar().LclNum : tempCache.GrabTemp(TYP_REF);
+            var newArrayLocal = canReuseArrayLocal ? BAD_VAR_NUM : arrayLocal;
 
             GenTree? fullTree = null;
             for (var i = 0; i < rank; i++)

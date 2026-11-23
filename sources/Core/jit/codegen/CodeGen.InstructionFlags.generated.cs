@@ -5570,6 +5570,7 @@ public sealed partial class CodeGen
         (insInfoFlags)(0), // INS_deferred_call
         (insInfoFlags)(0), // INS_deferred_return_call
         (insInfoFlags)(0), // INS_drop
+        (insInfoFlags)(0), // INS_select
         (insInfoFlags)(0), // INS_try_table
         (insInfoFlags)(0), // INS_local_get
         (insInfoFlags)(0), // INS_local_set

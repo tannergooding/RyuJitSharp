@@ -53,43 +53,23 @@ public partial struct AliasSet
 
         if (nodeInfo.IsLclVarRead)
         {
-            _lclVarReads.Add(compiler, nodeInfo.LclNum);
+            _lclVarReads.Add(compiler, nodeInfo.ReadLclNum);
         }
 
         if (nodeInfo.IsLclVarWrite)
         {
-            var visitor = new LocalWriteVisitor(compiler, _lclVarWrites);
-            _ = node.VisitLogicalLocalDefs(compiler, ref visitor);
+            var visitor = new LocalWriteVisitor(compiler, node, _lclVarWrites);
+            _ = nodeInfo.VisitLocalWrites(ref visitor);
             _lclVarWrites = visitor.Writes;
-
-            if (!visitor.AddedLocalDef)
-            {
-                _lclVarWrites.Add(compiler, nodeInfo.LclNum);
-                ref var dsc = ref compiler.lvaGetDesc(nodeInfo.LclNum);
-
-                if (dsc.lvIsStructField)
-                {
-                    _lclVarWrites.Add(compiler, dsc.lvParentLcl);
-                }
-                else if (dsc.lvPromoted)
-                {
-                    for (var i = 0; i < dsc.lvFieldCnt; i++)
-                    {
-                        _lclVarWrites.Add(compiler, dsc.lvFieldLclStart + i);
-                    }
-                }
-            }
         }
     }
 
-    private struct LocalWriteVisitor(Compiler compiler, LclVarSet writes) : ILocalDefVisitor
+    private struct LocalWriteVisitor(Compiler compiler, GenTree node, LclVarSet writes) : ILocalDefVisitor
     {
         public LclVarSet Writes = writes;
-        public bool AddedLocalDef;
 
         public GenTree.VisitResult Visit<TDef>(TDef def) where TDef : struct, ILocalDef
         {
-            AddedLocalDef = true;
             var lclNum = def.LclNum;
             Writes.Add(compiler, lclNum);
             ref var dsc = ref compiler.lvaGetDesc(lclNum);
@@ -97,6 +77,13 @@ public partial struct AliasSet
             if (dsc.lvIsStructField)
             {
                 Writes.Add(compiler, dsc.lvParentLcl);
+            }
+            else if (node.Oper.IsIndir && dsc.lvPromoted)
+            {
+                for (var i = 0; i < dsc.lvFieldCnt; i++)
+                {
+                    Writes.Add(compiler, dsc.lvFieldLclStart + i);
+                }
             }
 
             return GenTree.VisitResult.Continue;
@@ -126,10 +113,9 @@ public partial struct AliasSet
 
     public readonly bool InterferesWith(in NodeInfo other)
     {
+        var compiler = other.Compiler;
         if (_writesAddressableLocation || !_lclVarWrites.IsEmpty)
         {
-            var compiler = other.Compiler;
-
             foreach (var operand in other.Node.Operands)
             {
                 if (operand.Oper.IsLocalRead)
@@ -160,12 +146,63 @@ public partial struct AliasSet
             return true;
         }
 
-        if ((other.IsLclVarRead || other.IsLclVarWrite) && _lclVarWrites.Contains(other.LclNum))
+        if (other.IsLclVarRead && _lclVarWrites.Contains(other.ReadLclNum))
         {
             return true;
         }
 
-        return other.IsLclVarWrite && _lclVarReads.Contains(other.LclNum);
+        if (other.IsLclVarWrite)
+        {
+            var visitor = new LocalWriteInterferenceVisitor(
+                compiler, other.Node, _lclVarWrites, _lclVarReads);
+            _ = other.VisitLocalWrites(ref visitor);
+            return visitor.Interferes;
+        }
+
+        return false;
+    }
+
+    private struct LocalWriteInterferenceVisitor(
+        Compiler compiler,
+        GenTree node,
+        LclVarSet writes,
+        LclVarSet reads) : ILocalDefVisitor
+    {
+        public bool Interferes;
+
+        public GenTree.VisitResult Visit<TDef>(TDef def) where TDef : struct, ILocalDef
+        {
+            var lclNum = def.LclNum;
+            if (writes.Contains(lclNum) || reads.Contains(lclNum))
+            {
+                Interferes = true;
+                return GenTree.VisitResult.Abort;
+            }
+
+            ref var dsc = ref compiler.lvaGetDesc(lclNum);
+            if (dsc.lvIsStructField)
+            {
+                if (writes.Contains(dsc.lvParentLcl) || reads.Contains(dsc.lvParentLcl))
+                {
+                    Interferes = true;
+                    return GenTree.VisitResult.Abort;
+                }
+            }
+            else if (node.Oper.IsIndir && dsc.lvPromoted)
+            {
+                for (var i = 0; i < dsc.lvFieldCnt; i++)
+                {
+                    var fieldLclNum = dsc.lvFieldLclStart + i;
+                    if (writes.Contains(fieldLclNum) || reads.Contains(fieldLclNum))
+                    {
+                        Interferes = true;
+                        return GenTree.VisitResult.Abort;
+                    }
+                }
+            }
+
+            return GenTree.VisitResult.Continue;
+        }
     }
 
     public readonly bool WritesLocal(int lclNum) => _lclVarWrites.Contains(lclNum);

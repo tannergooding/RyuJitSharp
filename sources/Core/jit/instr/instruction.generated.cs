@@ -4348,6 +4348,7 @@ public enum instruction
     INS_deferred_call,
     INS_deferred_return_call,
     INS_drop,
+    INS_select,
     INS_try_table,
     INS_local_get,
     INS_local_set,

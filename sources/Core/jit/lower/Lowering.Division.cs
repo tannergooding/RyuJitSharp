@@ -36,7 +36,8 @@ public sealed partial class Lowering
             {
                 MakeSrcContained(node, divisor);
             }
-            else if (divisorCanBeRegOptional && IsSafeToMarkRegOptional(node, divisor))
+            else if (divisorCanBeRegOptional && IsContainableMemoryOpSize(node, divisor) &&
+                     IsSafeToMarkRegOptional(node, divisor))
             {
                 MakeSrcRegOptional(node, divisor);
             }

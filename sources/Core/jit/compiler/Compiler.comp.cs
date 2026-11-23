@@ -4647,6 +4647,12 @@ public partial class Compiler
 
         FinalizeEH();
 
+        if (Configuration.TARGET_WASM)
+        {
+            // Reorder blocks for wasm and figure out wasm control flow nesting.
+            DoPhase(this, PHASE_WASM_CONTROL_FLOW, default(WasmControlFlowPhaseAction));
+        }
+
         // We can not add any new tracked variables after this point.
         lvaTrackedFixed = true;
 
@@ -4658,12 +4664,7 @@ public partial class Compiler
         // Copied from rpPredictRegUse()
         IsFullPtrRegMapRequired = codeGen.Interruptible || !codeGen.IsFramePointerUsed;
 
-        if (Configuration.TARGET_WASM)
-        {
-            // Reorder blocks for wasm and figure out wasm control flow nesting
-            DoPhase(this, PHASE_WASM_CONTROL_FLOW, default(WasmControlFlowPhaseAction));
-        }
-        else if (opts.OptimizationEnabled)
+        if (!Configuration.TARGET_WASM && opts.OptimizationEnabled)
         {
             // We won't introduce new blocks from here on out, so run the new block layout.
             DoPhase(this, PHASE_OPTIMIZE_LAYOUT, default(SearchImprovedLayoutPhaseAction));

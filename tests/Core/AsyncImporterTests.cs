@@ -615,8 +615,8 @@ internal static unsafe class AsyncImporterTests
                 Assert.That((call.Flags & GenTreeFlags.GTF_GLOB_REF) != 0, Is.True);
                 Assert.That(call.GetAsyncInfo().InlineFrameContextHandling, Is.SameAs(handling));
             });
-            Assert.That(arguments[4], Is.SameAs(userArgument));
-            arguments.RemoveAt(4);
+            Assert.That(arguments[0], Is.SameAs(userArgument));
+            arguments.RemoveAt(0);
 
             for (var index = 0; index < inherited.Count; index++)
             {

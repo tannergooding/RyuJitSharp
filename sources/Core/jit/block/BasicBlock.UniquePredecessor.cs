@@ -14,7 +14,8 @@ public sealed partial class BasicBlock
         assert(compiler.fgPredsComputed);
 
         // A backedge is never the entry block's unique predecessor: the prolog also enters it.
-        if ((bbPreds is null) || (bbPreds.NextPredEdge is not null) || (this == compiler.fgFirstBB))
+        if ((bbPreds is null) || (bbPreds.NextPredEdge is not null) ||
+            (this == compiler.fgFirstBB) || compiler.bbIsHandlerBeg(this))
         {
             return null;
         }

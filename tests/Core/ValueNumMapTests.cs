@@ -86,10 +86,12 @@ internal static unsafe class ValueNumMapTests
             var disjoint = store.VNForMapPhysicalSelect(VNK_Liberal, TYP_INT, map, 12, 4);
             AssertMapSelect(store, disjoint, baseMap, store.EncodePhysicalSelector(12, 4));
 
+            var overlapSelector = store.EncodePhysicalSelector(10, 4);
             var overlap = store.VNForMapPhysicalSelect(VNK_Liberal, TYP_INT, map, 10, 4);
-            AssertMapSelect(store, overlap, map, store.EncodePhysicalSelector(10, 4));
-            Assert.That(store.VNForMapPhysicalSelect(VNK_Conservative, TYP_INT, map, 10, 4),
-                Is.EqualTo(overlap));
+            AssertMapSelect(store, overlap, map, overlapSelector);
+            var conservativeOverlap = store.VNForMapPhysicalSelect(VNK_Conservative, TYP_INT, map, 10, 4);
+            Assert.That(conservativeOverlap, Is.Not.EqualTo(overlap));
+            AssertMapSelect(store, conservativeOverlap, map, overlapSelector);
         });
     }
 
@@ -191,12 +193,17 @@ internal static unsafe class ValueNumMapTests
             var map = store.VNForExpr(null, TYP_HEAP);
             var index = store.VNForIntCon(1);
             var first = store.VNForMapSelect(VNK_Liberal, TYP_INT, map, index);
-            Assert.That(store.VNForMapSelect(VNK_Conservative, TYP_INT, map, index), Is.EqualTo(first));
+            var second = store.VNForMapSelect(VNK_Conservative, TYP_INT, map, index);
+            Assert.That(second, Is.Not.EqualTo(first));
             Assert.That(store.LoopOfVN(first), Is.Null);
             var opaque = new VNFuncApp();
             Assert.That(store.GetVNFunc(first, ref opaque), Is.True);
             Assert.That(opaque.Func, Is.EqualTo(VNFunc.VNF_MemOpaque));
             Assert.That(opaque.GetArg(0), Is.EqualTo(ValueNumStore.UnknownLoop));
+            var conservativeOpaque = new VNFuncApp();
+            Assert.That(store.GetVNFunc(second, ref conservativeOpaque), Is.True);
+            Assert.That(conservativeOpaque.Func, Is.EqualTo(VNFunc.VNF_MemOpaque));
+            Assert.That(conservativeOpaque.GetArg(0), Is.EqualTo(ValueNumStore.UnknownLoop));
         });
     }
 

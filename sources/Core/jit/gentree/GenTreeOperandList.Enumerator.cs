@@ -138,6 +138,25 @@ public partial struct GenTreeOperandsList
                         break;
                     }
 
+                    case GT_WASM_SELECT:
+                    {
+                        var conditional = tree.AsConditional();
+
+                        if (index < 0)
+                        {
+                            current = conditional.Op1;
+                        }
+                        else if (index == 0)
+                        {
+                            current = conditional.Op2;
+                        }
+                        else if (index == 1)
+                        {
+                            current = conditional.Cond;
+                        }
+                        break;
+                    }
+
                     case GT_HWINTRINSIC:
                     {
                         if (Configuration.FEATURE_HW_INTRINSICS)

@@ -23,7 +23,8 @@ public partial class Compiler
         assert(!fgSsaValid);
         optReachableBitVecTraits = null;
 
-        if (Configuration.TARGET_ARM64 || Configuration.TARGET_XARCH || Configuration.TARGET_RISCV64)
+        if (Configuration.TARGET_ARM64 || Configuration.TARGET_XARCH ||
+            Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM)
         {
             var budget = new[] { 20000 };
             for (var block = fgLastBB; block is not null; block = block.Prev)

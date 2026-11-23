@@ -31,8 +31,8 @@ public sealed partial class ValueNumStore
         }
     }
 
-    private readonly Dictionary<(ValueNum Map, ValueNum Index), MapSelectWorkCacheEntry> _mapSelectWorkCache = [];
-    private readonly List<(ValueNum Map, ValueNum Index)> _fixedPointMapSels = [];
+    private readonly Dictionary<(ValueNumKind Kind, ValueNum Map, ValueNum Index), MapSelectWorkCacheEntry> _mapSelectWorkCache = [];
+    private readonly List<(ValueNumKind Kind, ValueNum Map, ValueNum Index)> _fixedPointMapSels = [];
     private uint _numMapSels;
 
     private sealed class SmallValueNumSet
@@ -203,7 +203,7 @@ public sealed partial class ValueNumStore
                 assert((limit == 0) || (_numMapSels < limit));
             }
 
-            var key = (Map: map, Index: index);
+            var key = (Kind: vnk, Map: map, Index: index);
             if (_mapSelectWorkCache.TryGetValue(key, out var entry))
             {
                 memoryDependencies.AddRange(entry.MemoryDependencies);

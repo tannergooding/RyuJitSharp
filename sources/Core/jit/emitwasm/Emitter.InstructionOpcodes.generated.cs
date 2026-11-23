@@ -36,6 +36,7 @@ public partial class Emitter
         unchecked((uint)(0x10)), // INS_deferred_call
         unchecked((uint)(0x12)), // INS_deferred_return_call
         unchecked((uint)(0x1A)), // INS_drop
+        unchecked((uint)(0x1B)), // INS_select
         unchecked((uint)(0x1F)), // INS_try_table
         unchecked((uint)(0x20)), // INS_local_get
         unchecked((uint)(0x21)), // INS_local_set
@@ -494,6 +495,7 @@ public partial class Emitter
         unchecked((byte)(0)), // INS_deferred_call
         unchecked((byte)(0)), // INS_deferred_return_call
         unchecked((byte)(0)), // INS_drop
+        unchecked((byte)(0)), // INS_select
         unchecked((byte)(0)), // INS_try_table
         unchecked((byte)(0)), // INS_local_get
         unchecked((byte)(0)), // INS_local_set
@@ -952,6 +954,7 @@ public partial class Emitter
         insFormat.IF_WASM_DEFERRED_CALL, // INS_deferred_call
         insFormat.IF_WASM_DEFERRED_CALL, // INS_deferred_return_call
         insFormat.IF_WASM_OPCODE, // INS_drop
+        insFormat.IF_WASM_OPCODE, // INS_select
         insFormat.IF_WASM_TRY_TABLE, // INS_try_table
         insFormat.IF_WASM_ULEB128, // INS_local_get
         insFormat.IF_WASM_ULEB128, // INS_local_set

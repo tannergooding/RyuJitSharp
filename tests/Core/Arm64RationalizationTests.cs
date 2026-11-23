@@ -118,6 +118,16 @@ internal static unsafe class Arm64RationalizationTests
             Assert.That(extract.SimdBaseType, Is.EqualTo(scalarType));
             Assert.That(root, Is.SameAs(scalarType is TYP_INT ? extract : block.LastNode));
             Assert.That(extract.GetOp(1).Oper.IsHWIntrinsic, Is.True);
+
+            if ((baseType is TYP_BYTE) && (size == 16))
+            {
+                var reduction = extract.GetOp(1).AsHWIntrinsic();
+                var widening = reduction.GetOp(1).AsHWIntrinsic();
+                Assert.That(widening.HWIntrinsicId, Is.EqualTo(NI_AdvSimd_AddWideningLower));
+                Assert.That(widening.SimdBaseType, Is.EqualTo(TYP_UBYTE));
+                Assert.That(widening.SimdSize, Is.EqualTo(8));
+                Assert.That(widening.AuxiliaryType, Is.EqualTo(TYP_USHORT));
+            }
         });
     }
 

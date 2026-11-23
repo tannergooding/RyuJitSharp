@@ -11086,7 +11086,13 @@ public partial class Compiler
             op2 = gtWrapWithSideEffects(index, op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
         }
 
-        return gtNewSimdHWIntrinsicNode(type, NI_Vector_GetElement, simdBaseType, simdSize, op1, op2);
+        var resultNode = gtNewSimdHWIntrinsicNode(type, NI_Vector_GetElement, simdBaseType, simdSize, op1, op2);
+        if (rangeCheckNeeded)
+        {
+            resultNode.HasOrderingSideEffect = true;
+        }
+
+        return resultNode;
     }
 
     private GenTreeHWIntrinsic? gtNewSimdVectorElementCountNode(var_types simdBaseType)
@@ -13678,7 +13684,9 @@ public partial class Compiler
 
         if (rangeCheckNeeded)
         {
-            var index = fgMakeMultiUse(ref op2);
+            var index = gtTreeHasSideEffects(op3, GTF_PERSISTENT_SIDE_EFFECTS)
+                ? fgInsertCommaFormTemp(ref op2)
+                : fgMakeMultiUse(ref op2);
             var value = gtTreeHasSideEffects(op3, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)
                 ? fgMakeMultiUse(ref op3) : op3;
             index = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
@@ -13686,7 +13694,13 @@ public partial class Compiler
             op3 = gtWrapWithSideEffects(value, op3, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
         }
 
-        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, op3);
+        var resultNode = gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, op3);
+        if (rangeCheckNeeded)
+        {
+            resultNode.HasOrderingSideEffect = true;
+        }
+
+        return resultNode;
     }
 
     public GenTree gtNewSimdWithLowerNode(var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)

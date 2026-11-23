@@ -246,6 +246,40 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
+    [Test]
+    public static void WasmSelectNodeEmitsSelectInstruction()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var condition = compiler.gtNewIconNode(TYP_INT, 1);
+            var trueValue = compiler.gtNewIconNode(TYP_INT, 7);
+            var falseValue = compiler.gtNewIconNode(TYP_INT, 9);
+            var select = new GenTreeConditional(GT_WASM_SELECT, TYP_INT, condition, trueValue, falseValue);
+            var useEdges = new GenTree[3];
+            var iterator = new GenTreeUseEdgesList(select).GetEnumerator();
+            for (var index = 0; index < useEdges.Length; index++)
+            {
+                Assert.That(iterator.MoveNext(), Is.True);
+                useEdges[index] = iterator.Current;
+            }
+            Assert.That(iterator.MoveNext(), Is.False);
+            GenTree[] expectedUseEdges = [trueValue, falseValue, condition];
+            Assert.That(useEdges, Is.EqualTo(expectedUseEdges));
+
+            var method = typeof(CodeGen).GetMethod(
+                "genCodeForTreeNodeWasm",
+                BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new AssertionException("Wasm node dispatch is unavailable.");
+
+            _ = method.Invoke(codeGen, [select]);
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing Wasm emitter instruction buffer.");
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_select));
+        });
+    }
+
     [TestCase(true, CorInfoReloc.WASM_MEMORY_ADDR_SLEB, CorInfoReloc.WASM_MEMORY_ADDR_LEB)]
     [TestCase(false, CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB, CorInfoReloc.WASM_MEMORY_ADDR_REL_LEB)]
     public static void MemoryAddressRelocationsFollowTheNativeAotAddressModel(

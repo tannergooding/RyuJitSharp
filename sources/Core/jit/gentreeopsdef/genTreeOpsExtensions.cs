@@ -161,6 +161,7 @@ public static partial class genTreeOpsExtensions
 
         public bool IsConditional =>
             oper is GT_SELECT ||
+            (Configuration.TARGET_WASM && oper is GT_WASM_SELECT) ||
             (Configuration.TARGET_ARM64 && (oper is GT_SELECT_INC or GT_SELECT_INV or GT_SELECT_NEG));
 
         public bool IsConditionalJump

@@ -10,6 +10,11 @@ public sealed partial class Lowering
     private GenTree? LowerSelect(GenTreeConditional select)
     {
         var condition = select.Cond;
+        if (Configuration.TARGET_WASM)
+        {
+            TryMoveWasmSelectCondition(select);
+        }
+
         JITDUMP("Lowering select:\n");
         DISPTREERANGE(BlockRange(), select);
         JITDUMP("\n");
@@ -51,6 +56,12 @@ public sealed partial class Lowering
             {
                 TryLowerCnsIntCselToCinc(result, condition);
             }
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            assert(newSelect is null);
+            select.SetOper(GT_WASM_SELECT);
         }
 
         return newSelect is not null ? newSelect.Next : select.Next;

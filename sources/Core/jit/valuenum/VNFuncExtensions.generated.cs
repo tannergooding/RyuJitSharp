@@ -158,6 +158,7 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x05, // VNF_RETFILT
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_SWIFT_ERROR
         (ValueNumStore.VNFOpAttrib)0x09, // VNF_SWIFT_ERROR_RET
+        (ValueNumStore.VNFOpAttrib)0x00, // VNF_WASM_SELECT
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_WASM_JEXCEPT
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_WASM_THROW_REF
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_JMPTABLE

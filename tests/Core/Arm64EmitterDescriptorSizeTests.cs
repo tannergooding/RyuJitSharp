@@ -37,7 +37,7 @@ internal static class Arm64EmitterDescriptorSizeTests
         }
 
         var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
-        Assert.That(hash, Is.EqualTo("507050ec2548319b8e52bdaa4f89052d7907624a152fe333bd5299f92badf628"));
+        Assert.That(hash, Is.EqualTo("050b1e6504009a2dc94af2471b9a6064b58515757d52783928764353e7ed519f"));
     }
 
     [TestCase("instrDescCns", 24)]

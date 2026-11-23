@@ -86,7 +86,12 @@ public partial class Compiler
         noway_assert(op2Kind is O2K_CONST_INT or O2K_ZEROOBJ);
         assert(optLocalAssertionProp);
         assert(apTraits is not null);
-        var dependent = BitVecOps.Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+        if (!TryGetAssertionDep(lclNum, out var dependencies))
+        {
+            return NO_ASSERTION_INDEX;
+        }
+
+        var dependent = BitVecOps.Intersection(apTraits, dependencies, assertions);
         var result = NO_ASSERTION_INDEX;
         _ = BitVecOps.VisitBits(apTraits, dependent, bitIndex => {
             var index = GetAssertionIndex((ushort)bitIndex);
@@ -138,6 +143,18 @@ public partial class Compiler
         }
 
         return ref CollectionsMarshal.AsSpan(optAssertionDep)[lclNum];
+    }
+
+    private bool TryGetAssertionDep(int lclNum, out ASSERT_TP? dep)
+    {
+        if ((optAssertionDep is null) || ((uint)lclNum >= (uint)optAssertionDep.Count))
+        {
+            dep = null;
+            return false;
+        }
+
+        dep = optAssertionDep[lclNum];
+        return !BitVecOps.MaybeUninit(dep);
     }
 
     public void optAssertionTraitsInit(AssertionIndex assertionCount)

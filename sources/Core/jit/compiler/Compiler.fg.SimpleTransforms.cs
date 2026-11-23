@@ -245,7 +245,7 @@ public partial class Compiler
                         op1.SetOper(GT_MUL);
                         op1.Flags &= GTF_COMMON_MASK;
                         constant.AsIntCon().IconValue = multiplier;
-                        fgValueNumberTreeConst(constant);
+                        fgUpdateConstTreeValueNumber(constant);
                     }
                 }
                 break;

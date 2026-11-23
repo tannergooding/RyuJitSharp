@@ -13237,10 +13237,10 @@ public partial class Compiler
         var syncNode = gtCloneExpr(syncArg.Node);
 
         call.Flags |= (resumedUseNode.Flags | resumedDefNode.Flags | execNode.Flags | syncNode.Flags) & GTF_ALL_EFFECT;
-        _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(syncNode).WithWellKnownArg(WellKnownArg.AsyncSynchronizationContext));
-        _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(execNode).WithWellKnownArg(WellKnownArg.AsyncExecutionContext));
-        _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(resumedUseNode).WithWellKnownArg(WellKnownArg.AsyncResumedUse));
-        _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(resumedDefNode).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+        _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(resumedDefNode).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+        _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(resumedUseNode).WithWellKnownArg(WellKnownArg.AsyncResumedUse));
+        _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(execNode).WithWellKnownArg(WellKnownArg.AsyncExecutionContext));
+        _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(syncNode).WithWellKnownArg(WellKnownArg.AsyncSynchronizationContext));
 
         // Outer frames must retain their order: suspension hands off through the
         // same chain of frame transitions as the inlining call.
@@ -20646,64 +20646,43 @@ public partial class Compiler
         }
 
         // Inspect callee's arguments (and the actual values at the callsite for them)
-        var sig = info.compMethodInfo->args;
-        var sigArg = sig.args;
-
-        CallArg? argUse = null;
-
         if (inlineInfo is not null)
         {
             var iciCall = inlineInfo.iciCall;
             assert(iciCall is not null);
-            argUse = iciCall.AsCall().Args.Args.FirstOrDefault();
-        }
 
-        for (var i = 0; i < info.compMethodInfo->args.numArgs; i++)
-        {
-            if ((argUse is not null) && (argUse.WellKnownArg == WellKnownArg.ThisPointer))
+            var firstArg = iciCall.AsCall().Args.ThisArg is not null ? 1 : 0;
+            for (var argNum = firstArg; argNum < inlineInfo.argCnt; argNum++)
             {
-                argUse = argUse.Next;
-            }
+                ref var lclInfo = ref inlineInfo.lclVarInfo[argNum];
+                var argNode = inlineInfo.inlArgInfo[argNum].arg.EarlyNode;
 
-            CORINFO_CLASS_HANDLE sigClass;
-            var corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
-            var argNode = argUse?.EarlyNode;
+                if (varTypeIsStruct(lclInfo.lclTypeInfo))
+                {
+                    inlineResult.Note(InlineObservation.CALLEE_ARG_STRUCT);
+                }
 
-            if (corType == CORINFO_TYPE_CLASS)
-            {
-                sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-            }
-            else if (corType == CORINFO_TYPE_VALUECLASS)
-            {
-                inlineResult.Note(InlineObservation.CALLEE_ARG_STRUCT);
-            }
-            else if (corType == CORINFO_TYPE_BYREF)
-            {
-                sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-                corType = eeGetChildType(sigClass, &sigClass);
-            }
+                if (argNode is null)
+                {
+                    continue;
+                }
 
-            if (argNode is not null)
-            {
                 var argCls = gtGetClassHandle(argNode, out var isExact, out var isNonNull);
 
                 if (argCls is not null)
                 {
                     var isArgValueType = eeIsValueClass(argCls);
 
-                    // Exact class of the arg is known
                     if (isExact && !isArgValueType)
                     {
                         inlineResult.Note(InlineObservation.CALLSITE_ARG_EXACT_CLS);
 
-                        if ((argCls != sigClass) && (sigClass is not null))
+                        if ((argCls != lclInfo.lclTypeHandle) && (lclInfo.lclTypeHandle is not null))
                         {
-                            // .. but the signature accepts a less concrete type.
                             inlineResult.Note(InlineObservation.CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT);
                         }
                     }
-                    // Arg is a reference type in the signature and a boxed value type was passed.
-                    else if (isArgValueType && (corType == CORINFO_TYPE_CLASS))
+                    else if (isArgValueType && (lclInfo.lclTypeInfo is TYP_REF))
                     {
                         inlineResult.Note(InlineObservation.CALLSITE_ARG_BOXED);
                     }
@@ -20713,12 +20692,25 @@ public partial class Compiler
                 {
                     inlineResult.Note(InlineObservation.CALLSITE_ARG_CONST);
                 }
-
-                assert(argUse is not null);
-                argUse = argUse.Next;
             }
+        }
+        else
+        {
+            var sig = info.compMethodInfo->args;
+            var sigArg = sig.args;
 
-            sigArg = info.compCompHnd->getArgNext(sigArg);
+            for (var i = 0; i < sig.numArgs; i++)
+            {
+                CORINFO_CLASS_HANDLE sigClass;
+                var corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
+
+                if (corType == CORINFO_TYPE_VALUECLASS)
+                {
+                    inlineResult.Note(InlineObservation.CALLEE_ARG_STRUCT);
+                }
+
+                sigArg = info.compCompHnd->getArgNext(sigArg);
+            }
         }
 
         // Note if the callee's return type is a value type

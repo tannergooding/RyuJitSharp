@@ -254,7 +254,12 @@ public partial class Compiler
         var filtered = assertions;
         if (optLocalAssertionProp)
         {
-            filtered = BitVecOps.Intersection(apTraits, GetAssertionDep(local), filtered);
+            if (!TryGetAssertionDep(local, out var dependencies))
+            {
+                return null;
+            }
+
+            filtered = BitVecOps.Intersection(apTraits, dependencies, filtered);
         }
         else if (!optAssertionHasAssertionsForVN(vn))
         {
@@ -311,7 +316,12 @@ public partial class Compiler
         }
 
         assert(apTraits is not null);
-        var filtered = BitVecOps.Intersection(apTraits, GetAssertionDep(tree.LclNum), assertions);
+        if (!TryGetAssertionDep(tree.LclNum, out var dependencies))
+        {
+            return null;
+        }
+
+        var filtered = BitVecOps.Intersection(apTraits, dependencies, assertions);
         GenTree? result = null;
         _ = BitVecOps.VisitBits(apTraits, filtered, bitIndex => {
             var index = GetAssertionIndex((ushort)bitIndex);

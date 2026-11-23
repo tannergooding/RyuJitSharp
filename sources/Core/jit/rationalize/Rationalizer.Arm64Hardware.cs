@@ -353,7 +353,8 @@ public sealed partial class Rationalizer
             var lower = CompilerInstance.gtNewSimdGetLowerNode(TYP_SIMD8, other, baseType, 16);
             BlockRange.InsertAfter(other, lower);
             value = CompilerInstance.gtNewSimdHWIntrinsicNode(vectorType,
-                NI_AdvSimd_AddWideningLower, TYP_USHORT, 8, shifted, lower);
+                NI_AdvSimd_AddWideningLower, baseType, 8, shifted, lower);
+            value.AsHWIntrinsic().AuxiliaryType = TYP_USHORT;
             BlockRange.InsertAfter(lower, value);
             baseType = TYP_USHORT;
         }

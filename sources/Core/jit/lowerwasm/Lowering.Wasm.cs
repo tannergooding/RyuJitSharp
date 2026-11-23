@@ -9,6 +9,41 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+    private void TryMoveWasmSelectCondition(GenTreeConditional select)
+    {
+        var condition = select.Cond;
+        if (condition.Next == select)
+        {
+            return;
+        }
+
+        var range = BlockRange().GetTreeRange(condition, out var isClosed);
+        if (!isClosed)
+        {
+            return;
+        }
+
+        foreach (var node in range)
+        {
+            if ((node._lirFlags & LIR.Flags.MultiplyUsed) != 0)
+            {
+                return;
+            }
+        }
+
+        var firstNode = range.FirstNode;
+        var lastNode = range.LastNode;
+        if ((firstNode is null) || (lastNode is null) ||
+            !IsRangeInvariantInRange(firstNode, lastNode, select, ignoreNode: null))
+        {
+            return;
+        }
+
+        JITDUMP("Moving select condition to Wasm stack order\n");
+        var conditionRange = BlockRange().RemoveAndGetRange(firstNode, lastNode);
+        BlockRange().InsertBefore(select, conditionRange);
+    }
+
     private void AfterLowerBlocksWasm()
     {
         if (!Configuration.TARGET_WASM)

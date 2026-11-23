@@ -295,13 +295,13 @@ public sealed partial class CodeGen
                 case NI_AdvSimd_AddWideningLower:
                 {
                     assert(varTypeIsIntegral(intrin.BaseType));
-                    if (intrin.Op1.Type == TYP_SIMD8)
+                    if (node.AuxiliaryType == intrin.BaseType)
                     {
                         ins = varTypeIsUnsigned(intrin.BaseType) ? INS_uaddl : INS_saddl;
                     }
                     else
                     {
-                        assert(intrin.Op1.Type == TYP_SIMD16);
+                        assert(node.AuxiliaryType != TYP_UNKNOWN);
                         ins = varTypeIsUnsigned(intrin.BaseType) ? INS_uaddw : INS_saddw;
                     }
                     break;
@@ -309,13 +309,13 @@ public sealed partial class CodeGen
                 case NI_AdvSimd_SubtractWideningLower:
                 {
                     assert(varTypeIsIntegral(intrin.BaseType));
-                    if (intrin.Op1.Type == TYP_SIMD8)
+                    if (node.AuxiliaryType == intrin.BaseType)
                     {
                         ins = varTypeIsUnsigned(intrin.BaseType) ? INS_usubl : INS_ssubl;
                     }
                     else
                     {
-                        assert(intrin.Op1.Type == TYP_SIMD16);
+                        assert(node.AuxiliaryType != TYP_UNKNOWN);
                         ins = varTypeIsUnsigned(intrin.BaseType) ? INS_usubw : INS_ssubw;
                     }
                     break;

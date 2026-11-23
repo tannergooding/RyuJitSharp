@@ -196,7 +196,7 @@ public sealed partial class CodeGen
         if (Configuration.DEBUG && Configuration.TARGET_X86)
         {
             genStackPointerCheck(_compiler.compStackCheckOnCall && (call._callType == CT_USER_FUNC),
-                _compiler.lvaCallSpCheck, call.CallerPop ? 0 : stackArgBytes, REG_ARG_0_X86);
+                _compiler.lvaCallSpCheck, call.CallerPop ? 0 : stackArgBytes);
         }
         var stackAdjustBias = 0u;
         if (Configuration.TARGET_X86)
@@ -218,7 +218,8 @@ public sealed partial class CodeGen
         {
             if (bias != 0)
             {
-                if (bias == sizeof(int))
+                var resultInEcx = (call.Type != TYP_VOID) && ((call.RegMask & RBM_ECX) != RBM_NONE);
+                if ((bias == sizeof(int)) && !resultInEcx)
                 {
                     inst_RV(INS_pop, REG_X86_ECX, TYP_INT);
                 }

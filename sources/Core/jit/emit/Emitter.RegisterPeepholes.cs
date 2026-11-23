@@ -44,6 +44,7 @@ public partial class Emitter
             switch (id.idIns())
             {
                 case INS_call:
+                case INS_cmpxchg:
                 case INS_cwde or INS_cdq or INS_movsx or INS_movsxd:
                 {
                     return emitPeepholeResult.PEEPHOLE_ABORT;
@@ -331,6 +332,7 @@ public partial class Emitter
                 break;
             }
 
+            // CMPXCHG writes the integer return register only when the comparison fails.
             case INS_cmpxchg:
             {
                 if (reg == TargetRuntimeMetadata.IntegerReturnRegister)

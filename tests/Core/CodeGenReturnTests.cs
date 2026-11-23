@@ -332,12 +332,12 @@ internal static unsafe class CodeGenReturnTests
             compiler.lvaTable[0].Type = TYP_I_IMPL;
             var firstGroup = codeGen.Emitter.emitCurIG;
 
-            codeGen.genStackPointerCheck(true, 0, offset, REG_R11);
+            codeGen.genStackPointerCheck(true, 0, offset);
 
             var saved = firstGroup?.igData ?? throw new AssertionException("Missing stack check group.");
             Assert.That(saved.Select(id => id.idIns()), Is.EqualTo(offset == 0
                 ? (instruction[])[INS_cmp, INS_je, INS_int3]
-                : [INS_mov, INS_sub, INS_cmp, INS_je, INS_int3]));
+                : [INS_add, INS_cmp, INS_je, INS_int3]));
             var target = EmitterJumpInstructionTests.JumpView.Target(saved[^2]);
             Assert.That(target?.bbEmitCookie, Is.SameAs(codeGen.Emitter.emitCurIG));
         });

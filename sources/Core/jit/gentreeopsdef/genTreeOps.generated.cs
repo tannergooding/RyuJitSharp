@@ -157,6 +157,7 @@ public enum genTreeOps : byte
     GT_RETFILT,
     GT_SWIFT_ERROR,
     GT_SWIFT_ERROR_RET,
+    GT_WASM_SELECT,
     GT_WASM_JEXCEPT,
     GT_WASM_THROW_REF,
     GT_JMPTABLE,
