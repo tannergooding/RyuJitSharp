@@ -9,10 +9,8 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public struct LocalsWithAddrOpVisitor : IGenTreeVisitor<LocalsWithAddrOpVisitor>
+    public struct LocalsWithAddrOpVisitor : IGenTreeVisitor<LocalsWithAddrOpVisitor>, ILocalDefVisitor
     {
-        public static bool DoLclVarsOnly => true;
-
         public static bool DoPreOrder => true;
 
         private readonly Compiler _compiler;
@@ -24,13 +22,25 @@ public partial class Compiler
 
         public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
-            ref var varDsc = ref _compiler.lvaGetDesc(use.AsLclVarCommon().LclNum);
-
-            if (varDsc.lvHasLdAddrOp || varDsc.IsAddressExposed)
+            if (use.Oper.IsAnyLocal)
             {
-                return WALK_ABORT;
+                ref var local = ref _compiler.lvaGetDesc(use.AsLclVarCommon().LclNum);
+                return HasAddrOp(local) ? WALK_ABORT : WALK_CONTINUE;
             }
-            return WALK_CONTINUE;
+
+            var visitor = this;
+            return use.VisitLogicalLocalDefs(_compiler, ref visitor) is GenTree.VisitResult.Abort
+                ? WALK_ABORT : WALK_CONTINUE;
+        }
+
+        private static bool HasAddrOp(in LclVarDsc varDsc)
+            => varDsc.lvHasLdAddrOp || varDsc.IsAddressExposed;
+
+        public readonly GenTree.VisitResult Visit<TDef>(TDef def)
+            where TDef : struct, ILocalDef
+        {
+            ref var varDsc = ref _compiler.lvaGetDesc(def.LclNum);
+            return HasAddrOp(varDsc) ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue;
         }
 
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;

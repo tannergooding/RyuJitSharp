@@ -14,18 +14,30 @@ public partial class Compiler
     }
 
     private struct PhysicalPromotionAddressExposedVisitor(Compiler compiler)
-        : IGenTreeVisitor<PhysicalPromotionAddressExposedVisitor>
+        : IGenTreeVisitor<PhysicalPromotionAddressExposedVisitor>, ILocalDefVisitor
     {
-
-        public static bool DoLclVarsOnly => true;
         public static bool DoPreOrder => true;
 
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
             => IGenTreeVisitor<PhysicalPromotionAddressExposedVisitor>.WalkTree(ref this, ref use, user);
 
         public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
-            => compiler.lvaGetDesc(use.AsLclVarCommon().LclNum).IsAddressExposed
+        {
+            if (use.Oper.IsAnyLocal)
+            {
+                return compiler.lvaGetDesc(use.AsLclVarCommon().LclNum).IsAddressExposed
+                    ? WALK_ABORT : WALK_CONTINUE;
+            }
+
+            var visitor = this;
+            return use.VisitLogicalLocalDefs(compiler, ref visitor) is GenTree.VisitResult.Abort
                 ? WALK_ABORT : WALK_CONTINUE;
+        }
+
+        public readonly GenTree.VisitResult Visit<TDef>(TDef def)
+            where TDef : struct, ILocalDef
+            => compiler.lvaGetDesc(def.LclNum).IsAddressExposed
+                ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue;
 
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
     }

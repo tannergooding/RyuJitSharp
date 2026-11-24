@@ -11,7 +11,8 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_R_SArm64(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
+    public void emitIns_R_SArm64(
+        instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, bool canPeephole = true)
     {
         assert(_compiler is not null);
         var size = EA_SIZE(attr);
@@ -232,7 +233,7 @@ public partial class Emitter
 
         assert(fmt != IF_NONE);
 
-        if (isLdrStr && _compiler.opts.OptimizationEnabled &&
+        if (isLdrStr && canPeephole && _compiler.opts.OptimizationEnabled &&
             OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs, useRegForImm))
         {
             return;
@@ -346,7 +347,8 @@ public partial class Emitter
         appendToCurIG(id);
     }
 
-    public void emitIns_S_RArm64(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
+    public void emitIns_S_RArm64(
+        instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, bool canPeephole = true)
     {
         assert(_compiler is not null);
         assert(offs >= 0);
@@ -500,7 +502,7 @@ public partial class Emitter
 
         assert(fmt != IF_NONE);
 
-        if (isStr && _compiler.opts.OptimizationEnabled &&
+        if (isStr && canPeephole && _compiler.opts.OptimizationEnabled &&
             OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs, useRegForImm))
         {
             return;

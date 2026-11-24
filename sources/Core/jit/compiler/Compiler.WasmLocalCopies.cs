@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Collections.Generic;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.genTreeOps;
@@ -17,6 +18,12 @@ public partial class Compiler
         public GenTreeLclVar Store;
         public int SourceLclNum;
         public GenTree? SourceLastUse;
+    }
+
+    private struct WasmRematerializationCandidate
+    {
+        public BasicBlock Block;
+        public GenTreeLclVar Store;
     }
 
     private struct WasmLocalCopyDefinitionVisitor(ArrayStack<WasmLocalCopy> pending) : ILocalDefVisitor
@@ -37,6 +44,7 @@ public partial class Compiler
     }
 
     private ArrayStack<BasicBlock>? _wasmLocalCopyBlocks;
+    private ArrayStack<BasicBlock>? _wasmRematBlocks;
 
     internal void RecordWasmLocalCopyBlock(BasicBlock block)
     {
@@ -47,17 +55,49 @@ public partial class Compiler
         }
     }
 
+    internal void RecordWasmRematBlock(BasicBlock block)
+    {
+        var blocks = _wasmRematBlocks ??= new ArrayStack<BasicBlock>();
+        if ((blocks.Height() == 0) || !ReferenceEquals(blocks.Top(), block))
+        {
+            blocks.Push(block);
+        }
+    }
+
+    internal static bool fgWasmIsRematerializableValue(GenTree? node)
+    {
+        if (node is null)
+        {
+            return false;
+        }
+
+        if (node.Oper.IsConst)
+        {
+            return true;
+        }
+
+        const GenTreeFlags invariantLoad = GTF_IND_INVARIANT | GTF_IND_NONFAULTING;
+        const GenTreeFlags unmovable = GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF | GTF_IND_VOLATILE;
+        return (node.Oper is GT_IND) && ((node.Flags & invariantLoad) == invariantLoad) &&
+            ((node.Flags & unmovable) == 0) && node.AsIndir().Addr.IsInvariant;
+    }
+
     public PhaseStatus fgWasmForwardLocalCopies()
     {
         assert(Configuration.TARGET_WASM);
 
-        var blocks = _wasmLocalCopyBlocks;
-        if ((blocks is null) || !opts.OptimizationEnabled || !backendRequiresLocalVarLifetimes())
+        if (!opts.OptimizationEnabled || !backendRequiresLocalVarLifetimes())
         {
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        var madeChanges = false;
+        var madeChanges = fgWasmRematerializeInvariantLocals();
+        var blocks = _wasmLocalCopyBlocks;
+        if (blocks is null)
+        {
+            return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+        }
+
         var pending = new ArrayStack<WasmLocalCopy>();
         static bool IsCopyableType(var_types type)
         {
@@ -198,6 +238,135 @@ public partial class Compiler
         }
 
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
+
+    private bool fgWasmRematerializeInvariantLocals()
+    {
+        var rematBlocks = _wasmRematBlocks;
+        if (rematBlocks is null)
+        {
+            return false;
+        }
+
+        var candidates = new Dictionary<int, WasmRematerializationCandidate>();
+        var liveIntoEntries = VarSetOps.MakeCopy(this, fgFirstBB!.bbLiveIn);
+        foreach (ref var clause in new EHClauses(this))
+        {
+            VarSetOps.UnionD(this, liveIntoEntries, clause.ebdHndBeg.bbLiveIn);
+            if (clause.HasFilter)
+            {
+                VarSetOps.UnionD(this, liveIntoEntries, clause.ebdFilter.bbLiveIn);
+            }
+        }
+
+        foreach (var block in rematBlocks.BottomUpOrder())
+        {
+            if (block.HasFlag(BBF_REMOVED))
+            {
+                continue;
+            }
+
+            LIR.Range range = block;
+            foreach (var node in range)
+            {
+                if (node.Oper is not GT_STORE_LCL_VAR)
+                {
+                    continue;
+                }
+
+                var store = node.AsLclVar();
+                var value = store.Data;
+                if (!fgWasmIsRematerializableValue(value) ||
+                    ((value!._lirFlags & LIR.Flags.MultiplyUsed) != 0))
+                {
+                    continue;
+                }
+
+                ref var descriptor = ref lvaGetDesc(store.LclNum);
+                var type = descriptor.Type;
+                if ((descriptor.lvRefCnt() != 2) || !descriptor.lvTracked || descriptor.lvIsParam ||
+                    descriptor.lvIsStructField || descriptor.lvIsOSRLocal || descriptor.lvPromoted ||
+                    descriptor.IsAddressExposed || descriptor.lvImplicitlyReferenced ||
+                    !varTypeIsEnregisterable(type) || varTypeIsStruct(type) || varTypeIsGC(type) ||
+                    varTypeIsSmall(type) || (store.Type != type) || (genActualType(value!) != type) ||
+                    VarSetOps.IsMember(this, liveIntoEntries, descriptor._varIndex))
+                {
+                    continue;
+                }
+
+                candidates[store.LclNum] = new WasmRematerializationCandidate
+                {
+                    Block = block,
+                    Store = store,
+                };
+            }
+        }
+
+        if (candidates.Count == 0)
+        {
+            return false;
+        }
+
+        var removed = VarSetOps.MakeEmpty(this);
+        var madeChanges = false;
+        foreach (var block in Blocks)
+        {
+            if (candidates.Count == 0)
+            {
+                break;
+            }
+
+            LIR.Range range = block;
+            for (var node = range.FirstNode; (node is not null) && (candidates.Count != 0);)
+            {
+                var next = node.Next;
+                if ((node.Oper is GT_LCL_VAR) && !node.IsContained &&
+                    candidates.TryGetValue(node.AsLclVarCommon().LclNum, out var candidate) &&
+                    (block.bbWeight <= candidate.Block.bbWeight) && (node.Type == candidate.Store.Type))
+                {
+                    LIR.Range definitionRange = candidate.Block;
+                    var value = candidate.Store.Data;
+                    if (value is not null)
+                    {
+                        var valueRange = definitionRange.GetTreeRange(value, out var isClosed);
+                        if (isClosed && range.TryGetUse(node, out var use))
+                        {
+                            var lclNum = node.AsLclVarCommon().LclNum;
+                            JITDUMP(
+                                $"Rematerializing [{value.TreeId:D6}] from {FMT_BB(candidate.Block.bbNum)} " +
+                                $"at [{node.TreeId:D6}] in {FMT_BB(block.bbNum)} in place of single-use V{lclNum:D2}\n");
+
+                            definitionRange.Remove(candidate.Store);
+                            var movedValue = definitionRange.RemoveAndGetRange(valueRange);
+                            range.InsertBefore(node, movedValue);
+                            value._lirFlags |= node._lirFlags & LIR.Flags.MultiplyUsed;
+                            use.ReplaceWith(value);
+                            range.Remove(node);
+
+                            ref var descriptor = ref lvaGetDesc(lclNum);
+                            descriptor.setLvRefCnt(0);
+                            descriptor.setLvRefCntWtd(0);
+                            VarSetOps.AddElemD(this, removed, descriptor._varIndex);
+                            _ = candidates.Remove(lclNum);
+                            madeChanges = true;
+                        }
+                    }
+                }
+
+                node = next;
+            }
+        }
+
+        if (madeChanges)
+        {
+            foreach (var block in Blocks)
+            {
+                VarSetOps.DiffD(this, block.bbLiveIn, removed);
+                VarSetOps.DiffD(this, block.bbLiveOut, removed);
+            }
+        }
+
+        return madeChanges;
     }
 
     private static void RemovePendingWasmLocalCopy(ArrayStack<WasmLocalCopy> pending, int index)

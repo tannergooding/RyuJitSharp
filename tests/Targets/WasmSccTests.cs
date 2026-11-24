@@ -9,7 +9,9 @@ using System.Runtime.InteropServices;
 using NUnit.Framework;
 using RyuJitSharp.UnitTests;
 using BitVecOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
+using TrackedVarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 using static RyuJitSharp.BBKinds;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
@@ -54,6 +56,129 @@ internal static unsafe class WasmSccTests
             Assert.That(blockMap[0], Is.SameAs(entry));
             Assert.That(blockMap[1], Is.SameAs(exit));
             Assert.That(blockMap[2].bbPreorderNum, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public static void BlocksUnreachableFromAnyFunctionEntryAreRejected()
+    {
+        WithCompiler(compiler =>
+        {
+            var entry = NewBlock(compiler, BBJ_ALWAYS);
+            var exit = NewBlock(compiler, BBJ_RETURN);
+            var unreachable = NewBlock(compiler, BBJ_RETURN);
+            Link(compiler, entry, exit, unreachable);
+            Connect(compiler, entry, exit);
+            compiler.fgGlobalMorphDone = true;
+            compiler.fgFuncletsCreated = true;
+            compiler.compFuncInfoCount = 1;
+
+            _ = Assert.Throws<FatalJitException>(() => compiler.fgWasmControlFlow());
+            Assert.That(compiler.fgFirstBB, Is.SameAs(entry));
+            Assert.That(compiler.fgLastBB, Is.SameAs(unreachable));
+            Assert.That(entry.Next, Is.SameAs(exit));
+            Assert.That(exit.Next, Is.SameAs(unreachable));
+        });
+    }
+
+    [Test]
+    public static void ConstantLocalStoreIsRematerializedAtItsSingleUse()
+    {
+        WithCompiler(compiler =>
+        {
+            var block = NewBlock(compiler, BBJ_RETURN);
+            Link(compiler, block);
+            compiler.compCurBB = block;
+            compiler.lvaTable =
+            [
+                new LclVarDsc { Type = TYP_INT, lvTracked = true, _varIndex = 0 },
+            ];
+            compiler.lvaCount = 1;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
+            compiler.lvaTable[0].setLvRefCnt(2);
+            compiler.lvaTable[0].setLvRefCntWtd(2);
+            block.bbLiveIn = TrackedVarSetOps.MakeEmpty(compiler);
+            block.bbLiveOut = TrackedVarSetOps.MakeEmpty(compiler);
+
+            var value = compiler.gtNewIconNode(TYP_INT, 42);
+            var store = compiler.gtNewStoreLclVarNode(0, value);
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            var one = compiler.gtNewIconNode(TYP_INT, 1);
+            var add = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, local, one);
+            block.InsertAtEnd(value);
+            block.InsertAtEnd(store);
+            block.InsertAtEnd(local);
+            block.InsertAtEnd(one);
+            block.InsertAtEnd(add);
+            compiler.RecordWasmRematBlock(block);
+
+            Assert.That(compiler.fgWasmForwardLocalCopies(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(block.FirstNode, Is.SameAs(value));
+            Assert.That(value.Next, Is.SameAs(one));
+            Assert.That(one.Next, Is.SameAs(add));
+            Assert.That(add.AsOp().Op1, Is.SameAs(value));
+            Assert.That(compiler.lvaTable[0].lvRefCnt(), Is.Zero);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void InvariantLoadIsRematerializedUnlessVolatile(bool isVolatile)
+    {
+        WithCompiler(compiler =>
+        {
+            var block = NewBlock(compiler, BBJ_RETURN);
+            Link(compiler, block);
+            compiler.compCurBB = block;
+            compiler.lvaTable =
+            [
+                new LclVarDsc { Type = TYP_INT, lvTracked = true, _varIndex = 0 },
+            ];
+            compiler.lvaCount = 1;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
+            compiler.lvaTable[0].setLvRefCnt(2);
+            compiler.lvaTable[0].setLvRefCntWtd(2);
+            block.bbLiveIn = TrackedVarSetOps.MakeEmpty(compiler);
+            block.bbLiveOut = TrackedVarSetOps.MakeEmpty(compiler);
+
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var value = new GenTreeIndir(GT_IND, TYP_INT, address)
+            {
+                Flags = GTF_IND_INVARIANT | GTF_IND_NONFAULTING |
+                    (isVolatile ? GTF_IND_VOLATILE : GTF_EMPTY),
+            };
+            var store = compiler.gtNewStoreLclVarNode(0, value);
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            var one = compiler.gtNewIconNode(TYP_INT, 1);
+            var add = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, local, one);
+            block.InsertAtEnd(address);
+            block.InsertAtEnd(value);
+            block.InsertAtEnd(store);
+            block.InsertAtEnd(local);
+            block.InsertAtEnd(one);
+            block.InsertAtEnd(add);
+            compiler.RecordWasmRematBlock(block);
+
+            var expectedStatus = isVolatile ? PhaseStatus.MODIFIED_NOTHING : PhaseStatus.MODIFIED_EVERYTHING;
+            Assert.That(compiler.fgWasmForwardLocalCopies(), Is.EqualTo(expectedStatus));
+            if (isVolatile)
+            {
+                Assert.That(block.FirstNode, Is.SameAs(address));
+                Assert.That(value.Next, Is.SameAs(store));
+                Assert.That(add.AsOp().Op1, Is.SameAs(local));
+            }
+            else
+            {
+                Assert.That(block.FirstNode, Is.SameAs(address));
+                Assert.That(value.Next, Is.SameAs(one));
+                Assert.That(one.Next, Is.SameAs(add));
+                Assert.That(add.AsOp().Op1, Is.SameAs(value));
+                Assert.That(compiler.lvaTable[0].lvRefCnt(), Is.Zero);
+            }
         });
     }
 

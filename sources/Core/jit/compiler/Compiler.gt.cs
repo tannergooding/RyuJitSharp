@@ -7758,15 +7758,28 @@ public partial class Compiler
         return visitor.WalkTree(ref tree, user: null) == WALK_ABORT;
     }
 
-    /// <summary>Find out whether the given tree contains a local.</summary>
-    /// <param name="tree">tree to find the local in</param>
-    /// <param name="lclNum">the local's number</param>
-    /// <returns>Whether "tree" has any local nodes that refer to the local.</returns>
-    public static bool gtHasRef(GenTree? tree, int lclNum)
+    private readonly struct FindLocalDefinitionVisitor(int lclNum) : ILocalDefVisitor
+    {
+        public GenTree.VisitResult Visit<TDef>(TDef def)
+            where TDef : struct, ILocalDef
+            => def.LclNum == lclNum ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue;
+    }
+
+    /// <summary>Find out whether the given tree references or defines a local.</summary>
+    /// <param name="tree">Tree to search.</param>
+    /// <param name="lclNum">The local's number.</param>
+    /// <returns>Whether the tree references or defines the local.</returns>
+    public bool gtHasRef(GenTree? tree, int lclNum)
     {
         if (tree is null)
         {
             return false;
+        }
+
+        var visitor = new FindLocalDefinitionVisitor(lclNum);
+        if (tree.VisitLogicalLocalDefs(this, ref visitor) == GenTree.VisitResult.Abort)
+        {
+            return true;
         }
 
         var oper = tree.Oper;
@@ -7787,10 +7800,6 @@ public partial class Compiler
 
         if (oper.IsUnary)
         {
-            if (oper.IsLocalStore && (tree.AsLclVarCommon().LclNum == lclNum))
-            {
-                return true;
-            }
             return gtHasRef(tree.AsUnOp().Op1, lclNum);
         }
 

@@ -459,14 +459,14 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         });
     }
 
-    internal static void WithCodeGen(Action<Compiler, CodeGen> action)
+    internal static void WithCodeGen(Action<Compiler, CodeGen> action, bool minOpts = true)
     {
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.SetMinOpts(true);
+        compiler.SetMinOpts(minOpts);
         compiler.eeInfoInitialized = true;
         compiler.lvaCount = 1;
         compiler.lvaTable =

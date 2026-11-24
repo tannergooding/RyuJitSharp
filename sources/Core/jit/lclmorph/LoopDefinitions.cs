@@ -83,7 +83,7 @@ internal sealed class LoopDefinitions
         VisitLoopNestMaps(loop, ref visitor);
     }
 
-    private struct LocalsVisitor : IGenTreeVisitor<LocalsVisitor>
+    private struct LocalsVisitor : IGenTreeVisitor<LocalsVisitor>, ILocalDefVisitor
     {
         private readonly Compiler _compiler;
         private readonly LocalDefinitionsMap _map;
@@ -96,19 +96,17 @@ internal sealed class LoopDefinitions
 
         public static bool DoPreOrder => true;
 
-        public static bool DoLclVarsOnly => true;
-
-        public readonly Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
+        public Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
-            var local = use.AsLclVarCommon();
-
-            if (!local.Oper.IsLocalStore)
-            {
-                return Compiler.WALK_CONTINUE;
-            }
-
-            _map.Set(local.LclNum);
+            _ = use.VisitLogicalLocalDefs(_compiler, ref this);
             return Compiler.WALK_CONTINUE;
+        }
+
+        public readonly GenTree.VisitResult Visit<TDef>(TDef def)
+            where TDef : struct, ILocalDef
+        {
+            _map.Set(def.LclNum);
+            return GenTree.VisitResult.Continue;
         }
 
         public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => Compiler.WALK_CONTINUE;

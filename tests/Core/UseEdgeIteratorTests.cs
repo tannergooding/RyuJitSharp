@@ -647,6 +647,7 @@ internal static unsafe class UseEdgeIteratorTests
             call.SetIsAsync(default);
             call.GetAsyncInfo().DefinesResumedIndicator = true;
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(resumed).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+            call.Flags |= GenTreeFlags.GTF_ASG;
             var visitor = new DefinitionVisitor(compiler, abort);
             Assert.That(call.VisitLogicalLocalDefs(compiler, ref visitor), Is.EqualTo(abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue));
             Assert.That(visitor.Locals, Has.Count.EqualTo(1));
@@ -657,6 +658,41 @@ internal static unsafe class UseEdgeIteratorTests
             Assert.That(def.Entire, Is.False);
             Assert.That(def.Offset, Is.EqualTo(8));
             Assert.That(def.Size, Is.EqualTo(Globals.TARGET_POINTER_SIZE));
+        });
+    }
+
+    [Test]
+    public static void LogicalDefinitionVisitRequiresAssignmentFlag()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_STRUCT, Layout = new ClassLayout(16) }];
+            compiler.lvaCount = 1;
+            if (TestConfiguration.IsDebug)
+            {
+                compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
+            }
+
+            var resumed = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 8);
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call.SetIsAsync(default);
+            call.GetAsyncInfo().DefinesResumedIndicator = true;
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(resumed).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+            call.Flags |= GenTreeFlags.GTF_ASG;
+            Assert.That((call.Flags & GenTreeFlags.GTF_ASG) != 0, Is.True);
+
+            var visitor = new DefinitionVisitor(compiler, abort: false);
+            Assert.That(call.VisitLogicalLocalDefs(compiler, ref visitor), Is.EqualTo(GenTree.VisitResult.Continue));
+            Assert.That(visitor.Locals, Is.EqualTo([0]));
+
+            call.Flags &= ~GenTreeFlags.GTF_ASG;
+            visitor = new DefinitionVisitor(compiler, abort: false);
+            Assert.That(call.VisitLogicalLocalDefs(compiler, ref visitor), Is.EqualTo(GenTree.VisitResult.Continue));
+            Assert.That(visitor.Locals, Is.Empty);
+
+            visitor = new DefinitionVisitor(compiler, abort: false);
+            Assert.That(call.VisitLogicalLocalDefsInternal(compiler, ref visitor),
+                Is.EqualTo(GenTree.VisitResult.Continue));
+            Assert.That(visitor.Locals, Is.EqualTo([0]));
         });
     }
 

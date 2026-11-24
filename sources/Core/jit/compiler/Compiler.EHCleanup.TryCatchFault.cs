@@ -253,9 +253,26 @@ public partial class Compiler
 
             fgUpdateACDsBeforeEHTableEntryRemoval(xtnum);
             fgRemoveEHTableEntry(xtnum);
-            if (!bbIsTryBeg(firstTry))
+            for (var tryBlock = firstTry;;)
             {
-                firstTry.RemoveFlags(BBF_DONT_REMOVE);
+                if (!bbIsTryBeg(tryBlock) && !bbIsHandlerBeg(tryBlock) && !fgIsThrowHlpBlk(tryBlock) &&
+                    (tryBlock != genReturnBB))
+                {
+                    tryBlock.RemoveFlags(BBF_DONT_REMOVE);
+                }
+
+                if (tryBlock == lastTry)
+                {
+                    break;
+                }
+
+                if (tryBlock.Next is not BasicBlock next)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TryRegionEndedPrematurely);
+                    return default;
+                }
+
+                tryBlock = next;
             }
 
             emptyCount++;

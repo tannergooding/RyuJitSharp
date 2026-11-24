@@ -153,6 +153,33 @@ public partial class Compiler
         }
     }
 
+    private struct MaskConversionsDefinitionVisitor(
+        Compiler compiler,
+        Dictionary<int, MaskConversionsWeight> weights,
+        GenTree node) : ILocalDefVisitor
+    {
+        public readonly GenTree.VisitResult Visit<TDef>(TDef def)
+            where TDef : struct, ILocalDef
+        {
+            var lclNum = def.LclNum;
+            if (!varTypeIsSimdOrMask(compiler.lvaGetDesc(lclNum).Type))
+            {
+                return GenTree.VisitResult.Continue;
+            }
+
+            if (!weights.TryGetValue(lclNum, out var weight))
+            {
+                weight = new MaskConversionsWeight();
+                weights.Add(lclNum, weight);
+            }
+
+            JITDUMP($"{node.Oper.Name} defining V{lclNum:D2} at [{node.TreeId:D6}] is unhandled. ");
+            weight.InvalidateWeight();
+            weights[lclNum] = weight;
+            return GenTree.VisitResult.Continue;
+        }
+    }
+
     private struct MaskConversionsCheckVisitor : IGenTreeVisitor<MaskConversionsCheckVisitor>
     {
         private readonly Compiler _compiler;
@@ -168,11 +195,17 @@ public partial class Compiler
 
         public static bool DoPreOrder => true;
         public static bool UseExecutionOrder => true;
-        public static bool DoLclVarsOnly => true;
         public bool FoundConversions;
 
         public fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
+            if (!use.Oper.IsNonPhiLocal && (use.Oper is not GT_LCL_ADDR))
+            {
+                var visitor = new MaskConversionsDefinitionVisitor(_compiler, _weights, use);
+                _ = use.VisitLogicalLocalDefs(_compiler, ref visitor);
+                return WALK_CONTINUE;
+            }
+
             var local = use.AsLclVarCommon();
             ref var descriptor = ref _compiler.lvaGetDesc(local.LclNum);
             if (!varTypeIsSimdOrMask(descriptor.Type))

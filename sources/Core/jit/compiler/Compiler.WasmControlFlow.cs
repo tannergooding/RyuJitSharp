@@ -30,6 +30,13 @@ public partial class Compiler
         }
 
         assert(dfsTree.IsForWasm);
+        if (dfsTree.PostOrderCount != fgBBcount)
+        {
+            JITDUMP($"\nWasm DFS reached {dfsTree.PostOrderCount} of {fgBBcount} blocks\n");
+            NYI_WASM("Method has blocks not reachable from any wasm function entry");
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
         var loops = FlowGraphNaturalLoops.Find(dfsTree);
         assert(loops.ImproperLoopHeaders == 0);
 

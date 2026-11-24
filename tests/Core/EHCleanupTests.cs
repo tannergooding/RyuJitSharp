@@ -180,26 +180,37 @@ internal static class EHCleanupTests
         {
             var entry = BasicBlock.New(compiler, BBJ_ALWAYS);
             var tryBlock = BasicBlock.New(compiler, BBJ_ALWAYS);
+            var middleTry = BasicBlock.New(compiler, BBJ_ALWAYS);
+            var lastTry = BasicBlock.New(compiler, BBJ_ALWAYS);
             var handler = BasicBlock.New(compiler, BBJ_THROW);
             var continuation = BasicBlock.New(compiler, BBJ_RETURN);
-            Link(compiler, entry, tryBlock, handler, continuation);
+            Link(compiler, entry, tryBlock, middleTry, lastTry, handler, continuation);
             entry.bbRefs = 1;
             Jump(compiler, entry, tryBlock);
-            Jump(compiler, tryBlock, continuation);
+            Jump(compiler, tryBlock, middleTry);
+            Jump(compiler, middleTry, lastTry);
+            Jump(compiler, lastTry, continuation);
             tryBlock.TryIndex = 0;
+            middleTry.TryIndex = 0;
+            lastTry.TryIndex = 0;
             handler.HndIndex = 0;
             handler.bbRefs = 1;
             tryBlock.SetFlags(BBF_DONT_REMOVE);
+            middleTry.SetFlags(BBF_DONT_REMOVE);
+            lastTry.SetFlags(BBF_DONT_REMOVE);
             handler.SetFlags(BBF_DONT_REMOVE);
-            Clause(compiler, kind, tryBlock, tryBlock, handler, handler);
+            Clause(compiler, kind, tryBlock, lastTry, handler, handler);
 
             Assert.That(RemoveEmptyTryCatchOrFault(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(compiler.compHndBBtabCount, Is.Zero);
             Assert.That(tryBlock.hasTryIndex, Is.False);
             Assert.That(tryBlock.HasFlag(BBF_DONT_REMOVE), Is.False);
+            Assert.That(middleTry.HasFlag(BBF_DONT_REMOVE), Is.False);
+            Assert.That(lastTry.HasFlag(BBF_DONT_REMOVE), Is.False);
             Assert.That(handler.HasFlag(BBF_REMOVED), Is.True);
-            Assert.That(tryBlock.Next, Is.SameAs(continuation));
-            Assert.That(continuation.GetUniquePred(compiler), Is.SameAs(tryBlock));
+            Assert.That(tryBlock.Next, Is.SameAs(middleTry));
+            Assert.That(lastTry.Next, Is.SameAs(continuation));
+            Assert.That(continuation.GetUniquePred(compiler), Is.SameAs(lastTry));
         });
     }
 

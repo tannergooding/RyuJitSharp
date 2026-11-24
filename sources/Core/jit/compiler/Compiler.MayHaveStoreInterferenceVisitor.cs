@@ -9,13 +9,14 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public struct MayHaveStoreInterferenceVisitor : IGenTreeVisitor<MayHaveStoreInterferenceVisitor>
+    public struct MayHaveStoreInterferenceVisitor : IGenTreeVisitor<MayHaveStoreInterferenceVisitor>, ILocalDefVisitor
     {
         public static bool DoPreOrder => true;
 
         private readonly Compiler _compiler;
         private readonly GenTree _readTree;
         private int _numStoresChecked;
+        private bool _hasDefsInNode;
 
         public MayHaveStoreInterferenceVisitor(Compiler compiler, GenTree readTree)
         {
@@ -32,20 +33,32 @@ public partial class Compiler
                 return WALK_SKIP_SUBTREES;
             }
 
-            if (node.Oper.IsLocalStore)
+            _hasDefsInNode = false;
+            var visitor = this;
+            if (node.VisitLogicalLocalDefs(_compiler, ref visitor) is GenTree.VisitResult.Abort)
             {
-                // Check up to 8 stores before we bail with a conservative
-                // answer. Avoids quadratic behavior in case we have a large
-                // number of stores (e.g. created by physical promotion or by
-                // call args morphing).
-                if ((_numStoresChecked >= 8) || _compiler.gtTreeHasLocalRead(_readTree, node.AsLclVarCommon().LclNum))
-                {
-                    return WALK_ABORT;
-                }
-
+                return WALK_ABORT;
+            }
+            _hasDefsInNode = visitor._hasDefsInNode;
+            if (_hasDefsInNode)
+            {
                 _numStoresChecked++;
             }
             return WALK_CONTINUE;
+        }
+
+        public GenTree.VisitResult Visit<TDef>(TDef def)
+            where TDef : struct, ILocalDef
+        {
+            if (!_hasDefsInNode && (_numStoresChecked >= 8))
+            {
+                return GenTree.VisitResult.Abort;
+            }
+
+            _hasDefsInNode = true;
+            return _compiler.gtTreeHasLocalRead(_readTree, def.LclNum)
+                ? GenTree.VisitResult.Abort
+                : GenTree.VisitResult.Continue;
         }
 
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;

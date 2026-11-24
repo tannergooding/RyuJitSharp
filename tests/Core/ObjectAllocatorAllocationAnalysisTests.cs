@@ -4,6 +4,7 @@ using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
@@ -60,6 +61,34 @@ internal static unsafe class ObjectAllocatorAllocationAnalysisTests
             var unknown = Get<int>(allocator, "_unknownSourceIndex");
             Assert.That(BitVecOps.IsMember(traits, adjacency[0], unknown), Is.True);
             Assert.That(BitVecOps.IsEmpty(traits, adjacency[1]), Is.True);
+        });
+    }
+
+    [Test]
+    public static void UnmodelledCallDefinitionEscapesTrackedLocal()
+    {
+        WithAllocator([TYP_REF], (compiler, allocator, block) => {
+            if (TestConfiguration.IsDebug)
+            {
+                compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
+            }
+
+            var resumed = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call.SetIsAsync(default);
+            call.GetAsyncInfo().DefinesResumedIndicator = true;
+            _ = call.Args.PushBack(
+                NewCallArg.CreateForPrimitive(resumed).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+            call.Flags |= GTF_ASG;
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(call));
+
+            Call(allocator, "DoAnalysis");
+
+            var traits = Get<BitVecTraits>(allocator, "_bitVecTraits");
+            var adjacency = Get<nint[][]>(allocator, "_connGraphAdjacencyMatrix");
+            var unknown = Get<int>(allocator, "_unknownSourceIndex");
+            Assert.That(BitVecOps.IsMember(traits, adjacency[0], unknown), Is.True);
+            Assert.That(Call<bool>(allocator, "CanLclVarEscape", 0), Is.True);
         });
     }
 

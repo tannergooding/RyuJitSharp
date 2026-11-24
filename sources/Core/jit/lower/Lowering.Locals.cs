@@ -391,6 +391,13 @@ public sealed partial class Lowering
             CompilerInstance.RecordWasmLocalCopyBlock(CompilerInstance.compCurBB!);
         }
 
+        if (Configuration.TARGET_WASM && CompilerInstance.opts.OptimizationEnabled &&
+            (storeLoc.Oper is GT_STORE_LCL_VAR) &&
+            Compiler.fgWasmIsRematerializableValue(storeLoc.Op1))
+        {
+            CompilerInstance.RecordWasmRematBlock(CompilerInstance.compCurBB!);
+        }
+
         ContainCheckStoreLoc(storeLoc);
         var next = storeLoc.Next;
         if (Configuration.TARGET_ARM64 && CompilerInstance.opts.OptimizationEnabled)

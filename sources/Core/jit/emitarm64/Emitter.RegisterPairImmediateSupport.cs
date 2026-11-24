@@ -325,14 +325,21 @@ public partial class Emitter
         }
 
         assert(emitLastIns is not null);
-        if ((emitLastIns.idIns() != ins) || insOptsIndexed(emitLastIns.idInsOpt()))
+        if (insOptsIndexed(emitLastIns.idInsOpt()))
         {
             return false;
         }
 
-        if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+        var gcType = EA_IS_GCREF(reg1Attr) ? GCT_GCREF : (EA_IS_BYREF(reg1Attr) ? GCT_BYREF : GCT_NONE);
+        if ((emitLastIns.idGCref() == gcType) &&
+            IsRedundantLdStr(ins, reg1, encodingSPtoZR(reg2), imm, size, fmt))
         {
             return true;
+        }
+
+        if (emitLastIns.idIns() != ins)
+        {
+            return false;
         }
 
         reg2 = encodingZRtoSP(reg2);
@@ -378,7 +385,7 @@ public partial class Emitter
 
         if ((ins == INS_ldr) && (emitLastIns.idIns() == INS_str))
         {
-            if (size != EA_8BYTE)
+            if (!isVectorRegister(reg1) && (size != EA_8BYTE))
             {
                 return false;
             }

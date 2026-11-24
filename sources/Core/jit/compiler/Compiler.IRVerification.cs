@@ -100,6 +100,11 @@ public partial class Compiler
             expectedFlags |= GTF_ASG;
         }
 
+        if (tree.HasAnyLocalDefsInternal(this))
+        {
+            expectedFlags |= GTF_ASG;
+        }
+
         if (tree.RequiresCallFlag(this))
         {
             expectedFlags |= GTF_CALL;

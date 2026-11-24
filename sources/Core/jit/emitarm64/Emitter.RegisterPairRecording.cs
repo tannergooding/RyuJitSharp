@@ -10,7 +10,8 @@ namespace RyuJitSharp;
 public partial class Emitter
 {
     public void emitIns_R_RArm64(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
-        insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE)
+        insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE,
+        bool canPeephole = true)
     {
         RequireArm64Target();
 
@@ -274,7 +275,8 @@ public partial class Emitter
             case INS_tst:
             {
                 assert(insOptsNone(opt));
-                emitIns_R_R_IArm64(ins, attr, reg1, reg2, 0, INS_OPTS_NONE);
+                emitIns_R_R_IArm64(ins, attr, reg1, reg2, 0, INS_OPTS_NONE,
+                    insScalableOpts.INS_SCALABLE_OPTS_NONE, canPeephole);
                 return;
             }
 

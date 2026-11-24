@@ -10,7 +10,8 @@ namespace RyuJitSharp;
 public unsafe partial class Emitter
 {
     public void emitIns_R_R_IArm64(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
-        nint imm, insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE)
+        nint imm, insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE,
+        bool canPeephole = true)
     {
         RequireArm64Target();
 
@@ -641,7 +642,7 @@ public unsafe partial class Emitter
             {
                 return;
             }
-            if (isLdrStr && !insOptsIndexed(opt) && _compiler.opts.OptimizationEnabled &&
+            if (isLdrStr && canPeephole && !insOptsIndexed(opt) && _compiler.opts.OptimizationEnabled &&
                 OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, false, -1, -1, false))
             {
                 return;

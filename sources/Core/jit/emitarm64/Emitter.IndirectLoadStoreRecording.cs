@@ -18,6 +18,7 @@ public partial class Emitter
     {
         RequireArm64Target();
         var addr = indir.Addr;
+        var canPeephole = !indir.IsVolatile;
 
         if (addr.IsContained)
         {
@@ -62,7 +63,8 @@ public partial class Emitter
                         }
 
                         noway_assert(emitInsIsLoadArm64(ins) || (tmpReg != dataReg));
-                        emitIns_R_R_IArm64(ins, attr, dataReg, tmpReg, offset);
+                        emitIns_R_R_IArm64(ins, attr, dataReg, tmpReg, offset, INS_OPTS_NONE,
+                            insScalableOpts.INS_SCALABLE_OPTS_NONE, canPeephole);
                     }
                     else
                     {
@@ -107,21 +109,23 @@ public partial class Emitter
                 var local = addr.AsLclVarCommon();
                 if (emitInsIsStore(ins))
                 {
-                    emitIns_S_R(ins, attr, dataReg, local.LclNum, local.LclOffs);
+                    emitIns_S_RArm64(ins, attr, dataReg, local.LclNum, local.LclOffs, canPeephole);
                 }
                 else
                 {
-                    emitIns_R_S(ins, attr, dataReg, local.LclNum, local.LclOffs);
+                    emitIns_R_SArm64(ins, attr, dataReg, local.LclNum, local.LclOffs, canPeephole);
                 }
             }
             else if (addr.Oper.IsCnsIntOrI && addr.AsIntCon().IsIconHandle(GTF_ICON_TLS_HDL))
             {
-                emitIns_R_R_IArm64(ins, attr, dataReg, REG_ARM64_R18, addr.AsIntCon().IconValue);
+                emitIns_R_R_IArm64(ins, attr, dataReg, REG_ARM64_R18, addr.AsIntCon().IconValue, INS_OPTS_NONE,
+                    insScalableOpts.INS_SCALABLE_OPTS_NONE, canPeephole);
             }
             else if (emitIns_valid_imm_for_ldst_offset(indir.Offset, indir.Type.EmitSize))
             {
                 assert(memBase is not null);
-                emitIns_R_R_IArm64(ins, attr, dataReg, memBase.RegNum, indir.Offset);
+                emitIns_R_R_IArm64(ins, attr, dataReg, memBase.RegNum, indir.Offset, INS_OPTS_NONE,
+                    insScalableOpts.INS_SCALABLE_OPTS_NONE, canPeephole);
             }
             else
             {
@@ -142,7 +146,8 @@ public partial class Emitter
                     assert(!varDsc.lvTracked);
                 }
             }
-            emitIns_R_RArm64(ins, attr, dataReg, addr.RegNum);
+            emitIns_R_RArm64(ins, attr, dataReg, addr.RegNum, INS_OPTS_NONE,
+                insScalableOpts.INS_SCALABLE_OPTS_NONE, canPeephole);
         }
     }
 }

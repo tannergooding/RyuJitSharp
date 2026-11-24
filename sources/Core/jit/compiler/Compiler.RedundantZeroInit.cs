@@ -10,6 +10,25 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private struct LocalDefinitionCountsVisitor(
+        Compiler compiler,
+        Dictionary<int, uint> refCounts,
+        Dictionary<int, uint> defsInBlock) : ILocalDefVisitor
+    {
+        public readonly GenTree.VisitResult Visit<TDef>(TDef def)
+            where TDef : struct, ILocalDef
+        {
+            var lclNum = def.LclNum;
+            refCounts[lclNum] = unchecked(refCounts.GetValueOrDefault(lclNum) + 1u);
+            if (compiler.lvaGetDesc(lclNum).lvTracked)
+            {
+                defsInBlock[lclNum] = unchecked(defsInBlock.GetValueOrDefault(lclNum) + 1u);
+            }
+
+            return GenTree.VisitResult.Continue;
+        }
+    }
+
     public void optRemoveRedundantZeroInits()
     {
         if (Configuration.DEBUG && verbose)
@@ -82,9 +101,16 @@ public partial class Compiler
                     hasImplicitControlFlow |= hasEHSuccs && ((tree.Flags & GTF_EXCEPT) != 0);
                     hasGCSafePoint |= IsPotentialGCSafePoint(tree);
 
+                    if ((tree.Oper is GT_LCL_ADDR) && ((tree.Flags & GTF_VAR_DEF) != 0))
+                    {
+                        continue;
+                    }
+
                     if (tree.Oper is not (GT_LCL_VAR or GT_LCL_FLD or GT_LCL_ADDR or
                         GT_STORE_LCL_VAR or GT_STORE_LCL_FLD))
                     {
+                        var visitor = new LocalDefinitionCountsVisitor(this, refCounts, defsInBlock);
+                        _ = tree.VisitLogicalLocalDefs(this, ref visitor);
                         continue;
                     }
 

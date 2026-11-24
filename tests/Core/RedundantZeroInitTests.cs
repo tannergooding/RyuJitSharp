@@ -120,6 +120,42 @@ internal static unsafe class RedundantZeroInitTests
     }
 
     [Test]
+    public static void CallDefinitionPreventsTreatingLaterZeroStoreAsFirstReference()
+    {
+        WithGraph(1, compiler => {
+            compiler.info.compInitMem = true;
+            ref var descriptor = ref compiler.lvaTable[0];
+            descriptor.Type = TYP_INT;
+            descriptor.lvTracked = true;
+            descriptor._varIndex = 0;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            if (TestConfiguration.IsDebug)
+            {
+                compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
+            }
+
+            var block = AddBlock(compiler);
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call.SetIsAsync(default);
+            call.GetAsyncInfo().DefinesResumedIndicator = true;
+            call.Flags |= GTF_ASG;
+            _ = call.Args.PushBack(
+                NewCallArg.CreateForPrimitive(compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0))
+                    .WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+            AddStatement(compiler, block, call);
+            var store = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 0));
+            AddStatement(compiler, block, store);
+            SetDfs(compiler);
+
+            compiler.optRemoveRedundantZeroInits();
+
+            Assert.That(block.LastStmt?.RootNode, Is.SameAs(store));
+            Assert.That(compiler.lvaTable[0].lvSuppressedZeroInit, Is.False);
+        });
+    }
+
+    [Test]
     public static void MultiplePredecessorsStopTheUniqueSuccessorScanBeforeARejoin()
     {
         WithGraph(1, compiler => {

@@ -80,7 +80,7 @@ public sealed partial class ObjectAllocator
         _analysisDone = true;
     }
 
-    private struct BuildConnGraphVisitor : IGenTreeVisitor<BuildConnGraphVisitor>
+    private struct BuildConnGraphVisitor : IGenTreeVisitor<BuildConnGraphVisitor>, ILocalDefVisitor
     {
         public static bool DoPreOrder => true;
         public static bool DoPostOrder => true;
@@ -91,6 +91,7 @@ public sealed partial class ObjectAllocator
         private readonly BasicBlock _block;
         private readonly Statement _stmt;
         private readonly GenTreeStack _ancestors;
+        private GenTree? _definitionNode;
 
         public BuildConnGraphVisitor(ObjectAllocator allocator, BasicBlock block, Statement stmt)
         {
@@ -152,7 +153,7 @@ public sealed partial class ObjectAllocator
             return Compiler.fgWalkResult.WALK_CONTINUE;
         }
 
-        public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
+        public Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
         {
             var tree = use;
             var allocator = _allocator;
@@ -240,8 +241,30 @@ public sealed partial class ObjectAllocator
                     JITDUMP($" ... Not a GC store at [{TreeIdForDump(tree):D6}]\n");
                 }
             }
+            else
+            {
+                _definitionNode = tree;
+                _ = tree.VisitLogicalLocalDefs(compiler, ref this);
+                _definitionNode = null;
+            }
 
             return Compiler.fgWalkResult.WALK_CONTINUE;
+        }
+
+        public readonly GenTree.VisitResult Visit<TDef>(TDef def)
+            where TDef : struct, ILocalDef
+        {
+            var lclNum = def.LclNum;
+            if (_allocator.IsTrackedLocal(lclNum))
+            {
+                var definitionNode = _definitionNode ?? def.DefNode;
+                JITDUMP($"V{lclNum:D2} defined by unmodelled node [{TreeIdForDump(definitionNode)}]\n");
+                _allocator.AddConnGraphEdgeIndex(
+                    _allocator.LocalToIndex(lclNum), _allocator._unknownSourceIndex);
+                _allocator.MarkLclVarAsEscaping(lclNum);
+            }
+
+            return GenTree.VisitResult.Continue;
         }
 
         public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)

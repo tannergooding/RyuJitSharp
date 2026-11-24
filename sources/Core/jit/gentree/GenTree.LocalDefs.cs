@@ -100,6 +100,14 @@ public partial class GenTree
     public unsafe VisitResult VisitLogicalLocalDefs<TVisitor>(Compiler compiler, ref TVisitor visitor)
         where TVisitor : struct, ILocalDefVisitor
     {
+        return (Flags & GenTreeFlags.GTF_ASG) != 0
+            ? VisitLogicalLocalDefsInternal(compiler, ref visitor)
+            : VisitResult.Continue;
+    }
+
+    public unsafe VisitResult VisitLogicalLocalDefsInternal<TVisitor>(Compiler compiler, ref TVisitor visitor)
+        where TVisitor : struct, ILocalDefVisitor
+    {
         if (Oper is GT_STORE_LCL_VAR)
         {
             return VisitLocalDef(compiler, AsLclVarCommon(), ref visitor);
@@ -162,5 +170,11 @@ public partial class GenTree
     {
         var visitor = default(HasAnyLocalDefVisitor);
         return VisitLogicalLocalDefs(compiler, ref visitor) == VisitResult.Abort;
+    }
+
+    internal bool HasAnyLocalDefsInternal(Compiler compiler)
+    {
+        var visitor = default(HasAnyLocalDefVisitor);
+        return VisitLogicalLocalDefsInternal(compiler, ref visitor) == VisitResult.Abort;
     }
 }
