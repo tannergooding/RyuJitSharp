@@ -15,6 +15,7 @@ public sealed partial class RangeCheck
     private readonly Compiler _compiler;
     private readonly Dictionary<GenTree, Range> _rangeMap = [];
     private readonly Dictionary<GenTree, BasicBlock?> _searchPath = [];
+    private Dictionary<GenTree, BasicBlock?>? _rejectNegativeSearchPath;
     private ValueNum _preferredBound = ValueNumStore.NoVN;
     private int _visitBudget = MaxVisitBudget;
     private bool _updateStmt;
@@ -23,6 +24,15 @@ public sealed partial class RangeCheck
     {
         _compiler = compiler;
     }
+
+    private void ClearSearchPath()
+    {
+        _searchPath.Clear();
+        _rejectNegativeSearchPath?.Clear();
+    }
+
+    private Dictionary<GenTree, BasicBlock?> GetRejectNegativeSearchPath()
+        => _rejectNegativeSearchPath ??= [];
 
     public void SetBudget(int budget)
     {

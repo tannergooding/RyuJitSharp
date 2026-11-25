@@ -23,9 +23,9 @@ public partial struct JitFlags
     public const JitFlag JIT_FLAG_RELOC = JitFlag.JIT_FLAG_RELOC;
     public const JitFlag JIT_FLAG_IL_STUB = JitFlag.JIT_FLAG_IL_STUB;
     public const JitFlag JIT_FLAG_PROCSPLIT = JitFlag.JIT_FLAG_PROCSPLIT;
-    public const JitFlag JIT_FLAG_BBINSTR = JitFlag.JIT_FLAG_BBINSTR;
-    public const JitFlag JIT_FLAG_BBINSTR_IF_LOOPS = JitFlag.JIT_FLAG_BBINSTR_IF_LOOPS;
-    public const JitFlag JIT_FLAG_BBOPT = JitFlag.JIT_FLAG_BBOPT;
+    public const JitFlag JIT_FLAG_PGO_INSTR = JitFlag.JIT_FLAG_PGO_INSTR;
+    public const JitFlag JIT_FLAG_PGO_INSTR_IF_LOOPS = JitFlag.JIT_FLAG_PGO_INSTR_IF_LOOPS;
+    public const JitFlag JIT_FLAG_PGO_OPT = JitFlag.JIT_FLAG_PGO_OPT;
     public const JitFlag JIT_FLAG_FRAMED = JitFlag.JIT_FLAG_FRAMED;
     public const JitFlag JIT_FLAG_USE_PINVOKE_HELPERS = JitFlag.JIT_FLAG_USE_PINVOKE_HELPERS;
     public const JitFlag JIT_FLAG_REVERSE_PINVOKE = JitFlag.JIT_FLAG_REVERSE_PINVOKE;
@@ -99,14 +99,14 @@ public partial struct JitFlags
         /// <summary>JIT should separate code into hot and cold sections</summary>
         JIT_FLAG_PROCSPLIT = 17,
 
-        /// <summary>Collect basic block profile information</summary>
-        JIT_FLAG_BBINSTR = 18,
+        /// <summary>Collect profile data for PGO</summary>
+        JIT_FLAG_PGO_INSTR = 18,
 
         /// <summary>JIT must instrument current method if it has loops</summary>
-        JIT_FLAG_BBINSTR_IF_LOOPS = 19,
+        JIT_FLAG_PGO_INSTR_IF_LOOPS = 19,
 
         /// <summary>Optimize method based on profile information</summary>
-        JIT_FLAG_BBOPT = 20,
+        JIT_FLAG_PGO_OPT = 20,
 
         /// <summary>All methods have an EBP frame</summary>
         JIT_FLAG_FRAMED = 21,

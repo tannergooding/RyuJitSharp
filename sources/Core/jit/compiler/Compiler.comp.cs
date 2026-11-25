@@ -419,7 +419,7 @@ public partial class Compiler
     /// <returns>The type of probe to use.</returns>
     public unsafe GDVProbeType compClassifyGDVProbeType(GenTreeCall call)
     {
-        if (!opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR) || IsAot)
+        if (!opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_INSTR) || IsAot)
         {
             return GDVProbeType.None;
         }
@@ -1290,9 +1290,9 @@ public partial class Compiler
             //
             var reason = "";
 
-            if (compTailPrefixSeen && !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR))
+            if (compTailPrefixSeen && !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_INSTR))
             {
-                reason = "tail.call and not BBINSTR";
+                reason = "tail.call and not PGO_INSTR";
             }
             else if (compHasBackwardJump && ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
             {
@@ -1319,10 +1319,10 @@ public partial class Compiler
                 if (canEscapeViaOSR)
                 {
                     JITDUMP("\nOSR enabled for this method\n");
-                    if (compHasBackwardJump && !compTailPrefixSeen && opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR_IF_LOOPS) && opts.IsTier0)
+                    if (compHasBackwardJump && !compTailPrefixSeen && opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_INSTR_IF_LOOPS) && opts.IsTier0)
                     {
                         assert((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) == 0);
-                        opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
+                        opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_INSTR);
                         JITDUMP("\nEnabling instrumentation for this method so OSR'd version will have a profile.\n");
                     }
                 }
@@ -1350,7 +1350,7 @@ public partial class Compiler
             if (DebugData.MethodRangeData.s_jitInstrumentIfOptimizingRange.Contains(impInlineRoot.info.compMethodHash()))
             {
                 JITDUMP("\nEnabling instrumentation\n");
-                opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
+                opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_INSTR);
             }
         }
 
@@ -1901,7 +1901,7 @@ public partial class Compiler
         assert(fgPgoConsistent is false);
         assert(fgPgoDynamic is false);
 
-        if (jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT))
+        if (jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_OPT))
         {
             fixed (PgoInstrumentationSchema** pSchema = &fgPgoSchema)
             fixed (int* pCountSchemaItems = &fgPgoSchemaCount)
@@ -2553,7 +2553,7 @@ public partial class Compiler
                     jitprintf($"OPTIONS: compProfilerHookNeeded   = {dspBool(compProfilerHookNeeded)}\n");
                 }
 
-                if (jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT))
+                if (jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_OPT))
                 {
                     jitprintf("OPTIONS: optimizer should use profile data\n");
                 }
@@ -2808,7 +2808,7 @@ public partial class Compiler
     {
         var tier0 = opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0);
         var tier1 = opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER1);
-        var instrumenting = opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR);
+        var instrumenting = opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_INSTR);
 
         if (!opts.compMinOptsIsSet)
         {
@@ -4016,7 +4016,7 @@ public partial class Compiler
 
         // If we're going to instrument code, we may need to prepare before we import.
         // Also do this before we read in any profile data.
-        if (jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR))
+        if (jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_INSTR))
         {
             DoPhase(this, PHASE_IBCPREP, default(PrepareToInstrumentPhaseAction));
         }
@@ -4063,7 +4063,7 @@ public partial class Compiler
         DoPhase(this, PHASE_EARLY_QMARK_EXPANSION, default(EarlyQmarkExpansionPhaseAction));
 
         // If instrumenting, add block and class probes.
-        if (jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR))
+        if (jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_INSTR))
         {
             DoPhase(this, PHASE_IBCINSTR, default(InstrumentMethodPhaseAction));
         }
@@ -4956,7 +4956,7 @@ public partial class Compiler
                 {
                     compiler.info.compCompHnd->setMethodAttribs(compiler.info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_MIN_OPT);
                     compiler.opts.jitFlags->Clear(JitFlags.JIT_FLAG_TIER1);
-                    compiler.opts.jitFlags->Clear(JitFlags.JIT_FLAG_BBOPT);
+                    compiler.opts.jitFlags->Clear(JitFlags.JIT_FLAG_PGO_OPT);
                     compiler.compSwitchedToMinOpts = true;
                 }
             }

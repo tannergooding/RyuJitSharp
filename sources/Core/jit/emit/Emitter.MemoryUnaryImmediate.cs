@@ -68,11 +68,6 @@ public partial class Emitter
             id.idInsFmt(format);
             size = emitInsSizeCV(id, insCodeMR(ins));
         }
-        if (TakesRexWPrefix(id))
-        {
-            size += emitGetRexPrefixSize(id, ins);
-        }
-
         id.idAddr().iiaFieldHnd = fldHnd;
         id.idCodeSize(size);
         dispIns(id);

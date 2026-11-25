@@ -151,11 +151,6 @@ public partial class Emitter
                 id.idInsFmt(IF_XARCH_METHPTR);
                 id.idAddr().iiaAddr = (byte*)parameters.addr;
                 size = 6;
-
-                if (TakesRex2Prefix(id))
-                {
-                    size += 2;
-                }
                 if (codeGen.genCodeIndirAddrNeedsReloc((nuint)parameters.addr))
                 {
                     id.idSetIsDspReloc();

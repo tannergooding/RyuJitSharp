@@ -123,7 +123,7 @@ public sealed partial class CodeGen
             {
                 jitprintf("; debuggable code\n");
             }
-            if (_compiler.opts.jitFlags->IsSet(JIT_FLAG_BBOPT) && _compiler.fgHaveProfileWeights)
+            if (_compiler.opts.jitFlags->IsSet(JIT_FLAG_PGO_OPT) && _compiler.fgHaveProfileWeights)
             {
                 jitprintf($"; optimized using {_compiler.compPgoSourceName}\n");
             }

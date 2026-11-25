@@ -231,8 +231,34 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildStoreLoc(allocator, store), Is.EqualTo(1));
-            Assert.That(sourceDef.nextRefPosition?.registerAssignment, Is.EqualTo(AvailableIntRegs(allocator)));
+            var sourceCandidates = Configuration.TARGET_XARCH
+                ? AvailableIntRegs(allocator) & SRBM_LOWINT
+                : AvailableIntRegs(allocator);
+            Assert.That(sourceDef.nextRefPosition?.registerAssignment, Is.EqualTo(sourceCandidates));
             Assert.That(sourceDef.getInterval().relatedInterval, Is.SameAs(allocator.localVarIntervals![0]));
+        });
+    }
+
+    [Test]
+    public static void ContainedFloatingBitcastRestrictsIntegerDestinationToLowGprs()
+    {
+        WithAllocator((compiler, allocator) => {
+            SetLocals(compiler, allocator,
+                new LclVarDsc { Type = TYP_INT, _varIndex = 0, lvTracked = true, lvLRACandidate = true });
+            var source = compiler.gtNewDconNode(TYP_DOUBLE, 2.5);
+            ReferenceBuildLocation(allocator) = 2;
+            var sourceDef = BuildDef(allocator, source, SRBM_NONE, 0);
+            var bitcast = new GenTreeUnOp(GT_BITCAST, TYP_INT, source) { IsContained = true };
+            var store = new GenTreeLclVar(TYP_INT, 0, bitcast);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildStoreLoc(allocator, store), Is.EqualTo(1));
+            Assert.That(sourceDef.nextRefPosition?.registerAssignment, Is.EqualTo(AvailableFloatRegs(allocator)));
+            var destination = allocator.localVarIntervals![0]?.lastRefPosition;
+            var destinationCandidates = Configuration.TARGET_XARCH
+                ? AvailableIntRegs(allocator) & SRBM_LOWINT
+                : AvailableIntRegs(allocator);
+            Assert.That(destination?.registerAssignment, Is.EqualTo(destinationCandidates));
         });
     }
 

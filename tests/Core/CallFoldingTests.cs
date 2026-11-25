@@ -156,7 +156,7 @@ internal static unsafe class CallFoldingTests
 
                 try
                 {
-                    compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
+                    compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_INSTR);
                     compiler.fgPgoMethodProfiles = 1;
 
                     var method = (nint)call._callMethHnd;
@@ -249,7 +249,7 @@ internal static unsafe class CallFoldingTests
     {
         WithCompiler("SpanHelpers", method, (compiler, call) =>
         {
-            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBOPT);
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_OPT);
             compiler.lvaTable[0].Type = TYP_I_IMPL;
             var data = stackalloc int[4] { 8, 8, 8, 8 };
             var schema = stackalloc ICorJitInfo.PgoInstrumentationSchema[2] {

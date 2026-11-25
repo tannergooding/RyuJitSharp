@@ -195,8 +195,8 @@ internal static class EmitterRegisterInstructionTests
             emitter.UseVexEncodings = true;
             emitter.UseEvexEncodings = true;
             Assert.That(emitter.emitIns_Mov(INS_kmovq_msk, EA_8BYTE, REG_X64_K1, REG_X64_K2, canSkip: false), Is.True);
-            // Native emitInsSizeRR adds the provisional VEX prefix before sizing K instructions.
-            Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(8u));
+            // Native sizing removes the provisional VEX prefix for K instructions.
+            Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(5u));
         });
     }
 
@@ -221,7 +221,7 @@ internal static class EmitterRegisterInstructionTests
 
             emitter.emitIns_R_I(INS_add, EA_8BYTE, REG_X64_RAX, 7, INS_OPTS_EVEX_nf);
             Assert.That(Last(emitter).idIsEvexNfContextSet(), Is.True);
-            Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(8u));
+            Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(7u));
 
             emitter.emitIns_R_R(INS_ccmpe, EA_4BYTE, REG_X64_RAX, REG_X64_RCX,
                 INS_OPTS_EVEX_dfv_cf | INS_OPTS_EVEX_dfv_of);

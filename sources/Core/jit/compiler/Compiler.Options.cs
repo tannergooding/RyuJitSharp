@@ -530,11 +530,11 @@ public partial class Compiler
 
         public readonly unsafe bool IsTier0 => jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0);
 
-        public readonly unsafe bool IsInstrumented => jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR);
+        public readonly unsafe bool IsInstrumented => jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_INSTR);
 
-        public readonly unsafe bool IsOptimizedWithProfile => OptimizationEnabled && jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT);
+        public readonly unsafe bool IsOptimizedWithProfile => OptimizationEnabled && jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_OPT);
 
-        public readonly unsafe bool IsInstrumentedAndOptimized => IsInstrumented && jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT);
+        public readonly unsafe bool IsInstrumentedAndOptimized => IsInstrumented && jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_OPT);
 
         public readonly unsafe bool DoEarlyBlockMerging => !jitFlags->IsSet(JitFlags.JIT_FLAG_DEBUG_EnC)
                                                         && !jitFlags->IsSet(JitFlags.JIT_FLAG_DEBUG_CODE)

@@ -291,11 +291,6 @@ public sealed partial class LinearScan
                     }
                     assert(ctrlExprCandidates != SRBM_NONE);
                 }
-
-                if (Configuration.TARGET_RISCV64 && ctrlExpr.IsContainedIntOrIImmed)
-                {
-                    _ = buildInternalIntRegisterDefForNode(call);
-                }
             }
             else if (call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir)
             {

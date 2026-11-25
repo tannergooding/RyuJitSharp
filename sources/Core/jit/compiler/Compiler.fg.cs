@@ -11126,7 +11126,7 @@ public partial class Compiler
         }
 
         if (Configuration.DEBUG &&
-            opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR) &&
+            opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_INSTR) &&
             (JitConfig.JitPropagateSynthesizedCountsToProfileData > 0))
         {
             JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
@@ -11137,13 +11137,13 @@ public partial class Compiler
 
         if (!fgHaveProfileData)
         {
-            if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT))
+            if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_OPT))
             {
-                JITDUMP($"BBOPT set, but no profile data available (hr={fgPgoQueryResult:x8})\n");
+                JITDUMP($"PGO_OPT set, but no profile data available (hr={fgPgoQueryResult:x8})\n");
             }
             else
             {
-                JITDUMP("BBOPT not set\n");
+                JITDUMP("PGO_OPT not set\n");
             }
 
             if (fgPgoDynamic)
@@ -15200,10 +15200,10 @@ public partial class Compiler
         JITDUMP($"****\n**** JIT Tier0 jit request switching to Tier1 because: {reason}\n****\n");
         assert(opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0));
         opts.jitFlags->Clear(JitFlags.JIT_FLAG_TIER0);
-        opts.jitFlags->Clear(JitFlags.JIT_FLAG_BBINSTR);
-        opts.jitFlags->Clear(JitFlags.JIT_FLAG_BBINSTR_IF_LOOPS);
+        opts.jitFlags->Clear(JitFlags.JIT_FLAG_PGO_INSTR);
+        opts.jitFlags->Clear(JitFlags.JIT_FLAG_PGO_INSTR_IF_LOOPS);
         opts.jitFlags->Clear(JitFlags.JIT_FLAG_OSR);
-        opts.jitFlags->Set(JitFlags.JIT_FLAG_BBOPT);
+        opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_OPT);
 
         // Leave a note for jit diagnostics
         compSwitchedToOptimized = true;

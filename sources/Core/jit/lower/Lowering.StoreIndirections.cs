@@ -25,7 +25,7 @@ public sealed partial class Lowering
             return Configuration.TARGET_WASM ? LowerStoreIndir(ind) : ind.Next;
         }
 
-        if (!Configuration.TARGET_XARCH && ind.Data.Oper.IsCnsIntOrI &&
+        if (!Configuration.TARGET_XARCH && !ind.IsVolatile && ind.Data.Oper.IsCnsIntOrI &&
             ind.Data.AsIntCon().IsIconHandle(GTF_ICON_OBJ_HDL) &&
             !compiler.info.compCompHnd->isObjectImmutable((CORINFO_OBJECT_HANDLE)ind.Data.AsIntCon().IconValue))
         {

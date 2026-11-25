@@ -504,7 +504,7 @@ public partial class Emitter
                 else if (hasCodeMR(ins))
                 {
                     code = AddX86PrefixIfNeeded(id, insCodeMR(ins), size);
-                    if (size == EA_2BYTE && TakesRex2Prefix(id))
+                    if (NeedsLegacyOperandSizePrefix(id))
                     {
                         dst += emitOutputByte(dst, 0x66);
                     }
@@ -1378,6 +1378,25 @@ public partial class Emitter
                 emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (nuint)(dst - *dp), ig);
             }
         }
+
+        if (Configuration.DEBUG && JitConfig.JitAssertOnEmitSizeMismatch != 0)
+        {
+            var insFmtInfo = emitGetSchedInfo(insFmt);
+            var skipStackSizeCheck = !Configuration.FEATURE_FIXED_OUT_ARGS &&
+                ((insFmtInfo & (IS_SF_RD | IS_SF_RW | IS_SF_WR)) != 0);
+            var skipSizeCheck = (id.idIns() == INS_align) ||
+                (insFmt is IF_XARCH_LABEL or IF_XARCH_RWR_LABEL or IF_XARCH_SWR_LABEL or IF_ARM32_LABEL or IF_ARM64_LABEL) ||
+                skipStackSizeCheck;
+            var actualCodeSize = unchecked((uint)(dst - *dp));
+            if (!skipSizeCheck && (id.idCodeSize() != actualCodeSize))
+            {
+                jitprintf($"Instruction size mismatch: estimated={id.idCodeSize()} actual={actualCodeSize} " +
+                    $"fmt={insFmt} attr={id.idOpSize():x} reg1={id.idReg1()} reg2={id.idReg2()}\n");
+                emitDispIns(id, false, false, true, emitCurCodeOffs(*dp), *dp, (nuint)actualCodeSize, ig);
+                assert(false, "Instruction size mismatch");
+            }
+        }
+
         if (Configuration.FEATURE_LOOP_ALIGN && emitLastAlignedIg is not null &&
             ((emitCurIG == emitLastAlignedIg) || emitCurIG.IsBefore(emitLastAlignedIg)))
         {

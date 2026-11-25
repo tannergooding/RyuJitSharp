@@ -95,7 +95,7 @@ internal static unsafe class ValueNumBinaryInterningTests
     }
 
     [Test]
-    public static void ComponentTestsPreserveNativeCanonicalizationAssertion()
+    public static void ComponentTestsMatchNativeCanonicalization()
     {
         Assume.That(TestConfiguration.IsDebug);
 
@@ -107,8 +107,8 @@ internal static unsafe class ValueNumBinaryInterningTests
 
         WithStore((_, compiler) => ValueNumStore.RunTests(compiler), &ee);
 
-        Assert.That(s_assertions, Is.EqualTo(1), s_lastAssertion);
-        Assert.That(s_lastAssertion, Does.Contain("application.GetArg(0) == one"));
+        Assert.That(s_assertions, Is.Zero, s_lastAssertion);
+        Assert.That(s_lastAssertion, Is.Null);
     }
 
     [Test]

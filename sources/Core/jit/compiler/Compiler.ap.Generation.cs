@@ -32,13 +32,31 @@ public partial class Compiler
 
             case GT_LCL_VAR:
             {
-                if (!optLocalAssertionProp && (tree.Type == TYP_INT) && lvaGetDesc(tree.AsLclVarCommon().LclNum).IsNeverNegative)
+                if (!optLocalAssertionProp && (tree.Type == TYP_INT) &&
+                    lvaGetDesc(tree.AsLclVarCommon().LclNum).IsNeverNegative)
                 {
                     var vn = optConservativeNormalVN(tree);
                     if (vn != ValueNumStore.NoVN)
                     {
                         assert(vnStore is not null);
                         assertionInfo = new(optAddAssertion(AssertionDsc.CreateConstantBound(this, VNF_GE, vn, vnStore.VNZeroForType(TYP_INT))));
+                    }
+                }
+
+                break;
+            }
+
+            case GT_LCL_FLD:
+            {
+                if (!optLocalAssertionProp && (tree.Type == TYP_INT) &&
+                    IntegralRange.ForNode(tree, this).IsNonNegative)
+                {
+                    var vn = optConservativeNormalVN(tree);
+                    if (vn != ValueNumStore.NoVN)
+                    {
+                        assert(vnStore is not null);
+                        assertionInfo = new(optAddAssertion(AssertionDsc.CreateConstantBound(
+                            this, VNF_GE, vn, vnStore.VNZeroForType(TYP_INT))));
                     }
                 }
 
@@ -63,7 +81,8 @@ public partial class Compiler
                 {
                     assertionInfo = new(optCreateAssertion(tree.IndirOrArrMetaDataAddr, null, equals: false));
                 }
-                else if ((tree.Oper == GT_IND) && (tree.Type == TYP_INT) && IntegralRange.ForNode(tree, this).IsNonNegative)
+                else if (!optLocalAssertionProp && (tree.Oper == GT_IND) && (tree.Type == TYP_INT) &&
+                    IntegralRange.ForNode(tree, this).IsNonNegative)
                 {
                     var vn = optConservativeNormalVN(tree);
                     if (vn != ValueNumStore.NoVN)

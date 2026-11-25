@@ -37,7 +37,7 @@ public partial class Emitter
             return;
         }
 
-        assert(isGeneralRegister(parameters.ireg));
+        assert((parameters.callType is EC_FUNC_TOKEN) || isGeneralRegister(parameters.ireg));
         assert((parameters.callType is EC_FUNC_TOKEN) || (parameters.addr == null));
         assert(parameters.xreg == REG_NA && parameters.xmul == 0 && parameters.disp == 0);
 
@@ -60,16 +60,6 @@ public partial class Emitter
             printRegMaskInt(byrefRegs);
             emitDispRegSet(byrefRegs);
             jitprintf("\n");
-        }
-
-        nint jalrOffset = 0;
-        if ((parameters.callType is EC_FUNC_TOKEN) && !IsAddressInRange(parameters.addr))
-        {
-            assert(parameters.addr is not null);
-            var imm = (nint)parameters.addr;
-            jalrOffset = unchecked((imm << (64 - 12)) >> (64 - 12));
-            imm = unchecked(imm - jalrOffset);
-            _ = emitLoadImmediate(true, EA_PTRSIZE, parameters.ireg, imm);
         }
 
         assert((parameters.argSize % Configuration.REGSIZE_BYTES) == 0);
@@ -114,20 +104,18 @@ public partial class Emitter
         id.idIns(INS_jalr);
         id.idInsOpt(INS_OPTS_RISCV64_C);
 
-        if ((parameters.callType is EC_INDIR_R) ||
-            ((parameters.callType is EC_FUNC_TOKEN) && !IsAddressInRange(parameters.addr)))
+        if (parameters.callType is EC_INDIR_R)
         {
             id.idSetIsCallRegPtr();
             id.idReg4(parameters.isJump ? REG_RISCV64_R0 : REG_RISCV64_RA);
             id.idReg3(parameters.ireg);
-            id.idSmallCns(jalrOffset);
+            id.idSmallCns(0);
             id.idCodeSize(4);
         }
         else
         {
             assert(parameters.callType is EC_FUNC_TOKEN);
             assert(parameters.addr is not null);
-            assert(IsAddressInRange(parameters.addr));
 
             id.idAddr().iiaAddr = (byte*)parameters.addr + (parameters.isJump ? 0 : 1);
             id.idCodeSize(8);

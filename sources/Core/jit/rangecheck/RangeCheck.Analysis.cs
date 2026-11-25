@@ -20,7 +20,7 @@ public sealed partial class RangeCheck
 
         _preferredBound = preferredBoundVN;
         _rangeMap.Clear();
-        _searchPath.Clear();
+        ClearSearchPath();
 
         var computed = GetRangeWorker(block, tree, false);
         assert(computed.IsValid());
@@ -39,7 +39,7 @@ public sealed partial class RangeCheck
         }
 
         JITDUMP($"Range value {computed}\n");
-        _searchPath.Clear();
+        ClearSearchPath();
         Widen(block, tree, ref computed);
         if (computed.UpperLimit.IsUnknown || computed.LowerLimit.IsUnknown)
         {

@@ -292,11 +292,11 @@ internal static unsafe class ProfileCountTests
 
             if (bbopt)
             {
-                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBOPT);
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_OPT);
             }
 
             var output = Capture(compiler, () => _ = IncorporateProfile(compiler));
-            var expected = bbopt ? "BBOPT set, but no profile data available (hr=80004001)" : "BBOPT not set";
+            var expected = bbopt ? "PGO_OPT set, but no profile data available (hr=80004001)" : "PGO_OPT not set";
             Assert.That(output, Is.EqualTo(expected + Environment.NewLine));
         });
     }
@@ -326,7 +326,7 @@ internal static unsafe class ProfileCountTests
             if (propagate)
             {
                 PropagateSynthesis(ref JitConfig) = 1;
-                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_INSTR);
             }
 
             _ = IncorporateProfile(compiler);

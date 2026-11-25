@@ -26,6 +26,7 @@ public partial class Compiler
             internal int _enablePCRelAddr;
             internal int _jitAssertOnMaxRAPasses;
             internal int _jitBreakEmitOutputInstr;
+            internal int _jitAssertOnEmitSizeMismatch;
             internal int _jitBreakMorphTree;
             internal int _jitBreakOnBadCode;
             internal int _jitBreakOnMinOpts;
@@ -582,6 +583,19 @@ public partial struct JitConfigValues
                 return debugData is null ? default! : debugData._jitBreakEmitOutputInstr;
             }
             JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitBreakEmitOutputInstr" : default);
+            return default!;
+        }
+    }
+    public int JitAssertOnEmitSizeMismatch
+    {
+        get
+        {
+            if (Configuration.DEBUG)
+            {
+                var debugData = _configurationData?._debugData;
+                return debugData is null ? default! : debugData._jitAssertOnEmitSizeMismatch;
+            }
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitAssertOnEmitSizeMismatch" : default);
             return default!;
         }
     }
@@ -3818,6 +3832,7 @@ public partial struct JitConfigValues
         // _configurationData!._debugData!._enablePCRelAddr = unchecked((int)(0xCDCDCDCD));
         // _configurationData!._debugData!._jitAssertOnMaxRAPasses = unchecked((int)(0xCDCDCDCD));
         // _configurationData!._debugData!._jitBreakEmitOutputInstr = unchecked((int)(0xCDCDCDCD));
+        // _configurationData!._debugData!._jitAssertOnEmitSizeMismatch = unchecked((int)(0xCDCDCDCD));
         // _configurationData!._debugData!._jitBreakMorphTree = unchecked((int)(0xCDCDCDCD));
         // _configurationData!._debugData!._jitBreakOnBadCode = unchecked((int)(0xCDCDCDCD));
         // _configurationData!._debugData!._jitBreakOnMinOpts = unchecked((int)(0xCDCDCDCD));
@@ -4384,6 +4399,7 @@ public partial struct JitConfigValues
             _configurationData!._debugData!._enablePCRelAddr = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnablePCRelAddr"u8))), 1);
             _configurationData!._debugData!._jitAssertOnMaxRAPasses = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAssertOnMaxRAPasses"u8))), 0);
             _configurationData!._debugData!._jitBreakEmitOutputInstr = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitBreakEmitOutputInstr"u8))), -1);
+            _configurationData!._debugData!._jitAssertOnEmitSizeMismatch = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAssertOnEmitSizeMismatch"u8))), 1);
             _configurationData!._debugData!._jitBreakMorphTree = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitBreakMorphTree"u8))), unchecked((int)(0xffffffff)));
             _configurationData!._debugData!._jitBreakOnBadCode = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitBreakOnBadCode"u8))), 0);
             _configurationData!._debugData!._jitBreakOnMinOpts = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JITBreakOnMinOpts"u8))), 0);

@@ -2838,7 +2838,7 @@ public partial class Compiler
     {
         // Possibly instrument.
         //
-        if (!opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR))
+        if (!opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_INSTR))
         {
             return;
         }
@@ -14485,7 +14485,7 @@ public partial class Compiler
 
     public unsafe bool impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
     {
-        if ((JitConfig.JitConsumeProfileForCasts is not 1) || !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT))
+        if ((JitConfig.JitConsumeProfileForCasts is not 1) || !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PGO_OPT))
         {
             return false;
         }

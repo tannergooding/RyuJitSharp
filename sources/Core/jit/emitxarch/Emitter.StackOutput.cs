@@ -92,7 +92,7 @@ public partial class Emitter
         }
         else if ((code & 0x00FF0000) != 0)
         {
-            if (size == EA_2BYTE && ins == INS_cmpxchg)
+            if (NeedsLegacyOperandSizePrefix(id))
             {
                 dst += emitOutputByte(dst, 0x66);
             }
@@ -217,9 +217,12 @@ public partial class Emitter
                 assert(isCompressed && dspInByte);
                 dsp = unchecked((int)compressedDsp);
             }
-            else if (TakesEvexPrefix(id) && !IsBMIInstruction(ins)
-                && !(IsApxExtendedEvexInstruction(ins) && !IsSimdInstruction(ins)))
+            else if (TakesEvexPrefix(id) && hasTupleTypeInfo(ins))
             {
+                if (Configuration.FEATURE_FIXED_OUT_ARGS)
+                {
+                    assert(!TryEvexCompressDisp8Byte(id, dsp, out _, out _));
+                }
                 dspInByte = false;
             }
             else

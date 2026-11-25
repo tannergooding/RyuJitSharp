@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "e59cd983cf02cae356d135079a058a3c2b65e249",
-    "targetObservedAt": "2026-11-24",
-    "reconciledCommit": "e59cd983cf02cae356d135079a058a3c2b65e249"
+    "targetCommit": "c2e4466c30252873ebb828f1d95803d79ac8f03d",
+    "targetObservedAt": "2026-11-25",
+    "reconciledCommit": "c2e4466c30252873ebb828f1d95803d79ac8f03d"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Capture matched native/managed phase and codegen evidence for the e59cd983cf02cae356d135079a058a3c2b65e249 Wasm select/if-conversion, ARM64 widening-intrinsic, xarch codegen, async importer, AliasSet, and value-number changes before claiming those frontiers; available runtime JIT binaries are stamped 032b849d22cbf2eee40f63eb2c6156c2f54846e5 and 1d599674e31ad86ca9e6e1dad7055b531e4d58e4, not the pinned oracle. Then investigate the GenericCatch Importation diagnostic difference last observed at fcb04a83f3013e65d573dc0ec240c7a5a720db3a (native defers profile-weight checking after fgPgoDeferredInconsistency; managed checks weights), then continue recursive-tail-call-to-loop phase/codegen verification. Preserve the known broad win-arm64 Debug baseline of 10 failures and 2 not executed; do not treat it as passing or attribute those failures to this batch. Keep D015/B322 accepted and dynamicTlsInputBoundary unresolved. Defer genAsyncResumeInfo until the B209 target-width table/emitter closure is ported and tested; Wasm GC-info and AMD64 unwind-V3 encoders remain unverified. Do not claim full runtime parity.",
+    "nextAction": "Capture matched native/managed phase and codegen evidence for the c2e4466c30252873ebb828f1d95803d79ac8f03d RISC-V direct-call relocations, xarch emitter sizing/APX paths, mutable multi-register struct arguments, Span.Length assertion/range/VN changes, Wasm select/if-conversion, ARM64 widening-intrinsic, async importer, AliasSet, and value-number frontiers; available runtime JIT binaries are stamped 032b849d22cbf2eee40f63eb2c6156c2f54846e5 and 1d599674e31ad86ca9e6e1dad7055b531e4d58e4, not the pinned oracle. Then investigate the GenericCatch Importation diagnostic difference last observed at fcb04a83f3013e65d573dc0ec240c7a5a720db3a (native defers profile-weight checking after fgPgoDeferredInconsistency; managed checks weights), then continue recursive-tail-call-to-loop phase/codegen verification. Preserve the known broad win-arm64 Debug baseline of 10 failures (4 scalable TYP_SIMD clone, 3 embedded-FMA, 2 constant-count intrinsic, 1 jump-table) and 2 not executed; do not treat it as passing or attribute those failures to this batch. Keep D015/B322 accepted and dynamicTlsInputBoundary unresolved. Defer genAsyncResumeInfo until the B209 target-width table/emitter closure is ported and tested; Wasm GC-info and AMD64 unwind-V3 encoders remain unverified. Do not claim full runtime parity.",
     "activeBatch": null,
     "unresolvedConditionalCleanup": [],
     "unresolvedQueryCacheBoundaries": [
@@ -1399,6 +1399,71 @@
       ],
       "disposition": "The shared logical-definition visitor covers promoted locals and call-defined locals; the public traversal requires GTF_ASG, while IR verification uses the ungated traversal. Consumers are split across Compiler and ObjectAllocator partials, with focused tests for assignment gating, reference counts, and escaping call definitions.",
       "sourceCommit": "e59cd983cf02cae356d135079a058a3c2b65e249"
+    },
+    {
+      "area": "riscv-relocatable-direct-calls",
+      "native": [
+        "src\\coreclr\\jit\\codegenriscv64.cpp",
+        "src\\coreclr\\jit\\emitriscv64.cpp",
+        "src\\coreclr\\jit\\lsrariscv64.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegenriscv64\\CodeGen.Calls.cs",
+        "sources\\Core\\jit\\emit\\Emitter.CallInstructions.RiscV64.cs",
+        "sources\\Core\\jit\\lsra\\LinearScan.Calls.cs",
+        "tests\\Core\\RiscVCodeGenPortTests.cs"
+      ],
+      "disposition": "Contained constant EC_FUNC_TOKEN calls use relocatable PC-relative emission without a transient target-register allocation; only indirect EC_INDIR_R calls retain register-based jalr. CodeGen, Emitter, and LSRA responsibilities span three managed partials, with focused descriptor coverage.",
+      "sourceCommit": "c2e4466c30252873ebb828f1d95803d79ac8f03d"
+    },
+    {
+      "area": "span-length-nonnegative-range-classification",
+      "native": [
+        "src\\coreclr\\jit\\assertionprop.cpp",
+        "src\\coreclr\\jit\\compiler.h",
+        "src\\coreclr\\jit\\gentree.cpp",
+        "src\\coreclr\\jit\\gentree.h",
+        "src\\coreclr\\jit\\rangecheck.cpp",
+        "src\\coreclr\\jit\\rangecheck.h",
+        "src\\coreclr\\jit\\valuenum.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.ap.Application.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.ap.Generation.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.VNTree.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.gt.cs",
+        "sources\\Core\\jit\\compiler\\IntegralRange.cs",
+        "sources\\Core\\jit\\rangecheck\\RangeCheck.Analysis.cs",
+        "sources\\Core\\jit\\rangecheck\\RangeCheck.Assertions.cs",
+        "sources\\Core\\jit\\rangecheck\\RangeCheck.Ssa.cs",
+        "sources\\Core\\jit\\rangecheck\\RangeCheck.cs",
+        "sources\\Core\\jit\\valuenum\\ValueNumStore.Queries.cs",
+        "tests\\Core\\AssertionTests.cs",
+        "tests\\Core\\ValueNumStore.ComponentTests.cs"
+      ],
+      "disposition": "Span.Length recognition now feeds assertion generation, range monotonicity/checked-bound queries, and VN nonnegative classification. The native functions are split between Compiler partials, IntegralRange, RangeCheck, and ValueNumStore; recognition is centralized in Compiler.gtIsSpanLength.",
+      "sourceCommit": "c2e4466c30252873ebb828f1d95803d79ac8f03d"
+    },
+    {
+      "area": "xarch-emitter-size-validation",
+      "native": [
+        "src\\coreclr\\jit\\codegenxarch.cpp",
+        "src\\coreclr\\jit\\emitxarch.cpp",
+        "src\\coreclr\\jit\\emitxarch.h",
+        "src\\coreclr\\jit\\jitconfigvalues.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegencommon\\CodeGen.EmitterTests.cs",
+        "sources\\Core\\jit\\emit\\Emitter.InstructionOutput.cs",
+        "sources\\Core\\jit\\emit\\Emitter.InstructionSizes.cs",
+        "sources\\Core\\jit\\emit\\Emitter.RegisterInstructionSizes.cs",
+        "sources\\Core\\jit\\emitxarch\\Emitter.PrefixDecisions.cs",
+        "sources\\Core\\jit\\emitxarch\\Emitter.StackInstructionSizes.cs",
+        "sources\\GenerateTables\\Inputs\\jitconfigvalues.h",
+        "sources\\Core\\jit\\jitconfig\\JitConfigValues.generated.cs"
+      ],
+      "disposition": "The native emitter's operand-prefix and actual/estimated-size paths are implemented across shared Emitter sizing/output and xarch prefix/output partials. Emitter self-tests route through CodeGen.EmitterTests; the debug size-mismatch toggle is kept paired with its generator input and output.",
+      "sourceCommit": "c2e4466c30252873ebb828f1d95803d79ac8f03d"
     }
   ],
   "generatorInputMapping": {
@@ -1409,8 +1474,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "bdd9b750b7065f5d2a26e28a0b74776339beaeac",
-    "reconciledCommit": "e59cd983cf02cae356d135079a058a3c2b65e249",
+    "targetInputCommit": "c2e4466c30252873ebb828f1d95803d79ac8f03d",
+    "reconciledCommit": "c2e4466c30252873ebb828f1d95803d79ac8f03d",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

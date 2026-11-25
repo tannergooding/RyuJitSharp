@@ -112,6 +112,11 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
         assert(varTypeIsIntegral(node.Type));
         var rangeType = node.Type;
 
+        if (compiler.gtIsSpanLength(node))
+        {
+            return new(Zero, UpperBoundForType(rangeType));
+        }
+
         switch (node.Oper)
         {
             case GT_EQ:
@@ -155,39 +160,6 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
                 if (node.AsCall().NormalizesSmallTypesOnReturn)
                 {
                     rangeType = node.AsCall()._returnType;
-                }
-
-                break;
-            }
-
-            case GT_IND:
-            {
-                var addr = node.AsIndir().Addr;
-
-                if ((node.Type is TYP_INT) && (addr.Oper is GT_ADD)
-                    && (addr.AsOp().Op1.Oper is GT_LCL_VAR)
-                    && addr.AsOp().Op2.IsIntegralConst(OFFSETOF__CORINFO_Span__length))
-                {
-                    var lclVar = addr.AsOp().Op1.AsLclVar();
-
-                    if (compiler.lvaGetDesc(lclVar.LclNum).IsSpan)
-                    {
-                        assert(compiler.lvaIsImplicitByRefLocal(lclVar.LclNum));
-                        return new(Zero, UpperBoundForType(rangeType));
-                    }
-                }
-
-                break;
-            }
-
-            case GT_LCL_FLD:
-            {
-                var lclFld = node.AsLclFld();
-                ref var varDsc = ref compiler.lvaGetDesc(lclFld.LclNum);
-
-                if ((node.Type is TYP_INT) && varDsc.IsSpan && (lclFld.LclOffs == OFFSETOF__CORINFO_Span__length))
-                {
-                    return new(Zero, UpperBoundForType(rangeType));
                 }
 
                 break;

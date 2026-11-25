@@ -8350,6 +8350,39 @@ public partial class Compiler
         return false;
     }
 
+    public bool gtIsSpanLength(GenTree tree)
+    {
+        if (tree.Type is not TYP_INT)
+        {
+            return false;
+        }
+
+        if (tree.Oper is GT_LCL_FLD)
+        {
+            var localField = tree.AsLclFld();
+            return lvaGetDesc(localField.LclNum).IsSpan &&
+                (localField.LclOffs == OFFSETOF__CORINFO_Span__length);
+        }
+
+        if (tree.Oper is GT_IND)
+        {
+            var address = tree.AsIndir().Addr;
+            if ((address.Oper is GT_ADD) &&
+                (address.AsOp().Op1.Oper is GT_LCL_VAR) &&
+                address.AsOp().Op2.IsIntegralConst(OFFSETOF__CORINFO_Span__length))
+            {
+                var local = address.AsOp().Op1.AsLclVar().LclNum;
+                if (lvaGetDesc(local).IsSpan)
+                {
+                    assert(lvaIsImplicitByRefLocal(local));
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>Check if two trees may interfere because of a store in one of the trees.</summary>
     /// <param name="treeWithStores">Tree that may have stores in it</param>
     /// <param name="tree">Tree that may be reading from a local stored to in "treeWithStores"</param>

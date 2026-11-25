@@ -12,12 +12,29 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private readonly struct WriteBarrierReachingVNVisitor(ValueNumStore store)
+    private struct WriteBarrierReachingVNVisitor(Compiler compiler, ValueNumStore store, bool isVolatile)
         : IValueNumVisitor<WriteBarrierReachingVNVisitor>
     {
-        public ValueNumStore.VNVisit Visit(ValueNum valueNum)
-            => (valueNum == ValueNumStore.VNForNull()) || store.IsVNObjHandle(valueNum)
-                ? ValueNumStore.VNVisit.Continue : ValueNumStore.VNVisit.Abort;
+        private bool _needsRelease;
+
+        public readonly bool NeedsRelease => _needsRelease;
+
+        public unsafe ValueNumStore.VNVisit Visit(ValueNum valueNum)
+        {
+            if ((valueNum == ValueNumStore.VNForNull()) || store.IsVNObjHandle(valueNum))
+            {
+                if (!Configuration.TARGET_XARCH && !_needsRelease && !isVolatile &&
+                    (valueNum != ValueNumStore.VNForNull()))
+                {
+                    var handle = (CORINFO_OBJECT_HANDLE)store.ConstantValue<nint>(valueNum);
+                    _needsRelease = !compiler.info.compCompHnd->isObjectImmutable(handle);
+                }
+
+                return ValueNumStore.VNVisit.Continue;
+            }
+
+            return ValueNumStore.VNVisit.Abort;
+        }
     }
 
     private readonly struct VectorElementMaskVisitor(ValueNumStore store, var_types simdBaseType, byte simdSize)
@@ -271,7 +288,7 @@ public partial class Compiler
 
         assert(vnStore is not null);
         var form = WBF_BarrierUnknown;
-        var visitor = new WriteBarrierReachingVNVisitor(vnStore);
+        var visitor = new WriteBarrierReachingVNVisitor(this, vnStore, indir.IsVolatile);
         var result = vnStore.VNVisitReachingVNs(optConservativeNormalVN(value), ref visitor);
         if (result is ValueNumStore.VNVisit.Continue)
         {
@@ -287,6 +304,11 @@ public partial class Compiler
         if (form is WBF_NoBarrier)
         {
             JITDUMP("is not needed at all.\n");
+            if (visitor.NeedsRelease)
+            {
+                indir.Flags |= GTF_IND_VOLATILE;
+                indir.HasOrderingSideEffect = true;
+            }
             indir.Flags |= GTF_IND_TGT_NOT_HEAP;
             return true;
         }

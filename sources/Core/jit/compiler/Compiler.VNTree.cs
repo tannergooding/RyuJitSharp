@@ -264,6 +264,16 @@ public partial class Compiler
                     {
                         tree._vnPair.SetBoth(vnStore.VNForExpr(compCurBB, type));
                     }
+
+                    if (gtIsSpanLength(tree))
+                    {
+                        var lengthVN = vnStore.VNNormalValue(tree._vnPair.Conservative);
+                        if (!vnStore.IsVNConstant(lengthVN))
+                        {
+                            vnStore.SetVNIsCheckedBound(lengthVN);
+                        }
+                    }
+
                     break;
                 }
 
@@ -461,6 +471,15 @@ public partial class Compiler
                         tree._vnPair.Conservative = vnStore.VNForExpr(compCurBB, type);
                     }
                     tree._vnPair = vnStore.VNPWithExc(tree._vnPair, addrExceptions);
+                }
+
+                if (gtIsSpanLength(tree))
+                {
+                    var lengthVN = vnStore.VNNormalValue(tree._vnPair.Conservative);
+                    if (!vnStore.IsVNConstant(lengthVN))
+                    {
+                        vnStore.SetVNIsCheckedBound(lengthVN);
+                    }
                 }
             }
             else if (oper is GT_CAST)

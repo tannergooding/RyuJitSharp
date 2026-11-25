@@ -139,12 +139,13 @@ public partial class Compiler
             FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AnalyzedLoopMustHaveATestBlock);
             return default!;
         }
-        assert(loop.ContainsBlock(testBlock.TrueTarget) != loop.ContainsBlock(testBlock.FalseTarget));
         if (testBlock.TrueTarget != loop.Header && testBlock.FalseTarget != loop.Header)
         {
             JITDUMP($"Failed to unroll loop L{loop.Index:D2}: test block is not a backedge\n");
             return false;
         }
+        // A test outside the backedge may have both successors outside the loop.
+        assert(loop.ContainsBlock(testBlock.TrueTarget) != loop.ContainsBlock(testBlock.FalseTarget));
 
         var lbeg = iterInfo.ConstInitValue;
         var llim = iterInfo.ConstLimit();

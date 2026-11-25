@@ -164,16 +164,16 @@ public partial class Emitter
             // The prefix absorbs the opcode escape byte and any SIMD size prefix.
             // A second escape byte and the otherwise uncounted ModRM byte cancel.
             prefixAdjustedSize -= 1;
-            var check = (byte)((code >> 24) & 0xFF);
+            var sizePrefix = (byte)((code >> 16) & 0xFF);
 
-            if (check != 0)
+            if ((sizePrefix != 0) && isPrefix(sizePrefix))
             {
-                var sizePrefix = (byte)((code >> 16) & 0xFF);
-
-                if ((sizePrefix != 0) && isPrefix(sizePrefix))
-                {
-                    prefixAdjustedSize -= 1;
-                }
+                prefixAdjustedSize -= 1;
+            }
+            else if ((sizePrefix == 0) && ((code & 0xFF000000) != 0))
+            {
+                // Four-byte opcodes without a SIMD prefix still reserve this prefix slot.
+                prefixAdjustedSize -= 1;
             }
 
             adjustedSize = prefixAdjustedSize;
@@ -206,10 +206,7 @@ public partial class Emitter
                 }
             }
 
-            var attr = id.idOpSize();
-
-            if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) &&
-                !IsSimdInstruction(ins) && !TakesEvexPrefix(id))
+            if (NeedsLegacyOperandSizePrefix(id))
             {
                 prefixAdjustedSize++;
             }
@@ -223,9 +220,7 @@ public partial class Emitter
                 adjustedSize++;
             }
 
-            var attr = id.idOpSize();
-
-            if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && !IsSimdInstruction(ins))
+            if (NeedsLegacyOperandSizePrefix(id))
             {
                 adjustedSize++;
             }

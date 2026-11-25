@@ -173,7 +173,7 @@ public sealed partial class CodeGen
             if (target.IsContainedIntOrIImmed)
             {
                 parameters.callType = EC_FUNC_TOKEN;
-                parameters.ireg = InternalRegisters.GetSingle(call);
+                parameters.ireg = REG_RISCV64_NA;
                 parameters.addr = (void*)target.AsIntCon().IconValue;
             }
             else
@@ -182,7 +182,7 @@ public sealed partial class CodeGen
                 parameters.ireg = target.RegNum;
             }
 
-            assert(genIsValidIntReg(parameters.ireg));
+            assert((parameters.callType is EC_FUNC_TOKEN) || genIsValidIntReg(parameters.ireg));
             genEmitCallWithCurrentGC(ref parameters);
         }
         else

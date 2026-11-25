@@ -493,6 +493,38 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
+    public static void EmitterRecordsRelocatableRiscVDirectCallWithoutTargetRegister()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compReloc = true;
+            var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
+            var parameters = new EmitCallParams
+            {
+                callType = EC_FUNC_TOKEN,
+                ireg = REG_RISCV64_NA,
+                addr = (void*)0x1234,
+                ptrVars = VarSetOps.MakeEmpty(compiler),
+            };
+            var failure = CaptureFatalJitException(() => codeGen.Emitter.emitIns_Call(in parameters));
+
+            var instructionBuffer = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(instructionBuffer, Has.Count.EqualTo(1), failure?.ToString());
+
+            var descriptor = instructionBuffer[0];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_jalr));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(8));
+            Assert.That(descriptor.idIsCall(), Is.True);
+            Assert.That(descriptor.idIsCallRegPtr(), Is.False);
+            Assert.That(descriptor.idIsDspReloc(), Is.True);
+            Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo((nint)0x1235));
+            Assert.That(failure, Is.Null);
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize + 8));
+        });
+    }
+
+    [Test]
     public static void EmitterRecordsIndirectRiscVTailCall()
     {
         WithCodeGen((compiler, codeGen) =>
@@ -2856,7 +2888,7 @@ internal static unsafe class RiscVCodeGenPortTests
             else
             {
                 Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
-                    Is.EqualTo([INS_add, INS_slt, INS_slti, INS_beq, INS_slli, INS_jalr]));
+                    Is.EqualTo([INS_add, INS_slt, INS_slti, INS_beq, INS_jalr]));
             }
         });
     }
@@ -2935,8 +2967,8 @@ internal static unsafe class RiscVCodeGenPortTests
             else
             {
                 instruction[] expectedInstructions = isUnsigned
-                    ? [INS_slli, INS_slli, INS_mulhu, INS_srai, INS_mulw, INS_beq, INS_slli, INS_jalr]
-                    : [INS_mulh, INS_mul, INS_srai, INS_beq, INS_slli, INS_jalr];
+                    ? [INS_slli, INS_slli, INS_mulhu, INS_srai, INS_mulw, INS_beq, INS_jalr]
+                    : [INS_mulh, INS_mul, INS_srai, INS_beq, INS_jalr];
                 Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(expectedInstructions));
             }
         });

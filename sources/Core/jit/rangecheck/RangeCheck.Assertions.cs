@@ -333,19 +333,53 @@ public sealed partial class RangeCheck
                         };
                         result = RangeOps.EvalRelop(op, unsigned, left, right);
 
-                        var addVN = ValueNumStore.NoVN;
-                        var addConstant = 0;
-                        if (!result.IsSingleValueConstant(out _) && (type.ActualType == TYP_INT) &&
-                            store.IsVNBinFuncWithConst(app.GetArg(0), VNF_ADD, ref addVN, ref addConstant) &&
-                            (addVN == app.GetArg(1)) && (addConstant < 0) && (addConstant > int.MinValue) &&
-                            right.LowerLimit.IsConstant && (right.LowerLimit.Constant >= -addConstant))
+                        var op1VN = app.GetArg(0);
+                        var op2VN = app.GetArg(1);
+                        var base1 = op1VN;
+                        var base2 = op2VN;
+                        var constant1 = 0;
+                        var constant2 = 0;
+                        if (!result.IsSingleValueConstant(out _))
                         {
-                            result = op switch
+                            _ = store.IsVNBinFuncWithConst(op1VN, VNF_ADD, ref base1, ref constant1);
+                            _ = store.IsVNBinFuncWithConst(op2VN, VNF_ADD, ref base2, ref constant2);
+
+                            if ((base1 != base2) && (base1 == op2VN))
                             {
-                                GT_LT or GT_LE or GT_NE => new(new(LimitType.Constant, 1)),
-                                GT_GT or GT_GE or GT_EQ => new(new(LimitType.Constant, 0)),
-                                _ => result,
-                            };
+                                base2 = op2VN;
+                                constant2 = 0;
+                            }
+                            else if ((base1 != base2) && (base2 == op1VN))
+                            {
+                                base1 = op1VN;
+                                constant1 = 0;
+                            }
+                        }
+
+                        if (!result.IsSingleValueConstant(out _) && (base1 == base2) &&
+                            (store.TypeOfVN(base1) is TYP_INT))
+                        {
+                            var baseRange = (base1 == op1VN) ? left : right;
+                            if ((base1 != op1VN) && (base1 != op2VN))
+                            {
+                                baseRange = GetRangeFromAssertionsWorker(
+                                    comp, base1, assertions, --budget, []);
+                            }
+
+                            if (baseRange.IsConstantRange())
+                            {
+                                var minimumConstant = constant1 < constant2 ? constant1 : constant2;
+                                var maximumConstant = constant1 > constant2 ? constant1 : constant2;
+                                var lower = (long)baseRange.LowerLimit.Constant + minimumConstant;
+                                var upper = (long)baseRange.UpperLimit.Constant + maximumConstant;
+                                if ((lower >= (unsigned ? 0 : int.MinValue)) && (upper <= int.MaxValue))
+                                {
+                                    result = RangeOps.EvalRelop(
+                                        op, false,
+                                        new(new(LimitType.Constant, constant1)),
+                                        new(new(LimitType.Constant, constant2)));
+                                }
+                            }
                         }
                     }
                     break;

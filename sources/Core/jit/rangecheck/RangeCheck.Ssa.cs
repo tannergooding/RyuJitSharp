@@ -44,15 +44,16 @@ public sealed partial class RangeCheck
         }
 
         _visitBudget--;
-        if (_searchPath.ContainsKey(tree))
+        var searchPath = rejectNegativeConstant ? GetRejectNegativeSearchPath() : _searchPath;
+        if (searchPath.ContainsKey(tree))
         {
             return true;
         }
 
-        _searchPath[tree] = null;
+        searchPath[tree] = null;
         try
         {
-            if (_searchPath.Count > MaxSearchDepth)
+            if ((_searchPath.Count + (_rejectNegativeSearchPath?.Count ?? 0)) > MaxSearchDepth)
             {
                 return false;
             }
@@ -99,7 +100,7 @@ public sealed partial class RangeCheck
             {
                 foreach (var use in tree.AsPhi().Uses)
                 {
-                    if (!_searchPath.ContainsKey(use.Node) &&
+                    if (!searchPath.ContainsKey(use.Node) &&
                         !IsMonotonicallyIncreasing(use.Node, rejectNegativeConstant))
                     {
                         return false;
@@ -114,7 +115,7 @@ public sealed partial class RangeCheck
         }
         finally
         {
-            _ = _searchPath.Remove(tree);
+            _ = searchPath.Remove(tree);
         }
     }
 

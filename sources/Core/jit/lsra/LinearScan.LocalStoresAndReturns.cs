@@ -53,6 +53,13 @@ public sealed partial class LinearScan
         {
             candidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
         }
+        else if (Configuration.TARGET_XARCH && store.Op1.IsContained &&
+            (store.Op1.Oper is GT_BITCAST) && varTypeUsesIntReg(registerType) &&
+            varTypeUsesFloatReg(store.Op1.AsUnOp().Op1.Type))
+        {
+            // Until extended EVEX is available, int-to-float bitcasts require low GPRs.
+            candidates = _lowGprRegs;
+        }
         var definition = newRefPosition(interval, _referenceBuildLocation + 1,
             RefType.RefTypeDef, store, candidates, checked((uint)index));
         if (interval.isWriteThru)
@@ -156,7 +163,15 @@ public sealed partial class LinearScan
         {
             var bitcastSource = source.AsUnOp().Op1;
             var registerType = regType(bitcastSource.Type);
-            singleUse = buildUse(bitcastSource, allRegs(registerType));
+            var sourceCandidates = allRegs(registerType);
+            if (Configuration.TARGET_XARCH &&
+                varTypeUsesIntReg(bitcastSource.Type) &&
+                varTypeUsesFloatReg(local.GetRegisterType(store)))
+            {
+                // Until extended EVEX is available, int-to-float bitcasts require low GPRs.
+                sourceCandidates = _lowGprRegs;
+            }
+            singleUse = buildUse(bitcastSource, sourceCandidates);
             assert(regType(singleUse.getInterval().registerType) == registerType);
             sourceCount = 1;
         }

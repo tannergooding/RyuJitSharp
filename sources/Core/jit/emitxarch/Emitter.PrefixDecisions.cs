@@ -179,6 +179,19 @@ public partial class Emitter
         return false;
     }
 
+    private bool NeedsLegacyOperandSizePrefix(instrDesc id)
+    {
+        var ins = id.idIns();
+        return (id.idOpSize() == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) &&
+            !IsSimdInstruction(ins) && !TakesEvexPrefix(id);
+    }
+
+    private static bool HasRewrittenBuiltInRexPrefix(instruction ins)
+    {
+        return Configuration.TARGET_AMD64 &&
+            InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_08, INS_imul_15);
+    }
+
     private bool TakesRexWPrefix(instrDesc id)
     {
         if (Configuration.TARGET_X86 && !UseVexEncodings)

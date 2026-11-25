@@ -320,7 +320,7 @@ internal static class EmitterAddressInstructionTests
     [TestCase(INS_movzx, EA_1BYTE, 3u)]
     [TestCase(INS_movsx, EA_1BYTE, 4u)]
     [TestCase(INS_cmove, EA_2BYTE, 4u)]
-    [TestCase(INS_cmpxchg, EA_2BYTE, 5u)]
+    [TestCase(INS_cmpxchg, EA_2BYTE, 4u)]
     [TestCase(INS_prefetcht0, EA_1BYTE, 3u)]
     public static void MultiByteOpcodesRetainNativeOperandPrefixSpecialCases(instruction ins, emitAttr attr, uint size)
     {

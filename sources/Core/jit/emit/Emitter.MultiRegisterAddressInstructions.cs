@@ -117,7 +117,9 @@ public partial class Emitter
 
         SetEvexBroadcastIfNeeded(id, instOptions);
         SetEvexEmbMaskIfNeeded(id, instOptions);
-        var sz = emitInsSizeAM(id, insCodeRM(ins), ival);
+        var sz = isMaskReg(op3Reg)
+            ? emitInsSizeAM(id, insCodeRM(ins))
+            : emitInsSizeAM(id, insCodeRM(ins), ival);
         id.idCodeSize(sz);
 
         dispIns(id);

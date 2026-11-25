@@ -228,7 +228,9 @@ public partial class Emitter
 
         SetEvexBroadcastIfNeeded(id, instOptions);
         SetEvexEmbMaskIfNeeded(id, instOptions);
-        var sz = emitInsSizeCV(id, insCodeRM(ins), ival);
+        var sz = isMaskReg(op3Reg)
+            ? emitInsSizeCV(id, insCodeRM(ins))
+            : emitInsSizeCV(id, insCodeRM(ins), ival);
         id.idCodeSize(sz);
 
         dispIns(id);
@@ -265,7 +267,9 @@ public partial class Emitter
 
         SetEvexBroadcastIfNeeded(id, instOptions);
         SetEvexEmbMaskIfNeeded(id, instOptions);
-        var sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
+        var sz = isMaskReg(op3Reg)
+            ? emitInsSizeSV(id, insCodeRM(ins), varx, offs)
+            : emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
         id.idCodeSize(sz);
 
         dispIns(id);

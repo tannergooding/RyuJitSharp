@@ -377,7 +377,7 @@ public partial class Compiler
             for (var index = firstVectorOperand; (index <= opCount) && canFold; index++)
             {
                 var operand = tree.GetOp(index);
-                canFold = operand.IsSveMaskOperand &&
+                canFold = operand.CanBeSveMask &&
                     (!operand.IsConvertMaskToVector ||
                      (operand.AsHWIntrinsic().SimdBaseType.Size == simdBaseType.Size));
             }

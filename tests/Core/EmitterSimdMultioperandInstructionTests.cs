@@ -521,7 +521,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             else
             {
                 Assert.That(Constant(emitter, id), Is.EqualTo((nint)mask));
-                Assert.That(id.idCodeSize(), Is.EqualTo(kind == 0 ? 7u : 11u));
+                Assert.That(id.idCodeSize(), Is.EqualTo(kind == 0 ? 6u : 10u));
                 Assert.That(id.NativeLogicalSize, Is.EqualTo(24));
             }
             var prefix = AddEvexPrefix(emitter, id, 0, EA_64BYTE);

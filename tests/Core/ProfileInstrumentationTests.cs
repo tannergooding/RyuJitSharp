@@ -144,8 +144,8 @@ internal static unsafe class ProfileInstrumentationTests
         try
         {
             FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
-                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
-                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBOPT);
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_INSTR);
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_OPT);
                 compiler.optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
                 var pred = BasicBlock.New(compiler, BBJ_ALWAYS);
                 var ret = BasicBlock.New(compiler, BBJ_RETURN);
@@ -286,7 +286,7 @@ internal static unsafe class ProfileInstrumentationTests
         try
         {
             FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
-                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_INSTR);
                 var block = BasicBlock.New(compiler, BBJ_RETURN);
                 compiler.fgFirstBB = block;
                 compiler.fgLastBB = block;
@@ -349,7 +349,7 @@ internal static unsafe class ProfileInstrumentationTests
                 vtable.Base.embedMethodHandle = &EmbedProfileMethodHandle;
                 ICorJitInfo runtime = new() { lpVtbl = &vtable };
                 compiler.info.compCompHnd = &runtime;
-                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_INSTR);
                 var block = BasicBlock.New(compiler, BBJ_RETURN);
                 block.SetFlags(BBF_IMPORTED | BBF_HAS_HISTOGRAM_PROFILE);
                 compiler.fgFirstBB = block;
@@ -430,7 +430,7 @@ internal static unsafe class ProfileInstrumentationTests
                 vtable.Base.Base.getExactClasses = &RecordExactClassQuery;
                 ICorJitInfo runtime = new() { lpVtbl = &vtable };
                 compiler.info.compCompHnd = &runtime;
-                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_INSTR);
 
                 var call = compiler.gtNewCallNode(TYP_REF, CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)0x10);
                 call.Flags |= GTF_CALL_VIRT_VTABLE;
@@ -537,11 +537,11 @@ internal static unsafe class ProfileInstrumentationTests
                     compiler.compCurBB = new BasicBlock(null, null);
                     if (instrumented)
                     {
-                        compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
+                        compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_INSTR);
                     }
                     if (optimized)
                     {
-                        compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBOPT);
+                        compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_PGO_OPT);
                     }
 
                     var call = compiler.gtNewCallNode(method == "Memmove" ? TYP_VOID : TYP_INT,

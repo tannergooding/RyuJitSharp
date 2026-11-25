@@ -26,9 +26,9 @@ public partial struct CORJIT_FLAGS
     public const CorJitFlag CORJIT_FLAG_RELOC = CorJitFlag.CORJIT_FLAG_RELOC;
     public const CorJitFlag CORJIT_FLAG_IL_STUB = CorJitFlag.CORJIT_FLAG_IL_STUB;
     public const CorJitFlag CORJIT_FLAG_PROCSPLIT = CorJitFlag.CORJIT_FLAG_PROCSPLIT;
-    public const CorJitFlag CORJIT_FLAG_BBINSTR = CorJitFlag.CORJIT_FLAG_BBINSTR;
-    public const CorJitFlag CORJIT_FLAG_BBINSTR_IF_LOOPS = CorJitFlag.CORJIT_FLAG_BBINSTR_IF_LOOPS;
-    public const CorJitFlag CORJIT_FLAG_BBOPT = CorJitFlag.CORJIT_FLAG_BBOPT;
+    public const CorJitFlag CORJIT_FLAG_PGO_INSTR = CorJitFlag.CORJIT_FLAG_PGO_INSTR;
+    public const CorJitFlag CORJIT_FLAG_PGO_INSTR_IF_LOOPS = CorJitFlag.CORJIT_FLAG_PGO_INSTR_IF_LOOPS;
+    public const CorJitFlag CORJIT_FLAG_PGO_OPT = CorJitFlag.CORJIT_FLAG_PGO_OPT;
     public const CorJitFlag CORJIT_FLAG_FRAMED = CorJitFlag.CORJIT_FLAG_FRAMED;
     public const CorJitFlag CORJIT_FLAG_USE_PINVOKE_HELPERS = CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS;
     public const CorJitFlag CORJIT_FLAG_REVERSE_PINVOKE = CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE;
@@ -105,14 +105,14 @@ public partial struct CORJIT_FLAGS
         /// <summary>JIT should separate code into hot and cold sections.</summary>
         CORJIT_FLAG_PROCSPLIT = 17,
 
-        /// <summary>Collect basic block profile information.</summary>
-        CORJIT_FLAG_BBINSTR = 18,
+        /// <summary>Collect profile data for PGO.</summary>
+        CORJIT_FLAG_PGO_INSTR = 18,
 
         /// <summary>JIT must instrument current method if it has loops.</summary>
-        CORJIT_FLAG_BBINSTR_IF_LOOPS = 19,
+        CORJIT_FLAG_PGO_INSTR_IF_LOOPS = 19,
 
         /// <summary>Optimize method based on profile information.</summary>
-        CORJIT_FLAG_BBOPT = 20,
+        CORJIT_FLAG_PGO_OPT = 20,
 
         /// <summary>All methods have an EBP frame.</summary>
         CORJIT_FLAG_FRAMED = 21,

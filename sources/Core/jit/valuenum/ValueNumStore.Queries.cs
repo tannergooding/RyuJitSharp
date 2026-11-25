@@ -527,16 +527,17 @@ public sealed partial class ValueNumStore
             };
         }
 
-        if (IsVNArrLen(vn))
-        {
-            return VNVisit.Continue;
-        }
-
         // TODO-VN: Recognize Span.Length and intrinsics such as Max of nonnegative values.
         var app = new VNFuncApp();
         if (GetVNFunc(vn, ref app))
         {
-            if (Configuration.FEATURE_HW_INTRINSICS)
+            if (app.FuncIs(VNF_ARR_LENGTH, VNF_MDArrLength))
+            {
+                return VNVisit.Continue;
+            }
+
+            if (Configuration.FEATURE_HW_INTRINSICS &&
+                (app.Func >= VNF_HWI_FIRST) && (app.Func <= VNF_HWI_LAST))
             {
                 var id = NI_Illegal;
                 var simdSize = 0;
@@ -562,7 +563,6 @@ public sealed partial class ValueNumStore
                 case VNF_GT_UN:
                 case VNF_LE_UN:
                 case VNF_LT_UN:
-                case VNF_MDArrLowerBound:
                     return VNVisit.Continue;
 
                 case VNF_HWI_Vector_ExtractMostSignificantBits when Configuration.FEATURE_HW_INTRINSICS:

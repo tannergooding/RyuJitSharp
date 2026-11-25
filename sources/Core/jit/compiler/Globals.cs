@@ -386,7 +386,7 @@ public partial class Globals
             jitFlags->Set(JitFlags.JIT_FLAG_MIN_OPT);
             jitFlags->Clear(JitFlags.JIT_FLAG_SIZE_OPT);
             jitFlags->Clear(JitFlags.JIT_FLAG_SPEED_OPT);
-            jitFlags->Clear(JitFlags.JIT_FLAG_BBOPT);
+            jitFlags->Clear(JitFlags.JIT_FLAG_PGO_OPT);
 
             // Reattempt with debuggable code.
             result = JitNativeCodeCore(methodHandle, classHandle, jitInfo, methodInfo, out methodCodePtr, out methodCodeSize, jitFlags, inlineInfo, jitFallbackCompile: true);

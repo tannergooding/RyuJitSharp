@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.SveMaskPattern;
 using static RyuJitSharp.genTreeOps;
@@ -220,6 +221,7 @@ internal static unsafe class Arm64HardwareLoweringTests
         Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS, "Masked hardware intrinsics are unavailable.");
 
         WithLowering((compiler, lowering, block) => {
+            EnableSve(compiler);
             var first = useZeroOperand
                 ? (GenTree)new GenTreeVecCon(TYP_SIMD16)
                 : compiler.gtNewSimdTrueMaskNode(TYP_INT);
@@ -249,11 +251,32 @@ internal static unsafe class Arm64HardwareLoweringTests
     }
 
     [Test]
+    public static void SvePredicateBitwiseClearFallsBackWithoutSveDependency()
+    {
+        WithLowering((compiler, lowering, block) => {
+            var first = new GenTreeVecCon(TYP_SIMD16);
+            var secondMask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, false);
+            var secondVector = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, secondMask, TYP_INT, 16);
+            var not = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Sve_Not, TYP_INT, 16, secondVector);
+            var and = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Sve_And, TYP_INT, 16, first, not);
+            Append(block, first, secondMask, secondVector, not, and);
+
+            _ = LowerNode(lowering, and);
+
+            Assert.That(and.HWIntrinsicId, Is.EqualTo(NI_AdvSimd_BitwiseClear));
+            Assert.That(and.Type, Is.EqualTo(TYP_SIMD16));
+            Assert.That(and.GetOp(1), Is.SameAs(first));
+            Assert.That(and.GetOp(2), Is.SameAs(secondVector));
+        });
+    }
+
+    [Test]
     public static void SvePredicateBitwiseClearKeepsSameWidthMaskResult()
     {
         Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS, "Masked hardware intrinsics are unavailable.");
 
         WithLowering((compiler, lowering, block) => {
+            EnableSve(compiler);
             var firstMask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, true);
             var secondMask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, false);
             var first = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, firstMask, TYP_INT, 16);
@@ -558,6 +581,13 @@ internal static unsafe class Arm64HardwareLoweringTests
         {
             block.InsertAtEnd(node);
         }
+    }
+
+    private static void EnableSve(Compiler compiler)
+    {
+        compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Sve);
+        compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Sve);
+        compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Sve);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]

@@ -127,13 +127,32 @@ public partial class Emitter
 
         if ((code & 0xFF00) != 0)
         {
-            sz += (IsSimdInstruction(ins) || TakesEvexPrefix(id))
-                ? emitInsSize(id, code, includeRexPrefixSize)
-                : 5u;
+            sz += emitInsSize(id, code, includeRexPrefixSize);
+            if (!IsSimdInstruction(ins) && !TakesEvexPrefix(id) && (ins != INS_crc32) &&
+                ((code & 0xFF00) != 0xC000))
+            {
+                // Non-SIMD two-byte opcodes generally emit a separate ModRM byte.
+                sz++;
+            }
         }
         else
         {
             sz += emitInsSize(id, insEncodeRMreg(id, code), includeRexPrefixSize);
+        }
+
+        if (Configuration.TARGET_AMD64 && IsKInstruction(ins) && hasVexPrefix(code))
+        {
+            sz -= emitGetVexPrefixSize(id);
+        }
+
+        if (instrIsExtendedReg3opImul(ins) && hasRex2Prefix(code))
+        {
+            sz -= 2;
+        }
+        else if (HasRewrittenBuiltInRexPrefix(ins) && !TakesEvexPrefix(id) &&
+            (TakesRexWPrefix(id) || TakesRex2Prefix(id)))
+        {
+            sz--;
         }
         return sz;
     }

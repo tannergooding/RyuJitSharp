@@ -10,6 +10,20 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private readonly struct ReadsMutableMemoryPredicate(Compiler compiler)
+        : IGenTreePredicate<ReadsMutableMemoryPredicate>
+    {
+        public bool IsMatch(GenTree node)
+        {
+            if (node.Oper.IsIndir)
+            {
+                return (node.Flags & GTF_IND_INVARIANT) == 0;
+            }
+
+            return node.Oper.IsLocalRead && compiler.lvaGetDesc(node.AsLclVarCommon().LclNum).IsAddressExposed;
+        }
+    }
+
     private unsafe struct OutgoingArgTempVisitor(
         Compiler compiler,
         hashBv availableTemps,
@@ -174,6 +188,7 @@ public partial class Compiler
         }
 
         GenTree? newArgument = null;
+        GenTree? addressSpillStore = null;
         if (node.Oper is GT_LCL_VAR)
         {
             var local = node.AsLclVar();
@@ -238,6 +253,18 @@ public partial class Compiler
                 {
                     // Multiple slot loads must not duplicate address effects.
                     return false;
+                }
+
+                var address = node.AsIndir().Addr;
+                var predicate = new ReadsMutableMemoryPredicate(this);
+                if ((argument.AbiInfo.CountRegsAndStackSlots() > 1) &&
+                    (gtFindNodeInTree(address, ref predicate, GTF_GLOB_REF) is not null))
+                {
+                    // Re-reading mutable memory for each slot could observe a torn struct value.
+                    var addressTemp = fgMakeTemp(address);
+                    addressSpillStore = addressTemp.Store;
+                    address = addressTemp.Load;
+                    node.AsIndir().Addr = address;
                 }
             }
 
@@ -312,7 +339,13 @@ public partial class Compiler
                 {
                     address = gtNewBinaryNode(GT_ADD, address.Type, gtCloneExpr(address), gtNewIconNode(TYP_I_IMPL, offset));
                 }
-                return gtNewIndir(type, address);
+                var indir = gtNewIndir(type, address, node.Flags & GTF_IND_COPYABLE_FLAGS);
+                if ((node.Flags & (GTF_IND_NONFAULTING | GTF_ORDER_SIDEEFF)) ==
+                    (GTF_IND_NONFAULTING | GTF_ORDER_SIDEEFF))
+                {
+                    indir.HasOrderingSideEffect = true;
+                }
+                return indir;
             }
 
             var fieldList = new GenTreeFieldList();
@@ -334,6 +367,12 @@ public partial class Compiler
                 }
             }
             newArgument = fieldList.SoleFieldOrThis;
+        }
+
+        if (addressSpillStore is not null)
+        {
+            assert(newArgument is not null);
+            newArgument = gtNewCommaNode(newArgument!.Type, addressSpillStore, newArgument!);
         }
 
         JITDUMP("fgTryMorphStructArg created tree:\n");

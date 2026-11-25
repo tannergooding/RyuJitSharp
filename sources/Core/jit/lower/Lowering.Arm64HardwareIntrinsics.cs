@@ -114,7 +114,8 @@ public sealed partial class Lowering
             }
         }
 
-        if ((notNode is not null) && op1.IsSveMaskOperand && op2.IsSveMaskOperand)
+        if ((notNode is not null) && op1.CanBeSveMask && op2.CanBeSveMask &&
+            CompilerInstance.compOpportunisticallyDependsOn(InstructionSet_Sve))
         {
             var simdBaseTypeSize = node.SimdBaseType.Size;
             if ((op1.IsConvertMaskToVector &&

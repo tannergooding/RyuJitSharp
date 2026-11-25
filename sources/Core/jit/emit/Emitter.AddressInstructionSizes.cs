@@ -135,9 +135,9 @@ public partial class Emitter
             assert(ins != INS_bt);
             assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE) ||
                 (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) || (attrSize == EA_64BYTE) ||
-                (ins is INS_movzx or INS_movsx or INS_vmovsh or INS_cmpxchg) ||
+                (ins is INS_movzx or INS_movsx or INS_vmovsh or INS_cmpxchg or INS_xadd) ||
                 IsKMOVInstruction(ins) || isPrefetch(ins) || insIsCMOV(ins));
-            size = ((attrSize == EA_2BYTE) && (ins == INS_cmpxchg)) ? 4u : 3u;
+            size = 3;
         }
         else
         {
@@ -155,7 +155,8 @@ public partial class Emitter
             size += emitGetRexPrefixSize(id, ins);
         }
         else if (IsExtendedReg(reg, EA_PTRSIZE) || IsExtendedReg(rgx, EA_PTRSIZE) ||
-            ((ins != INS_call) && (IsExtendedReg(id.idReg1(), attrSize) || IsExtendedReg(id.idReg2(), attrSize))))
+            ((ins != INS_call) && ((id.idHasReg1() && IsExtendedReg(id.idReg1(), attrSize)) ||
+                (id.idHasReg2() && IsExtendedReg(id.idReg2(), attrSize)))))
         {
             size += emitGetRexPrefixSize(id, ins);
         }

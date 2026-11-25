@@ -122,7 +122,7 @@ public partial class Emitter
         }
         else if ((code & 0x00FF0000) != 0)
         {
-            if (size == EA_2BYTE && ins == INS_cmpxchg)
+            if (NeedsLegacyOperandSizePrefix(id))
             {
                 dst += emitOutputByte(dst, 0x66);
             }

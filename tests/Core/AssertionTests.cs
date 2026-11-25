@@ -2045,8 +2045,9 @@ internal static unsafe class AssertionTests
             compiler.vnStore = store;
             var unknown = store.VNForExpr(null, TYP_INT);
             var zero = store.VNForIntCon(0);
-            var length = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_MDArrLength,
-                store.VNForExpr(null, TYP_REF), zero);
+            var array = store.VNForExpr(null, TYP_REF);
+            var length = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_MDArrLength, array, zero);
+            var lowerBound = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_MDArrLowerBound, array, zero);
             var comparison = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_LT, unknown, zero);
             Assert.That(store.IsVNNeverNegative(ValueNumStore.NoVN), Is.False);
             Assert.That(store.IsVNNeverNegative(store.VNForLongCon(long.MinValue)), Is.False);
@@ -2054,6 +2055,7 @@ internal static unsafe class AssertionTests
             Assert.That(store.IsVNNeverNegative(store.VNForFloatCon(1)), Is.False);
             Assert.That(store.IsVNNeverNegative(unknown), Is.False);
             Assert.That(store.IsVNNeverNegative(length), Is.True);
+            Assert.That(store.IsVNNeverNegative(lowerBound), Is.False);
             Assert.That(store.IsVNNeverNegative(comparison), Is.True);
             var bounds = AssertionDsc.CreateCompareCheckedBound(compiler, VNFunc.VNF_LT, unknown, length, -5);
             Assert.That(bounds.Op2.IsVNNeverNegative, Is.True);

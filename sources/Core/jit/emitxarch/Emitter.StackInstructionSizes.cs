@@ -13,6 +13,19 @@ public partial class Emitter
         var ins = id.idIns();
         var size = emitInsSize(id, code, includeRexPrefixSize: true);
 
+        if (Configuration.TARGET_AMD64)
+        {
+            if (instrIsExtendedReg3opImul(ins) && hasRex2Prefix(code))
+            {
+                size -= 2;
+            }
+            else if (HasRewrittenBuiltInRexPrefix(ins) && !TakesEvexPrefix(id) &&
+                (TakesRexWPrefix(id) || TakesRex2Prefix(id)))
+            {
+                size--;
+            }
+        }
+
         var adr = _compiler.lvaFrameAddress(var, out var ebpBased);
         dsp = unchecked(adr + (int)id.idAddr().iiaLclVar.lvaOffset());
         var dspIsZero = dsp == 0;

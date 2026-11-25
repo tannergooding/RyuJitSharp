@@ -143,6 +143,7 @@ public partial class Emitter
         // Retain the historical additional emitInsSize call for SIMD byte immediates;
         // proving it redundant requires auditing the different prefix paths.
         var isSimdInsAndValInByte = false;
+        var usesAccForm = false;
 
         switch (ins)
         {
@@ -195,6 +196,7 @@ public partial class Emitter
                         !IsThreeOperandImulInstruction(ins))
                     {
                         sz = 2;
+                        usesAccForm = true;
                     }
                     else
                     {
@@ -207,6 +209,7 @@ public partial class Emitter
                     if ((reg == TargetRuntimeMetadata.IntegerReturnRegister) && !IsThreeOperandImulInstruction(ins))
                     {
                         sz = 1;
+                        usesAccForm = true;
                     }
                     else
                     {
@@ -274,8 +277,7 @@ public partial class Emitter
 
         if (Configuration.TARGET_AMD64)
         {
-            if ((reg == TargetRuntimeMetadata.IntegerReturnRegister) &&
-                !IsThreeOperandImulInstruction(ins) && TakesEvexPrefix(id))
+            if (usesAccForm && TakesEvexPrefix(id))
             {
                 // The accumulator form is not promoted into EVEX space; use MI.
                 sz += 1;

@@ -52,7 +52,7 @@ public sealed partial class ValueNumStore
         var found = store.GetVNFunc(sum, ref application);
         assert(found);
         assert((application.Func is VNF_ADD) && (application.Arity == 2) &&
-            (application.GetArg(0) == one) && (application.GetArg(1) == random));
+            (application.GetArg(0) == random) && (application.GetArg(1) == one));
 
         var constantSum = store.VNForFunc(TYP_INT, VNF_ADD, one, hundred);
         assert(constantSum == store.VNForFunc(TYP_INT, VNF_ADD, one, hundred));
@@ -61,5 +61,10 @@ public sealed partial class ValueNumStore
         assert(store.TypeOfVN(constantSum) is TYP_INT);
         assert(store.IsVNConstant(constantSum));
         assert(store.ConstantValue<int>(constantSum) == 101);
+
+        var array = store.VNForExpr(null, TYP_REF);
+        var dimension = store.VNForIntCon(0);
+        assert(store.IsVNNeverNegative(store.VNForFunc(TYP_INT, VNF_MDArrLength, array, dimension)));
+        assert(!store.IsVNNeverNegative(store.VNForFunc(TYP_INT, VNF_MDArrLowerBound, array, dimension)));
     }
 }
